@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using OpenDealer360.Platform.Kernel;
+using OpenDealer360.Core;
 
 namespace OpenDealer360.Modules.Identity.Data;
 

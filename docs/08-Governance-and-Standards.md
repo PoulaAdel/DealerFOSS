@@ -81,7 +81,7 @@ A new contributor reads:
 3. [Architecture & Decisions](02-Architecture-and-Decisions.md);
 4. the module or connector README for their task;
 5. architecture and conformance tests;
-6. `CONTRIBUTING.md`, security policy, and relevant ADRs.
+6. `.github/CONTRIBUTING.md`, security policy, and relevant ADRs.
 
 ## 9. Branching and review
 

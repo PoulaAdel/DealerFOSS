@@ -3,7 +3,7 @@ using FluentAssertions;
 using NetArchTest.Rules;
 using OpenDealer360.Modules.Identity.Contracts;
 using OpenDealer360.Modules.Organization.Domain;
-using OpenDealer360.Platform.Persistence.HostCatalog;
+using OpenDealer360.Tenancy;
 using Xunit;
 
 namespace OpenDealer360.ArchitectureTests;
@@ -17,7 +17,7 @@ public sealed class ModuleBoundaryTests
 {
     private static readonly Assembly Organization = typeof(DealerOrganization).Assembly;
     private static readonly Assembly Identity = typeof(IAccessDirectory).Assembly;
-    private static readonly Assembly PlatformPersistence = typeof(HostCatalogDbContext).Assembly;
+    private static readonly Assembly TenancyAssembly = typeof(HostCatalogDbContext).Assembly;
 
     [Fact]
     public void Organization_domain_must_not_depend_on_ef_or_aspnetcore()
@@ -80,16 +80,16 @@ public sealed class ModuleBoundaryTests
     }
 
     [Fact]
-    public void Platform_persistence_must_not_depend_on_aspnetcore()
+    public void Tenancy_must_not_depend_on_aspnetcore()
     {
         // Web concerns (middleware, HttpContext) live in Host, not in the
         // persistence infrastructure project.
-        var result = Types.InAssembly(PlatformPersistence)
+        var result = Types.InAssembly(TenancyAssembly)
             .Should().NotHaveDependencyOn("Microsoft.AspNetCore")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "persistence infrastructure is web-agnostic; offenders: "
+            because: "tenant routing is web-agnostic; offenders: "
                 + string.Join(", ", result.FailingTypeNames ?? []));
     }
 }

@@ -1,5 +1,5 @@
-using OpenDealer360.Platform.Persistence.Tenancy;
-using OpenDealer360.Platform.Tenancy;
+using OpenDealer360.Tenancy;
+using OpenDealer360.Core;
 
 namespace OpenDealer360.Host.Tenancy;
 
@@ -21,7 +21,7 @@ public sealed class TenantMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(
         HttpContext context,
-        ITenantConnectionResolver resolver,
+        ITenantResolver resolver,
         ITenantContext tenantContext)
     {
         if (!context.Request.Path.StartsWithSegments(ApiPrefix))

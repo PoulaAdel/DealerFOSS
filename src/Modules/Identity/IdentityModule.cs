@@ -2,8 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OpenDealer360.Modules.Identity.Contracts;
 using OpenDealer360.Modules.Identity.Data;
-using OpenDealer360.Platform.Security;
-using OpenDealer360.Platform.Tenancy;
+using OpenDealer360.Core;
 
 namespace OpenDealer360.Modules.Identity;
 

@@ -2,8 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Modules.Identity.Contracts;
 using OpenDealer360.Modules.Organization.Contracts;
 using OpenDealer360.Modules.Organization.Data;
-using OpenDealer360.Platform.Kernel;
-using OpenDealer360.Platform.Security;
+using OpenDealer360.Core;
 
 namespace OpenDealer360.Modules.Organization;
 

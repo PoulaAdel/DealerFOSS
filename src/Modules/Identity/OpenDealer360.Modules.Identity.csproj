@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Platform\OpenDealer360.Platform.csproj" />
+    <ProjectReference Include="..\..\Core\OpenDealer360.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

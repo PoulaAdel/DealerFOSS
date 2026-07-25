@@ -1,4 +1,4 @@
-using OpenDealer360.Platform.Security;
+using OpenDealer360.Core;
 
 namespace OpenDealer360.Host.Tenancy;
 

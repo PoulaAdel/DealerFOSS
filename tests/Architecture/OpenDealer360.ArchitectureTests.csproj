@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Platform\OpenDealer360.Platform.csproj" />
-    <ProjectReference Include="..\..\src\Platform.Persistence\OpenDealer360.Platform.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\Core\OpenDealer360.Core.csproj" />
+    <ProjectReference Include="..\..\src\Tenancy\OpenDealer360.Tenancy.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\OpenDealer360.Modules.Identity.csproj" />
     <ProjectReference Include="..\..\src\Modules\Organization\OpenDealer360.Modules.Organization.csproj" />
   </ItemGroup>

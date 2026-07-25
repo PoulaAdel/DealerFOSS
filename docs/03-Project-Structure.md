@@ -13,7 +13,8 @@ The repository is capability-first. A contributor looking for Sales, Parts, or S
 OpenDealer360/
 ├── src/
 │   ├── Host/                 startup, middleware, composition, background workers
-│   ├── Platform/             small shared kernel and infrastructure abstractions
+│   ├── Core/                 shared types and abstractions; no EF, no web, no domain
+│   ├── Tenancy/              host catalog, tenant resolution, routing cache
 │   ├── Modules/
 │   │   ├── Organization/
 │   │   ├── Identity/
@@ -73,28 +74,36 @@ The permitted folders have stable meanings:
 
 | Area | Responsibility | May depend on |
 |---|---|---|
-| Domain | entities, value objects, invariants, state transitions | `Platform/Kernel` only |
+| Domain | entities, value objects, invariants, state transitions | `Core` only |
 | Features | commands, queries, handlers, validation | Domain and published contracts |
 | Data | EF configuration, storage implementations, projections | its module and EF Core |
 | Contracts | narrow cross-module interfaces and versioned events | shared primitives only |
 | Endpoints | authorization, transport mapping, delegation | Features and API DTOs |
 
-## 4. Platform boundary
+## 4. Core boundary
 
-`Platform/` contains only capabilities broadly required by modules:
+`Core/` contains only what modules broadly require. It is flat — the project *is* the shared kernel, so it needs no inner folders:
 
 ```text
-Platform/
-├── Kernel/          Result, Money, EntityId, Clock abstractions
-├── Persistence/     tenant context factory, transaction/outbox support
-├── Security/        authentication/authorization primitives, encryption interfaces
-├── Jobs/            durable scheduling abstractions
-├── Observability/   telemetry conventions and correlation
-├── Storage/         IDocumentStore
-└── Utilities/       domain-free helpers only
+Core/                    types and abstractions only — no EF, no ASP.NET, no domain
+├── Result.cs            typed success/failure for expected business outcomes
+├── Error.cs             stable application error codes
+├── Money.cs             amount plus ISO currency; cross-currency maths refused
+├── Ids.cs               DealerOrganizationId, LegalEntityId, RooftopId, DepartmentId
+├── Clock.cs             IClock, so "now" is injectable and testable
+├── AuditableEntity.cs   audit columns and the concurrency stamp
+├── ITenantContext.cs    the tenant resolved for this request
+├── ICurrentUser.cs      the caller resolved for this request
+├── IAuditSink.cs        how a security-sensitive event is recorded
+└── ISecretProtector.cs  how sensitive configuration is protected at rest
 ```
 
-Business concepts such as Deal, RepairOrder, Rooftop, TaxRule, or Journal never enter Platform. Shared code must have at least two real consumers; “might be reused later” is insufficient.
+Infrastructure that needs a database lives outside `Core`. `Tenancy/` implements
+`ITenantContext` resolution against the host catalog; each module implements its
+own persistence. Document storage, jobs, and telemetry gain their own projects
+when their first real implementation lands, not before.
+
+Business concepts such as Deal, RepairOrder, Rooftop, TaxRule, or Journal never enter `Core`. Shared code must have at least two real consumers; “might be reused later” is insufficient.
 
 ## 5. Boundary enforcement
 
