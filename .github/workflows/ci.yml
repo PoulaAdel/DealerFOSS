@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build, boundary + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # Restore runs NuGetAudit; TreatWarningsAsErrors fails the build on any
+      # vulnerable or disallowed-license dependency (doc 06 §7, doc 08 §2).
+      - name: Restore
+        run: dotnet restore OpenDealer360.slnx
+
+      - name: Build (warnings as errors)
+        run: dotnet build OpenDealer360.slnx -c Release --no-restore
+
+      - name: Test (architecture + unit)
+        run: dotnet test OpenDealer360.slnx -c Release --no-build --verbosity normal

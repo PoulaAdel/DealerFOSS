@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>OpenDealer360.Host</RootNamespace>
+    <AssemblyName>OpenDealer360.Host</AssemblyName>
+    <!-- The composition root and HTTP edge (doc 03 §2). -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Platform\OpenDealer360.Platform.csproj" />
+    <ProjectReference Include="..\Platform.Persistence\OpenDealer360.Platform.Persistence.csproj" />
+    <ProjectReference Include="..\Modules\Organization\OpenDealer360.Modules.Organization.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+  </ItemGroup>
+
+</Project>

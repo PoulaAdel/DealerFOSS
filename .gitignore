@@ -1,0 +1,42 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+*.suo
+
+# Test / coverage
+[Tt]est[Rr]esult*/
+coverage/
+*.coverage
+*.trx
+
+# Rider / VS / VS Code
+.idea/
+.vs/
+.vscode/*
+!.vscode/extensions.json
+
+# Node / frontend
+node_modules/
+dist/
+frontend/.vite/
+
+# Local config & secrets — never commit
+appsettings.*.local.json
+appsettings.Development.json
+*.env
+.env
+secrets.json
+
+# Local tooling overrides
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker / local data volumes
+deploy/.data/

@@ -1,0 +1,24 @@
+# Normalize line endings. The application is developed on Windows and also
+# runs in Linux containers (ADR-015), so text is stored LF in the repository
+# and checked out natively.
+* text=auto
+
+# Files that must keep LF regardless of platform (shell scripts, container and
+# CI inputs are read by Linux tooling).
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+Dockerfile  text eol=lf
+
+# Windows-only tooling expects CRLF.
+*.ps1       text eol=crlf
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+
+# Binary assets — never diff or convert.
+*.png       binary
+*.jpg       binary
+*.ico       binary
+*.pdf       binary
+*.mdf       binary
+*.ldf       binary

@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/OpenDealer360.Host.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Organization/">
+    <Project Path="src/Modules/Organization/OpenDealer360.Modules.Organization.csproj" />
+  </Folder>
+  <Folder Name="/src/Platform.Persistence/">
+    <Project Path="src/Platform.Persistence/OpenDealer360.Platform.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/src/Platform/">
+    <Project Path="src/Platform/OpenDealer360.Platform.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Architecture/">
+    <Project Path="tests/Architecture/OpenDealer360.ArchitectureTests.csproj" />
+  </Folder>
+</Solution>
