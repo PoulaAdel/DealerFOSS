@@ -16,6 +16,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Platform\OpenDealer360.Platform.csproj" />
+    <!-- Access decisions only, through Identity's published Contracts namespace
+         (ADR-008). Architecture tests forbid reaching past it. -->
+    <ProjectReference Include="..\Identity\OpenDealer360.Modules.Identity.csproj" />
   </ItemGroup>
 
   <ItemGroup>

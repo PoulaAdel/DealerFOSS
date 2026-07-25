@@ -4,6 +4,9 @@
     <Project Path="src/Host/OpenDealer360.Host.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/OpenDealer360.Modules.Identity.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Organization/">
     <Project Path="src/Modules/Organization/OpenDealer360.Modules.Organization.csproj" />
   </Folder>

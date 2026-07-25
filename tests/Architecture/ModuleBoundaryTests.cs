@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentAssertions;
 using NetArchTest.Rules;
+using OpenDealer360.Modules.Identity.Contracts;
 using OpenDealer360.Modules.Organization.Domain;
 using OpenDealer360.Platform.Persistence.HostCatalog;
 using Xunit;
@@ -15,6 +16,7 @@ namespace OpenDealer360.ArchitectureTests;
 public sealed class ModuleBoundaryTests
 {
     private static readonly Assembly Organization = typeof(DealerOrganization).Assembly;
+    private static readonly Assembly Identity = typeof(IAccessDirectory).Assembly;
     private static readonly Assembly PlatformPersistence = typeof(HostCatalogDbContext).Assembly;
 
     [Fact]
@@ -41,6 +43,39 @@ public sealed class ModuleBoundaryTests
 
         result.IsSuccessful.Should().BeTrue(
             because: "a module never references the composition host; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Organization_may_reach_identity_only_through_its_contracts()
+    {
+        // Cross-module access goes through the published contract (ADR-008).
+        // Reaching Identity's Domain, Data, or service types would couple the
+        // two modules and make authorization rules impossible to reason about.
+        var result = Types.InAssembly(Organization)
+            .Should()
+            .NotHaveDependencyOnAny(
+                "OpenDealer360.Modules.Identity.Domain",
+                "OpenDealer360.Modules.Identity.Data")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Identity is reachable only via its Contracts namespace; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Identity_must_not_depend_on_other_business_modules()
+    {
+        // Identity answers access questions; it must not know what the caller
+        // is trying to reach, or the dependency becomes circular.
+        var result = Types.InAssembly(Identity)
+            .Should()
+            .NotHaveDependencyOnAny("OpenDealer360.Modules.Organization", "OpenDealer360.Host")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Identity sits below business modules; offenders: "
                 + string.Join(", ", result.FailingTypeNames ?? []));
     }
 

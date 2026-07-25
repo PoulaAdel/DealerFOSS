@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenDealer360.Host.Development;
 using OpenDealer360.Host.Tenancy;
+using OpenDealer360.Modules.Identity;
 using OpenDealer360.Modules.Organization;
 using OpenDealer360.Platform.Kernel;
 using OpenDealer360.Platform.Persistence;
@@ -31,6 +32,8 @@ var tenancyEnabled = !string.IsNullOrWhiteSpace(hostConnection);
 if (tenancyEnabled)
 {
     builder.Services.AddHostCatalog(hostConnection!);
+    builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+    builder.Services.AddIdentityModule();
     builder.Services.AddOrganizationModule();
 }
 
@@ -82,7 +85,9 @@ app.UseSerilogRequestLogging();
 
 if (tenancyEnabled)
 {
+    // Order matters: the tenant is resolved first, then the caller within it.
     app.UseMiddleware<TenantMiddleware>();
+    app.UseMiddleware<CurrentUserMiddleware>();
 }
 
 // Liveness: is the process up at all? Runs no dependency checks.
