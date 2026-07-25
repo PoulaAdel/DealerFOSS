@@ -1,0 +1,40 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,md,csproj,props,targets}]
+indent_size = 2
+
+[*.cs]
+# Namespaces
+csharp_style_namespace_declarations = file_scoped:warning
+# var usage — be explicit where it aids readability
+csharp_style_var_when_type_is_apparent = true:suggestion
+# Modern C#
+csharp_prefer_braces = true:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+# Error/Result are deliberate C#-only kernel type names; VB keyword-clash rule N/A.
+dotnet_diagnostic.CA1716.severity = none
+dotnet_style_readonly_field = true:warning
+# Naming: private fields _camelCase
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+
+# Test projects: underscore-separated method names are the standard xUnit convention.
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+# EF Core migrations are generated artifacts — exclude from style/quality analysis.
+[**/Migrations/*.cs]
+generated_code = true

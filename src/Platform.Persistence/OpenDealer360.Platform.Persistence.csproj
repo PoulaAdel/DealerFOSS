@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OpenDealer360.Platform.Persistence</RootNamespace>
+    <AssemblyName>OpenDealer360.Platform.Persistence</AssemblyName>
+    <!--
+      Infrastructure: the host catalog and tenant resolution (doc 03 §4,
+      doc 04 §2/§5). May depend on EF Core; must NOT depend on ASP.NET Core
+      (web concerns live in Host) or on any business module.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Platform\OpenDealer360.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

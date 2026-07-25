@@ -1,0 +1,22 @@
+<Project>
+
+  <!-- Solution-wide build settings. Every project inherits these. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- SPDX license identifier on every assembly (governance §2). -->
+  <ItemGroup>
+    <AssemblyMetadata Include="SPDX-License-Identifier" Value="AGPL-3.0-or-later" />
+  </ItemGroup>
+
+</Project>
