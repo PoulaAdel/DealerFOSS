@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using OpenDealer360.Host.Development;
 
 namespace OpenDealer360.IntegrationTests;
 
@@ -80,6 +81,10 @@ public sealed class TenantIsolationTests(HostFixture fixture)
         using var client = _fixture.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(OrganizationEndpoint, UriKind.Relative));
         request.Headers.Add("X-Tenant", tenantKey);
+        // Organization-wide so these tests observe the tenant boundary rather
+        // than a rooftop-scope filter; rooftop scope is covered separately by
+        // RooftopAuthorizationTests.
+        request.Headers.Add("X-User", DevelopmentSeeder.DevUsers.OrganizationWide.ToString());
         return await client.SendAsync(request);
     }
 

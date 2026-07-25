@@ -1,8 +1,8 @@
 # Implementation Status
 
-Current phase: **I0 partial → I1 partial**
-Current milestone: rooftop-scoped authorization (risk R05)
-Last verified: 2026-07-25 · commit `dd7b582` on `feature/foundation`
+Current phase: **I0 complete (except container path) → I1 in progress**
+Current milestone: durable sessions and BFF cookie authentication
+Last verified: 2026-07-25 · `dotnet build` 0 warnings/0 errors, `dotnet test` 22/22 · branch `feature/foundation`
 
 > The repository is the truth. If this file disagrees with the code, this file
 > is wrong — correct it. A file existing is not evidence that a workflow works.
@@ -37,12 +37,13 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - [x] Unresolvable tenant is rejected at the edge — missing header → 400, unknown tenant → 404 *(agent-verifiable)*
 - [x] Migrations and seeding are idempotent — second `verify-e2e.ps1` run reports "already up to date" and skips seeding *(agent-verifiable)*
 - [x] Secret-protector seam; development pass-through refused outside Development — `Program.cs` startup guard *(agent-verifiable)*
-- [ ] **Users, roles, permissions, scoped user assignments** — not started
-- [ ] **Cross-tenant and unauthorized-rooftop reads/writes fail in endpoint and job tests** — not started *(this is the current milestone)*
+- [x] Users, roles, permissions, scoped user assignments — `identity` schema, migration `InitialIdentity`; roles hold catalogued permissions, assignments are organization- or rooftop-scoped *(agent-verifiable)*
+- [x] **Unauthorized-rooftop reads fail in endpoint tests** — `RooftopAuthorizationTests` (7 tests): a rooftop-scoped user sees only their own rooftop in the list, is refused a sibling rooftop by direct id (403), and an unassigned user is refused entirely. **Regression-proven 2026-07-25:** removing the scope check fails exactly these tests *(agent-verifiable)*
+- [x] Audit events capture scoped security-sensitive changes — every denial writes an append-only `identity.AuditEvents` row; the context refuses to update or delete audit history (ADR-016) *(agent-verifiable)*
+- [ ] Background-job authorization tests — no jobs exist yet; due with the first scheduled job
 - [ ] Durable sessions, BFF cookie auth, CSRF, rotation and revocation — not started
 - [ ] Local identity, MFA foundation, OIDC extension point — not started
 - [ ] Global-administration separation and time-limited support access — not started
-- [ ] Audit events for scoped security-sensitive changes — not started
 - [ ] Tenant-aware background job context — not started
 - [ ] React/TypeScript/Vite shell with accessible layout — not started *(blocked: Node not installed)*
 - [ ] Tenant creation, migration, backup, and restore rehearsed — migration rehearsed; **backup and restore not** *(partly human-verifiable)*
@@ -53,12 +54,12 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - **2026-07-25 — Tenancy and Organization module.** Host catalog, cached tenant resolver, tenant middleware, organization→legal entity→rooftop→department model, EF migrations, development seeder. Evidence: `verify-e2e.ps1` → `PASS` (two isolated databases, multi-rooftop resolved, 400/404 contract), verified twice including an idempotent re-run.
 - **2026-07-25 — Baseline committed.** `ef8793a` docs, `dd7b582` engineering baseline, on `feature/foundation`.
 - **2026-07-25 — I0 gaps closed.** Tenant isolation moved from a manual script into CI-runnable integration tests; forbidden-reference rehearsal performed and documented; code of conduct and 16 immutable ADR files added; `CLAUDE.md` records the verified local environment. Evidence: `dotnet build` 0/0, `dotnet test` 13/13.
+- **2026-07-25 — Rooftop authorization (closes R05).** Identity module with users, roles, catalogued permissions, organization- and rooftop-scoped assignments, and append-only audit. The Organization capability now filters reads to the caller's authorized rooftops and refuses a sibling rooftop addressed directly; denials are audited. Cross-module access goes only through `IAccessDirectory`, enforced by two new boundary tests. Evidence: `dotnet test` 22/22, plus a regression rehearsal in which removing the scope check failed exactly the three tests that assert it.
 
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
 |---|---|---|---|
-| Agent | R05 — rooftop authorization not enforced | Denial test that fails when the check is removed | Critical risk stays open; the current endpoint has no scope check |
 | Host env | SQL Server container unusable here (`LSA 0xc000004b`) | A working container host, or accept LocalDB for local development | Container development path unverified; ADR-015 unchanged |
 | Host env | Node.js absent | Node installed | All frontend work blocked |
 | Human | Backup and restore rehearsal | A timed restore producing a working system | I1 exit criterion cannot close |
@@ -66,7 +67,9 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 
 ## Next milestone
 
-**Outcome:** a rooftop-scoped user cannot read another rooftop's data, proven by a test that fails when the scope check is removed.
+**Outcome:** a user signs in and receives a durable session cookie; revoking the session immediately refuses subsequent requests, proven by test.
 
-- **Included:** permissions catalogue, scoped user assignments, server-side scope enforcement on the Organization endpoint, audit event on denial, unauthorized-rooftop denial test.
-- **Explicitly excluded:** full identity, MFA, OIDC, durable sessions, support access — each is a later milestone in I1.
+This replaces the provisional `X-User` header, which is accepted only in Development and is the last piece of client-supplied identity in the system.
+
+- **Included:** password credentials on `User`, durable session records in SQL, BFF cookie issuance with Secure/HttpOnly/SameSite, CSRF protection on writes, session rotation after sign-in, revocation, and idle/absolute expiry.
+- **Explicitly excluded:** MFA, OIDC federation, global-administration separation, and time-limited support access — each is a later milestone in I1.

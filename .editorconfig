@@ -21,6 +21,9 @@ csharp_prefer_braces = true:warning
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
 # Error/Result are deliberate C#-only kernel type names; VB keyword-clash rule N/A.
 dotnet_diagnostic.CA1716.severity = none
+# "Permission" is a domain term here (RolePermission is the documented join
+# table in doc 04 §3), not the framework suffix CA1711 reserves.
+dotnet_code_quality.CA1711.allowed_suffixes = Permission
 dotnet_style_readonly_field = true:warning
 # Naming: private fields _camelCase
 dotnet_naming_rule.private_fields_underscore.symbols = private_fields
