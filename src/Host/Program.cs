@@ -5,10 +5,8 @@ using OpenDealer360.Host.Development;
 using OpenDealer360.Host.Tenancy;
 using OpenDealer360.Modules.Identity;
 using OpenDealer360.Modules.Organization;
-using OpenDealer360.Platform.Kernel;
-using OpenDealer360.Platform.Persistence;
-using OpenDealer360.Platform.Persistence.Security;
-using OpenDealer360.Platform.Security;
+using OpenDealer360.Core;
+using OpenDealer360.Tenancy;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -22,7 +20,7 @@ builder.Host.UseSerilog((context, configuration) => configuration
     .Enrich.FromLogContext()
     .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture));
 
-// --- Platform kernel services ---
+// --- Core services ---
 builder.Services.AddSingleton<IClock, SystemClock>();
 
 // --- Tenancy + modules. Enabled when a host-catalog connection is configured,
@@ -74,7 +72,7 @@ var app = builder.Build();
 // Refuse to run with the development pass-through secret protector in any
 // non-Development environment (doc 06 §4).
 if (!app.Environment.IsDevelopment()
-    && app.Services.GetService<ISecretProtector>() is PassThroughSecretProtector)
+    && app.Services.GetService<ISecretProtector>() is DevSecretProtector)
 {
     throw new InvalidOperationException(
         "The development pass-through secret protector must not be used outside Development. "

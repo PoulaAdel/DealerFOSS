@@ -17,6 +17,39 @@ The project does not call a customer/vehicle/deal UI a complete DMS. Accounting,
 
 Building or contributing? Read [`CLAUDE.md`](CLAUDE.md) first for the verified local setup and canonical commands.
 
+## Repository map
+
+Every directory has one job. You should not need the docs to know where something lives.
+
+```text
+src/
+├── Host/          the ASP.NET Core application — startup, middleware, wiring
+├── Core/          shared types every module uses: Result, Money, Ids, Clock, and
+│                  the interfaces modules depend on. No database, no web, no domain.
+├── Tenancy/       finds the right dealer database for a request: the host catalog
+│                  of tenants, the resolver, and its cache.
+└── Modules/       the business capabilities — one folder each, self-contained
+    ├── Organization/   dealer organization → legal entity → rooftop → department
+    └── Identity/       users, roles, permissions, who-can-see-which-rooftop, audit
+
+tests/
+├── Architecture/  rules about what may reference what; fails the build on a breach
+└── Integration/   drives the real app against a real database
+
+deploy/            docker compose for local services, and the end-to-end check script
+docs/              the engineering workbook (design decisions and specifications)
+.github/           CI workflow, contributing guide, security policy, code of conduct
+```
+
+**Why `Core` and `Tenancy` are separate:** `Core` is deliberately free of Entity
+Framework so business rules can never depend on the database — an architecture
+test enforces it. `Tenancy` is where that database dependency is allowed to live.
+
+**Inside a module**, small ones stay flat and larger ones use only what they need:
+`Domain/` (rules), `Data/` (tables and queries), `Contracts/` (what other modules
+may call), and `…Endpoints.cs` (the HTTP surface). A module is the only code that
+touches its own tables.
+
 ## Engineering workbook
 
 Start with the [workbook index](docs/00-Workbook.md).

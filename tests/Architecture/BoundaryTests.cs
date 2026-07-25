@@ -1,6 +1,6 @@
 using FluentAssertions;
 using NetArchTest.Rules;
-using OpenDealer360.Platform.Kernel;
+using OpenDealer360.Core;
 using Xunit;
 
 namespace OpenDealer360.ArchitectureTests;
@@ -13,12 +13,12 @@ namespace OpenDealer360.ArchitectureTests;
 /// </summary>
 public sealed class BoundaryTests
 {
-    private static readonly System.Reflection.Assembly Platform = typeof(Result).Assembly;
+    private static readonly System.Reflection.Assembly Core = typeof(Result).Assembly;
 
     [Fact]
-    public void Platform_must_not_depend_on_web_or_persistence_frameworks()
+    public void Core_must_not_depend_on_web_or_persistence_frameworks()
     {
-        var result = Types.InAssembly(Platform)
+        var result = Types.InAssembly(Core)
             .Should()
             .NotHaveDependencyOnAny(
                 "Microsoft.AspNetCore",
@@ -27,22 +27,22 @@ public sealed class BoundaryTests
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "Platform is a domain-free kernel; offenders: "
+            because: "Core is a domain-free kernel; offenders: "
                 + string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void Platform_kernel_must_not_reference_module_namespaces()
+    public void Core_must_not_reference_module_namespaces()
     {
         // No business concept (Deal, RepairOrder, Rooftop entities, Journal, ...)
-        // may live in or be referenced by Platform (doc 03 §4).
-        var result = Types.InAssembly(Platform)
+        // may live in or be referenced by Core (doc 03 §4).
+        var result = Types.InAssembly(Core)
             .Should()
             .NotHaveDependencyOn("OpenDealer360.Modules")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "Platform must not know about business modules; offenders: "
+            because: "Core must not know about business modules; offenders: "
                 + string.Join(", ", result.FailingTypeNames ?? []));
     }
 }

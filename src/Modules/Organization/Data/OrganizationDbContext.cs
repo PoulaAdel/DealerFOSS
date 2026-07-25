@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Modules.Organization.Domain;
-using OpenDealer360.Platform.Kernel;
+using OpenDealer360.Core;
 
 namespace OpenDealer360.Modules.Organization.Data;
 

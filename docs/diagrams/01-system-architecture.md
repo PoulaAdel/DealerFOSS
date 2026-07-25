@@ -9,7 +9,7 @@ flowchart TB
         Host["Host / BFF<br/>auth · API · jobs · composition"]
         Modules["Business modules<br/>Organization · Customers · Inventory · CRM<br/>Sales · Finance · Service · Documents · Reporting"]
         Edge["Integration edge<br/>contracts · connectors · inbox/outbox · reconciliation"]
-        Platform["Small platform foundation<br/>persistence · security · jobs · telemetry · storage"]
+        Core["Core + Tenancy<br/>shared types · tenant routing"]
     end
     HostDB[("Host catalog<br/>tenant routing only")]
     TenantDB[("Dealer organization DB<br/>one or many rooftops · operational data · rpt")]
@@ -20,13 +20,13 @@ flowchart TB
     Browser -->|HTTPS / secure session| Host
     Host --> Modules
     Host --> Edge
-    Modules --> Platform
-    Edge --> Platform
+    Modules --> Core
+    Edge --> Core
     Host --> HostDB
     Modules --> TenantDB
     Edge --> TenantDB
-    Platform --> Docs
-    Platform -. scale-out .-> Redis
+    Core --> Docs
+    Core -. scale-out .-> Redis
     Edge <-->|versioned contracts| External
 ```
 

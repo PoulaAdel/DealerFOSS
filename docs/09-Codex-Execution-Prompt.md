@@ -73,7 +73,7 @@ During implementation:
 - Prefer a complete vertical slice over many empty abstractions.
 - Reuse existing patterns only when they comply with the docs.
 - Keep business rules in domain/features, transport mapping in endpoints, and persistence in Data/Infrastructure.
-- Keep `Platform/` small and domain-free.
+- Keep `Core/` small and domain-free.
 - Add a dependency only when it materially reduces risk or maintenance; record the reason.
 - Never add a module, interface, generic repository, event, DTO, or extension point only for possible future use.
 - Use application-generated IDs, explicit rooftop/legal-entity scope, optimistic concurrency, UTC instants, dealership time zones, and amount-plus-currency money.
@@ -126,11 +126,11 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 **Build:**
 
 - solution and centrally pinned .NET projects/packages;
-- backend Host, Platform, initial module, and test project boundaries from `03-Project-Structure.md`. Do **not** scaffold `Integrations` or `Cli` here: empty projects are exactly the speculative structure §3 forbids. Create each when its first real work lands (`Integrations` at I2; `Cli` with the first migration command);
+- backend Host, Core, Tenancy, initial module, and test project boundaries from `03-Project-Structure.md`. Do **not** scaffold `Integrations` or `Cli` here: empty projects are exactly the speculative structure §3 forbids. Create each when its first real work lands (`Integrations` at I2; `Cli` with the first migration command);
 - shared build settings: nullable, warnings as errors, analyzers, formatting, deterministic builds;
 - local SQL Server development profile; optional Redis profile;
 - configuration validation and development secrets procedure;
-- initial architecture tests for module, Domain, Integration, and Platform boundaries;
+- initial architecture tests for module, Domain, Integration, and Core boundaries;
 - CI for build, unit, architecture, integration smoke, dependency/license, and secret scanning (frontend jobs are added with the frontend, in I1);
 - AGPL license, contribution guide, code of conduct, security policy, ADR template, and sample data plan;
 - basic `/health/live` and `/health/ready`, structured logs, correlation IDs, and OpenTelemetry wiring.

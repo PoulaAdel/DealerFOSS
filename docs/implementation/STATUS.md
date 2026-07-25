@@ -21,8 +21,8 @@ Last verified: 2026-07-25 · `dotnet build` 0 warnings/0 errors, `dotnet test` 2
 - [x] CI runs build + tests with the audit gate — `.github/workflows/ci.yml` *(agent-verifiable)*
 - [x] AGPLv3, contribution guide, security policy, ADR index *(agent-verifiable)*
 - [x] SQL-backed integration tests run repeatably — `dotnet test` → 8/8 in `OpenDealer360.IntegrationTests`, driving the real Host against SQL via `WebApplicationFactory`; CI supplies a SQL Server service container *(agent-verifiable)*
-- [x] Architecture tests demonstrably fail on a forbidden reference — rehearsed 2026-07-25: an EF Core dependency added to `Platform/Kernel/Result.cs` failed `Platform_must_not_depend_on_web_or_persistence_frameworks` naming the offending type, then was reverted. Procedure: `tests/Architecture/README.md` *(agent-verifiable)*
-- [x] Code of conduct — `CODE_OF_CONDUCT.md` *(agent-verifiable)*
+- [x] Architecture tests demonstrably fail on a forbidden reference — rehearsed 2026-07-25: an EF Core dependency added to `Core/Result.cs` failed `Core_must_not_depend_on_web_or_persistence_frameworks` naming the offending type, then was reverted. Procedure: `tests/Architecture/README.md` *(agent-verifiable)*
+- [x] Code of conduct — `.github/CODE_OF_CONDUCT.md` *(agent-verifiable)*
 - [x] One immutable ADR file per Accepted decision — `docs/adr/0001…0016`, index repointed to the files *(agent-verifiable)*
 - [ ] Windows and container development paths documented — Windows path documented in `CLAUDE.md`; container path unverified on this host *(human-verifiable: needs a working container host)*
 
@@ -50,7 +50,7 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 
 ## Completed milestones
 
-- **2026-07-25 — Engineering baseline.** Solution, Platform kernel, architecture tests, CI, health endpoints, telemetry. Evidence: `dotnet build` 0/0, `dotnet test` 5/5.
+- **2026-07-25 — Engineering baseline.** Solution, Core kernel, architecture tests, CI, health endpoints, telemetry. Evidence: `dotnet build` 0/0, `dotnet test` 5/5.
 - **2026-07-25 — Tenancy and Organization module.** Host catalog, cached tenant resolver, tenant middleware, organization→legal entity→rooftop→department model, EF migrations, development seeder. Evidence: `verify-e2e.ps1` → `PASS` (two isolated databases, multi-rooftop resolved, 400/404 contract), verified twice including an idempotent re-run.
 - **2026-07-25 — Baseline committed.** `ef8793a` docs, `dd7b582` engineering baseline, on `feature/foundation`.
 - **2026-07-25 — I0 gaps closed.** Tenant isolation moved from a manual script into CI-runnable integration tests; forbidden-reference rehearsal performed and documented; code of conduct and 16 immutable ADR files added; `CLAUDE.md` records the verified local environment. Evidence: `dotnet build` 0/0, `dotnet test` 13/13.
