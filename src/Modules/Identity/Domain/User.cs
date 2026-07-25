@@ -1,6 +1,6 @@
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Identity.Domain;
+namespace OpenDealer360.Identity.Domain;
 
 /// <summary>
 /// A person who can sign in to this dealer organization. Credentials and

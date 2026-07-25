@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using OpenDealer360.Modules.Identity.Data;
+using OpenDealer360.Identity.Data;
 
 #nullable disable
 
-namespace OpenDealer360.Modules.Identity.Data.Migrations
+namespace OpenDealer360.Identity.Data.Migrations
 {
     [DbContext(typeof(IdentityDbContext))]
     partial class IdentityDbContextModelSnapshot : ModelSnapshot
@@ -23,7 +23,7 @@ namespace OpenDealer360.Modules.Identity.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.AuditEvent", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.AuditEvent", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -76,7 +76,7 @@ namespace OpenDealer360.Modules.Identity.Data.Migrations
                     b.ToTable("AuditEvents", "identity");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.Role", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.Role", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -113,7 +113,7 @@ namespace OpenDealer360.Modules.Identity.Data.Migrations
                     b.ToTable("Roles", "identity");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.RolePermission", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.RolePermission", b =>
                 {
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uniqueidentifier");
@@ -127,7 +127,7 @@ namespace OpenDealer360.Modules.Identity.Data.Migrations
                     b.ToTable("RolePermissions", "identity");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.User", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -172,7 +172,7 @@ namespace OpenDealer360.Modules.Identity.Data.Migrations
                     b.ToTable("Users", "identity");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.UserAssignment", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.UserAssignment", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -217,30 +217,30 @@ namespace OpenDealer360.Modules.Identity.Data.Migrations
                     b.ToTable("UserAssignments", "identity");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.RolePermission", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.RolePermission", b =>
                 {
-                    b.HasOne("OpenDealer360.Modules.Identity.Domain.Role", null)
+                    b.HasOne("OpenDealer360.Identity.Domain.Role", null)
                         .WithMany("Permissions")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.UserAssignment", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.UserAssignment", b =>
                 {
-                    b.HasOne("OpenDealer360.Modules.Identity.Domain.User", null)
+                    b.HasOne("OpenDealer360.Identity.Domain.User", null)
                         .WithMany("Assignments")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.Role", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.Role", b =>
                 {
                     b.Navigation("Permissions");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Identity.Domain.User", b =>
+            modelBuilder.Entity("OpenDealer360.Identity.Domain.User", b =>
                 {
                     b.Navigation("Assignments");
                 });

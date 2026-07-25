@@ -1,6 +1,6 @@
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Identity.Domain;
+namespace OpenDealer360.Identity.Domain;
 
 /// <summary>
 /// A named set of permissions. Users are granted a role at a scope; permissions

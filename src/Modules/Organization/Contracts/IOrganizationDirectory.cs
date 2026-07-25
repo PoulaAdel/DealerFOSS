@@ -1,6 +1,6 @@
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization.Contracts;
+namespace OpenDealer360.Organization.Contracts;
 
 /// <summary>
 /// The Organization module's public contract — the only surface other modules

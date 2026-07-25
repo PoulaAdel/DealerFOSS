@@ -1,4 +1,4 @@
-namespace OpenDealer360.Modules.Identity.Domain;
+namespace OpenDealer360.Identity.Domain;
 
 /// <summary>
 /// The permission catalogue. Permissions are named centrally and granted to

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>OpenDealer360.Modules.Identity</RootNamespace>
-    <AssemblyName>OpenDealer360.Modules.Identity</AssemblyName>
+    <RootNamespace>OpenDealer360.Identity</RootNamespace>
+    <AssemblyName>OpenDealer360.Identity</AssemblyName>
     <!--
       Users, roles, permissions, scoped assignments, and audit events
       (doc 04 §3). Owns the identity schema. Other modules ask it for access
@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\OpenDealer360.Core.csproj" />
+    <ProjectReference Include="..\..\Core\Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

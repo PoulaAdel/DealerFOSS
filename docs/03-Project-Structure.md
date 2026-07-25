@@ -139,6 +139,19 @@ Each route declares its organization/rooftop context. UI permission checks impro
 
 ## 7. Naming
 
+**Never repeat the path in the name.** A file called `Organization.csproj` inside
+`src/Modules/Organization/` is obvious; `OpenDealer360.Modules.Organization.csproj`
+only makes the tree harder to scan. Project files, folders, and types are named
+for the one thing they are.
+
+- Project files carry the bare capability name: `Core.csproj`, `Host.csproj`,
+  `Organization.csproj`.
+- Assemblies and namespaces keep the `OpenDealer360.` root — those are *global*
+  identifiers, and a bare `Core` namespace or `Core.dll` would collide with other
+  libraries and read as anonymous in a stack trace. Nothing beyond that root is
+  repeated: the namespace is `OpenDealer360.Organization`, not
+  `OpenDealer360.Modules.Organization`, because "Modules" describes the folder,
+  not the code.
 - Modules and folders use dealership capability names.
 - Commands are verbs (`CreateDeal`); queries describe returned data (`GetInventoryAging`); events use past tense (`DealApprovedV1`).
 - Domain types use plain names (`Deal`, `Customer`).

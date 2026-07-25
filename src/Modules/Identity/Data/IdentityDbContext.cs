@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Modules.Identity.Domain;
+using OpenDealer360.Identity.Domain;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Identity.Data;
+namespace OpenDealer360.Identity.Data;
 
 /// <summary>
 /// Persistence for the Identity module. Owns the <c>identity</c> schema and no

@@ -1,9 +1,9 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Modules.Identity.Data;
-using OpenDealer360.Modules.Identity.Domain;
-using OpenDealer360.Modules.Organization.Data;
-using OpenDealer360.Modules.Organization.Domain;
+using OpenDealer360.Identity.Data;
+using OpenDealer360.Identity.Domain;
+using OpenDealer360.Organization.Data;
+using OpenDealer360.Organization.Domain;
 using OpenDealer360.Core;
 using OpenDealer360.Tenancy;
 

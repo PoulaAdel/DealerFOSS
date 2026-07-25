@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using OpenDealer360.Modules.Identity.Contracts;
-using OpenDealer360.Modules.Identity.Data;
+using OpenDealer360.Identity.Contracts;
+using OpenDealer360.Identity.Data;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Identity;
+namespace OpenDealer360.Identity;
 
 /// <summary>Self-registration for the Identity slice (doc 03 §3).</summary>
 public static class IdentityModule

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace OpenDealer360.Modules.Organization.Data.Migrations
+namespace OpenDealer360.Organization.Data.Migrations
 {
     /// <inheritdoc />
     public partial class InitialOrganization : Migration

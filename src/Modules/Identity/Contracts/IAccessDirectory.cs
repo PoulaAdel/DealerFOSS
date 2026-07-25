@@ -1,6 +1,6 @@
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Identity.Contracts;
+namespace OpenDealer360.Identity.Contracts;
 
 /// <summary>
 /// The Identity module's public contract — the only surface other modules may

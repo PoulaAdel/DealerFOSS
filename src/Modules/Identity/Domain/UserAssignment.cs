@@ -1,6 +1,6 @@
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Identity.Domain;
+namespace OpenDealer360.Identity.Domain;
 
 /// <summary>
 /// Grants a user a role at a scope: either organization-wide, or at one named

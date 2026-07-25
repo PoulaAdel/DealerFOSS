@@ -1,6 +1,6 @@
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization.Domain;
+namespace OpenDealer360.Organization.Domain;
 
 /// <summary>
 /// A rooftop — one physical dealership location. Inventory, deals, and repair

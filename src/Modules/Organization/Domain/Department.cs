@@ -1,6 +1,6 @@
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization.Domain;
+namespace OpenDealer360.Organization.Domain;
 
 /// <summary>A department within a rooftop (doc 04 §1).</summary>
 public sealed class Department : AuditableEntity

@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using OpenDealer360.Modules.Organization.Contracts;
+using OpenDealer360.Organization.Contracts;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization;
+namespace OpenDealer360.Organization;
 
 /// <summary>
 /// HTTP surface for the Organization capability. Thin by design: it delegates

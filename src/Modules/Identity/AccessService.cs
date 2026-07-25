@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Modules.Identity.Contracts;
-using OpenDealer360.Modules.Identity.Data;
-using OpenDealer360.Modules.Identity.Domain;
+using OpenDealer360.Identity.Contracts;
+using OpenDealer360.Identity.Data;
+using OpenDealer360.Identity.Domain;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Identity;
+namespace OpenDealer360.Identity;
 
 /// <summary>
 /// Resolves what a user may reach, and records denials. Deny is the default:

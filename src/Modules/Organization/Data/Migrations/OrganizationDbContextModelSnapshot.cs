@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using OpenDealer360.Modules.Organization.Data;
+using OpenDealer360.Organization.Data;
 
 #nullable disable
 
-namespace OpenDealer360.Modules.Organization.Data.Migrations
+namespace OpenDealer360.Organization.Data.Migrations
 {
     [DbContext(typeof(OrganizationDbContext))]
     partial class OrganizationDbContextModelSnapshot : ModelSnapshot
@@ -23,7 +23,7 @@ namespace OpenDealer360.Modules.Organization.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.DealerOrganization", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.DealerOrganization", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -65,7 +65,7 @@ namespace OpenDealer360.Modules.Organization.Data.Migrations
                     b.ToTable("DealerOrganizations", "org");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.Department", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.Department", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -109,7 +109,7 @@ namespace OpenDealer360.Modules.Organization.Data.Migrations
                     b.ToTable("Departments", "org");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.LegalEntity", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.LegalEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -156,7 +156,7 @@ namespace OpenDealer360.Modules.Organization.Data.Migrations
                     b.ToTable("LegalEntities", "org");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.Rooftop", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.Rooftop", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -208,44 +208,44 @@ namespace OpenDealer360.Modules.Organization.Data.Migrations
                     b.ToTable("Rooftops", "org");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.Department", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.Department", b =>
                 {
-                    b.HasOne("OpenDealer360.Modules.Organization.Domain.Rooftop", null)
+                    b.HasOne("OpenDealer360.Organization.Domain.Rooftop", null)
                         .WithMany("Departments")
                         .HasForeignKey("RooftopId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.LegalEntity", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.LegalEntity", b =>
                 {
-                    b.HasOne("OpenDealer360.Modules.Organization.Domain.DealerOrganization", null)
+                    b.HasOne("OpenDealer360.Organization.Domain.DealerOrganization", null)
                         .WithMany("LegalEntities")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.Rooftop", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.Rooftop", b =>
                 {
-                    b.HasOne("OpenDealer360.Modules.Organization.Domain.LegalEntity", null)
+                    b.HasOne("OpenDealer360.Organization.Domain.LegalEntity", null)
                         .WithMany("Rooftops")
                         .HasForeignKey("LegalEntityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.DealerOrganization", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.DealerOrganization", b =>
                 {
                     b.Navigation("LegalEntities");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.LegalEntity", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.LegalEntity", b =>
                 {
                     b.Navigation("Rooftops");
                 });
 
-            modelBuilder.Entity("OpenDealer360.Modules.Organization.Domain.Rooftop", b =>
+            modelBuilder.Entity("OpenDealer360.Organization.Domain.Rooftop", b =>
                 {
                     b.Navigation("Departments");
                 });

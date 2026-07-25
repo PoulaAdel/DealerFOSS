@@ -1,6 +1,6 @@
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization.Domain;
+namespace OpenDealer360.Organization.Domain;
 
 /// <summary>
 /// The dealer organization — the tenant itself (doc 04 §1). Exactly one row

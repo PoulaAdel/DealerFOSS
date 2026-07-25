@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Core\OpenDealer360.Core.csproj" />
-    <ProjectReference Include="..\..\src\Tenancy\OpenDealer360.Tenancy.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Identity\OpenDealer360.Modules.Identity.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Organization\OpenDealer360.Modules.Organization.csproj" />
+    <ProjectReference Include="..\..\src\Core\Core.csproj" />
+    <ProjectReference Include="..\..\src\Tenancy\Tenancy.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Identity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Organization\Organization.csproj" />
   </ItemGroup>
 
   <ItemGroup>
