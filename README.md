@@ -15,7 +15,11 @@ The project does not call a customer/vehicle/deal UI a complete DMS. Accounting,
 
 **[Implementation status](docs/implementation/STATUS.md)** — what is built, what is proven, and what is next. Every completed item names the command that proves it.
 
-Building or contributing? Read [`CLAUDE.md`](CLAUDE.md) first for the verified local setup and canonical commands.
+## New here?
+
+Start with **[Onboarding](docs/ONBOARDING.md)** — a 30-minute path that reads the
+code before the documents, gets the app running, and lists the traps worth knowing.
+Then [`CLAUDE.md`](CLAUDE.md) for the verified local setup and canonical commands.
 
 ## Repository map
 

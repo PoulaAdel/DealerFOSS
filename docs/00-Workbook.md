@@ -10,6 +10,7 @@ This workbook is the single source of truth for product scope, architecture, str
 
 | # | Document | Owns |
 |---|---|---|
+| — | [Onboarding](ONBOARDING.md) | **start here** — how to read, run, and change the project |
 | 01 | [Vision & Scope](01-Vision-and-Scope.md) | product boundaries, users, releases, and competitive path |
 | 02 | [Architecture & Decisions](02-Architecture-and-Decisions.md) | system shape, ADRs, and approved technology choices |
 | 03 | [Project Structure](03-Project-Structure.md) | code layout, naming, and dependency enforcement |
