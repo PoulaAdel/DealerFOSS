@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>OpenDealer360.Modules.Organization</RootNamespace>
-    <AssemblyName>OpenDealer360.Modules.Organization</AssemblyName>
+    <RootNamespace>OpenDealer360.Organization</RootNamespace>
+    <AssemblyName>OpenDealer360.Organization</AssemblyName>
     <!--
       The Organization capability: dealer organization, legal entities, rooftops,
       departments (doc 04 §1/§3). Owns its own tables; other modules reach it
@@ -15,10 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\OpenDealer360.Core.csproj" />
+    <ProjectReference Include="..\..\Core\Core.csproj" />
     <!-- Access decisions only, through Identity's published Contracts namespace
          (ADR-008). Architecture tests forbid reaching past it. -->
-    <ProjectReference Include="..\Identity\OpenDealer360.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Identity\Identity.csproj" />
   </ItemGroup>
 
   <ItemGroup>

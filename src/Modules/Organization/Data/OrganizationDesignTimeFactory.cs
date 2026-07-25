@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization.Data;
+namespace OpenDealer360.Organization.Data;
 
 /// <summary>
 /// Design-time context builder for <c>dotnet ef</c>. The connection points at a

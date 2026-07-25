@@ -1,4 +1,4 @@
-namespace OpenDealer360.Modules.Identity.Domain;
+namespace OpenDealer360.Identity.Domain;
 
 /// <summary>
 /// An append-only audit record (ADR-016). Never updated or deleted: a

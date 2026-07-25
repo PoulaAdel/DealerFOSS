@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace OpenDealer360.Modules.Identity.Data.Migrations
+namespace OpenDealer360.Identity.Data.Migrations
 {
     /// <inheritdoc />
     public partial class InitialIdentity : Migration

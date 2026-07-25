@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Routing;
-using OpenDealer360.Modules.Organization.Contracts;
-using OpenDealer360.Modules.Organization.Data;
+using OpenDealer360.Organization.Contracts;
+using OpenDealer360.Organization.Data;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization;
+namespace OpenDealer360.Organization;
 
 /// <summary>
 /// Self-registration for the Organization slice (doc 03 §3). The DbContext binds

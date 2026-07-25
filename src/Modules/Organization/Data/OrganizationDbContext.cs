@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Modules.Organization.Domain;
+using OpenDealer360.Organization.Domain;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization.Data;
+namespace OpenDealer360.Organization.Data;
 
 /// <summary>
 /// Persistence for the Organization module. Owns the <c>org</c> schema and no

@@ -20,7 +20,7 @@ Last verified: 2026-07-25 · `dotnet build` 0 warnings/0 errors, `dotnet test` 2
 - [x] Architecture tests present and passing — `dotnet test` → 5/5 *(agent-verifiable)*
 - [x] CI runs build + tests with the audit gate — `.github/workflows/ci.yml` *(agent-verifiable)*
 - [x] AGPLv3, contribution guide, security policy, ADR index *(agent-verifiable)*
-- [x] SQL-backed integration tests run repeatably — `dotnet test` → 8/8 in `OpenDealer360.IntegrationTests`, driving the real Host against SQL via `WebApplicationFactory`; CI supplies a SQL Server service container *(agent-verifiable)*
+- [x] SQL-backed integration tests run repeatably — `dotnet test` → 8/8 in `IntegrationTests`, driving the real Host against SQL via `WebApplicationFactory`; CI supplies a SQL Server service container *(agent-verifiable)*
 - [x] Architecture tests demonstrably fail on a forbidden reference — rehearsed 2026-07-25: an EF Core dependency added to `Core/Result.cs` failed `Core_must_not_depend_on_web_or_persistence_frameworks` naming the offending type, then was reverted. Procedure: `tests/Architecture/README.md` *(agent-verifiable)*
 - [x] Code of conduct — `.github/CODE_OF_CONDUCT.md` *(agent-verifiable)*
 - [x] One immutable ADR file per Accepted decision — `docs/adr/0001…0016`, index repointed to the files *(agent-verifiable)*

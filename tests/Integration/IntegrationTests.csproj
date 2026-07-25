@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Host\OpenDealer360.Host.csproj" />
+    <ProjectReference Include="..\..\src\Host\Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>

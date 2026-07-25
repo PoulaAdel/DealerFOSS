@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Modules.Identity.Contracts;
-using OpenDealer360.Modules.Organization.Contracts;
-using OpenDealer360.Modules.Organization.Data;
+using OpenDealer360.Identity.Contracts;
+using OpenDealer360.Organization.Contracts;
+using OpenDealer360.Organization.Data;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Organization;
+namespace OpenDealer360.Organization;
 
 /// <summary>
 /// Read workflows for the Organization capability, scoped to what the caller is

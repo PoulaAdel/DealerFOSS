@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using OpenDealer360.Core;
 
-namespace OpenDealer360.Modules.Identity.Data;
+namespace OpenDealer360.Identity.Data;
 
 /// <summary>Design-time context builder for <c>dotnet ef</c>.</summary>
 public sealed class IdentityDesignTimeFactory : IDesignTimeDbContextFactory<IdentityDbContext>

@@ -1,8 +1,8 @@
 using System.Reflection;
 using FluentAssertions;
 using NetArchTest.Rules;
-using OpenDealer360.Modules.Identity.Contracts;
-using OpenDealer360.Modules.Organization.Domain;
+using OpenDealer360.Identity.Contracts;
+using OpenDealer360.Organization.Domain;
 using OpenDealer360.Tenancy;
 using Xunit;
 
@@ -25,7 +25,7 @@ public sealed class ModuleBoundaryTests
         // Domain holds entities and rules only. EF mapping lives in Data;
         // HTTP lives in Endpoints (doc 03 §3).
         var result = Types.InAssembly(Organization)
-            .That().ResideInNamespace("OpenDealer360.Modules.Organization.Domain")
+            .That().ResideInNamespace("OpenDealer360.Organization.Domain")
             .Should().NotHaveDependencyOnAny("Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore")
             .GetResult();
 
@@ -55,8 +55,8 @@ public sealed class ModuleBoundaryTests
         var result = Types.InAssembly(Organization)
             .Should()
             .NotHaveDependencyOnAny(
-                "OpenDealer360.Modules.Identity.Domain",
-                "OpenDealer360.Modules.Identity.Data")
+                "OpenDealer360.Identity.Domain",
+                "OpenDealer360.Identity.Data")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
@@ -71,7 +71,7 @@ public sealed class ModuleBoundaryTests
         // is trying to reach, or the dependency becomes circular.
         var result = Types.InAssembly(Identity)
             .Should()
-            .NotHaveDependencyOnAny("OpenDealer360.Modules.Organization", "OpenDealer360.Host")
+            .NotHaveDependencyOnAny("OpenDealer360.Organization", "OpenDealer360.Host")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
