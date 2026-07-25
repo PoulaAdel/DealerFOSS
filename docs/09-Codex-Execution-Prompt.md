@@ -80,6 +80,7 @@ During implementation:
 - Every write must define validation, authorization scope, audit behavior, concurrency behavior, and idempotency where retried.
 - Every external message must define source identity/version, provenance, deletion behavior, mapping warnings, and replay behavior.
 - Never log secrets, tokens, credit data, government identifiers, or document content.
+- Apply SPDX licence metadata once, at assembly level in `Directory.Build.props`. Do not add per-file licence headers; they create large diffs without improving provenance.
 - Never weaken security, tests, tenant isolation, migration safety, or error handling to make a test pass.
 - Do not create fixture-only connector code and describe it as certified.
 - Do not invent vendor credentials, legal approval, pilot acceptance, penetration-test results, or production evidence.
@@ -94,6 +95,14 @@ When blocked by credentials, vendor access, legal review, or a business choice:
 ### 4. Implementation roadmap
 
 Follow the implementation phases in order. Their `I` prefix distinguishes Codex engineering phases from the product/delivery phases in `07-Delivery-Roadmap.md`. A later implementation phase may be explored only when it does not bypass an unmet foundation or create rework. The dates in `07-Delivery-Roadmap.md` are planning estimates; exit evidence, not elapsed time, completes a phase.
+
+Three rules govern every phase:
+
+**Exit criteria are permanent.** Once met, a criterion becomes a standing CI gate. A later phase may not regress an earlier guarantee — tenant isolation proven in I1 must still be proven in I7. Re-verify, never assume.
+
+**Criteria are labelled `(agent-verifiable)` or `(human-verifiable)`.** An agent runs axe-core, times a local restore, and executes isolation tests; it cannot perform a screen-reader review, validate production disaster recovery, obtain vendor certification, or accept a pilot. Claiming a human-verifiable criterion without recorded external evidence violates §3 and is a reporting failure, not a shortcut.
+
+**Work already completed out of order is preserved.** If a later phase's work already exists and is verified while an earlier phase has gaps, backfill the gaps *without regressing the working slice*. Never delete or rewrite passing, verified behavior merely to satisfy phase ordering; record the out-of-order state in the status file instead.
 
 | Codex implementation phase | Delivery-roadmap relationship |
 |---|---|
@@ -117,13 +126,12 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 **Build:**
 
 - solution and centrally pinned .NET projects/packages;
-- backend Host, Platform, initial module, Integrations, CLI, and test project boundaries from `03-Project-Structure.md`;
-- React/TypeScript/Vite frontend shell with accessible application layout;
+- backend Host, Platform, initial module, and test project boundaries from `03-Project-Structure.md`. Do **not** scaffold `Integrations` or `Cli` here: empty projects are exactly the speculative structure §3 forbids. Create each when its first real work lands (`Integrations` at I2; `Cli` with the first migration command);
 - shared build settings: nullable, warnings as errors, analyzers, formatting, deterministic builds;
 - local SQL Server development profile; optional Redis profile;
 - configuration validation and development secrets procedure;
 - initial architecture tests for module, Domain, Integration, and Platform boundaries;
-- CI for build, unit, architecture, integration smoke, frontend, dependency/license, and secret scanning;
+- CI for build, unit, architecture, integration smoke, dependency/license, and secret scanning (frontend jobs are added with the frontend, in I1);
 - AGPL license, contribution guide, code of conduct, security policy, ADR template, and sample data plan;
 - basic `/health/live` and `/health/ready`, structured logs, correlation IDs, and OpenTelemetry wiring.
 
@@ -131,13 +139,13 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 
 **Exit criteria:**
 
-- a clean checkout can build and test using documented commands;
-- the backend and frontend start locally;
-- SQL-backed integration smoke tests run repeatably;
-- architecture tests fail on an intentionally forbidden reference;
-- health and telemetry work without exposing secrets;
-- Windows and container development paths are documented;
-- CI is green.
+- a clean checkout can build and test using the commands in `CLAUDE.md` *(agent-verifiable)*;
+- the backend starts locally *(agent-verifiable)*;
+- SQL-backed integration smoke tests run repeatably *(agent-verifiable)*;
+- architecture tests fail on an intentionally forbidden reference *(agent-verifiable)*;
+- health and telemetry work without exposing secrets *(agent-verifiable)*;
+- the Windows development path is documented and the container path is documented and validated on a host that can run it *(container validation is human-verifiable)*;
+- CI is green *(agent-verifiable)*.
 
 #### Implementation Phase I1 - Organization, tenancy, identity, and security foundation
 
@@ -154,17 +162,19 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 - global-administration separation and time-limited support-access model;
 - tenant-aware DbContext/job context, migrations, seed data, and CLI commands;
 - one single-rooftop and one multi-rooftop test tenant;
-- encrypted secret/key-provider abstraction and redacted diagnostics.
+- encrypted secret/key-provider abstraction and redacted diagnostics;
+- React/TypeScript/Vite frontend shell with accessible application layout, and the frontend CI job. The shell belongs here rather than in I0 because the authenticated session it wraps does not exist until this phase; a shell built earlier would sit unused and rot.
 
 **Exit criteria:**
 
-- two dealer organizations resolve to separate databases;
-- one organization contains multiple rooftops and scoped users;
-- cross-tenant and unauthorized-rooftop reads/writes fail in endpoint and background-job tests;
-- global administration cannot silently access tenant business data;
-- session revoke, expiry, CSRF, MFA policy, and permission changes are tested;
-- tenant creation, migration, backup, and restore are rehearsed;
-- audit events capture scoped security-sensitive changes.
+- two dealer organizations resolve to separate databases *(agent-verifiable)*;
+- one organization contains multiple rooftops and scoped users *(agent-verifiable)*;
+- cross-tenant and unauthorized-rooftop reads/writes fail in endpoint and background-job tests *(agent-verifiable)*;
+- global administration cannot silently access tenant business data *(agent-verifiable)*;
+- session revoke, expiry, CSRF, MFA policy, and permission changes are tested *(agent-verifiable)*;
+- tenant creation and migration are rehearsed *(agent-verifiable)*; backup and restore are rehearsed to a working system *(human-verifiable)*;
+- audit events capture scoped security-sensitive changes *(agent-verifiable)*;
+- the frontend shell starts and passes typecheck and accessibility smoke tests *(agent-verifiable)*.
 
 #### Implementation Phase I2 - Integration runtime, migration, reconciliation, and export
 
@@ -173,6 +183,7 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 **Build:**
 
 - capability/version contract envelope and initial Customer/Vehicle/Inventory contracts;
+- a **thin real Customer write target** — entity, module contract, table, and migration — so inbox processing, idempotency, and import control totals are proven against real persistence rather than a mock. Keep it minimal; I3 deepens it into the full party model. Without a real target the exit criteria below cannot produce honest evidence;
 - connector manifests and compiled discovery;
 - durable inbox, outbox, leases, checkpoints, quarantine, replay, and operator-visible status;
 - idempotent processing of duplicate, delayed, reordered, deleted, and partially failed messages;
@@ -413,6 +424,10 @@ Last verified commit/date:
 ```
 
 Checkboxes require evidence. A file existing is not evidence that a workflow works.
+
+`Last verified commit/date` records a commit when one exists. Agents do not commit unless explicitly asked (see `docs/10-Claude-Code-Execution-Prompt.md` §4), so when the work is uncommitted, record the date plus the verification command and its result instead — never leave the line blank or imply a commit that does not exist.
+
+The status file is a **reporting artifact, never a source of truth**. The repository governs: when the two disagree, correct the file. Re-verify by running the commands in `CLAUDE.md` rather than by trusting a previous run's checkbox.
 
 ### 9. Response format after each Codex run
 

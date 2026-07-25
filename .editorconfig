@@ -31,9 +31,11 @@ dotnet_naming_symbols.private_fields.applicable_accessibilities = private
 dotnet_naming_style.underscore_camel.capitalization = camel_case
 dotnet_naming_style.underscore_camel.required_prefix = _
 
-# Test projects: underscore-separated method names are the standard xUnit convention.
+# Test projects: underscore-separated method names and *Collection fixture
+# definitions are standard xUnit conventions.
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1711.severity = none
 
 # EF Core migrations are generated artifacts — exclude from style/quality analysis.
 [**/Migrations/*.cs]
