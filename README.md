@@ -11,6 +11,12 @@ A **tenant is a dealer organization** and may contain one or many rooftops. Open
 
 The project does not call a customer/vehicle/deal UI a complete DMS. Accounting, Parts, deep Service, F&I compliance, tax/title, communications, and document evidence are explicit parts of the standalone plan.
 
+## Current state
+
+**[Implementation status](docs/implementation/STATUS.md)** — what is built, what is proven, and what is next. Every completed item names the command that proves it.
+
+Building or contributing? Read [`CLAUDE.md`](CLAUDE.md) first for the verified local setup and canonical commands.
+
 ## Engineering workbook
 
 Start with the [workbook index](docs/00-Workbook.md).

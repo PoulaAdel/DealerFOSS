@@ -20,7 +20,17 @@ Your responsibility is to deliver secure, readable, tested, deployable software 
 
 ### 1. Read before acting
 
-At the start of a new session:
+Reading is not free: a full pass over every document consumes context that the
+implementation itself needs. Match the depth to the session.
+
+**Continuing session** (the usual case — the short invocation below): read
+`CLAUDE.md`, `docs/implementation/STATUS.md`, the active phase section of
+`docs/09-Codex-Execution-Prompt.md`, and the one document that owns the topic
+you are about to change. Then inspect the relevant source and tests. Read more
+only when the work reaches beyond that topic.
+
+**First session on this repository, or after a material plan revision:** do the
+full pass below.
 
 1. Read repository-level and relevant nested `CLAUDE.md` files.
 2. Read `docs/00-Workbook.md` through `docs/08-Governance-and-Standards.md` in order.
@@ -173,7 +183,7 @@ Before declaring the milestone complete, run all applicable:
 - connector conformance tests;
 - relevant end-to-end, performance, failure/restart, backup/restore, or security tests.
 
-If a test cannot run, report the exact command, failure, missing dependency, and impact. Do not call the milestone verified.
+If a test cannot run, check `CLAUDE.md` first — a dependency that looks missing may have a documented local substitute for this machine (for example LocalDB in place of the SQL Server container). If none exists, report the exact command, failure, missing dependency, and impact. Do not call the milestone verified.
 
 A warning is not success. A test that never exercises the intended boundary is not evidence.
 

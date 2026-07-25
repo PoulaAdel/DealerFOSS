@@ -16,13 +16,21 @@ the short version; the authoritative rules live in the workbook under
 
 ## Local setup
 
-```bash
-# Prerequisites: .NET SDK (see global.json) · Docker · Node.js (for the frontend)
+Read [`CLAUDE.md`](CLAUDE.md) first — it records the verified setup for this
+project, including which SQL engine actually works on a given host.
 
-# 1. Start dev dependencies (SQL Server; add --profile redis / --profile otel as needed)
-docker compose -f deploy/docker-compose.yml up -d
+```bash
+# Prerequisites: .NET SDK (see global.json) · a reachable SQL Server
+# Optional: Docker (dev services), Node.js (frontend, once it exists)
+
+# 1. Start a SQL engine.
+#    Windows/LocalDB (verified):
+sqllocaldb start MSSQLLocalDB
+#    Or containers, where the host supports them:
+#    docker compose -f deploy/docker-compose.yml up -d
 
 # 2. Build and test
+dotnet tool restore
 dotnet build OpenDealer360.slnx -c Release
 dotnet test  OpenDealer360.slnx -c Release
 
@@ -32,6 +40,21 @@ dotnet run --project src/Host
 #    GET /health/live    → liveness
 #    GET /health/ready   → readiness (dependencies)
 ```
+
+Integration tests pick up `OPENDEALER360_TEST_SQL` when set and fall back to
+LocalDB otherwise.
+
+### Proving tenant isolation end to end
+
+```bash
+& .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
+```
+
+This seeds one multi-rooftop and one single-rooftop dealer organization in
+separate databases and asserts that each resolves only its own data. The same
+assertions run in CI via `tests/Integration`. See
+[`tests/Architecture/README.md`](tests/Architecture/README.md) for the
+forbidden-reference rehearsal.
 
 Copy `src/Host/appsettings.Development.json.example` to
 `src/Host/appsettings.Development.json` and fill in local values. **Never commit
