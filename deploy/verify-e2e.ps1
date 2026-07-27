@@ -1,6 +1,6 @@
-# End-to-end verification of the tenancy and authorization foundation:
-# two isolated dealer organizations, one multi-rooftop, and rooftop-scoped
-# access enforced server-side.
+# End-to-end verification of the tenancy, sign-in, and authorization foundation:
+# two isolated dealer organizations, real sessions, and rooftop-scoped access
+# enforced server-side.
 #
 # The same assertions run in CI via tests/Integration. This script exists for a
 # manual check against a real running Host.
@@ -22,18 +22,24 @@ $port = 5080
 $baseUrl = "http://localhost:$port"
 $hostConn = $HostConnection
 
-# Well-known development users seeded by DevelopmentSeeder.DevUsers.
-$userOrgWide  = "11111111-1111-1111-1111-111111111111"   # every rooftop
-$userScoped   = "22222222-2222-2222-2222-222222222222"   # first rooftop only
-$userNoAccess = "33333333-3333-3333-3333-333333333333"   # no assignment
+# Development accounts seeded by DevelopmentSeeder.DevUsers.
+$emailOrgWide  = "gm@dev.local"       # every rooftop
+$emailScoped   = "advisor@dev.local"  # first rooftop only
+$emailNoAccess = "nobody@dev.local"   # no assignment
+$devPassword   = "Dev@Pass1!"
 
 Write-Host "Starting Host (Development, seeding enabled)..." -ForegroundColor Cyan
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:ASPNETCORE_URLS = $baseUrl
 $env:ConnectionStrings__HostCatalog = $hostConn
 $env:Seed__Enabled = "true"
+# Quiet the application log: this script is meant to be read by a person, and
+# EF command logging buries the result. The host log still goes to a file.
+$env:Serilog__MinimumLevel__Default = "Warning"
+$hostLog = Join-Path $env:TEMP "opendealer360-verify-host.log"
 
 $proc = Start-Process dotnet -PassThru -NoNewWindow `
+    -RedirectStandardOutput $hostLog `
     -ArgumentList "run --project src/Host -c Release --no-build"
 
 try {
@@ -47,54 +53,94 @@ try {
     if (-not $ready) { throw "Host did not become ready." }
     Write-Host "Host ready." -ForegroundColor Green
 
-    function Get-Org([string]$tenant, [string]$user) {
-        return Invoke-RestMethod "$baseUrl/api/v1/organization" `
-            -Headers @{ "X-Tenant" = $tenant; "X-User" = $user }
+    # Signs in and returns a web session carrying the cookie. PowerShell 5.1 will
+    # not accept "Cookie" as a plain header, so use a cookie container.
+    function New-DealerSession([string]$tenant, [string]$email) {
+        $body = @{ email = $email; password = $devPassword } | ConvertTo-Json
+        $login = Invoke-WebRequest "$baseUrl/api/v1/auth/login" -Method Post `
+            -Body $body -ContentType "application/json" `
+            -Headers @{ "X-Tenant" = $tenant } -UseBasicParsing
+
+        $raw = $login.Headers['Set-Cookie']
+        if ($raw -is [array]) { $raw = $raw | Where-Object { $_ -like 'odms_session=*' } | Select-Object -First 1 }
+        $token = ($raw -split ';')[0] -replace '^odms_session=', ''
+
+        $ws = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_session", $token, "/", "localhost")))
+        return $ws
     }
 
-    function Get-Status([string]$path, [hashtable]$headers) {
-        try { return (Invoke-WebRequest "$baseUrl$path" -Headers $headers -UseBasicParsing).StatusCode }
-        catch { return $_.Exception.Response.StatusCode.value__ }
+    function Get-Org([string]$tenant, $session) {
+        return Invoke-RestMethod "$baseUrl/api/v1/organization" `
+            -Headers @{ "X-Tenant" = $tenant } -WebSession $session
     }
+
+    function Get-Status([string]$path, [string]$tenant, $session, [string]$method = "Get") {
+        try {
+            $call = @{ Uri = "$baseUrl$path"; UseBasicParsing = $true; Method = $method }
+            if ($tenant)  { $call.Headers = @{ "X-Tenant" = $tenant } }
+            if ($session) { $call.WebSession = $session }
+            return (Invoke-WebRequest @call).StatusCode
+        } catch { return $_.Exception.Response.StatusCode.value__ }
+    }
+
+    Write-Host "`n--- signing in ---" -ForegroundColor Cyan
+    $orgWide  = New-DealerSession "northgroup" $emailOrgWide
+    $scoped   = New-DealerSession "northgroup" $emailScoped
+    $noAccess = New-DealerSession "northgroup" $emailNoAccess
+    $cityWide = New-DealerSession "citymotors" $emailOrgWide
+    "signed in three northgroup users and one citymotors user"
 
     Write-Host "`n--- tenant isolation ---" -ForegroundColor Cyan
-    $north = Get-Org "northgroup" $userOrgWide
+    $north = Get-Org "northgroup" $orgWide
     $northRooftops = @($north.legalEntities.rooftops).Count
     "{0}: {1} rooftop(s)  (expect 2)" -f $north.name, $northRooftops
 
-    $city = Get-Org "citymotors" $userOrgWide
+    $city = Get-Org "citymotors" $cityWide
     $cityRooftops = @($city.legalEntities.rooftops).Count
     "{0}: {1} rooftop(s)  (expect 1)" -f $city.name, $cityRooftops
 
     Write-Host "`n--- rooftop authorization (R05) ---" -ForegroundColor Cyan
-    $scoped = Get-Org "northgroup" $userScoped
-    $scopedCodes = @($scoped.legalEntities.rooftops.code)
+    $scopedOrg = Get-Org "northgroup" $scoped
+    $scopedCodes = @($scopedOrg.legalEntities.rooftops.code)
     "scoped user sees: {0}  (expect NAG-01 only)" -f ($scopedCodes -join ", ")
 
     $siblingId = ($north.legalEntities.rooftops | Where-Object { $_.code -eq "NAG-02" }).id
-    $siblingStatus = Get-Status "/api/v1/organization/rooftops/$siblingId" `
-        @{ "X-Tenant" = "northgroup"; "X-User" = $userScoped }
+    $siblingStatus = Get-Status "/api/v1/organization/rooftops/$siblingId" "northgroup" $scoped
     "scoped user -> sibling rooftop by id  -> HTTP $siblingStatus (expect 403)"
 
-    $noAccessStatus = Get-Status "/api/v1/organization" `
-        @{ "X-Tenant" = "northgroup"; "X-User" = $userNoAccess }
+    $noAccessStatus = Get-Status "/api/v1/organization" "northgroup" $noAccess
     "unassigned user                       -> HTTP $noAccessStatus (expect 403)"
 
+    Write-Host "`n--- sessions ---" -ForegroundColor Cyan
+    $noSession = Get-Status "/api/v1/organization" "northgroup" $null
+    "no session                            -> HTTP $noSession (expect 401)"
+
+    $crossTenant = Get-Status "/api/v1/organization" "citymotors" $scoped
+    "northgroup session at citymotors      -> HTTP $crossTenant (expect 401)"
+
+    # Revoke, then prove the very same session stops working at once.
+    $null = Get-Status "/api/v1/auth/logout" "northgroup" $orgWide "Post"
+    $afterLogout = Get-Status "/api/v1/organization" "northgroup" $orgWide
+    "after sign-out, same session          -> HTTP $afterLogout (expect 401)"
+
     Write-Host "`n--- error contract ---" -ForegroundColor Cyan
-    $missingTenant = Get-Status "/api/v1/organization" @{ "X-User" = $userOrgWide }
-    $unknownTenant = Get-Status "/api/v1/organization" @{ "X-Tenant" = "nope"; "X-User" = $userOrgWide }
-    $missingUser   = Get-Status "/api/v1/organization" @{ "X-Tenant" = "northgroup" }
+    # No session here on purpose: a WebRequestSession remembers headers between
+    # calls, which would silently re-send the previous tenant. The tenant is
+    # resolved before the caller anyway, so none is needed to prove this.
+    $missingTenant = Get-Status "/api/v1/organization" $null $null
+    $unknownTenant = Get-Status "/api/v1/organization" "nope" $null
     "missing X-Tenant  -> HTTP $missingTenant (expect 400)"
     "unknown tenant    -> HTTP $unknownTenant (expect 404)"
-    "missing X-User    -> HTTP $missingUser (expect 401)"
 
     $ok = ($northRooftops -eq 2) -and ($cityRooftops -eq 1) -and ($north.name -ne $city.name) `
         -and ($scopedCodes.Count -eq 1) -and ($scopedCodes[0] -eq "NAG-01") `
         -and ($siblingStatus -eq 403) -and ($noAccessStatus -eq 403) `
-        -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404) -and ($missingUser -eq 401)
+        -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
+        -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, rooftop scope enforced, error contract holds." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced and revocable, rooftop scope holds." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

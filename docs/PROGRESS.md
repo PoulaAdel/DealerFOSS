@@ -15,7 +15,7 @@ Several dealership groups can already share one installation without ever seeing
 each other's data, and staff can be restricted to their own location. Nothing a
 salesperson or service advisor would recognise as their job has been built.
 
-**About 5% of the first release. Stage 1 of 8.**
+**About 6% of the first release. Stage 1 of 8.**
 
 ---
 
@@ -38,14 +38,14 @@ months of focused work.
 
 ---
 
-## Inside stage 1 — five of eight pieces done
+## Inside stage 1 — six of eight pieces done
 
 - [x] Dealership groups cannot see each other's data — each gets its own separate database
 - [x] A group can have several locations, each with its own departments
 - [x] Staff can be restricted to one location and cannot reach another
 - [x] Refused access attempts are recorded permanently and cannot be erased
 - [x] Automated checks guard all of the above, and were tested by deliberately breaking things
-- [ ] **Signing in** — today the software simply trusts whoever the request claims to be
+- [x] **Signing in** — real accounts and passwords, with sign-out taking effect immediately
 - [ ] **Any screens at all** — there is no user interface yet, only the engine behind it
 - [ ] **A rehearsed backup and restore**
 
@@ -57,6 +57,7 @@ months of focused work.
 - Multiple locations inside a group
 - Permissions that hold up when tested against
 - A permanent record of refused access
+- Signing in with an email and password, and signing out immediately
 
 ## What does not exist
 
@@ -71,10 +72,8 @@ months of focused work.
 
 ## Next
 
-**Signing in properly** — real accounts, real sessions, and the ability to revoke
-access immediately. That closes the last shortcut in the foundation.
-
-After it: **customer records** — the first feature a dealership would recognise.
+**Customer records** — the first feature a dealership would recognise. Finding a
+customer, adding one, and keeping their contact history.
 
 ---
 

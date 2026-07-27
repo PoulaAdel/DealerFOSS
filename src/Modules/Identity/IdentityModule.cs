@@ -5,10 +5,12 @@
 //       DbContext binds to the tenant resolved for the current request, so it
 //       can only be constructed after tenant middleware has run.
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OpenDealer360.Identity.Contracts;
 using OpenDealer360.Identity.Data;
+using OpenDealer360.Identity.Domain;
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Identity;
@@ -28,6 +30,11 @@ public static class IdentityModule
 
         services.AddScoped<IAuditSink, SqlAuditSink>();
         services.AddScoped<IAccessDirectory, AccessService>();
+
+        // Password hashing algorithm and parameters live here, so upgrading them
+        // is one change rather than a search through call sites.
+        services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+        services.AddScoped<IAuthenticator, Authenticator>();
 
         return services;
     }

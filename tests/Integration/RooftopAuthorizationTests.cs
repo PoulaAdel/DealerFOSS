@@ -161,7 +161,18 @@ public sealed class RooftopAuthorizationTests(HostFixture fixture)
         using var client = _fixture.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(path, UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("X-User", userId.ToString());
+
+        var token = await _fixture.TokenForAsync(EmailFor(userId), Tenant);
+        request.Headers.Add("Cookie", $"odms_session={token}");
+
         return await client.SendAsync(request);
     }
+
+    /// <summary>Maps a well-known development user id to the address they sign in with.</summary>
+    private static string EmailFor(Guid userId) =>
+        userId == DevelopmentSeeder.DevUsers.OrganizationWide
+            ? DevelopmentSeeder.DevUsers.OrganizationWideEmail
+            : userId == DevelopmentSeeder.DevUsers.FirstRooftopOnly
+                ? DevelopmentSeeder.DevUsers.FirstRooftopOnlyEmail
+                : DevelopmentSeeder.DevUsers.UnassignedEmail;
 }

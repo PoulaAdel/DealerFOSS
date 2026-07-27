@@ -10,6 +10,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OpenDealer360.Host.Auth;
 using OpenDealer360.Host.Development;
 using OpenDealer360.Host.Tenancy;
 using OpenDealer360.Identity;
@@ -115,6 +116,7 @@ app.MapGet("/", () => Results.Ok(new
 
 if (tenancyEnabled)
 {
+    app.MapAuth();
     app.MapOrganizationModule();
 }
 

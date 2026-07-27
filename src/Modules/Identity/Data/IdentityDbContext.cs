@@ -32,6 +32,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 
     public DbSet<UserAssignment> UserAssignments => Set<UserAssignment>();
 
+    public DbSet<Session> Sessions => Set<Session>();
+
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -86,6 +88,21 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
                     id => id!.Value.Value,
                     value => new RooftopId(value));
             builder.HasIndex(x => new { x.UserId, x.Scope });
+            ConfigureAudit(builder);
+        });
+
+        modelBuilder.Entity<Session>(builder =>
+        {
+            builder.ToTable("Sessions");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
+            builder.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            builder.Property(x => x.DeviceSummary).HasMaxLength(200);
+            // Every request looks a session up by token hash, so this index is
+            // on the hot path, and it is unique because a token identifies one
+            // session or none.
+            builder.HasIndex(x => x.TokenHash).IsUnique();
+            builder.HasIndex(x => new { x.UserId, x.AbsoluteExpiresAt });
             ConfigureAudit(builder);
         });
 

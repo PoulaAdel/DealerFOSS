@@ -9,10 +9,12 @@
 //       unreachable this fails loudly on purpose — a skipped isolation test is
 //       not evidence of isolation.
 
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Hosting;
+using OpenDealer360.Host.Development;
 
 namespace OpenDealer360.IntegrationTests;
 
@@ -67,6 +69,39 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
     }
 
     Task IAsyncLifetime.DisposeAsync() => Task.CompletedTask;
+
+    /// <summary>
+    /// Signs a development user in and returns their session token, caching it
+    /// so a suite of tests does not re-authenticate on every call.
+    /// </summary>
+    public async Task<string> TokenForAsync(string email, string tenant)
+    {
+        var key = $"{tenant}|{email}";
+        if (_tokens.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
+
+        using var client = CreateClient();
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post, new Uri("/api/v1/auth/login", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new { email, password = DevelopmentSeeder.DevUsers.Password }),
+        };
+        request.Headers.Add("X-Tenant", tenant);
+
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var header = response.Headers.GetValues("Set-Cookie")
+            .Single(v => v.StartsWith("odms_session=", StringComparison.Ordinal));
+        var token = Uri.UnescapeDataString(header.Split(';')[0]["odms_session=".Length..]);
+
+        _tokens[key] = token;
+        return token;
+    }
+
+    private readonly Dictionary<string, string> _tokens = [];
 
     private static async Task EnsureSqlReachableAsync()
     {

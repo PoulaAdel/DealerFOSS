@@ -70,7 +70,14 @@ public sealed class TenantIsolationTests(HostFixture fixture)
     [Fact]
     public async Task Request_for_an_unknown_tenant_is_refused()
     {
-        using var response = await SendAsync("no-such-dealer");
+        // No session is attached: an unknown tenant cannot be signed into, and
+        // the tenant is resolved before the caller, so this is refused as
+        // "no such organization" rather than "not signed in".
+        using var client = _fixture.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(OrganizationEndpoint, UriKind.Relative));
+        request.Headers.Add("X-Tenant", "no-such-dealer");
+
+        using var response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -92,7 +99,8 @@ public sealed class TenantIsolationTests(HostFixture fixture)
         // Organization-wide so these tests observe the tenant boundary rather
         // than a rooftop-scope filter; rooftop scope is covered separately by
         // RooftopAuthorizationTests.
-        request.Headers.Add("X-User", DevelopmentSeeder.DevUsers.OrganizationWide.ToString());
+        var token = await _fixture.TokenForAsync(DevelopmentSeeder.DevUsers.OrganizationWideEmail, tenantKey);
+        request.Headers.Add("Cookie", $"odms_session={token}");
         return await client.SendAsync(request);
     }
 

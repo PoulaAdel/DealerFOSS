@@ -1,68 +1,74 @@
-// CurrentUserMiddleware — identifies the caller, after the tenant is known.
+// CurrentUserMiddleware — identifies the caller from their session cookie, after
+// the tenant is known.
 //
-// Use:  automatic for every /api/v1 path; runs after TenantMiddleware.
-// Edit: the X-User header is a development stand-in and is refused outside
-//       Development, because no real authentication exists yet. It disappears
-//       with the durable-session milestone. Never trust a client-supplied
-//       identity in any other environment.
+// Use:  automatic for every /api/v1 path; runs after TenantMiddleware. Login and
+//       logout are exempt, since those are where a session is obtained or ended.
+// Edit: the session is checked against the database on every request, so
+//       revoking one takes effect immediately rather than whenever a token would
+//       have expired. Do not cache that lookup without also solving revocation —
+//       that trade is the whole reason sessions are durable rather than stateless.
 
 using OpenDealer360.Core;
+using OpenDealer360.Host.Auth;
+using OpenDealer360.Identity.Contracts;
 
 namespace OpenDealer360.Host.Tenancy;
 
 /// <summary>
-/// Resolves the calling user for the request, after the tenant is known.
-/// Tenant-scoped API calls without an identified user are refused here rather
-/// than deep in a service.
+/// Resolves the calling user for the request. Tenant-scoped API calls without a
+/// valid session are refused here rather than deep in a service.
 /// </summary>
-/// <remarks>
-/// Provisional source: the <c>X-User</c> header. When durable sessions land
-/// (ADR-009), the user comes from the authenticated session cookie and this
-/// header path is removed. It is accepted only in the Development environment
-/// so a deployed instance can never be driven by a client-supplied identity.
-/// </remarks>
-public sealed class CurrentUserMiddleware(RequestDelegate next, IWebHostEnvironment environment)
+public sealed class CurrentUserMiddleware(RequestDelegate next)
 {
-    public const string UserHeader = "X-User";
-
     private const string ApiPrefix = "/api/v1";
 
-    private readonly RequestDelegate _next = next;
-    private readonly IWebHostEnvironment _environment = environment;
+    /// <summary>The only endpoints reachable without a session.</summary>
+    private static readonly string[] AnonymousPaths =
+    [
+        "/api/v1/auth/login",
+        "/api/v1/auth/logout",
+    ];
 
+    private readonly RequestDelegate _next = next;
+
+    // IAuthenticator is resolved inside the method, not as a parameter. Injected
+    // middleware parameters are constructed before the method body runs, and
+    // building it reaches the tenant-bound DbContext — which throws on paths
+    // like /health where no tenant was ever resolved.
     public async Task InvokeAsync(HttpContext context, ICurrentUser currentUser)
     {
-        if (!context.Request.Path.StartsWithSegments(ApiPrefix))
+        if (!context.Request.Path.StartsWithSegments(ApiPrefix)
+            || AnonymousPaths.Contains(context.Request.Path.Value, StringComparer.OrdinalIgnoreCase))
         {
             await _next(context);
             return;
         }
 
-        if (!_environment.IsDevelopment())
-        {
-            // No authentication mechanism exists yet, so outside Development
-            // there is no safe way to identify a caller. Refuse rather than
-            // silently treating requests as anonymous-but-allowed.
-            await WriteProblemAsync(
-                context,
-                StatusCodes.Status401Unauthorized,
-                "authentication_unavailable",
-                "Session authentication is not yet enabled in this environment.");
-            return;
-        }
+        var authenticator = context.RequestServices.GetRequiredService<IAuthenticator>();
 
-        var header = context.Request.Headers[UserHeader].ToString();
-        if (!Guid.TryParse(header, out var userId))
+        if (!context.Request.Cookies.TryGetValue(AuthEndpoints.SessionCookie, out var token)
+            || string.IsNullOrWhiteSpace(token))
         {
             await WriteProblemAsync(
                 context,
                 StatusCodes.Status401Unauthorized,
-                "user_required",
-                $"Provide the {UserHeader} header with the calling user's id.");
+                "auth.session_required",
+                "Sign in to use this endpoint.");
             return;
         }
 
-        currentUser.Set(userId);
+        var result = await authenticator.ValidateAsync(token, context.RequestAborted);
+        if (result.IsFailure)
+        {
+            await WriteProblemAsync(
+                context,
+                StatusCodes.Status401Unauthorized,
+                result.Error.Code,
+                result.Error.Message);
+            return;
+        }
+
+        currentUser.Set(result.Value);
         await _next(context);
     }
 

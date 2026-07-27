@@ -24,6 +24,14 @@ public sealed class User : AuditableEntity
 
     public bool IsActive { get; private set; } = true;
 
+    /// <summary>
+    /// Hashed credential. Null means this account cannot sign in with a password
+    /// yet — it is not the same as "no password required".
+    /// </summary>
+    public string? PasswordHash { get; private set; }
+
+    public bool CanSignIn => IsActive && PasswordHash is not null;
+
     public ICollection<UserAssignment> Assignments { get; } = new List<UserAssignment>();
 
     private User()
@@ -50,4 +58,18 @@ public sealed class User : AuditableEntity
     }
 
     public void Deactivate() => IsActive = false;
+
+    /// <summary>
+    /// Stores an already-hashed credential. Hashing belongs to the service that
+    /// owns the algorithm; the domain never sees a plaintext password.
+    /// </summary>
+    public void SetPasswordHash(string passwordHash)
+    {
+        if (string.IsNullOrWhiteSpace(passwordHash))
+        {
+            throw new ArgumentException("A password hash is required.", nameof(passwordHash));
+        }
+
+        PasswordHash = passwordHash;
+    }
 }

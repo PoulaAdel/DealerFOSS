@@ -7,6 +7,7 @@
 //       deploy/verify-e2e.ps1 both reference them. Changing one breaks both.
 //       Sample data must stay synthetic; never seed real customer data.
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Identity.Data;
@@ -103,6 +104,13 @@ public static class DevelopmentSeeder
 
         /// <summary>Exists and is active, but holds no assignment at all.</summary>
         public static Guid Unassigned { get; } = new("33333333-3333-3333-3333-333333333333");
+
+        /// <summary>Shared password for every development account.</summary>
+        public const string Password = "Dev@Pass1!";
+
+        public const string OrganizationWideEmail = "gm@dev.local";
+        public const string FirstRooftopOnlyEmail = "advisor@dev.local";
+        public const string UnassignedEmail = "nobody@dev.local";
     }
 
     private static async Task SeedIdentityAsync(
@@ -117,8 +125,27 @@ public static class DevelopmentSeeder
         await using var identityDb = new IdentityDbContext(options, clock);
         await identityDb.Database.MigrateAsync();
 
+        var hasher = new PasswordHasher<User>();
+
         if (await identityDb.Users.AnyAsync())
         {
+            // A database seeded before passwords existed would otherwise leave
+            // every development account unable to sign in. Backfill rather than
+            // forcing a wipe.
+            var passwordless = await identityDb.Users
+                .Where(u => u.PasswordHash == null)
+                .ToListAsync();
+
+            foreach (var existing in passwordless)
+            {
+                existing.SetPasswordHash(hasher.HashPassword(existing, DevUsers.Password));
+            }
+
+            if (passwordless.Count > 0)
+            {
+                await identityDb.SaveChangesAsync();
+            }
+
             return;
         }
 
@@ -131,10 +158,21 @@ public static class DevelopmentSeeder
 
         identityDb.Roles.AddRange(manager, advisor);
 
-        identityDb.Users.AddRange(
+        // Every development account shares one obvious password. It is only ever
+        // created in Development, and the seeder never runs elsewhere.
+        var users = new[]
+        {
             new User(DevUsers.OrganizationWide, "gm@dev.local", "Organization Manager"),
             new User(DevUsers.FirstRooftopOnly, "advisor@dev.local", "Single Rooftop Advisor"),
-            new User(DevUsers.Unassigned, "nobody@dev.local", "Unassigned User"));
+            new User(DevUsers.Unassigned, "nobody@dev.local", "Unassigned User"),
+        };
+
+        foreach (var user in users)
+        {
+            user.SetPasswordHash(hasher.HashPassword(user, DevUsers.Password));
+        }
+
+        identityDb.Users.AddRange(users);
 
         // The scoped user is deliberately tied to one rooftop, so an attempt to
         // read a sibling rooftop is a genuine authorization failure.

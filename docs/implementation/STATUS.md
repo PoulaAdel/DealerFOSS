@@ -1,8 +1,8 @@
 # Implementation Status
 
 Current phase: **I0 complete (except container path) → I1 in progress**
-Current milestone: durable sessions and BFF cookie authentication
-Last verified: 2026-07-27 · `dotnet build` 0 warnings/0 errors, `dotnet test` 80/80 · `main` at `a1917d6`
+Current milestone: first dealership feature — customer records
+Last verified: 2026-07-27 · `dotnet build` 0 warnings/0 errors, `dotnet test` 91/91, `verify-e2e.ps1` PASS
 
 > The repository is the truth. If this file disagrees with the code, this file
 > is wrong — correct it. A file existing is not evidence that a workflow works.
@@ -42,8 +42,9 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - [x] **Unauthorized-rooftop reads fail in endpoint tests** — `RooftopAuthorizationTests` (7 tests): a rooftop-scoped user sees only their own rooftop in the list, is refused a sibling rooftop by direct id (403), and an unassigned user is refused entirely. **Regression-proven 2026-07-25:** removing the scope check fails exactly these tests *(agent-verifiable)*
 - [x] Audit events capture scoped security-sensitive changes — every denial writes an append-only `identity.AuditEvents` row; the context refuses to update or delete audit history (ADR-016) *(agent-verifiable)*
 - [ ] Background-job authorization tests — no jobs exist yet; due with the first scheduled job
-- [ ] Durable sessions, BFF cookie auth, CSRF, rotation and revocation — not started
-- [ ] Local identity, MFA foundation, OIDC extension point — not started
+- [x] **Durable sessions and cookie sign-in** — password credentials, SQL-backed sessions, Secure/HttpOnly/SameSite=Strict cookie, sliding idle expiry (30 min) under a fixed 8-hour ceiling. Revocation takes effect on the next request, proven by `AuthenticationTests`. An unknown email and a wrong password return byte-identical responses. *(agent-verifiable)*
+- [ ] CSRF protection on writes — due with the first write endpoint; every endpoint today is a read
+- [ ] MFA foundation and OIDC federation — not started (local password identity is done)
 - [ ] Global-administration separation and time-limited support access — not started
 - [ ] Tenant-aware background job context — not started
 - [ ] React/TypeScript/Vite shell with accessible layout — not started *(blocked: Node not installed)*
@@ -57,6 +58,8 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - **2026-07-25 — I0 gaps closed.** Tenant isolation moved from a manual script into CI-runnable integration tests; forbidden-reference rehearsal performed and documented; code of conduct and 16 immutable ADR files added; `CLAUDE.md` records the verified local environment. Evidence: `dotnet build` 0/0, `dotnet test` 13/13.
 - **2026-07-25 — Rooftop authorization (closes R05).** Identity module with users, roles, catalogued permissions, organization- and rooftop-scoped assignments, and append-only audit. The Organization capability now filters reads to the caller's authorized rooftops and refuses a sibling rooftop addressed directly; denials are audited. Cross-module access goes only through `IAccessDirectory`, enforced by two new boundary tests. Evidence: `dotnet test` 22/22, plus a regression rehearsal in which removing the scope check failed exactly the three tests that assert it.
 - **2026-07-27 — Domain unit tests.** `tests/Unit` added (58 tests). Mutation-proven: breaking cross-currency refusal, rooftop coverage, or the permission catalogue check fails exactly the tests that guard them. Evidence: `dotnet test` 80/80.
+
+- **2026-07-27 — Signing in.** Password credentials, SQL-backed sessions, and a Secure/HttpOnly/SameSite cookie replace the development header that simply trusted the caller. Signing out stops the session on the very next request. Evidence: `dotnet test` 91/91 and `verify-e2e.ps1` PASS.
 
 ## Active risks and blockers
 
