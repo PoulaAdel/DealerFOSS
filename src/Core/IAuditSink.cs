@@ -1,3 +1,10 @@
+// IAuditSink — how a security-sensitive event is recorded.
+//
+// Use:  inject it and call RecordAsync. The Identity module implements it and
+//       owns the table; nothing else writes audit rows directly.
+// Edit: never put credentials, tokens, credit data, government ids, or document
+//       content into an AuditEntry. Audit rows are append-only (ADR-016).
+
 namespace OpenDealer360.Core;
 
 /// <summary>

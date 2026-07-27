@@ -1,3 +1,10 @@
+// IdentityModule — registers this slice with the application.
+//
+// Use:  services.AddIdentityModule() from Program.cs.
+// Edit: add a registration here when you add a service to the module. The
+//       DbContext binds to the tenant resolved for the current request, so it
+//       can only be constructed after tenant middleware has run.
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OpenDealer360.Identity.Contracts;

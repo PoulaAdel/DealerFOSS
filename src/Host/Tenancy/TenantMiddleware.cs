@@ -1,3 +1,13 @@
+// TenantMiddleware — resolves which dealer organization a request belongs to,
+// once, before any endpoint runs.
+//
+// Use:  automatic for every /api/v1 path. Health and root are exempt so probes
+//       work without a tenant.
+// Edit: the X-Tenant header is provisional. When sessions land (ADR-009) the
+//       tenant comes from the authenticated session and this header path is
+//       deleted. Refusing early is deliberate — a missing tenant must never
+//       reach a data call.
+
 using OpenDealer360.Tenancy;
 using OpenDealer360.Core;
 

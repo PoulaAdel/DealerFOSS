@@ -1,3 +1,10 @@
+// Result — the return type for operations that can fail for ordinary reasons.
+//
+// Use:  return Result.Failure<T>(Error.NotFound(...)) for an expected outcome;
+//       throw only for bugs. Endpoints map a failed Result to a status code.
+// Edit: add combinators (Map, Bind) here if they earn their keep. Never add a
+//       domain-specific helper — Core must stay free of dealership concepts.
+
 namespace OpenDealer360.Core;
 
 /// <summary>

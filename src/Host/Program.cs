@@ -1,3 +1,12 @@
+// Program — the composition root. Everything the application is made of is
+// registered and ordered here, and nowhere else.
+//
+// Use:  dotnet run --project src/Host. With no HostCatalog connection string it
+//       still starts and serves health only, which keeps a bare checkout usable.
+// Edit: register a new module as one AddXModule() plus one MapXModule() line.
+//       Middleware order is behaviour, not style: the tenant must be resolved
+//       before the caller, and both before any endpoint runs.
+
 using System.Globalization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;

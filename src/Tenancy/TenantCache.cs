@@ -1,3 +1,10 @@
+// TenantCache — in-process routing cache, so every request does not re-read the
+// host catalog. A single node needs nothing more (ADR-005).
+//
+// Use:  through TenantResolver.
+// Edit: entries expire after Ttl. That is also the lag before a suspended tenant
+//       actually stops being served — call Invalidate on status changes.
+
 using System.Collections.Concurrent;
 using OpenDealer360.Core;
 

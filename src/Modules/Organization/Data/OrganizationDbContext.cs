@@ -1,3 +1,12 @@
+// OrganizationDbContext — persistence for this module. Owns the "org" schema and
+// no other (ADR-014).
+//
+// Use:  injected into this module's own services; nothing outside Organization
+//       may depend on it.
+// Edit: schema changes need a migration in this project. SaveChangesAsync stamps
+//       audit columns and the concurrency token centrally — do not set them at
+//       call sites. Typed ids need a HasConversion here to persist as GUIDs.
+
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Organization.Domain;
 using OpenDealer360.Core;

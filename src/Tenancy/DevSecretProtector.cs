@@ -1,3 +1,10 @@
+// DevSecretProtector — a no-op ISecretProtector for local development.
+//
+// Use:  nowhere but Development. Program.cs refuses to start if this is
+//       registered in any other environment.
+// Edit: do not "improve" this into a real implementation. Add a separate
+//       DPAPI/certificate/KMS class and register that instead.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Tenancy;

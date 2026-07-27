@@ -1,3 +1,11 @@
+// IOrganizationDirectory — this module's public contract, and the only part of
+// it other modules may reference (ADR-008).
+//
+// Use:  ask for the organization structure, one rooftop, or whether a rooftop
+//       exists. Reads are already scoped to the caller's rooftops.
+// Edit: changing a signature here is a cross-module break. Do not add an
+//       "unscoped" overload — that is how a leak gets introduced politely.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Organization.Contracts;

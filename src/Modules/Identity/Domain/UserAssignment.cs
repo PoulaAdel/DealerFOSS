@@ -1,3 +1,12 @@
+// UserAssignment — grants a user a role, either across the whole organization or
+// at one named rooftop. The same user may hold different roles at different
+// rooftops (doc 04 §1).
+//
+// Use:  UserAssignment.ForOrganization(...) or .ForRooftop(...).
+// Edit: keep organization-wide as its own scope rather than "a list of every
+//       rooftop". A rooftop opened next year must be covered automatically by
+//       the first and deliberately not by the second.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Identity.Domain;

@@ -1,3 +1,10 @@
+// OrganizationView and friends — the read models this module hands out.
+//
+// Use:  returned by IOrganizationDirectory and serialized directly to clients.
+// Edit: these are a published API shape. Entities never cross the boundary;
+//       map into these instead. Removing or renaming a field breaks callers, so
+//       treat additions as the safe change and removals as versioned ones.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Organization.Contracts;

@@ -1,3 +1,11 @@
+// CurrentUserMiddleware — identifies the caller, after the tenant is known.
+//
+// Use:  automatic for every /api/v1 path; runs after TenantMiddleware.
+// Edit: the X-User header is a development stand-in and is refused outside
+//       Development, because no real authentication exists yet. It disappears
+//       with the durable-session milestone. Never trust a client-supplied
+//       identity in any other environment.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Host.Tenancy;

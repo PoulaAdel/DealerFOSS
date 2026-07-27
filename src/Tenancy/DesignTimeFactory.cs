@@ -1,3 +1,10 @@
+// DesignTimeFactory — lets "dotnet ef" construct the host catalog context
+// outside the running application.
+//
+// Use:  tooling only; never referenced by application code.
+// Edit: point it elsewhere with OPENDEALER360_HOST_CONNECTION. The connection is
+//       used by "database update"; "migrations add" needs only the model.
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 

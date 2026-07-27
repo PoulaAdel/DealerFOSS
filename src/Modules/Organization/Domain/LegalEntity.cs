@@ -1,3 +1,11 @@
+// LegalEntity — a legal entity within the dealer organization. Deals, accounting
+// entries, and other regulated records are owned by one (doc 04 §1).
+//
+// Use:  created beneath a DealerOrganization.
+// Edit: pure domain — no EF or ASP.NET types. Tax and registration details
+//       belong here; anything jurisdiction-specific belongs in a rule pack, not
+//       in this entity.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Organization.Domain;

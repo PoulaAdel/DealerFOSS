@@ -1,3 +1,10 @@
+// AuditEvent — one append-only record of a security-sensitive action.
+//
+// Use:  written through IAuditSink, never constructed by feature code.
+// Edit: never add a field that could carry a credential, token, credit datum,
+//       government id, or document content. Rows are never updated or deleted
+//       (ADR-016); a correction is a new row.
+
 namespace OpenDealer360.Identity.Domain;
 
 /// <summary>

@@ -1,3 +1,11 @@
+// AuditableEntity — base for records that carry audit columns and an optimistic
+// concurrency stamp.
+//
+// Use:  inherit from it. Do not set CreatedAt/ModifiedAt by hand — each module's
+//       DbContext stamps them centrally in SaveChangesAsync.
+// Edit: rarely. Adding a field here changes every table that inherits it, so it
+//       needs a migration in every module.
+
 namespace OpenDealer360.Core;
 
 /// <summary>

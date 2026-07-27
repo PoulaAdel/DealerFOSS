@@ -1,3 +1,10 @@
+// ICurrentUser — who is making the current request.
+//
+// Use:  inject it and read Id. Never accept a user id as a parameter from the
+//       client; that would let a caller act as somebody else.
+// Edit: this is only the holder. Resolution lives in
+//       Host/Tenancy/CurrentUserMiddleware.
+
 namespace OpenDealer360.Core;
 
 /// <summary>

@@ -1,3 +1,10 @@
+// Money — an amount together with its ISO currency.
+//
+// Use:  new Money(24995.00m, "USD"). Add/Subtract refuse mixed currencies on
+//       purpose; there is no implicit conversion anywhere in the system.
+// Edit: only add operations that are true for every currency. Conversion needs
+//       a rate and a date, so it belongs to the module that owns those.
+
 using System.Globalization;
 
 namespace OpenDealer360.Core;

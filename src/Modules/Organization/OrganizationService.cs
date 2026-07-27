@@ -1,3 +1,12 @@
+// OrganizationService — the read workflows, and the rooftop-scope check applied
+// to them.
+//
+// Use:  through IOrganizationDirectory.
+// Edit: authorization lives here, not in the endpoint, so a background job gets
+//       the same check as an HTTP call. An unauthorized rooftop and an unknown
+//       one deliberately return the same failure, so the response cannot be used
+//       to enumerate rooftops. Removing either check fails RooftopAuthorizationTests.
+
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Identity.Contracts;
 using OpenDealer360.Organization.Contracts;

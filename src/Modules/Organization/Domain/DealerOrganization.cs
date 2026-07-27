@@ -1,3 +1,10 @@
+// DealerOrganization — the tenant itself, and the root of the structure tree.
+//
+// Use:  exactly one row exists per tenant database.
+// Edit: this is pure domain — no EF or ASP.NET types may appear here, and an
+//       architecture test enforces it. Invariants belong in the constructor so
+//       an invalid organization cannot be created at all.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Organization.Domain;

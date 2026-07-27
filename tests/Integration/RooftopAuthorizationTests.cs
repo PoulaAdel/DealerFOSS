@@ -1,3 +1,12 @@
+// RooftopAuthorizationTests — proves a user assigned to one rooftop cannot read
+// another, by any route. This is the evidence that closes risk R05.
+//
+// Use:  runs with the normal test suite; needs a reachable SQL engine.
+// Edit: these must fail if the scope check in OrganizationService is removed —
+//       that is the point of them, and it has been rehearsed. Cover both routes
+//       when you extend them: filtering a list is not enough if the record can
+//       still be fetched by id.
+
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;

@@ -1,3 +1,11 @@
+// ISecretProtector — protects sensitive configuration at rest, chiefly tenant
+// connection references and connector credentials.
+//
+// Use:  Protect before storing, Unprotect after reading. Storage code never
+//       sees a plaintext key.
+// Edit: implementations live outside Core. src/Tenancy has a development no-op;
+//       a real one (DPAPI, certificate, or KMS) is required for production.
+
 namespace OpenDealer360.Core;
 
 /// <summary>
