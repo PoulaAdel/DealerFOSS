@@ -2,7 +2,7 @@
 
 Current phase: **I0 complete (except container path) → I1 in progress**
 Current milestone: durable sessions and BFF cookie authentication
-Last verified: 2026-07-25 · `dotnet build` 0 warnings/0 errors, `dotnet test` 22/22 · branch `feature/foundation`
+Last verified: 2026-07-27 · `dotnet build` 0 warnings/0 errors, `dotnet test` 80/80 · `main` at `a1917d6`
 
 > The repository is the truth. If this file disagrees with the code, this file
 > is wrong — correct it. A file existing is not evidence that a workflow works.
@@ -17,7 +17,8 @@ Last verified: 2026-07-25 · `dotnet build` 0 warnings/0 errors, `dotnet test` 2
 - [x] Backend starts locally — `dotnet run --project src/Host`; `/` and both health endpoints return 200 *(agent-verifiable)*
 - [x] Liveness and readiness separated — `GET /health/live`, `GET /health/ready` *(agent-verifiable)*
 - [x] Structured logs and OpenTelemetry wired, no secrets emitted — Serilog console output; OTLP exporter registered only when configured *(agent-verifiable)*
-- [x] Architecture tests present and passing — `dotnet test` → 5/5 *(agent-verifiable)*
+- [x] Architecture tests present and passing — `dotnet test` → 7/7 *(agent-verifiable)*
+- [x] Domain unit tests — `tests/Unit`, 58 tests covering money/currency, `Result` invariants, authorization scope, the permission catalogue, entity invariants, and request-context write-once semantics. **Mutation-proven 2026-07-27:** breaking cross-currency refusal, rooftop coverage, and the catalogue check failed exactly the 6 tests guarding them *(agent-verifiable)*
 - [x] CI runs build + tests with the audit gate — `.github/workflows/ci.yml` *(agent-verifiable)*
 - [x] AGPLv3, contribution guide, security policy, ADR index *(agent-verifiable)*
 - [x] SQL-backed integration tests run repeatably — `dotnet test` → 8/8 in `IntegrationTests`, driving the real Host against SQL via `WebApplicationFactory`; CI supplies a SQL Server service container *(agent-verifiable)*
@@ -55,6 +56,7 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - **2026-07-25 — Baseline committed.** `ef8793a` docs, `dd7b582` engineering baseline, on `feature/foundation`.
 - **2026-07-25 — I0 gaps closed.** Tenant isolation moved from a manual script into CI-runnable integration tests; forbidden-reference rehearsal performed and documented; code of conduct and 16 immutable ADR files added; `CLAUDE.md` records the verified local environment. Evidence: `dotnet build` 0/0, `dotnet test` 13/13.
 - **2026-07-25 — Rooftop authorization (closes R05).** Identity module with users, roles, catalogued permissions, organization- and rooftop-scoped assignments, and append-only audit. The Organization capability now filters reads to the caller's authorized rooftops and refuses a sibling rooftop addressed directly; denials are audited. Cross-module access goes only through `IAccessDirectory`, enforced by two new boundary tests. Evidence: `dotnet test` 22/22, plus a regression rehearsal in which removing the scope check failed exactly the three tests that assert it.
+- **2026-07-27 — Domain unit tests.** `tests/Unit` added (58 tests). Mutation-proven: breaking cross-currency refusal, rooftop coverage, or the permission catalogue check fails exactly the tests that guard them. Evidence: `dotnet test` 80/80.
 
 ## Active risks and blockers
 

@@ -51,5 +51,5 @@ jobs:
       - name: Build (warnings as errors)
         run: dotnet build OpenDealer360.slnx -c Release --no-restore
 
-      - name: Test (architecture + unit)
+      - name: Test (unit, architecture, integration)
         run: dotnet test OpenDealer360.slnx -c Release --no-build --verbosity normal
