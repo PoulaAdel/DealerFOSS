@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OpenDealer360.Core</RootNamespace>
+    <AssemblyName>OpenDealer360.Core</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    Core is the shared kernel + infrastructure abstractions (doc 03 §4).
+    It must not depend on ASP.NET Core, EF Core, or any module. Enforced by
+    tests/Architecture. Business concepts never enter this project.
+  -->
+
+</Project>

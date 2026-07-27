@@ -1,0 +1,16 @@
+{
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Debug",
+      "Override": {
+        "Microsoft.AspNetCore": "Information"
+      }
+    }
+  },
+  "OpenTelemetry": {
+    "OtlpEndpoint": "http://localhost:4317"
+  },
+  "ConnectionStrings": {
+    "HostCatalog": "Server=localhost,1433;Database=OpenDealer360_Host;User Id=sa;Password=Your_dev_password_here;TrustServerCertificate=True;Encrypt=True"
+  }
+}
