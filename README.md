@@ -13,7 +13,9 @@ The project does not call a customer/vehicle/deal UI a complete DMS. Accounting,
 
 ## Current state
 
-**[Implementation status](docs/implementation/STATUS.md)** — what is built, what is proven, and what is next. Every completed item names the command that proves it.
+**[Where we are](docs/PROGRESS.md)** — plain language: how far along the project is, what works today, and what does not exist yet.
+
+**[Implementation status](docs/implementation/STATUS.md)** — the engineering detail, where every completed item names the command that proves it.
 
 ## New here?
 
