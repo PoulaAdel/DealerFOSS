@@ -1,3 +1,12 @@
+// IAccessDirectory — the Identity module's public contract, and the only part of
+// it other modules may reference (ADR-008).
+//
+// Use:  ask "what may this user reach?" (GetAuthorizedScopeAsync) or "may they
+//       reach this rooftop?" (IsAuthorizedAsync). Never read assignments yourself.
+// Edit: changing a signature here is a cross-module break — every caller must be
+//       updated in the same change. An empty AuthorizedScope means DENY; keep
+//       that contract, or callers will read it as "no filter".
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Identity.Contracts;

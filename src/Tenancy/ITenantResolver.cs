@@ -1,3 +1,10 @@
+// ITenantResolver — turns a tenant key into a resolved connection.
+//
+// Use:  called by Host/Tenancy/TenantMiddleware once per request. A null result
+//       means unknown or not active; the caller decides the response.
+// Edit: keep the "null means refuse" contract. Returning a default tenant here
+//       would silently route a request into the wrong dealer's data.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Tenancy;

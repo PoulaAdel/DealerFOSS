@@ -1,3 +1,9 @@
+// ServiceRegistration — wires the host catalog and tenant resolution into DI.
+//
+// Use:  services.AddHostCatalog(connectionString) from Program.cs.
+// Edit: this is where a production ISecretProtector replaces the development
+//       one. Registering it after AddHostCatalog overrides the default.
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OpenDealer360.Tenancy;

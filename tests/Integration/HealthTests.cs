@@ -1,3 +1,11 @@
+// HealthTests — liveness and readiness are separate signals and must stay so
+// (doc 07 §6).
+//
+// Use:  runs with the normal test suite.
+// Edit: health must never require a tenant or a user; load balancers and probes
+//       call it without either. Readiness gains a check whenever a new
+//       must-be-available dependency is introduced.
+
 using System.Net;
 using FluentAssertions;
 

@@ -1,3 +1,10 @@
+// AccessService — decides what a user may reach, and records every refusal.
+//
+// Use:  through IAccessDirectory; do not construct it directly.
+// Edit: deny is the default and must stay so — an unknown user, an inactive
+//       user, or one with no covering assignment gets AuthorizedScope.None.
+//       If you add a fast path, make sure it cannot turn "no rows" into access.
+
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Identity.Contracts;
 using OpenDealer360.Identity.Data;

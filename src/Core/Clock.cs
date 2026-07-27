@@ -1,3 +1,10 @@
+// Clock — injectable "now", so time can be controlled in tests.
+//
+// Use:  inject IClock and read UtcNow. Do not call DateTimeOffset.UtcNow in
+//       domain or workflow code.
+// Edit: instants are UTC. A dealership-local date is derived from the rooftop
+//       time zone at the point of display, not stored as local time.
+
 namespace OpenDealer360.Core;
 
 /// <summary>

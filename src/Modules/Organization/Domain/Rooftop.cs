@@ -1,3 +1,10 @@
+// Rooftop — one physical dealership location, and the unit that scoped records
+// and permissions hang off.
+//
+// Use:  created beneath a LegalEntity. RooftopId appears throughout the system.
+// Edit: pure domain — no EF or ASP.NET types. TimeZone is an IANA id and is how
+//       a dealership-local date is derived; instants stay UTC everywhere else.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Organization.Domain;

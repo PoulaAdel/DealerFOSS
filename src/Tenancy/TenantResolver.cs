@@ -1,3 +1,10 @@
+// TenantResolver — reads the host catalog, checks the tenant is Active, and
+// decrypts its connection reference. Results are cached.
+//
+// Use:  through ITenantResolver.
+// Edit: a suspended or retired tenant must keep resolving to null. If you add a
+//       status, decide explicitly whether it may serve traffic.
+
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Core;
 using OpenDealer360.Tenancy;

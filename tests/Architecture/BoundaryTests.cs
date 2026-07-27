@@ -1,3 +1,11 @@
+// BoundaryTests — rules the compiler cannot express, about what Core is allowed
+// to depend on (ADR-014).
+//
+// Use:  runs with the normal test suite; a violation fails the build.
+// Edit: add a rule whenever a boundary breach reaches code review — a breach a
+//       human had to catch is a missing test. Rehearse new rules by breaking
+//       them deliberately; see the README in this folder.
+
 using FluentAssertions;
 using NetArchTest.Rules;
 using OpenDealer360.Core;

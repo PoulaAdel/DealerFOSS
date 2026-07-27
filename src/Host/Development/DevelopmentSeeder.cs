@@ -1,3 +1,12 @@
+// DevelopmentSeeder — creates sample dealer organizations so the system can be
+// run and tested without hand-building data. Development only.
+//
+// Use:  runs at startup when Seed:Enabled is true. It is idempotent, so
+//       repeated runs neither duplicate nor overwrite.
+// Edit: the DevUsers ids are fixed on purpose — integration tests and
+//       deploy/verify-e2e.ps1 both reference them. Changing one breaks both.
+//       Sample data must stay synthetic; never seed real customer data.
+
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Identity.Data;

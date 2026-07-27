@@ -1,3 +1,12 @@
+// OrganizationModule — registers this slice with the application.
+//
+// Use:  services.AddOrganizationModule() and app.MapOrganizationModule() from
+//       Program.cs.
+// Edit: the DbContext binds to the tenant resolved for the current request, so
+//       it can only be constructed after tenant middleware has run. Split-query
+//       behaviour is set here deliberately: the structure read spans several
+//       collections and would otherwise produce a cartesian join.
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Routing;

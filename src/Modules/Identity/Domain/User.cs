@@ -1,3 +1,10 @@
+// User — a person who can sign in to this dealer organization.
+//
+// Use:  created by administration workflows (and the development seeder today).
+// Edit: credentials and sessions arrive with the authentication milestone and
+//       belong here. Email is a sign-in handle, not an identity: customer
+//       matching must never key on it (doc 04 §4).
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Identity.Domain;

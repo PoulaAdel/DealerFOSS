@@ -38,6 +38,24 @@ Experimental community connectors are welcome but cannot be labeled certified wi
 
 ## 5. Coding standards
 
+**Every hand-written source file opens with a header.** Three parts, kept short —
+a reader should learn whether this file concerns them before scrolling:
+
+```csharp
+// Money — an amount together with its ISO currency.
+//
+// Use:  new Money(24995.00m, "USD"). Add/Subtract refuse mixed currencies on
+//       purpose; there is no implicit conversion anywhere in the system.
+// Edit: only add operations that are true for every currency. Conversion needs
+//       a rate and a date, so it belongs to the module that owns those.
+```
+
+`Use` is for the caller; `Edit` is for whoever changes the file — what belongs
+here, what does not, and the trap that is not visible from the code. Write the
+`Edit` line for the person who will get it wrong. It complements the XML
+`<summary>` on the type, which serves IntelliSense, rather than repeating it.
+Generated files (anything under `Migrations/`) are exempt.
+
 - Nullable reference types and warnings-as-errors are enabled.
 - Async I/O accepts `CancellationToken`; no `async void` outside true event handlers.
 - Domain code has no EF/ASP.NET/provider dependency.
@@ -53,7 +71,7 @@ Experimental community connectors are welcome but cannot be labeled certified wi
 
 - [ ] Confirm the owning module and rooftop/legal-entity scope.
 - [ ] Define state transition, authorization, audit, retention, and concurrency behavior.
-- [ ] Add or update domain model and feature handler.
+- [ ] Add or update domain model and feature handler; every new file opens with a Use/Edit header (§5).
 - [ ] Add EF mapping/migration and indexes based on query use.
 - [ ] Change a public contract only with compatibility/version review.
 - [ ] Add unit, integration, authorization, migration, and relevant accessibility/print tests.

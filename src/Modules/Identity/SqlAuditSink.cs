@@ -1,3 +1,10 @@
+// SqlAuditSink — writes audit entries into the tenant's identity.AuditEvents
+// table. Identity owns the audit store; other modules go through IAuditSink.
+//
+// Use:  registered for IAuditSink; callers never reference this class.
+// Edit: audit rows are append-only (ADR-016) — write new rows, never update.
+//       Nothing sensitive may be placed in an entry; see IAuditSink.
+
 using OpenDealer360.Identity.Data;
 using OpenDealer360.Identity.Domain;
 using OpenDealer360.Core;

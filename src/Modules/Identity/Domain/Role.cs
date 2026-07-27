@@ -1,3 +1,10 @@
+// Role — a named bundle of permissions. Users hold roles, never permissions
+// directly, so access can be reasoned about and revoked as a unit.
+//
+// Use:  new Role(id, "Service Advisor"), then Grant(Permissions.X).
+// Edit: Grant deliberately rejects anything outside the Permissions catalogue.
+//       Keep that check — it is what stops a typo becoming a silent non-grant.
+
 using OpenDealer360.Core;
 
 namespace OpenDealer360.Identity.Domain;

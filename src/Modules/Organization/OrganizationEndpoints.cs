@@ -1,3 +1,10 @@
+// OrganizationEndpoints — the HTTP surface for this capability.
+//
+// Use:  mapped by OrganizationModule; routes live under /api/v1/organization.
+// Edit: keep it thin — authorize, delegate, map a Result to a status code. No
+//       business logic and no data access belong here. New failure kinds need a
+//       case in Problem(), or they silently become 500s.
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;

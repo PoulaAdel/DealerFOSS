@@ -1,3 +1,10 @@
+// HostCatalogDbContext — the control-plane database. Exactly one exists per
+// deployment and it knows only which tenants exist and how to reach them.
+//
+// Use:  injected by TenantResolver. Ordinary feature code never touches it.
+// Edit: adding a business table here is a design error — see ADR-003. Schema
+//       changes need a migration in this project (Migrations/).
+
 using Microsoft.EntityFrameworkCore;
 
 namespace OpenDealer360.Tenancy;

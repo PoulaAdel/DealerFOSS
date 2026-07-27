@@ -1,3 +1,10 @@
+// Ids — typed identifiers for the tenancy hierarchy, so a RooftopId cannot be
+// passed where a LegalEntityId is expected.
+//
+// Use:  new RooftopId(guid); .Value to get the Guid back.
+// Edit: when adding an id, add its JsonConverter too. Without one it serializes
+//       as {"value":"..."} instead of a plain GUID, which breaks route binding.
+
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

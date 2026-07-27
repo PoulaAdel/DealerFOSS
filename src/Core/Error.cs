@@ -1,3 +1,10 @@
+// Error — a stable, code-identified business failure.
+//
+// Use:  Error.Validation("deal.price_required", "A price is required."). The
+//       Code is part of the public API contract; changing one breaks clients.
+// Edit: adding an ErrorType means every endpoint's status-code mapping must
+//       handle it — check OrganizationEndpoints.Problem before you do.
+
 namespace OpenDealer360.Core;
 
 /// <summary>

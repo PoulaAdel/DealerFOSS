@@ -1,3 +1,11 @@
+// TenantIsolationTests — proves two dealer organizations live in separate
+// databases and that a request resolves exactly one of them.
+//
+// Use:  runs with the normal test suite; needs a reachable SQL engine.
+// Edit: these assert the tenant boundary, so they act as an organization-wide
+//       user deliberately. Rooftop scope within a tenant is covered separately
+//       by RooftopAuthorizationTests.
+
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;

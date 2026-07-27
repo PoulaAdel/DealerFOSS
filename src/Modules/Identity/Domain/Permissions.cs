@@ -1,3 +1,10 @@
+// Permissions — the catalogue of actions the system can authorize, plus the
+// levels an assignment can apply at.
+//
+// Use:  reference the constants; never invent a permission string at a call site.
+// Edit: adding a permission means granting it to a role somewhere, or it can
+//       never be held. Role.Grant rejects anything not listed here.
+
 namespace OpenDealer360.Identity.Domain;
 
 /// <summary>

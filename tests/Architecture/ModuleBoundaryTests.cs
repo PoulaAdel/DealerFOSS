@@ -1,3 +1,10 @@
+// ModuleBoundaryTests — rules about what modules may reference (ADR-008, ADR-014).
+//
+// Use:  runs with the normal test suite; a violation fails the build.
+// Edit: every new module needs its own rules here — domain free of EF and
+//       ASP.NET, no reference to the Host, and other modules reachable only
+//       through their Contracts namespace.
+
 using System.Reflection;
 using FluentAssertions;
 using NetArchTest.Rules;
