@@ -74,9 +74,10 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 
 ## Next milestone
 
-**Outcome:** a user signs in and receives a durable session cookie; revoking the session immediately refuses subsequent requests, proven by test.
+**Outcome:** a vehicle can be recorded and found by VIN or stock number, and a rooftop's inventory can be listed with its current status.
 
-This replaces the provisional `X-User` header, which is accepted only in Development and is the last piece of client-supplied identity in the system.
+Vehicles are organization-shared like customers; an **inventory unit** — a specific vehicle on a specific lot, with a status and a cost — is rooftop-owned and must be scoped (doc 04 §1, §3).
 
-- **Included:** password credentials on `User`, durable session records in SQL, BFF cookie issuance with Secure/HttpOnly/SameSite, CSRF protection on writes, session rotation after sign-in, revocation, and idle/absolute expiry.
-- **Explicitly excluded:** MFA, OIDC federation, global-administration separation, and time-limited support access — each is a later milestone in I1.
+- **Included:** `Vehicle` identity (VIN, year/make/model/trim), `InventoryUnit` with rooftop scope, status history, `Vehicles.Read` / `Inventory.Read` / `Inventory.Manage` permissions, search by VIN and stock number, and the rooftop-scope tests that prove one location cannot see another's stock.
+- **Explicitly excluded:** pricing rules, aging analytics, vehicle images, and any incoming provider feed — those arrive with reporting and the integration runtime.
+- **VIN caution (doc 04 §4):** VIN validation must allow documented exceptions and a duplicate-resolution path. Do **not** add a universal unique index on VIN — the same physical vehicle legitimately reappears as a trade-in, and bad source data is common.
