@@ -1,7 +1,7 @@
 # Commercial Licensing
 
 OpenDealer360's complete, self-hosted core is free and open source under
-**GNU AGPLv3** (see [`LICENSE`](LICENSE)). You can run, study, modify, and
+**GNU AGPLv3** (see [`LICENSE`](../LICENSE)). You can run, study, modify, and
 self-host the full DMS under those terms at no cost, including commercial use,
 provided you honor AGPLv3 — most importantly, that users who interact with a
 modified version over a network are offered the corresponding source.
@@ -15,7 +15,7 @@ withheld from the open-source edition.
 
 This dual-licensing funds sustained work on the boring, high-value reliability
 that dealers depend on: migration, reconciliation, upgrades, restore, support,
-and certification (see [docs/08-Governance-and-Standards.md](docs/08-Governance-and-Standards.md) §10).
+and certification (see [08 — Governance & Standards](08-Governance-and-Standards.md) §10).
 
 ## Interested?
 

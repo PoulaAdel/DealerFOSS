@@ -9,7 +9,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using OpenDealer360.Host.Development;
+using OpenDealer360.App;
 
 namespace OpenDealer360.IntegrationTests;
 

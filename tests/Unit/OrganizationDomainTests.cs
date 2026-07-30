@@ -8,8 +8,8 @@
 
 using FluentAssertions;
 using OpenDealer360.Core;
-using OpenDealer360.Identity.Domain;
-using OpenDealer360.Organization.Domain;
+using OpenDealer360.Identity;
+using OpenDealer360.Organization;
 
 namespace OpenDealer360.UnitTests;
 

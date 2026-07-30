@@ -9,7 +9,8 @@
 
 using FluentAssertions;
 using OpenDealer360.Core;
-using OpenDealer360.Vehicles.Domain;
+using OpenDealer360.Inventory;
+using OpenDealer360.Vehicles;
 
 namespace OpenDealer360.UnitTests;
 

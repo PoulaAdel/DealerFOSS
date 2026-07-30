@@ -8,11 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Core\Core.csproj" />
-    <ProjectReference Include="..\..\src\Tenancy\Tenancy.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Identity\Identity.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Organization\Organization.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Customers\Customers.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Vehicles\Vehicles.csproj" />
+    <ProjectReference Include="..\..\src\Identity\Identity.csproj" />
+    <ProjectReference Include="..\..\src\App\App.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,8 +2,15 @@
 
 Current phase: **I0 complete (except container path) → I1 in progress**
 Current milestone: MFA foundation and OIDC federation
-Last verified: 2026-07-30 · `dotnet build` 0 warnings/0 errors, `dotnet test` 178/178,
+Last verified: 2026-07-30 · `dotnet build` 0 warnings/0 errors, `dotnet test` 176/176,
 `verify-e2e.ps1` PASS
+
+> **Layout note (2026-07-30).** The repository moved from seven backend projects to
+> three — `src/Core`, `src/Identity`, `src/App` — with one flat folder per
+> capability inside `App` and three `DbContext` classes instead of five. Table
+> names and schemas are unchanged. See
+> [ADR-017](../adr/0017-three-projects-flat-features.md); paths in older entries
+> below refer to the previous layout.
 
 > The repository is the truth. If this file disagrees with the code, this file
 > is wrong — correct it. A file existing is not evidence that a workflow works.
@@ -15,7 +22,7 @@ Last verified: 2026-07-30 · `dotnet build` 0 warnings/0 errors, `dotnet test` 1
 
 - [x] Solution builds with warnings as errors — `dotnet build OpenDealer360.slnx -c Release` → 0 warnings, 0 errors *(agent-verifiable)*
 - [x] Centrally pinned packages — `Directory.Packages.props`; `NuGetAudit` blocked and forced an upgrade of vulnerable OpenTelemetry 1.12.0 → 1.17.0 *(agent-verifiable)*
-- [x] Backend starts locally — `dotnet run --project src/Host`; `/` and both health endpoints return 200 *(agent-verifiable)*
+- [x] Backend starts locally — `dotnet run --project src/App`; `/` and both health endpoints return 200 *(agent-verifiable)*
 - [x] Liveness and readiness separated — `GET /health/live`, `GET /health/ready` *(agent-verifiable)*
 - [x] Structured logs and OpenTelemetry wired, no secrets emitted — Serilog console output; OTLP exporter registered only when configured *(agent-verifiable)*
 - [x] Architecture tests present and passing — `dotnet test` → 7/7 *(agent-verifiable)*
@@ -33,7 +40,7 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 ### I1 — organization, tenancy, identity, and security foundation
 
 - [x] Host catalog and tenant database creation/resolution — `deploy/verify-e2e.ps1` *(agent-verifiable)*
-- [x] `DealerOrganization`, `LegalEntity`, `Rooftop`, `Department` — `src/Modules/Organization/Domain/` + migration `20260724210646_InitialOrganization` *(agent-verifiable)*
+- [x] `DealerOrganization`, `LegalEntity`, `Rooftop`, `Department` — `src/App/Organization/` + the `org` schema in migration `InitialTenant` *(agent-verifiable)*
 - [x] **Two dealer organizations resolve to separate databases** — `verify-e2e.ps1` → `North Auto Group: 2 rooftop(s)`, `City Motors: 1 rooftop(s)` *(agent-verifiable)*
 - [x] **One organization contains multiple rooftops** — `northgroup` has `NAG-01` and `NAG-02` *(agent-verifiable)*
 - [x] Unresolvable tenant is rejected at the edge — missing header → 400, unknown tenant → 404 *(agent-verifiable)*

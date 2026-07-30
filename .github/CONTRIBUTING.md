@@ -35,7 +35,7 @@ dotnet build OpenDealer360.slnx -c Release
 dotnet test  OpenDealer360.slnx -c Release
 
 # 3. Run the API host (http://localhost:5080)
-dotnet run --project src/Host
+dotnet run --project src/App
 #    GET /               → service banner
 #    GET /health/live    → liveness
 #    GET /health/ready   → readiness (dependencies)
@@ -56,8 +56,8 @@ assertions run in CI via `tests/Integration`. See
 [`tests/Architecture/README.md`](../tests/Architecture/README.md) for the
 forbidden-reference rehearsal.
 
-Copy `src/Host/appsettings.Development.json.example` to
-`src/Host/appsettings.Development.json` and fill in local values. **Never commit
+Copy `src/App/appsettings.Development.json.example` to
+`src/App/appsettings.Development.json` and fill in local values. **Never commit
 secrets** — that file is git-ignored.
 
 ## Definition of done (see docs 06–08)

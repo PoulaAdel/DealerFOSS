@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>OpenDealer360</RootNamespace>
+    <AssemblyName>OpenDealer360.App</AssemblyName>
+    <!--
+      The application: composition root, HTTP edge, tenancy plumbing, and every
+      business feature. Features are separated by folder and namespace and kept
+      apart by architecture tests, not by project boundaries (ADR-017).
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj" />
+    <!-- Access and sign-in decisions only; Identity's internals are invisible here. -->
+    <ProjectReference Include="..\Identity\Identity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Endpoints and table configuration are internal; the test projects drive them. -->
+    <InternalsVisibleTo Include="IntegrationTests" />
+    <InternalsVisibleTo Include="ArchitectureTests" />
+    <InternalsVisibleTo Include="Unit.Tests" />
+  </ItemGroup>
+
+</Project>

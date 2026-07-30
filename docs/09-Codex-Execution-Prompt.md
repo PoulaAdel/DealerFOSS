@@ -52,7 +52,7 @@ Preserve these unless a new ADR explicitly supersedes them:
 - One tenant database contains the dealer organization's rooftops. Cross-tenant business access is prohibited.
 - SQL Server is the v1 database. The application supports Windows and Linux-container hosting.
 - Redis is optional for a single application node and required only when distributed coordination is needed.
-- Business modules own their data. Cross-module access uses published contracts or durable events.
+- Business capabilities own their data. Cross-capability access uses published contracts or durable events, never another capability's tables or types (ADR-017).
 - External provider shapes remain inside connectors. Integration contracts are capability-specific and versioned.
 - The first release is a coexistence product. Do not claim complete DMS or system-of-record status for unfinished subsystems.
 - Migration, reconciliation, backup/restore, export, security, accessibility, and observability are product requirements.
@@ -126,11 +126,11 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 **Build:**
 
 - solution and centrally pinned .NET projects/packages;
-- backend Host, Core, Tenancy, initial module, and test project boundaries from `03-Project-Structure.md`. Do **not** scaffold `Integrations` or `Cli` here: empty projects are exactly the speculative structure §3 forbids. Create each when its first real work lands (`Integrations` at I2; `Cli` with the first migration command);
+- backend `Core`, `Identity`, `App`, and test project boundaries from `03-Project-Structure.md`. Do **not** scaffold `Integrations` or `Cli` here: empty projects are exactly the speculative structure §3 forbids. Create each when its first real work lands (`Integrations` at I2; `Cli` with the first migration command);
 - shared build settings: nullable, warnings as errors, analyzers, formatting, deterministic builds;
 - local SQL Server development profile; optional Redis profile;
 - configuration validation and development secrets procedure;
-- initial architecture tests for module, Domain, Integration, and Core boundaries;
+- initial architecture tests for capability, entity, Integration, and Core boundaries;
 - CI for build, unit, architecture, integration smoke, dependency/license, and secret scanning (frontend jobs are added with the frontend, in I1);
 - AGPL license, contribution guide, code of conduct, security policy, ADR template, and sample data plan;
 - basic `/health/live` and `/health/ready`, structured logs, correlation IDs, and OpenTelemetry wiring.

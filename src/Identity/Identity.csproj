@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OpenDealer360.Identity</RootNamespace>
+    <AssemblyName>OpenDealer360.Identity</AssemblyName>
+    <!--
+      Users, roles, permissions, sessions, and the audit trail. A separate
+      project so its tables and services are physically unreachable from the
+      application: only IAccessDirectory and IAuthenticator are public
+      (ADR-017). Owns the "identity" schema.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      A test-only seam. It lets the unit tests assert rules on Role and User
+      without opening those types to the application, which is the wall this
+      project exists to provide.
+    -->
+    <InternalsVisibleTo Include="Unit.Tests" />
+  </ItemGroup>
+
+</Project>

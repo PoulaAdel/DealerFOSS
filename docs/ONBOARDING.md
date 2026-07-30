@@ -29,15 +29,18 @@ total.
 
 | # | File | What it teaches |
 |---|---|---|
-| 1 | [`src/Host/Program.cs`](../src/Host/Program.cs) | how the application is composed |
-| 2 | [`src/Host/Tenancy/TenantMiddleware.cs`](../src/Host/Tenancy/TenantMiddleware.cs) | how a request finds its dealer organization's database |
-| 3 | [`src/Host/Tenancy/CurrentUserMiddleware.cs`](../src/Host/Tenancy/CurrentUserMiddleware.cs) | how the caller is identified (provisional today — see §4) |
-| 4 | [`src/Modules/Organization/OrganizationEndpoints.cs`](../src/Modules/Organization/OrganizationEndpoints.cs) | how thin the HTTP layer is, and how errors map to Problem Details |
-| 5 | [`src/Modules/Organization/OrganizationService.cs`](../src/Modules/Organization/OrganizationService.cs) | where business decisions and authorization actually live |
-| 6 | [`src/Modules/Identity/Contracts/IAccessDirectory.cs`](../src/Modules/Identity/Contracts/IAccessDirectory.cs) | how one module asks another a question without touching its data |
-| 7 | [`src/Modules/Identity/AccessService.cs`](../src/Modules/Identity/AccessService.cs) | how "deny by default" is implemented, and where denials are audited |
-| 8 | [`src/Modules/Organization/Data/OrganizationDbContext.cs`](../src/Modules/Organization/Data/OrganizationDbContext.cs) | schema ownership, audit stamping, optimistic concurrency |
+| 1 | [`src/App/Program.cs`](../src/App/Program.cs) | how the application is composed |
+| 2 | [`src/App/Tenancy/TenantMiddleware.cs`](../src/App/Tenancy/TenantMiddleware.cs) | how a request finds its dealer organization's database |
+| 3 | [`src/App/Tenancy/CurrentUserMiddleware.cs`](../src/App/Tenancy/CurrentUserMiddleware.cs) | how the caller is identified from their session, on every request |
+| 4 | [`src/App/Organization/OrganizationEndpoints.cs`](../src/App/Organization/OrganizationEndpoints.cs) | how thin the HTTP layer is, and how errors map to Problem Details |
+| 5 | [`src/App/Organization/OrganizationService.cs`](../src/App/Organization/OrganizationService.cs) | where business decisions and authorization actually live |
+| 6 | [`src/Identity/IAccessDirectory.cs`](../src/Identity/IAccessDirectory.cs) | how one capability asks another a question without touching its data |
+| 7 | [`src/Identity/AccessService.cs`](../src/Identity/AccessService.cs) | how "deny by default" is implemented, and where denials are audited |
+| 8 | [`src/App/Data/TenantDb.cs`](../src/App/Data/TenantDb.cs) | audit stamping, optimistic concurrency, and the append-only rule |
 | 9 | [`src/Core/Result.cs`](../src/Core/Result.cs) | the return type you will use in nearly everything |
+
+Then open [`src/App/Customers/`](../src/App/Customers/) and read the folder as a
+whole — six files, one capability. That is the shape every new capability takes.
 
 ### Step 3 — the why (5 min, then on demand)
 
@@ -69,27 +72,30 @@ dotnet test OpenDealer360.slnx -c Release
 ```
 
 ```bash
-dotnet run --project src/Host
+dotnet run --project src/App
 ```
 
 ### Feel the tenancy model in one minute
 
 Development seeds two dealer organizations — `northgroup` (two rooftops) and
-`citymotors` (one) — and three users in each:
+`citymotors` (one) — and three accounts in each, all sharing the password
+`Dev@Pass1!`:
 
-| User id | Scope | Sees |
+| Sign in as | Scope | Sees |
 |---|---|---|
-| `11111111-1111-1111-1111-111111111111` | organization-wide | every rooftop |
-| `22222222-2222-2222-2222-222222222222` | one rooftop | `NAG-01` only |
-| `33333333-3333-3333-3333-333333333333` | no assignment | nothing — `403` |
+| `gm@dev.local` | organization-wide, every permission | every rooftop and every lot |
+| `advisor@dev.local` | one rooftop, read-only | `NAG-01` only; cannot move stock |
+| `nobody@dev.local` | no assignment | nothing — `403` |
+
+Sign in, keep the session cookie, then call an endpoint:
 
 ```powershell
-Invoke-RestMethod http://localhost:5080/api/v1/organization -Headers @{ "X-Tenant"="northgroup"; "X-User"="22222222-2222-2222-2222-222222222222" }
+$s = $null; Invoke-RestMethod http://localhost:5080/api/v1/auth/login -Method Post -Body '{"email":"advisor@dev.local","password":"Dev@Pass1!"}' -ContentType application/json -Headers @{ "X-Tenant"="northgroup" } -SessionVariable s; Invoke-RestMethod http://localhost:5080/api/v1/inventory -Headers @{ "X-Tenant"="northgroup" } -WebSession $s
 ```
 
-Change the user id and watch the response change. Change `X-Tenant` and watch the
-data change entirely — that is a different database. This demonstrates the model
-faster than any diagram.
+Sign in as `gm@dev.local` instead and the same call returns both lots. Change
+`X-Tenant` to `citymotors` and the data changes entirely — that is a different
+database. This demonstrates the model faster than any diagram.
 
 The whole thing, asserted end to end:
 
@@ -109,7 +115,8 @@ The whole thing, asserted end to end:
 3. **Write the failing test first**, then implement until it passes.
 4. Verify: build → test → `verify-e2e.ps1`.
 5. Update `STATUS.md`, pairing each claim with the command that proves it.
-6. Commit to a `feature/*` branch. See [CONTRIBUTING](../.github/CONTRIBUTING.md).
+6. Commit — see [CONTRIBUTING](../.github/CONTRIBUTING.md) and, for the branching
+   model this repository actually uses, [`CLAUDE.md`](../CLAUDE.md).
 
 ### The habit that matters most
 
@@ -137,6 +144,8 @@ comment explaining why it is legitimate — that is the standard for adding anot
 | Config in `WebApplicationFactory` | `Program.cs` reads configuration before in-memory sources are applied; use environment variables. |
 | Adding a strongly-typed id | Needs a JSON converter, or it serializes as `{"value":"…"}` and breaks route binding. |
 | Editing anything under `Migrations/` | Generated code, excluded from analysis. Create a new migration instead. |
+| Adding a `using` for another capability | Compiles fine, then fails `FeatureBoundaryTests`. Go through that capability's `I<Feature>` interface instead. |
+| Making a type in `src/Identity/` public | Fails `BoundaryTests`, which asserts Identity's exported type list. Widening it is a security decision. |
 
 ---
 
@@ -144,14 +153,17 @@ comment explaining why it is legitimate — that is the standard for adding anot
 
 Calibrate your confidence — these are current, honest limitations:
 
-- **Only two modules exist** (Organization, Identity) out of roughly thirteen
-  planned. The module template is not battle-tested; expect it to bend when the
-  first large capability lands. Do not treat Organization as canonical.
-- **There are no unit tests yet** — only architecture and integration. Domain
-  rules are reached incidentally rather than asserted directly.
+- **Four capabilities exist** (Organization, Identity, Customers, Vehicles +
+  Inventory) out of roughly thirteen planned. The shape in
+  [ADR-017](adr/0017-three-projects-flat-features.md) is one week old; expect it
+  to bend when the first large capability lands.
+- **The features inside `App` are held apart by tests, not by the compiler.** That
+  is deliberate, and it means a cross-feature `using` compiles and fails later.
 - **CI has never executed** (no remote configured). The workflow is a claim.
-- **Authentication is provisional.** The `X-User` header is refused outside
-  Development. Authorization is real; identity is not yet.
+- **Second-factor authentication and federation do not exist.** Passwords and
+  sessions are real; MFA and OIDC are the next milestone.
+- **No explicit anti-forgery token on writes.** The session cookie is
+  `SameSite=Strict`, which is the current defence.
 - **Backup and restore have never been rehearsed.**
 
 `STATUS.md` is the live version of this list. If it disagrees with this section,

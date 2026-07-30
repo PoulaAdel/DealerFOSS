@@ -1,0 +1,58 @@
+// CustomerEndpoints — the HTTP surface for customer records.
+//
+// Use:  mapped from Program.cs; routes under /api/v1/customers.
+//       GET  /api/v1/customers?search=smith&limit=25
+//       GET  /api/v1/customers/{id}
+//       POST /api/v1/customers
+// Edit: keep it thin — delegate, then map a Result to a status code.
+//       Authorization lives in CustomerService so background callers get it too.
+
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using OpenDealer360.App;
+
+namespace OpenDealer360.Customers;
+
+internal static class CustomerEndpoints
+{
+    public static void MapCustomers(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/v1/customers").WithTags("Customers");
+
+        group.MapGet("", SearchAsync);
+        group.MapGet("/{customerId:guid}", GetAsync);
+        group.MapPost("", AddAsync);
+    }
+
+    private static async Task<IResult> SearchAsync(
+        ICustomers customers,
+        CancellationToken cancellationToken,
+        string? search = null,
+        int limit = 25)
+    {
+        var result = await customers.SearchAsync(search, limit, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetAsync(
+        Guid customerId,
+        ICustomers customers,
+        CancellationToken cancellationToken)
+    {
+        var result = await customers.GetAsync(customerId, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> AddAsync(
+        NewCustomer request,
+        ICustomers customers,
+        CancellationToken cancellationToken)
+    {
+        var result = await customers.AddAsync(request, cancellationToken);
+
+        return result.IsSuccess
+            ? Results.Created($"/api/v1/customers/{result.Value.Id}", result.Value)
+            : result.Error.ToProblem();
+    }
+}

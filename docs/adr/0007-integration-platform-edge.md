@@ -19,7 +19,7 @@ Placing connectors among business modules blurs the line between the dealership 
 
 ## Consequences
 
-- Everything inside the edge faces outward; everything in `Modules/` faces the business.
+- Everything inside the edge faces outward; every business capability faces the business.
 - The edge writes through published module contracts and never touches module internals.
 
 ## Validation / review trigger

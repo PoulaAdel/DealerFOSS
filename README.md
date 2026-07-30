@@ -29,32 +29,41 @@ Every directory has one job. You should not need the docs to know where somethin
 
 ```text
 src/
-├── Host/          the ASP.NET Core application — startup, middleware, wiring
-├── Core/          shared types every module uses: Result, Money, Ids, Clock, and
-│                  the interfaces modules depend on. No database, no web, no domain.
-├── Tenancy/       finds the right dealer database for a request: the host catalog
-│                  of tenants, the resolver, and its cache.
-└── Modules/       the business capabilities — one folder each, self-contained
+├── Core/          shared types everything uses: Result, Money, Ids, Clock, and the
+│                  interfaces. No database, no web, no dealership concepts. Flat.
+├── Identity/      users, roles, permissions, sessions, audit. Its own project so
+│                  its tables are unreachable from the rest of the application.
+└── App/           the application — startup, plumbing, and every capability
+    ├── Program.cs      where everything is wired together
+    ├── Tenancy/        finds the right dealer database for a request
+    ├── Data/           the tenant database and its migrations
     ├── Organization/   dealer organization → legal entity → rooftop → department
-    └── Identity/       users, roles, permissions, who-can-see-which-rooftop, audit
+    ├── Customers/      the people and businesses the dealership deals with
+    ├── Vehicles/       vehicles as identities — VIN, year, make, model
+    └── Inventory/      a vehicle on a lot, with a status and a cost
 
 tests/
-├── Architecture/  rules about what may reference what; fails the build on a breach
-└── Integration/   drives the real app against a real database
+├── Unit/          domain rules, no infrastructure needed
+├── Integration/   drives the real app against a real database
+└── Architecture/  rules about what may reference what; fails the build on a breach
 
 deploy/            docker compose for local services, and the end-to-end check script
 docs/              the engineering workbook (design decisions and specifications)
 .github/           CI workflow, contributing guide, security policy, code of conduct
 ```
 
-**Why `Core` and `Tenancy` are separate:** `Core` is deliberately free of Entity
-Framework so business rules can never depend on the database — an architecture
-test enforces it. `Tenancy` is where that database dependency is allowed to live.
+**Why only three projects.** A separate project is a wall the compiler enforces,
+and walls have a cost paid on every change. Two are worth it: `Core` must never
+learn about a database, and `Identity` decides who may see what — so its tables
+and services are `internal`, and no other code can write a user row or an audit
+row except through `IAccessDirectory` and `IAuthenticator`. Every other boundary
+is held by architecture tests instead, which fail the build just as hard
+([ADR-017](docs/adr/0017-three-projects-flat-features.md)).
 
-**Inside a module**, small ones stay flat and larger ones use only what they need:
-`Domain/` (rules), `Data/` (tables and queries), `Contracts/` (what other modules
-may call), and `…Endpoints.cs` (the HTTP surface). A module is the only code that
-touches its own tables.
+**Inside a capability**, one flat folder with files named for their job:
+`Customer.cs` (the rules), `CustomerService.cs` (what you can do),
+`CustomerEndpoints.cs` (the HTTP surface), `CustomerTables.cs` (how it is stored),
+and `ICustomers.cs` (what other capabilities may call).
 
 ## Engineering workbook
 
@@ -77,7 +86,8 @@ See also the [ADR index](docs/adr/README.md) and [visual diagrams](docs/diagrams
 
 - One deployable ASP.NET Core modular monolith.
 - One SQL Server database per dealer organization, containing one or many rooftops.
-- Capability-first modules with compiler, architecture-test, and schema boundaries.
+- Capability-first folders; compiler walls only where a breach would be expensive,
+  architecture tests everywhere else.
 - Versioned integration contracts, durable inbox/outbox processing, replay, and reconciliation.
 - Secure browser sessions, scoped multi-rooftop authorization, MFA, immutable audit/evidence, and protected uploads.
 - Windows and Linux-container packages; Redis is optional until the application is scaled out.

@@ -9,8 +9,7 @@
 
 using FluentAssertions;
 using OpenDealer360.Core;
-using OpenDealer360.Identity.Contracts;
-using OpenDealer360.Identity.Domain;
+using OpenDealer360.Identity;
 
 namespace OpenDealer360.UnitTests;
 

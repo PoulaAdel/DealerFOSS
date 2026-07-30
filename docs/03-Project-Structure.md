@@ -5,85 +5,99 @@ Visual: [Project structure](diagrams/02-project-structure.md)
 
 ## 1. Organizing rule
 
-The repository is capability-first. A contributor looking for Sales, Parts, or Service starts in that module and finds its business model, workflows, persistence, endpoints, and tests nearby. Small modules stay flat; larger modules use the same small set of internal folders. This keeps the original at-a-glance navigation without forcing a mature DMS into one giant folder.
+**A wall goes where a breach would be expensive. Everywhere else, a test.**
+
+Three backend projects, and inside the application one flat folder per dealership
+capability. A contributor looking for Customers opens `src/App/Customers/` and
+sees every file that feature owns, named for what it does. Nothing is nested more
+than it must be ([ADR-017](adr/0017-three-projects-flat-features.md)).
+
+Two boundaries are compiler-enforced, because breaching either is a security or
+correctness incident:
+
+- **`Core`** must never learn about a database, or business rules become
+  untestable and coupled to storage.
+- **`Identity`** owns who may see what. Its tables and services are `internal`,
+  so application code cannot write a user row or an audit row except through
+  `IAccessDirectory` and `IAuthenticator`.
+
+Every other boundary is held by architecture tests, which fail the build on a
+breach. Accounting will earn a compiler wall of its own when it lands, for the
+same reason Identity has one.
 
 ## 2. Top-level layout
 
 ```text
 OpenDealer360/
 ├── src/
-│   ├── Host/                 startup, middleware, composition, background workers
-│   ├── Core/                 shared types and abstractions; no EF, no web, no domain
-│   ├── Tenancy/              host catalog, tenant resolution, routing cache
-│   ├── Modules/
-│   │   ├── Organization/
-│   │   ├── Identity/
-│   │   ├── Customers/
-│   │   ├── Vehicles/          vehicles and inventory units; see the note below
-│   │   ├── Crm/
-│   │   ├── Sales/
-│   │   ├── Finance/
-│   │   ├── Service/
-│   │   ├── Parts/            added on the standalone path
-│   │   ├── Accounting/       added on the standalone path
-│   │   ├── Documents/
-│   │   └── Reporting/
-│   ├── Integrations/
-│   └── Cli/
-├── frontend/
+│   ├── Core/         Result, Money, Ids, Clock, AuditableEntity, and the
+│   │                 interfaces everything depends on. No EF, no ASP.NET. Flat.
+│   ├── Identity/     users, roles, permissions, sessions, audit. Internals sealed;
+│   │                 only IAccessDirectory and IAuthenticator are public.
+│   └── App/          the application — everything else
+│       ├── Program.cs          composition root
+│       ├── AuthEndpoints.cs    sign in, sign out, who am I
+│       ├── ProblemResults.cs   the one Error → HTTP mapping
+│       ├── Tenancy/            host catalog, tenant resolution, middleware
+│       ├── Data/               TenantDb + Migrations/
+│       ├── Organization/       dealer organization → legal entity → rooftop → department
+│       ├── Customers/          people and businesses the dealership deals with
+│       ├── Vehicles/           vehicles as identities — VIN, year, make, model
+│       └── Inventory/          a vehicle on a rooftop's lot, with a status and a cost
 ├── tests/
+│   ├── Unit/           domain rules, no infrastructure
+│   ├── Integration/    the real app against a real database
+│   └── Architecture/   what may reference what; fails the build on a breach
 ├── deploy/
 └── docs/
 ```
 
-Tax/title, communications, and compliance begin as cohesive features in their owning modules. They become separate modules only when they acquire independent data ownership and workflows; speculative empty modules are forbidden.
+Future capabilities — CRM, Sales, Finance, Service, Parts, Accounting, Documents,
+Reporting — arrive as sibling folders inside `App/`. Speculative empty folders are
+forbidden. Tax/title, communications, and compliance begin as features inside
+their owning capability and separate only when they acquire independent data
+ownership and workflows.
 
-Inventory is built inside `Vehicles` rather than beside it. An inventory unit is a vehicle on a lot: nearly every read joins the two, and separating them would put a foreign key across a published module contract for no gain in independence. The two scopes stay distinct inside the module — a vehicle is organization-shared, a unit is rooftop-owned — which is the boundary that actually matters ([doc 04 §1](04-Data-and-Tenancy.md)). Inventory becomes its own module if and when it acquires workflows that do not need the vehicle.
+**Why Vehicles and Inventory are separate folders but one schema.** They answer
+different questions at different scopes: a vehicle is organization-shared and
+answers "what car is this?", while an inventory unit is rooftop-owned and answers
+"whose lot is it on, and what state is it in?". That scope difference is a
+permission boundary and deserves to be visible. They share the `vehicles` schema
+because nearly every read joins them ([doc 04 §1](04-Data-and-Tenancy.md)).
 
-## 3. Module layout
+## 3. Feature layout
 
-A small module may remain:
-
-```text
-Modules/Customers/
-├── Customer.cs
-├── CustomersService.cs
-├── ICustomerDirectory.cs
-├── CustomersData.cs
-├── CustomersEndpoints.cs
-├── CustomersDtos.cs
-└── CustomersModule.cs
-```
-
-When a module no longer scans comfortably—normally more than about 20 files or several independent workflows—it adopts:
+One flat folder per capability, with files named for their role:
 
 ```text
-Modules/Sales/
-├── Domain/                  Deal, TradeIn, rules, state transitions
-├── Features/
-│   ├── CreateDeal/
-│   ├── DeskDeal/
-│   ├── ApproveDeal/
-│   └── UnwindDeal/
-├── Data/                    EF configuration, repositories/queries, migrations
-├── Contracts/               public interfaces, commands/events, response models
-├── SalesEndpoints.cs
-└── SalesModule.cs
+App/Customers/
+├── Customer.cs           the records and their rules — no EF, no ASP.NET
+├── ContactPoint.cs
+├── Address.cs
+├── CustomerService.cs    what you can do, and the permission checks
+├── CustomerEndpoints.cs  the HTTP surface
+├── CustomerTables.cs     EF configuration and the schema this feature owns
+└── ICustomers.cs         what other features may call
 ```
 
-The permitted folders have stable meanings:
+The roles have stable meanings:
 
-| Area | Responsibility | May depend on |
+| File | Responsibility | May depend on |
 |---|---|---|
-| Domain | entities, value objects, invariants, state transitions | `Core` only |
-| Features | commands, queries, handlers, validation | Domain and published contracts |
-| Data | EF configuration, storage implementations, projections | its module and EF Core |
-| Contracts | narrow cross-module interfaces and versioned events | shared primitives only |
-| Endpoints | authorization, transport mapping, delegation | Features and API DTOs |
+| `<Entity>.cs` | entities, value objects, invariants, state transitions | `Core` only |
+| `<Feature>Service.cs` | workflows, authorization, validation | its own entities, `TenantDb`, other features' `I<Feature>` |
+| `<Feature>Endpoints.cs` | transport mapping and delegation | its own service and contracts |
+| `<Feature>Tables.cs` | EF configuration; declares the schema the feature owns | its own entities and EF Core |
+| `I<Feature>.cs` | the narrow cross-feature interface and its read models | `Core` only |
+
+A subfolder appears only when a folder genuinely stops scanning comfortably —
+roughly fifteen files, or several independent workflows. It is earned, never
+applied pre-emptively.
 
 ## 4. Core boundary
 
-`Core/` contains only what modules broadly require. It is flat — the project *is* the shared kernel, so it needs no inner folders:
+`Core/` contains only what everything broadly requires. It is flat — the project
+*is* the shared kernel, so it needs no inner folders:
 
 ```text
 Core/                    types and abstractions only — no EF, no ASP.NET, no domain
@@ -99,28 +113,53 @@ Core/                    types and abstractions only — no EF, no ASP.NET, no d
 └── ISecretProtector.cs  how sensitive configuration is protected at rest
 ```
 
-Infrastructure that needs a database lives outside `Core`. `Tenancy/` implements
-`ITenantContext` resolution against the host catalog; each module implements its
-own persistence. Document storage, jobs, and telemetry gain their own projects
-when their first real implementation lands, not before.
+Business concepts such as Deal, RepairOrder, Rooftop, TaxRule, or Journal never
+enter `Core`. Shared code must have at least two real consumers; "might be reused
+later" is insufficient.
 
-Business concepts such as Deal, RepairOrder, Rooftop, TaxRule, or Journal never enter `Core`. Shared code must have at least two real consumers; “might be reused later” is insufficient.
+## 5. Persistence
 
-## 5. Boundary enforcement
+Three contexts, not one per capability:
 
-CI verifies:
+| Context | Lives in | Holds |
+|---|---|---|
+| `HostDb` | `App/Tenancy/` | which dealer organization lives in which database |
+| `IdentityDb` | `Identity/` | users, roles, sessions, audit — `internal` |
+| `TenantDb` | `App/Data/` | one dealer's business data across every feature |
 
-- Domain code has no references to ASP.NET Core, EF Core, connector, or endpoint types.
-- A module references another module only through that module’s `Contracts` namespace/assembly.
-- Modules cannot read another module’s EF types or schema.
-- Integrations call published module contracts and cannot reference module internals.
-- Cross-module state changes use the transactional outbox; no handler assumes an external side effect is in the same transaction.
-- There are no circular module dependencies.
-- Public contracts and database migrations pass compatibility tests.
+`TenantDb` knows no table names. Each feature contributes an
+`IEntityTypeConfiguration<T>` in its own `<Feature>Tables.cs`, including the
+schema it owns (`org`, `customers`, `vehicles`), and `TenantDb` collects them with
+`ApplyConfigurationsFromAssembly`. Two behaviours live centrally in `TenantDb`
+because forgetting either is a silent data-integrity failure: audit columns and
+the concurrency stamp are set on save, and inventory status history is refused any
+update or delete.
 
-Important modules may be separate projects to make these compiler errors. Smaller modules may share a project while architecture tests enforce namespaces. The threshold is readability and boundary safety, not architectural fashion.
+`IdentityDb` stays separate even though it lives in the same physical database.
+Merging it would hand every feature a `DbSet<User>`, undoing the wall that is the
+whole reason `Identity` is its own project.
 
-## 6. Frontend
+## 6. Boundary enforcement
+
+`tests/Architecture` verifies, on every build:
+
+- `Core` has no dependency on ASP.NET Core or EF Core, and knows about no feature.
+- `Identity` has no dependency on the application or any feature.
+- `Identity` exports only its access and sign-in contracts — the list is asserted,
+  so widening it is a deliberate decision.
+- No feature reaches into another feature. `Inventory` may see `Vehicles`; nothing
+  may see `Inventory`.
+- Entities — anything inheriting `AuditableEntity` — have no EF or ASP.NET
+  dependency, wherever the file sits.
+- Tenancy knows about no business feature.
+- No feature builds its own `DbContextOptionsBuilder`, which would let it choose a
+  connection and escape the resolved tenant.
+
+Still to come as the matching subsystems land: integrations calling only published
+contracts, the transactional outbox, and public-contract/migration compatibility
+tests.
+
+## 7. Frontend
 
 ```text
 frontend/src/
@@ -128,34 +167,36 @@ frontend/src/
 ├── features/
 │   ├── organization/
 │   ├── customers/
-│   ├── sales/
-│   ├── service/
+│   ├── inventory/
 │   └── ...
 ├── shared/                 generated API client, reusable accessible UI
 ├── print/                  print preview and local print-agent integration
 └── theme/
 ```
 
-Each route declares its organization/rooftop context. UI permission checks improve usability but never replace server authorization.
+Each route declares its organization/rooftop context. UI permission checks improve
+usability but never replace server authorization.
 
-## 7. Naming
+## 8. Naming
 
-**Never repeat the path in the name.** A file called `Organization.csproj` inside
-`src/Modules/Organization/` is obvious; `OpenDealer360.Modules.Organization.csproj`
-only makes the tree harder to scan. Project files, folders, and types are named
-for the one thing they are.
+**Never repeat the path in the name.** A file called `Core.csproj` inside
+`src/Core/` is obvious; `OpenDealer360.Core.csproj` only makes the tree harder to
+scan. Project files, folders, and types are named for the one thing they are.
 
-- Project files carry the bare capability name: `Core.csproj`, `Host.csproj`,
-  `Organization.csproj`.
+- Project files carry the bare name: `Core.csproj`, `Identity.csproj`,
+  `App.csproj`.
 - Assemblies and namespaces keep the `OpenDealer360.` root — those are *global*
   identifiers, and a bare `Core` namespace or `Core.dll` would collide with other
   libraries and read as anonymous in a stack trace. Nothing beyond that root is
-  repeated: the namespace is `OpenDealer360.Organization`, not
-  `OpenDealer360.Modules.Organization`, because "Modules" describes the folder,
-  not the code.
-- Modules and folders use dealership capability names.
-- Commands are verbs (`CreateDeal`); queries describe returned data (`GetInventoryAging`); events use past tense (`DealApprovedV1`).
+  repeated: the namespace is `OpenDealer360.Customers`, not
+  `OpenDealer360.App.Customers`, because "App" describes the project, not the code.
+- Folders use dealership capability names.
+- Files are named for their role, not their layer: `CustomerService.cs`, not
+  `Application/Services/CustomerService.cs`.
+- Commands are verbs (`CreateDeal`); queries describe returned data
+  (`GetInventoryAging`); events use past tense (`DealApprovedV1`).
 - Domain types use plain names (`Deal`, `Customer`).
 - External contracts include their version in namespace or type.
 - IDs identify their scope (`RooftopId`, `LegalEntityId`, `ExternalSystemId`).
-- Files may be split when that improves reading; arbitrary “one file per role” limits are prohibited.
+- Files may be split when that improves reading; arbitrary "one file per role"
+  limits are prohibited.

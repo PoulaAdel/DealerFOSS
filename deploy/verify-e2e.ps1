@@ -41,7 +41,7 @@ $hostLog = Join-Path $env:TEMP "opendealer360-verify-host.log"
 
 $proc = Start-Process dotnet -PassThru -NoNewWindow `
     -RedirectStandardOutput $hostLog `
-    -ArgumentList "run --project src/Host -c Release --no-build"
+    -ArgumentList "run --project src/App -c Release --no-build"
 
 try {
     $ready = $false

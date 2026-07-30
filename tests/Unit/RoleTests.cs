@@ -6,7 +6,7 @@
 //       re-running a seeder cannot produce duplicate rows.
 
 using FluentAssertions;
-using OpenDealer360.Identity.Domain;
+using OpenDealer360.Identity;
 
 namespace OpenDealer360.UnitTests;
 

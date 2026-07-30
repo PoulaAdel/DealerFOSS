@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Hosting;
-using OpenDealer360.Host.Development;
+using OpenDealer360.App;
 
 namespace OpenDealer360.IntegrationTests;
 

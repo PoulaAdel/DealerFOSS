@@ -1,27 +1,30 @@
-// BoundaryTests — rules the compiler cannot express, about what Core is allowed
-// to depend on (ADR-014).
+// BoundaryTests — the dependency rules the compiler cannot express (ADR-014,
+// ADR-017).
 //
 // Use:  runs with the normal test suite; a violation fails the build.
 // Edit: add a rule whenever a boundary breach reaches code review — a breach a
 //       human had to catch is a missing test. Rehearse new rules by breaking
 //       them deliberately; see the README in this folder.
+//
+//       Two walls exist for two different reasons. Core and Identity are
+//       separate PROJECTS, so the compiler enforces them and these tests only
+//       confirm. The features inside App share one project, so these tests are
+//       the only thing holding them apart — which is why the feature rules below
+//       matter more than the project ones.
 
+using System.Reflection;
 using FluentAssertions;
 using NetArchTest.Rules;
 using OpenDealer360.Core;
+using OpenDealer360.Identity;
 using Xunit;
 
 namespace OpenDealer360.ArchitectureTests;
 
-/// <summary>
-/// Executable boundary rules (ADR-014). These fail the build when a dependency
-/// crosses a forbidden line. More rules are added as modules land — a business
-/// module referencing another module's internals, Integrations referencing a
-/// module, Domain referencing ASP.NET/EF, and so on (doc 03 §5).
-/// </summary>
 public sealed class BoundaryTests
 {
-    private static readonly System.Reflection.Assembly Core = typeof(Result).Assembly;
+    private static readonly Assembly Core = typeof(Result).Assembly;
+    private static readonly Assembly Identity = typeof(IAccessDirectory).Assembly;
 
     [Fact]
     public void Core_must_not_depend_on_web_or_persistence_frameworks()
@@ -30,8 +33,7 @@ public sealed class BoundaryTests
             .Should()
             .NotHaveDependencyOnAny(
                 "Microsoft.AspNetCore",
-                "Microsoft.EntityFrameworkCore",
-                "OpenDealer360.Host")
+                "Microsoft.EntityFrameworkCore")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
@@ -40,17 +42,75 @@ public sealed class BoundaryTests
     }
 
     [Fact]
-    public void Core_must_not_reference_module_namespaces()
+    public void Core_must_not_know_about_identity_or_any_feature()
     {
         // No business concept (Deal, RepairOrder, Rooftop entities, Journal, ...)
-        // may live in or be referenced by Core (doc 03 §4).
+        // may live in or be referenced by Core.
         var result = Types.InAssembly(Core)
             .Should()
-            .NotHaveDependencyOn("OpenDealer360.Modules")
+            .NotHaveDependencyOnAny(
+                "OpenDealer360.Identity",
+                "OpenDealer360.App",
+                "OpenDealer360.Data",
+                "OpenDealer360.Tenancy",
+                "OpenDealer360.Organization",
+                "OpenDealer360.Customers",
+                "OpenDealer360.Vehicles",
+                "OpenDealer360.Inventory")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "Core must not know about business modules; offenders: "
+            because: "Core sits below everything and knows none of it; offenders: "
                 + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Identity_must_not_depend_on_the_application_or_any_feature()
+    {
+        // Identity answers access questions; it must not know what the caller is
+        // trying to reach, or the dependency becomes circular. The project
+        // reference direction already prevents this — this test says so out loud.
+        var result = Types.InAssembly(Identity)
+            .Should()
+            .NotHaveDependencyOnAny(
+                "OpenDealer360.App",
+                "OpenDealer360.Data",
+                "OpenDealer360.Tenancy",
+                "OpenDealer360.Organization",
+                "OpenDealer360.Customers",
+                "OpenDealer360.Vehicles",
+                "OpenDealer360.Inventory")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Identity sits below the application; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Identity_exposes_only_its_access_and_sign_in_contracts()
+    {
+        // The point of keeping Identity a separate project: no feature can write
+        // a user row or an audit row except through these types (ADR-017). If a
+        // new public type appears here, it was a security decision — make it
+        // deliberately, then add it to this list.
+        var allowed = new[]
+        {
+            "IAccessDirectory", "AuthorizedScope",
+            "IAuthenticator", "IssuedSession", "AuthErrors",
+            "IdentityRegistration", "IdentitySeeder", "DevelopmentAccount",
+            "Permissions",
+        };
+
+        // Migration classes are generated artifacts and are public by design;
+        // they describe the schema and grant no access to it.
+        var actual = Identity.GetExportedTypes()
+            .Where(t => t.Namespace?.Contains(".Migrations", StringComparison.Ordinal) != true)
+            .Select(t => t.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        actual.Should().BeSubsetOf(allowed,
+            because: "everything else in Identity must stay internal");
     }
 }

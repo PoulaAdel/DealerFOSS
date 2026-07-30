@@ -7,7 +7,7 @@
 
 using FluentAssertions;
 using OpenDealer360.Core;
-using OpenDealer360.Customers.Domain;
+using OpenDealer360.Customers;
 
 namespace OpenDealer360.UnitTests;
 

@@ -7,7 +7,7 @@ Statuses are **Proposed**, **Accepted**, **Superseded**, or **Rejected**. A mate
 | ADR | Decision | Status |
 |---|---|---|
 | [ADR-001](0001-modular-monolith.md) | Modular monolith | Accepted |
-| [ADR-002](0002-capability-first-modules.md) | Capability-first modules with limited internal structure | Accepted |
+| [ADR-002](0002-capability-first-modules.md) | Capability-first modules with limited internal structure | Superseded by [ADR-017](0017-three-projects-flat-features.md) |
 | [ADR-003](0003-database-per-dealer-organization.md) | Database per dealer organization | Accepted |
 | [ADR-004](0004-operational-views-and-reporting-projections.md) | Live operational views and isolated reporting projections | Accepted |
 | [ADR-005](0005-redis-optional-single-node.md) | Redis optional for single-node deployments | Accepted |
@@ -22,6 +22,7 @@ Statuses are **Proposed**, **Accepted**, **Superseded**, or **Rejected**. A mate
 | [ADR-014](0014-boundaries-enforced-three-ways.md) | Compiler, architecture-test, and schema boundary enforcement | Accepted |
 | [ADR-015](0015-sql-server-first-cross-platform.md) | SQL Server first, cross-platform application | Accepted |
 | [ADR-016](0016-immutable-business-ledgers.md) | Immutable business ledgers | Accepted |
+| [ADR-017](0017-three-projects-flat-features.md) | Three projects, flat features, walls only where a breach is expensive | Accepted |
 
 ## ADR file template
 

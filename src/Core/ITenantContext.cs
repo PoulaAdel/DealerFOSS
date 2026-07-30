@@ -2,8 +2,8 @@
 //
 // Use:  inject it and read Current. It is write-once per request and throws if
 //       read before resolution, which catches code running outside middleware.
-// Edit: this is only the holder. Resolution lives in Host/Tenancy/TenantMiddleware
-//       and src/Tenancy; change those instead.
+// Edit: this is only the holder. Resolution lives in src/App/Tenancy — the
+//       middleware and the resolver; change those instead.
 
 using OpenDealer360.Core;
 

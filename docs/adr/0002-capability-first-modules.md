@@ -1,8 +1,15 @@
 # ADR-002 — Capability-first modules with limited internal structure
 
 Date: 2026-07-25
-Status: Accepted
+Status: Superseded by [ADR-017](0017-three-projects-flat-features.md) on 2026-07-30
 Supersedes: —
+
+> **Superseded.** Four capabilities in, this shape had produced seven projects,
+> five `DbContext` classes, and four-level paths to one-screen files — while the
+> boundary it enforced turned out not to be one anybody was trying to breach.
+> [ADR-017](0017-three-projects-flat-features.md) replaces it: compiler walls only
+> where a breach is expensive, architecture tests everywhere else. Kept here
+> unedited because the reasoning below was sound for the size the project was.
 
 ## Context
 

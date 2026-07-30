@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <!--
-    SQL-backed integration tests. These drive the real Host through
+    SQL-backed integration tests. These drive the real application through
     WebApplicationFactory against a real database, so tenant isolation is
     proven in CI rather than only by the manual verify-e2e.ps1 run.
   -->
@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Host\Host.csproj" />
+    <ProjectReference Include="..\..\src\App\App.csproj" />
   </ItemGroup>
 
   <ItemGroup>

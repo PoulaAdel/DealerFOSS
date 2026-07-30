@@ -50,7 +50,7 @@ dotnet test OpenDealer360.slnx -c Release
 ```
 
 ```bash
-dotnet run --project src/Host
+dotnet run --project src/App
 ```
 
 Tenant-isolation proof (the end-to-end check; expects `PASS`):
@@ -103,8 +103,17 @@ isolation on top of one that already exists.
 
 - Warnings are errors. `NuGetAudit` fails the build on a vulnerable package —
   upgrade it rather than suppressing the check.
+- **Three projects, and only three** (ADR-017): `src/Core`, `src/Identity`,
+  `src/App`. A new capability is a flat folder inside `src/App`, not a project.
+  Do not add `Domain/`, `Data/`, or `Contracts/` subfolders inside a capability.
+- **Identity's internals are sealed.** Only `IAccessDirectory`, `IAuthenticator`,
+  `IdentityRegistration`, `IdentitySeeder`, and `Permissions` are public, and
+  `BoundaryTests` asserts that list. Making another type public is a security
+  decision, not a convenience — say so explicitly if you do it.
 - EF migrations under any `Migrations/` folder are generated artifacts and are
-  excluded from style analysis; do not hand-edit them.
+  excluded from style analysis; do not hand-edit them. There are three:
+  `src/Identity/Migrations`, `src/App/Tenancy/Migrations` (host catalog), and
+  `src/App/Data/Migrations` (tenant business data).
 - SPDX is applied once at assembly level in `Directory.Build.props`. Do not add
   per-file licence headers.
 - Never commit secrets. `appsettings.Development.json` is git-ignored; the
