@@ -19,12 +19,24 @@ public static class Permissions
     public const string CustomersRead = "Customers.Read";
     public const string CustomersCreate = "Customers.Create";
 
+    /// <summary>Reading vehicles. Organization-wide, like the vehicles themselves.</summary>
+    public const string VehiclesRead = "Vehicles.Read";
+
+    /// <summary>Seeing what is on a lot. Held per rooftop, or organization-wide.</summary>
+    public const string InventoryRead = "Inventory.Read";
+
+    /// <summary>Taking stock in, moving its status, and recording a vehicle.</summary>
+    public const string InventoryManage = "Inventory.Manage";
+
     public static IReadOnlyCollection<string> All { get; } =
     [
         OrganizationRead,
         OrganizationManage,
         CustomersRead,
         CustomersCreate,
+        VehiclesRead,
+        InventoryRead,
+        InventoryManage,
     ];
 }
 

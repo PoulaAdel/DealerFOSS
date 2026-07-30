@@ -11,6 +11,7 @@ using NetArchTest.Rules;
 using OpenDealer360.Identity.Contracts;
 using OpenDealer360.Customers.Domain;
 using OpenDealer360.Organization.Domain;
+using OpenDealer360.Vehicles.Domain;
 using OpenDealer360.Tenancy;
 using Xunit;
 
@@ -26,6 +27,7 @@ public sealed class ModuleBoundaryTests
     private static readonly Assembly Organization = typeof(DealerOrganization).Assembly;
     private static readonly Assembly Identity = typeof(IAccessDirectory).Assembly;
     private static readonly Assembly Customers = typeof(Customer).Assembly;
+    private static readonly Assembly Vehicles = typeof(Vehicle).Assembly;
     private static readonly Assembly TenancyAssembly = typeof(HostCatalogDbContext).Assembly;
 
     [Fact]
@@ -120,6 +122,50 @@ public sealed class ModuleBoundaryTests
     public void Customers_may_reach_identity_only_through_its_contracts()
     {
         var result = Types.InAssembly(Customers)
+            .Should()
+            .NotHaveDependencyOnAny("OpenDealer360.Identity.Domain", "OpenDealer360.Identity.Data")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Identity is reachable only via its Contracts namespace; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Vehicles_domain_must_not_depend_on_ef_or_aspnetcore()
+    {
+        var result = Types.InAssembly(Vehicles)
+            .That().ResideInNamespace("OpenDealer360.Vehicles.Domain")
+            .Should().NotHaveDependencyOnAny("Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "domain must stay free of infrastructure; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Vehicles_must_not_depend_on_the_host_or_a_sibling_module()
+    {
+        // Sales will depend on Vehicles to price and sell a unit; a reference
+        // back would make the dependency circular.
+        var result = Types.InAssembly(Vehicles)
+            .Should()
+            .NotHaveDependencyOnAny(
+                "OpenDealer360.Host",
+                "OpenDealer360.Organization",
+                "OpenDealer360.Customers")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "a module never references the host or a sibling's internals; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Vehicles_may_reach_identity_only_through_its_contracts()
+    {
+        var result = Types.InAssembly(Vehicles)
             .Should()
             .NotHaveDependencyOnAny("OpenDealer360.Identity.Domain", "OpenDealer360.Identity.Data")
             .GetResult();

@@ -17,6 +17,7 @@ using OpenDealer360.Identity;
 using OpenDealer360.Organization;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
+using OpenDealer360.Vehicles;
 using OpenDealer360.Tenancy;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -45,6 +46,7 @@ if (tenancyEnabled)
     builder.Services.AddIdentityModule();
     builder.Services.AddOrganizationModule();
     builder.Services.AddCustomersModule();
+    builder.Services.AddVehiclesModule();
 }
 
 // --- Health: liveness, readiness, and degraded dependencies are separated
@@ -121,6 +123,7 @@ if (tenancyEnabled)
     app.MapAuth();
     app.MapOrganizationModule();
     app.MapCustomersModule();
+    app.MapVehiclesModule();
 }
 
 // Development-only sample data (doc 08 §8), gated behind an explicit flag.

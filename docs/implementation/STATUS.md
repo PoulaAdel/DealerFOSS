@@ -1,8 +1,9 @@
 # Implementation Status
 
 Current phase: **I0 complete (except container path) → I1 in progress**
-Current milestone: vehicles and inventory
-Last verified: 2026-07-28 · `dotnet build` 0 warnings/0 errors, `dotnet test` 126/126
+Current milestone: MFA foundation and OIDC federation
+Last verified: 2026-07-30 · `dotnet build` 0 warnings/0 errors, `dotnet test` 178/178,
+`verify-e2e.ps1` PASS
 
 > The repository is the truth. If this file disagrees with the code, this file
 > is wrong — correct it. A file existing is not evidence that a workflow works.
@@ -43,7 +44,7 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - [x] Audit events capture scoped security-sensitive changes — every denial writes an append-only `identity.AuditEvents` row; the context refuses to update or delete audit history (ADR-016) *(agent-verifiable)*
 - [ ] Background-job authorization tests — no jobs exist yet; due with the first scheduled job
 - [x] **Durable sessions and cookie sign-in** — password credentials, SQL-backed sessions, Secure/HttpOnly/SameSite=Strict cookie, sliding idle expiry (30 min) under a fixed 8-hour ceiling. Revocation takes effect on the next request, proven by `AuthenticationTests`. An unknown email and a wrong password return byte-identical responses. *(agent-verifiable)*
-- [ ] CSRF protection on writes — due with the first write endpoint; every endpoint today is a read
+- [ ] Explicit anti-forgery on writes — write endpoints now exist (customers, vehicles, inventory). The session cookie is `SameSite=Strict`, which is the current defence; a token-based check is still outstanding
 - [ ] MFA foundation and OIDC federation — not started (local password identity is done)
 - [ ] Global-administration separation and time-limited support access — not started
 - [ ] Tenant-aware background job context — not started
@@ -63,6 +64,8 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 
 - **2026-07-28 — Customer records (first dealership feature).** A customer can be added, fetched, and found by surname, phone, or email — however the phone or email was typed. Customers are organization-shared, not rooftop-hidden. `Customers.Read` and `Customers.Create` are checked separately. Evidence: `dotnet test` 126/126, plus a regression rehearsal in which treating "no assignment" as permitted failed exactly the two permission tests.
 
+- **2026-07-30 — Vehicles and inventory.** A vehicle can be recorded and found by whole or partial VIN; a unit can be taken into a rooftop's stock under a stock number, listed by rooftop or status, and moved through its life cycle with every move kept. Vehicles are organization-shared; **units are rooftop-owned and scoped**, proven by list, direct-id, and filtered-list routes. Stock numbers are unique within a rooftop and reusable across rooftops. A non-standard VIN is recordable with a written reason and no unique index is imposed on VIN (doc 04 §4). Evidence: `dotnet test` 178/178 and `verify-e2e.ps1` PASS, plus a regression rehearsal in which inverting the rooftop filter in `InventoryService.ListAsync` failed exactly the stock-leak tests.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -74,10 +77,10 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 
 ## Next milestone
 
-**Outcome:** a vehicle can be recorded and found by VIN or stock number, and a rooftop's inventory can be listed with its current status.
+**Outcome:** a second factor can be enrolled and is demanded at sign-in, and an existing identity provider can be used instead of a local password.
 
-Vehicles are organization-shared like customers; an **inventory unit** — a specific vehicle on a specific lot, with a status and a cost — is rooftop-owned and must be scoped (doc 04 §1, §3).
+This is the last unmet **security** criterion in I1 that does not need a person or a machine we do not have. It comes before more dealership features because every later feature inherits the sign-in path, and retrofitting a second factor after deals and finance data exist is far more disruptive.
 
-- **Included:** `Vehicle` identity (VIN, year/make/model/trim), `InventoryUnit` with rooftop scope, status history, `Vehicles.Read` / `Inventory.Read` / `Inventory.Manage` permissions, search by VIN and stock number, and the rooftop-scope tests that prove one location cannot see another's stock.
-- **Explicitly excluded:** pricing rules, aging analytics, vehicle images, and any incoming provider feed — those arrive with reporting and the integration runtime.
-- **VIN caution (doc 04 §4):** VIN validation must allow documented exceptions and a duplicate-resolution path. Do **not** add a universal unique index on VIN — the same physical vehicle legitimately reappears as a trade-in, and bad source data is common.
+- **Included:** TOTP enrolment and verification, recovery codes, a per-organization policy for who must use it, and OIDC federation as an alternative to the local password — with local accounts still working for organizations that do not federate.
+- **Explicitly excluded:** WebAuthn/passkeys, SCIM user provisioning, and global-administration separation — each is its own milestone.
+- **Caution:** enrolment secrets and recovery codes are credentials. They must go through `ISecretProtector`, must never reach a log or an audit row (ADR-016), and a failed second factor must be indistinguishable in timing and response from a wrong password, exactly as the existing sign-in path already is.

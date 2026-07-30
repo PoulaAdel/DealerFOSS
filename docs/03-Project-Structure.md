@@ -19,8 +19,7 @@ OpenDealer360/
 │   │   ├── Organization/
 │   │   ├── Identity/
 │   │   ├── Customers/
-│   │   ├── Vehicles/
-│   │   ├── Inventory/
+│   │   ├── Vehicles/          vehicles and inventory units; see the note below
 │   │   ├── Crm/
 │   │   ├── Sales/
 │   │   ├── Finance/
@@ -38,6 +37,8 @@ OpenDealer360/
 ```
 
 Tax/title, communications, and compliance begin as cohesive features in their owning modules. They become separate modules only when they acquire independent data ownership and workflows; speculative empty modules are forbidden.
+
+Inventory is built inside `Vehicles` rather than beside it. An inventory unit is a vehicle on a lot: nearly every read joins the two, and separating them would put a foreign key across a published module contract for no gain in independence. The two scopes stay distinct inside the module — a vehicle is organization-shared, a unit is rooftop-owned — which is the boundary that actually matters ([doc 04 §1](04-Data-and-Tenancy.md)). Inventory becomes its own module if and when it acquires workflows that do not need the vehicle.
 
 ## 3. Module layout
 

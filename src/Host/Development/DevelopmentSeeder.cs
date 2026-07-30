@@ -18,6 +18,8 @@ using OpenDealer360.Core;
 using OpenDealer360.Customers.Data;
 using OpenDealer360.Customers.Domain;
 using CustomerAddress = OpenDealer360.Customers.Domain.Address;
+using OpenDealer360.Vehicles.Data;
+using OpenDealer360.Vehicles.Domain;
 using OpenDealer360.Tenancy;
 
 namespace OpenDealer360.Host.Development;
@@ -77,6 +79,7 @@ public static class DevelopmentSeeder
 
         await SeedIdentityAsync(tenantConnection, clock, tenantDb);
         await SeedCustomersAsync(tenantConnection, clock);
+        await SeedVehiclesAsync(tenantConnection, clock, tenantDb);
 
         var record = await hostCatalog.Tenants.SingleOrDefaultAsync(t => t.Slug == slug);
         if (record is null)
@@ -141,14 +144,20 @@ public static class DevelopmentSeeder
             Permissions.OrganizationManage,
             Permissions.CustomersRead,
             Permissions.CustomersCreate,
+            Permissions.VehiclesRead,
+            Permissions.InventoryRead,
+            Permissions.InventoryManage,
         ]);
 
-        // An advisor can look a customer up but not create one, so the tests have
-        // a role that is allowed one thing and refused another.
+        // An advisor can look a customer up but not create one, and can see stock
+        // but not move it — so the tests have a role that is allowed one thing and
+        // refused another.
         var advisor = await UpsertRoleAsync(identityDb, "Advisor",
         [
             Permissions.OrganizationRead,
             Permissions.CustomersRead,
+            Permissions.VehiclesRead,
+            Permissions.InventoryRead,
         ]);
 
         if (await identityDb.Users.AnyAsync())
@@ -257,6 +266,71 @@ public static class DevelopmentSeeder
 
         customersDb.Customers.AddRange(alvarez, okafor, fleet);
         await customersDb.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// A few invented vehicles and some stock on each lot, so an inventory list
+    /// returns something on a fresh install. The units are spread across rooftops
+    /// on purpose: a group with stock at only one location would not show that
+    /// one location cannot see another's.
+    /// </summary>
+    private static async Task SeedVehiclesAsync(
+        string tenantConnection,
+        IClock clock,
+        OrganizationDbContext tenantDb)
+    {
+        var options = new DbContextOptionsBuilder<VehiclesDbContext>()
+            .UseSqlServer(tenantConnection)
+            .Options;
+
+        await using var vehiclesDb = new VehiclesDbContext(options, clock);
+        await vehiclesDb.Database.MigrateAsync();
+
+        if (await vehiclesDb.Vehicles.AnyAsync())
+        {
+            return;
+        }
+
+        var rav4 = Vehicle.Record(Guid.NewGuid(), "JT2BF22K1W0123456", 2021, "Toyota", "RAV4", "XLE",
+            bodyStyle: "SUV", exteriorColor: "Silver");
+        var civic = Vehicle.Record(Guid.NewGuid(), "1HGCM82633A004352", 2019, "Honda", "Civic", "EX",
+            bodyStyle: "Sedan", exteriorColor: "Blue");
+        var f150 = Vehicle.Record(Guid.NewGuid(), "WBA3A5C55DF123456", 2022, "Ford", "F-150", "Lariat",
+            bodyStyle: "Pickup", exteriorColor: "White");
+
+        // Deliberately not a standard VIN: the documented-exception path has to be
+        // exercised by real data, not only by a test (doc 04 §4).
+        var trailer = Vehicle.Record(Guid.NewGuid(), "TRAILER-1975-A", 1975, "Wells Cargo", "Utility Trailer",
+            vinExceptionReason: "Pre-1981 trailer; number read from the frame plate.");
+
+        vehiclesDb.Vehicles.AddRange(rav4, civic, f150, trailer);
+
+        var rooftops = await tenantDb.Rooftops
+            .OrderBy(r => r.Code)
+            .Select(r => r.Id)
+            .ToListAsync();
+
+        var now = clock.UtcNow;
+        var acquired = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-30);
+
+        var first = rooftops[0];
+        var second = rooftops.Count > 1 ? rooftops[1] : rooftops[0];
+
+        var onLot = InventoryUnit.Receive(Guid.NewGuid(), rav4.Id, first, "A1001", now,
+            cost: new Money(24500m, "USD"), acquiredOn: acquired, note: "Auction purchase.");
+        onLot.ChangeStatus(InventoryStatus.Available, now, note: "Passed inspection.");
+
+        var inShop = InventoryUnit.Receive(Guid.NewGuid(), civic.Id, first, "A1002", now,
+            cost: new Money(15750m, "USD"), acquiredOn: acquired, note: "Trade-in.");
+        inShop.ChangeStatus(InventoryStatus.Reconditioning, now, note: "Awaiting tyres.");
+
+        // At the second rooftop, so a rooftop-scoped user must not see it.
+        var otherLot = InventoryUnit.Receive(Guid.NewGuid(), f150.Id, second, "B2001", now,
+            cost: new Money(38900m, "USD"), acquiredOn: acquired);
+        otherLot.ChangeStatus(InventoryStatus.Available, now);
+
+        vehiclesDb.InventoryUnits.AddRange(onLot, inShop, otherLot);
+        await vehiclesDb.SaveChangesAsync();
     }
 
     private static DealerOrganization BuildNorthGroup()

@@ -12,6 +12,9 @@
   <Folder Name="/src/Modules/Organization/">
     <Project Path="src/Modules/Organization/Organization.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Vehicles/">
+    <Project Path="src/Modules/Vehicles/Vehicles.csproj" />
+  </Folder>
   <Folder Name="/src/Tenancy/">
     <Project Path="src/Tenancy/Tenancy.csproj" />
   </Folder>

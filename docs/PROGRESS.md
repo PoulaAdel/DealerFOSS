@@ -3,19 +3,21 @@
 Plain language, no jargon. For the engineering detail — every claim paired with
 the command that proves it — see [implementation/STATUS.md](implementation/STATUS.md).
 
-**Last updated:** 27 July 2026
+**Last updated:** 30 July 2026
 
 ---
 
 ## The short answer
 
-**The foundation is being built. No dealership features exist yet.**
+**The foundation is nearly done, and the first real dealership records now work.**
 
 Several dealership groups can already share one installation without ever seeing
-each other's data, and staff can be restricted to their own location. Nothing a
-salesperson or service advisor would recognise as their job has been built.
+each other's data, and staff can be restricted to their own location. On top of
+that, customers and vehicles can now be recorded and found, and each location's
+stock is kept separate from every other location's. There are still no screens —
+this is the engine, not the dashboard.
 
-**About 8% of the first release. Stage 1 of 8, with the first stage-3 feature started early.**
+**About 12% of the first release. Stage 1 of 8, with two stage-3 features built early.**
 
 ---
 
@@ -29,7 +31,7 @@ months of focused work.
 | 0 | Find pilot dealers, get provider access | Agreements, real data samples, access to the systems we must connect to. People work, not code. | **Yours to do** |
 | 1 | Foundation | Keeping dealership groups apart, locations, staff permissions, and signing in. | **In progress** |
 | 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | Not started |
-| 3 | Customers, vehicles, inventory | The first screens a dealership would actually use day to day. | Not started |
+| 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Started early** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | Not started |
 | 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | Not started |
 | 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | Not started |
@@ -58,11 +60,16 @@ months of focused work.
 - Permissions that hold up when tested against
 - A permanent record of refused access
 - Signing in with an email and password, and signing out immediately
-- **Adding a customer, and finding one by name, phone, or email**
+- Adding a customer, and finding one by name, phone, or email
+- **Recording a vehicle and finding it by VIN — even just the last few characters**
+- **Putting a car into a location's stock under a stock number, and moving it
+  through incoming → reconditioning → available → sold, with every move kept**
+- **One location cannot see or move another location's stock, while the vehicle
+  records themselves stay shared across the group**
 
 ## What does not exist
 
-- Entering a vehicle or inventory
+- Prices, aging, or photos of a vehicle
 - Building a deal or selling anything
 - Service appointments or repair orders
 - Accounting, parts, reports
@@ -72,7 +79,11 @@ months of focused work.
 
 ## Next
 
-**Vehicles and inventory** — recording a vehicle, and what is on the lot.
+**A second factor at sign-in, and using an existing company login.** This is the
+last piece of security groundwork we can finish without waiting on anyone. It
+comes before more dealership features on purpose: every feature added later
+inherits the sign-in path, and adding a second factor after deals and finance data
+exist is far more disruptive than adding it now.
 
 ---
 

@@ -1,6 +1,7 @@
 # End-to-end verification of the tenancy, sign-in, and authorization foundation:
 # two isolated dealer organizations, real sessions, and rooftop-scoped access
-# enforced server-side.
+# enforced server-side — over both the organization structure and the stock on
+# each lot.
 #
 # The same assertions run in CI via tests/Integration. This script exists for a
 # manual check against a real running Host.
@@ -112,6 +113,33 @@ try {
     $noAccessStatus = Get-Status "/api/v1/organization" "northgroup" $noAccess
     "unassigned user                       -> HTTP $noAccessStatus (expect 403)"
 
+    Write-Host "`n--- inventory rooftop scope ---" -ForegroundColor Cyan
+    # Counts are not asserted: the integration suite runs against the same
+    # databases and adds units of its own. What must hold is that none of the
+    # sibling rooftop's units ever reaches a scoped caller.
+    $managerUnits = Invoke-RestMethod "$baseUrl/api/v1/inventory?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $scopedUnits = Invoke-RestMethod "$baseUrl/api/v1/inventory?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped
+
+    $siblingUnits = @($managerUnits | Where-Object { $_.rooftopId -eq $siblingId })
+    $leaked = @($scopedUnits | Where-Object { $_.rooftopId -eq $siblingId }).Count
+    "manager sees {0} unit(s) at NAG-02        (expect 1 or more)" -f $siblingUnits.Count
+    "scoped user sees {0} of them              (expect 0)" -f $leaked
+
+    $siblingUnitId = $siblingUnits[0].id
+    $siblingUnitStatus = Get-Status "/api/v1/inventory/$siblingUnitId" "northgroup" $scoped
+    "scoped user -> sibling unit by id     -> HTTP $siblingUnitStatus (expect 403)"
+
+    $siblingFilterStatus = Get-Status "/api/v1/inventory?rooftopId=$siblingId" "northgroup" $scoped
+    "scoped user -> list filtered to NAG-02 -> HTTP $siblingFilterStatus (expect 403)"
+
+    # Vehicles are organization-shared, so the same user may read them all.
+    $vehicles = Invoke-RestMethod "$baseUrl/api/v1/vehicles?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped
+    $vehicleCount = @($vehicles).Count
+    "scoped user sees {0} vehicle(s)           (expect 1 or more: vehicles are shared)" -f $vehicleCount
+
     Write-Host "`n--- sessions ---" -ForegroundColor Cyan
     $noSession = Get-Status "/api/v1/organization" "northgroup" $null
     "no session                            -> HTTP $noSession (expect 401)"
@@ -136,11 +164,14 @@ try {
     $ok = ($northRooftops -eq 2) -and ($cityRooftops -eq 1) -and ($north.name -ne $city.name) `
         -and ($scopedCodes.Count -eq 1) -and ($scopedCodes[0] -eq "NAG-01") `
         -and ($siblingStatus -eq 403) -and ($noAccessStatus -eq 403) `
+        -and ($siblingUnits.Count -ge 1) -and ($leaked -eq 0) `
+        -and ($siblingUnitStatus -eq 403) -and ($siblingFilterStatus -eq 403) `
+        -and ($vehicleCount -ge 1) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
         -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced and revocable, rooftop scope holds." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced and revocable, rooftop scope holds on structure and stock." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1
