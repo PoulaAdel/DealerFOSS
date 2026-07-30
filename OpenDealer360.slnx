@@ -3,7 +3,9 @@
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Host.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/Customers/Customers.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Identity/">
     <Project Path="src/Modules/Identity/Identity.csproj" />
   </Folder>

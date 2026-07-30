@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\src\Tenancy\Tenancy.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Identity.csproj" />
     <ProjectReference Include="..\..\src\Modules\Organization\Organization.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Customers\Customers.csproj" />
   </ItemGroup>
 
   <ItemGroup>

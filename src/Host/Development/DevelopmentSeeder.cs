@@ -15,6 +15,9 @@ using OpenDealer360.Identity.Domain;
 using OpenDealer360.Organization.Data;
 using OpenDealer360.Organization.Domain;
 using OpenDealer360.Core;
+using OpenDealer360.Customers.Data;
+using OpenDealer360.Customers.Domain;
+using CustomerAddress = OpenDealer360.Customers.Domain.Address;
 using OpenDealer360.Tenancy;
 
 namespace OpenDealer360.Host.Development;
@@ -73,6 +76,7 @@ public static class DevelopmentSeeder
         var name = await tenantDb.Organizations.Select(o => o.Name).FirstAsync();
 
         await SeedIdentityAsync(tenantConnection, clock, tenantDb);
+        await SeedCustomersAsync(tenantConnection, clock);
 
         var record = await hostCatalog.Tenants.SingleOrDefaultAsync(t => t.Slug == slug);
         if (record is null)
@@ -127,11 +131,30 @@ public static class DevelopmentSeeder
 
         var hasher = new PasswordHasher<User>();
 
+        // Roles are reconciled every run, not created once. Each new module adds
+        // permissions, and a database seeded before that module existed would
+        // otherwise leave the development accounts unable to use it. Grant is
+        // idempotent, so re-running changes nothing that is already correct.
+        var manager = await UpsertRoleAsync(identityDb, "Manager",
+        [
+            Permissions.OrganizationRead,
+            Permissions.OrganizationManage,
+            Permissions.CustomersRead,
+            Permissions.CustomersCreate,
+        ]);
+
+        // An advisor can look a customer up but not create one, so the tests have
+        // a role that is allowed one thing and refused another.
+        var advisor = await UpsertRoleAsync(identityDb, "Advisor",
+        [
+            Permissions.OrganizationRead,
+            Permissions.CustomersRead,
+        ]);
+
         if (await identityDb.Users.AnyAsync())
         {
-            // A database seeded before passwords existed would otherwise leave
-            // every development account unable to sign in. Backfill rather than
-            // forcing a wipe.
+            // Same reasoning for credentials: a database seeded before passwords
+            // existed heals instead of needing a wipe.
             var passwordless = await identityDb.Users
                 .Where(u => u.PasswordHash == null)
                 .ToListAsync();
@@ -141,30 +164,17 @@ public static class DevelopmentSeeder
                 existing.SetPasswordHash(hasher.HashPassword(existing, DevUsers.Password));
             }
 
-            if (passwordless.Count > 0)
-            {
-                await identityDb.SaveChangesAsync();
-            }
-
+            await identityDb.SaveChangesAsync();
             return;
         }
-
-        var manager = new Role(Guid.NewGuid(), "Manager");
-        manager.Grant(Permissions.OrganizationRead);
-        manager.Grant(Permissions.OrganizationManage);
-
-        var advisor = new Role(Guid.NewGuid(), "Advisor");
-        advisor.Grant(Permissions.OrganizationRead);
-
-        identityDb.Roles.AddRange(manager, advisor);
 
         // Every development account shares one obvious password. It is only ever
         // created in Development, and the seeder never runs elsewhere.
         var users = new[]
         {
-            new User(DevUsers.OrganizationWide, "gm@dev.local", "Organization Manager"),
-            new User(DevUsers.FirstRooftopOnly, "advisor@dev.local", "Single Rooftop Advisor"),
-            new User(DevUsers.Unassigned, "nobody@dev.local", "Unassigned User"),
+            new User(DevUsers.OrganizationWide, DevUsers.OrganizationWideEmail, "Organization Manager"),
+            new User(DevUsers.FirstRooftopOnly, DevUsers.FirstRooftopOnlyEmail, "Single Rooftop Advisor"),
+            new User(DevUsers.Unassigned, DevUsers.UnassignedEmail, "Unassigned User"),
         };
 
         foreach (var user in users)
@@ -186,6 +196,67 @@ public static class DevelopmentSeeder
             UserAssignment.ForRooftop(Guid.NewGuid(), DevUsers.FirstRooftopOnly, advisor.Id, firstRooftopId));
 
         await identityDb.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Finds a role by name or creates it, then grants the given permissions.
+    /// Called on every run so a database created before a module existed picks up
+    /// that module's permissions instead of silently lacking them.
+    /// </summary>
+    private static async Task<Role> UpsertRoleAsync(
+        IdentityDbContext identityDb,
+        string name,
+        IReadOnlyCollection<string> permissions)
+    {
+        var role = await identityDb.Roles.SingleOrDefaultAsync(r => r.Name == name);
+
+        if (role is null)
+        {
+            role = new Role(Guid.NewGuid(), name);
+            identityDb.Roles.Add(role);
+        }
+
+        foreach (var permission in permissions)
+        {
+            role.Grant(permission);
+        }
+
+        await identityDb.SaveChangesAsync();
+        return role;
+    }
+
+    /// <summary>
+    /// A handful of invented customers, so search returns something on a fresh
+    /// install. Names are obviously fictional; never seed real people.
+    /// </summary>
+    private static async Task SeedCustomersAsync(string tenantConnection, IClock clock)
+    {
+        var options = new DbContextOptionsBuilder<CustomersDbContext>()
+            .UseSqlServer(tenantConnection)
+            .Options;
+
+        await using var customersDb = new CustomersDbContext(options, clock);
+        await customersDb.Database.MigrateAsync();
+
+        if (await customersDb.Customers.AnyAsync())
+        {
+            return;
+        }
+
+        var alvarez = Customer.Person(Guid.NewGuid(), "Marisol", "Alvarez");
+        alvarez.AddContactPoint(Guid.NewGuid(), ContactKind.Email, "marisol.alvarez@example.test");
+        alvarez.AddContactPoint(Guid.NewGuid(), ContactKind.Phone, "(555) 010-2030");
+        alvarez.SetAddress(CustomerAddress.Create(
+            "18 Kestrel Way", null, "Springfield", "IL", "62704", "US"));
+
+        var okafor = Customer.Person(Guid.NewGuid(), "Daniel", "Okafor");
+        okafor.AddContactPoint(Guid.NewGuid(), ContactKind.Mobile, "+15550117788");
+
+        var fleet = Customer.Business(Guid.NewGuid(), "Brightline Facilities Ltd");
+        fleet.AddContactPoint(Guid.NewGuid(), ContactKind.Email, "fleet@brightline.example.test");
+
+        customersDb.Customers.AddRange(alvarez, okafor, fleet);
+        await customersDb.SaveChangesAsync();
     }
 
     private static DealerOrganization BuildNorthGroup()

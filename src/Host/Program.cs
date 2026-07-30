@@ -16,6 +16,7 @@ using OpenDealer360.Host.Tenancy;
 using OpenDealer360.Identity;
 using OpenDealer360.Organization;
 using OpenDealer360.Core;
+using OpenDealer360.Customers;
 using OpenDealer360.Tenancy;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -43,6 +44,7 @@ if (tenancyEnabled)
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
     builder.Services.AddIdentityModule();
     builder.Services.AddOrganizationModule();
+    builder.Services.AddCustomersModule();
 }
 
 // --- Health: liveness, readiness, and degraded dependencies are separated
@@ -118,6 +120,7 @@ if (tenancyEnabled)
 {
     app.MapAuth();
     app.MapOrganizationModule();
+    app.MapCustomersModule();
 }
 
 // Development-only sample data (doc 08 §8), gated behind an explicit flag.

@@ -16,10 +16,15 @@ public static class Permissions
     public const string OrganizationRead = "Organization.Read";
     public const string OrganizationManage = "Organization.Manage";
 
+    public const string CustomersRead = "Customers.Read";
+    public const string CustomersCreate = "Customers.Create";
+
     public static IReadOnlyCollection<string> All { get; } =
     [
         OrganizationRead,
         OrganizationManage,
+        CustomersRead,
+        CustomersCreate,
     ];
 }
 

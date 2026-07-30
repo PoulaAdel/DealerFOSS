@@ -15,7 +15,7 @@ Several dealership groups can already share one installation without ever seeing
 each other's data, and staff can be restricted to their own location. Nothing a
 salesperson or service advisor would recognise as their job has been built.
 
-**About 6% of the first release. Stage 1 of 8.**
+**About 8% of the first release. Stage 1 of 8, with the first stage-3 feature started early.**
 
 ---
 
@@ -58,10 +58,10 @@ months of focused work.
 - Permissions that hold up when tested against
 - A permanent record of refused access
 - Signing in with an email and password, and signing out immediately
+- **Adding a customer, and finding one by name, phone, or email**
 
 ## What does not exist
 
-- Entering a customer
 - Entering a vehicle or inventory
 - Building a deal or selling anything
 - Service appointments or repair orders
@@ -72,8 +72,7 @@ months of focused work.
 
 ## Next
 
-**Customer records** — the first feature a dealership would recognise. Finding a
-customer, adding one, and keeping their contact history.
+**Vehicles and inventory** — recording a vehicle, and what is on the lot.
 
 ---
 

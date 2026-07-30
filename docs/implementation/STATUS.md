@@ -1,8 +1,8 @@
 # Implementation Status
 
 Current phase: **I0 complete (except container path) → I1 in progress**
-Current milestone: first dealership feature — customer records
-Last verified: 2026-07-27 · `dotnet build` 0 warnings/0 errors, `dotnet test` 91/91, `verify-e2e.ps1` PASS
+Current milestone: vehicles and inventory
+Last verified: 2026-07-28 · `dotnet build` 0 warnings/0 errors, `dotnet test` 126/126
 
 > The repository is the truth. If this file disagrees with the code, this file
 > is wrong — correct it. A file existing is not evidence that a workflow works.
@@ -60,6 +60,8 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - **2026-07-27 — Domain unit tests.** `tests/Unit` added (58 tests). Mutation-proven: breaking cross-currency refusal, rooftop coverage, or the permission catalogue check fails exactly the tests that guard them. Evidence: `dotnet test` 80/80.
 
 - **2026-07-27 — Signing in.** Password credentials, SQL-backed sessions, and a Secure/HttpOnly/SameSite cookie replace the development header that simply trusted the caller. Signing out stops the session on the very next request. Evidence: `dotnet test` 91/91 and `verify-e2e.ps1` PASS.
+
+- **2026-07-28 — Customer records (first dealership feature).** A customer can be added, fetched, and found by surname, phone, or email — however the phone or email was typed. Customers are organization-shared, not rooftop-hidden. `Customers.Read` and `Customers.Create` are checked separately. Evidence: `dotnet test` 126/126, plus a regression rehearsal in which treating "no assignment" as permitted failed exactly the two permission tests.
 
 ## Active risks and blockers
 

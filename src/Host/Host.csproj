@@ -10,6 +10,7 @@
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Tenancy\Tenancy.csproj" />
     <ProjectReference Include="..\Modules\Organization\Organization.csproj" />
+    <ProjectReference Include="..\Modules\Customers\Customers.csproj" />
   </ItemGroup>
 
   <ItemGroup>
