@@ -1,10 +1,19 @@
 name: CI
 
+# The project works on main only, so main is what CI watches. That makes CI a
+# smoke alarm rather than a gate: it confirms after a push instead of blocking
+# before one. The gate is local — nothing is committed until build, tests, and
+# deploy/verify-e2e.ps1 pass on the developer's machine.
+#
+# workflow_dispatch gives a "Run workflow" button, so CI can be checked without
+# inventing a commit. The pull_request trigger is kept for the rare risky change
+# that gets its own short-lived branch; it costs nothing when unused.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read

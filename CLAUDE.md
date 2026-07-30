@@ -1,0 +1,111 @@
+# CLAUDE.md — operating instructions for coding agents
+
+This file holds **machine and workflow facts only**. Product and architecture
+decisions live in `docs/` and are never duplicated here.
+
+## Start here
+
+| Question | File |
+|---|---|
+| What is the current state? | [`docs/implementation/STATUS.md`](docs/implementation/STATUS.md) |
+| How should I work? | [`docs/10-Claude-Code-Execution-Prompt.md`](docs/10-Claude-Code-Execution-Prompt.md) |
+| What phase am I in, and what are its exit criteria? | [`docs/09-Codex-Execution-Prompt.md`](docs/09-Codex-Execution-Prompt.md) |
+| Why is it built this way? | [`docs/02-Architecture-and-Decisions.md`](docs/02-Architecture-and-Decisions.md) |
+| Everything else | [`docs/00-Workbook.md`](docs/00-Workbook.md) |
+
+Verify claims against the repository. A status checkbox is not evidence; a
+passing command is.
+
+## Environment on this machine
+
+These are verified facts, not assumptions. They differ from what the execution
+prompts assume by default.
+
+- **SQL: use LocalDB, not Docker.** The SQL Server 2022 Linux container crashes
+  on this host (`LSA initialization failed 0xc000004b` — a SQLPAL/WSL2
+  incompatibility, not a memory or configuration problem). `deploy/docker-compose.yml`
+  remains the committed target per ADR-015; only this host cannot run it.
+
+  ```
+  Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False
+  ```
+
+  Start it with `sqllocaldb start MSSQLLocalDB`.
+
+- **Shell is Windows PowerShell 5.1.** `pwsh` (PowerShell 7) is **not**
+  installed. Invoke scripts with `& .\deploy\verify-e2e.ps1`, and avoid `&&`,
+  `??`, and ternaries, which 5.1 does not parse.
+
+- **Node.js is not installed.** Any frontend work requires installing it first;
+  do not report the absence as a code defect.
+
+## Canonical commands
+
+```bash
+dotnet build OpenDealer360.slnx -c Release
+```
+
+```bash
+dotnet test OpenDealer360.slnx -c Release
+```
+
+```bash
+dotnet run --project src/Host
+```
+
+Tenant-isolation proof (the end-to-end check; expects `PASS`):
+
+```bash
+& .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
+```
+
+Notes: the solution is `.slnx` (the .NET 10 format) — `OpenDealer360.sln` does
+not exist. `dotnet-ef` is pinned in `dotnet-tools.json`; run `dotnet tool restore`
+once per clone.
+
+## Working rules
+
+### Nothing leaves this machine
+
+Absolute. Not covered by any standing approval, and a previous "yes" to one of
+these does not carry to the next occasion.
+
+- **Never `git push`, open a pull request, or otherwise touch the remote.** The
+  maintainer pushes manually. The `origin` remote stays configured for their use;
+  do not invoke it, and do not remove it.
+- **Never publish a Claude artifact.** Artifacts are reachable from the
+  maintainer's other devices. The visual progress view is device-only at
+  `local/progress.html` (git-ignored); the shared one is
+  [`docs/PROGRESS.md`](docs/PROGRESS.md).
+- Anything else that changes state outside this repository needs an explicit ask
+  first (doc 10 §4).
+
+### Git: main only
+
+This is a single-maintainer repository with one agent committing sequentially, and
+pushes are manual — so local `main` is already a staging area, and nothing is
+public until the maintainer pushes. Feature branches would add a second layer of
+isolation on top of one that already exists.
+
+- **Commit directly to `main`.** Do not create feature branches, and do not leave
+  more than one milestone sitting on a branch other than `main`.
+- **Verify before every commit**, never after: `dotnet build`, `dotnet test`, and
+  `deploy/verify-e2e.ps1` must all pass. Local verification is the real gate; CI
+  runs after a push and only confirms.
+- One commit per milestone, with a message that says what now works that did not
+  before. Never `--no-verify`. Never rewrite pushed history.
+- **Branch only for a genuinely risky change** the maintainer wants to inspect
+  before it lands — then say so explicitly and delete the branch once merged.
+  Adopt branch-per-milestone properly if a second contributor appears, or once CI
+  is reliably green and worth gating on.
+
+### Everything else
+
+- Warnings are errors. `NuGetAudit` fails the build on a vulnerable package —
+  upgrade it rather than suppressing the check.
+- EF migrations under any `Migrations/` folder are generated artifacts and are
+  excluded from style analysis; do not hand-edit them.
+- SPDX is applied once at assembly level in `Directory.Build.props`. Do not add
+  per-file licence headers.
+- Never commit secrets. `appsettings.Development.json` is git-ignored; the
+  committed example file is `appsettings.Development.json.example`.
