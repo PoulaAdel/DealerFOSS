@@ -36,6 +36,8 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
 
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
+    public DbSet<SignInChallenge> SignInChallenges => Set<SignInChallenge>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -48,11 +50,41 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
             builder.Property(x => x.Email).HasMaxLength(320).IsRequired();
             builder.Property(x => x.DisplayName).HasMaxLength(200).IsRequired();
             builder.HasIndex(x => x.Email).IsUnique();
+            // Long enough for the protected form: the base32 secret wrapped in
+            // AES-GCM and base64, plus the version and key id.
+            builder.Property(x => x.MfaSecretProtected).HasMaxLength(400);
+            builder.Ignore(x => x.MfaEnabled);
             builder.HasMany(x => x.Assignments)
                 .WithOne()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            builder.HasMany(x => x.RecoveryCodes)
+                .WithOne()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             ConfigureAudit(builder);
+        });
+
+        modelBuilder.Entity<RecoveryCode>(builder =>
+        {
+            builder.ToTable("RecoveryCodes");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
+            builder.Property(x => x.CodeHash).HasMaxLength(64).IsRequired();
+            builder.Ignore(x => x.IsAvailable);
+            builder.HasIndex(x => new { x.UserId, x.CodeHash });
+        });
+
+        modelBuilder.Entity<SignInChallenge>(builder =>
+        {
+            builder.ToTable("SignInChallenges");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
+            builder.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            builder.Property(x => x.DeviceSummary).HasMaxLength(200);
+            // Looked up by hash on every second-factor attempt.
+            builder.HasIndex(x => x.TokenHash).IsUnique();
+            builder.HasIndex(x => x.ExpiresAt);
         });
 
         modelBuilder.Entity<Role>(builder =>

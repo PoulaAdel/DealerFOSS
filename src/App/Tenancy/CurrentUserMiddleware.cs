@@ -22,10 +22,18 @@ public sealed class CurrentUserMiddleware(RequestDelegate next)
 {
     private const string ApiPrefix = "/api/v1";
 
-    /// <summary>The only endpoints reachable without a session.</summary>
+    /// <summary>
+    /// The only endpoints reachable without a session: the ones where a session
+    /// is obtained or ended. Completing a second factor belongs here for the
+    /// obvious reason — the whole point is that the password did not produce a
+    /// session, so there is nothing to authenticate with yet. It is not
+    /// unprotected: it demands a challenge token that only a correct password
+    /// produces, and a code on top of that.
+    /// </summary>
     private static readonly string[] AnonymousPaths =
     [
         "/api/v1/auth/login",
+        "/api/v1/auth/login/second-factor",
         "/api/v1/auth/logout",
     ];
 

@@ -47,6 +47,12 @@ var tenancyEnabled = !string.IsNullOrWhiteSpace(hostConnection);
 if (tenancyEnabled)
 {
     builder.Services.AddHostCatalog(hostConnection!);
+
+    // Replaces the development pass-through with real AES-256-GCM envelope
+    // encryption whenever keys are configured — in every environment, so what
+    // runs in production is what developers exercise.
+    builder.Services.AddSecretProtection(builder.Configuration);
+
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
     // Identity is a separate project so its tables and services are physically
@@ -106,13 +112,18 @@ builder.Services
 var app = builder.Build();
 
 // Refuse to run with the development pass-through secret protector in any
-// non-Development environment (doc 06 §4).
+// non-Development environment (doc 06 §4). Tenant connection strings would be
+// stored in plaintext, which is not a degraded mode — it is a breach waiting to
+// be found.
 if (!app.Environment.IsDevelopment()
     && app.Services.GetService<ISecretProtector>() is DevSecretProtector)
 {
     throw new InvalidOperationException(
-        "The development pass-through secret protector must not be used outside Development. "
-        + "Register a DPAPI/certificate/KMS-backed ISecretProtector.");
+        $"No secret-protection keys are configured, so tenant connection strings would be stored "
+        + $"in plaintext. Set {SecretProtection.SectionName}:CurrentKeyId and at least one "
+        + $"{SecretProtection.SectionName}:Keys entry — a base64 32-byte key. "
+        + "deploy/README.md explains how to generate one and where to put it on each "
+        + "deployment target.");
 }
 
 app.UseSerilogRequestLogging();

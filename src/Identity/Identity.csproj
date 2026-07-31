@@ -31,6 +31,13 @@
       project exists to provide.
     -->
     <InternalsVisibleTo Include="Unit.Tests" />
+    <!--
+      The second-factor tests have to compute a valid TOTP code, which means
+      reaching Totp. It stays internal rather than joining the public surface:
+      it is pure maths that grants no access to anything, and the application has
+      no reason to call it.
+    -->
+    <InternalsVisibleTo Include="IntegrationTests" />
   </ItemGroup>
 
 </Project>

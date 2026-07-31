@@ -12,5 +12,26 @@
   },
   "ConnectionStrings": {
     "HostCatalog": "Server=localhost,1433;Database=OpenDealer360_Host;User Id=sa;Password=Your_dev_password_here;TrustServerCertificate=True;Encrypt=True"
+  },
+
+  "//Secrets": [
+    "Encrypts tenant connection strings at rest. Leave this out in Development and",
+    "the application uses a pass-through instead — convenient locally, and it",
+    "refuses to start in any other environment.",
+    "",
+    "Add it and you exercise the real thing. Generate a key with:",
+    "  $b = New-Object byte[] 32",
+    "  [System.Security.Cryptography.RandomNumberGenerator]::Fill($b)",
+    "  [Convert]::ToBase64String($b)",
+    "",
+    "The key id is yours to choose; a year-month reads well because it says when",
+    "the key was cut. Keep old keys listed after rotating or values written under",
+    "them become unreadable. NEVER commit a real key — this file is git-ignored."
+  ],
+  "Secrets": {
+    "CurrentKeyId": "2026-07",
+    "Keys": {
+      "2026-07": "REPLACE_WITH_A_BASE64_32_BYTE_KEY"
+    }
   }
 }

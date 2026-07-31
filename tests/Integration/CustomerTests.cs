@@ -87,10 +87,19 @@ public sealed class CustomerTests(HostFixture fixture)
     public async Task A_customer_can_be_found_by_phone_however_it_is_typed()
     {
         var surname = UniqueSurname();
-        await AddPersonAsync(surname, phone: "(555) 987-6543");
+
+        // A number unique to this run. A fixed one accumulates a customer per run
+        // until the match falls off the end of a capped, name-ordered page — which
+        // would make this a test about paging rather than about search.
+        var digits = System.Security.Cryptography.RandomNumberGenerator
+            .GetInt32(1_000_000, 9_999_999)
+            .ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        await AddPersonAsync(surname, phone: $"(555) {digits[..3]}-{digits[3..]}");
 
         // Typed with punctuation, stored as digits — the search must bridge that.
-        var names = await SearchAsync("555-987-6543", DevelopmentSeeder.DevUsers.OrganizationWideEmail);
+        var names = await SearchAsync(
+            $"555-{digits[..3]}-{digits[3..]}", DevelopmentSeeder.DevUsers.OrganizationWideEmail);
 
         names.Should().Contain(n => n.Contains(surname, StringComparison.Ordinal));
     }

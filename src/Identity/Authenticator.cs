@@ -21,9 +21,13 @@ internal sealed class Authenticator(
     IdentityDb db,
     IClock clock,
     IPasswordHasher<User> passwordHasher,
+    ISecretProtector secretProtector,
     IAuditSink audit)
     : IAuthenticator
 {
+    /// <summary>Shown as the account issuer in an authenticator app.</summary>
+    private const string Issuer = "OpenDealer360";
+
     /// <summary>
     /// A valid hash of a throwaway password. Verified against when no user
     /// matches, so a missing account costs the same time as a wrong password.
@@ -34,9 +38,10 @@ internal sealed class Authenticator(
     private readonly IdentityDb _db = db;
     private readonly IClock _clock = clock;
     private readonly IPasswordHasher<User> _passwordHasher = passwordHasher;
+    private readonly ISecretProtector _secretProtector = secretProtector;
     private readonly IAuditSink _audit = audit;
 
-    public async Task<Result<IssuedSession>> SignInAsync(
+    public async Task<Result<SignInOutcome>> SignInAsync(
         string email,
         string password,
         string? deviceSummary,
@@ -52,7 +57,7 @@ internal sealed class Authenticator(
             // Still do the work, so absence is not detectable by timing.
             _passwordHasher.VerifyHashedPassword(null!, DecoyHash, password ?? string.Empty);
             await RecordFailureAsync(user?.Id, normalized, cancellationToken);
-            return Result.Failure<IssuedSession>(AuthErrors.InvalidCredentials);
+            return Result.Failure<SignInOutcome>(AuthErrors.InvalidCredentials);
         }
 
         var verification = _passwordHasher.VerifyHashedPassword(
@@ -61,7 +66,7 @@ internal sealed class Authenticator(
         if (verification == PasswordVerificationResult.Failed)
         {
             await RecordFailureAsync(user.Id, normalized, cancellationToken);
-            return Result.Failure<IssuedSession>(AuthErrors.InvalidCredentials);
+            return Result.Failure<SignInOutcome>(AuthErrors.InvalidCredentials);
         }
 
         if (verification == PasswordVerificationResult.SuccessRehashNeeded)
@@ -71,19 +76,221 @@ internal sealed class Authenticator(
             user.SetPasswordHash(_passwordHasher.HashPassword(user, password!));
         }
 
-        var (token, tokenHash) = NewToken();
         var now = _clock.UtcNow;
-        var session = new Session(Guid.NewGuid(), user.Id, tokenHash, now, deviceSummary);
+
+        // The password alone is not a session for an account with a second
+        // factor. It buys a short-lived challenge and nothing else.
+        if (user.MfaEnabled)
+        {
+            var (challengeToken, challengeHash) = NewToken();
+            var challenge = new SignInChallenge(
+                Guid.NewGuid(), user.Id, challengeHash, now, deviceSummary);
+
+            _db.SignInChallenges.Add(challenge);
+            await _db.SaveChangesAsync(cancellationToken);
+
+            return Result.Success(SignInOutcome.NeedsSecondFactor(
+                new SecondFactorChallenge(challengeToken, challenge.ExpiresAt)));
+        }
+
+        var session = await StartSessionAsync(user.Id, deviceSummary, now, cancellationToken);
+        return Result.Success(SignInOutcome.Completed(session));
+    }
+
+    public async Task<Result<IssuedSession>> CompleteSignInAsync(
+        string challengeToken,
+        string code,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(challengeToken))
+        {
+            return Result.Failure<IssuedSession>(AuthErrors.SecondFactorRejected);
+        }
+
+        var hash = Hash(challengeToken);
+        var challenge = await _db.SignInChallenges
+            .SingleOrDefaultAsync(c => c.TokenHash == hash, cancellationToken);
+
+        var now = _clock.UtcNow;
+        if (challenge is null || !challenge.IsUsableAt(now))
+        {
+            return Result.Failure<IssuedSession>(AuthErrors.SecondFactorRejected);
+        }
+
+        var user = await _db.Users
+            .Include(u => u.RecoveryCodes)
+            .SingleOrDefaultAsync(u => u.Id == challenge.UserId, cancellationToken);
+
+        if (user is null || !user.CanSignIn || !user.MfaEnabled)
+        {
+            return Result.Failure<IssuedSession>(AuthErrors.SecondFactorRejected);
+        }
+
+        var accepted = VerifyTotp(user, code, now) || ConsumeRecoveryCode(user, code, now);
+
+        if (!accepted)
+        {
+            // Counted, so six digits cannot simply be guessed at.
+            challenge.RecordFailure();
+            await _db.SaveChangesAsync(cancellationToken);
+
+            await _audit.RecordAsync(
+                AuditEntry.Denied(user.Id, "Auth.SecondFactor", "User", user.Id.ToString(),
+                    null, "Invalid second factor."),
+                cancellationToken);
+
+            return Result.Failure<IssuedSession>(AuthErrors.SecondFactorRejected);
+        }
+
+        challenge.Consume(now);
+        var session = await StartSessionAsync(user.Id, challenge.DeviceSummary, now, cancellationToken);
+
+        return Result.Success(session);
+    }
+
+    public async Task<Result<MfaEnrolment>> BeginMfaEnrolmentAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var user = await _db.Users.SingleOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return Result.Failure<MfaEnrolment>(AuthErrors.SessionInvalid);
+        }
+
+        if (user.MfaEnabled)
+        {
+            return Result.Failure<MfaEnrolment>(AuthErrors.MfaAlreadyOn);
+        }
+
+        var secret = Totp.NewSecret();
+        user.BeginMfaEnrolment(_secretProtector.Protect(secret));
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return Result.Success(new MfaEnrolment(
+            secret, Totp.EnrolmentUri(secret, Issuer, user.Email)));
+    }
+
+    public async Task<Result<IReadOnlyList<string>>> ConfirmMfaAsync(
+        Guid userId,
+        string code,
+        CancellationToken cancellationToken)
+    {
+        var user = await _db.Users
+            .Include(u => u.RecoveryCodes)
+            .SingleOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user?.MfaSecretProtected is null)
+        {
+            return Result.Failure<IReadOnlyList<string>>(AuthErrors.MfaNotEnrolled);
+        }
+
+        var now = _clock.UtcNow;
+        if (!VerifyTotp(user, code, now))
+        {
+            return Result.Failure<IReadOnlyList<string>>(AuthErrors.SecondFactorRejected);
+        }
+
+        user.ConfirmMfa(now);
+
+        var (plaintext, records) = RecoveryCode.Issue(user.Id);
+        foreach (var record in records)
+        {
+            user.RecoveryCodes.Add(record);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(user.Id, "Auth.MfaEnabled", AuditOutcome.Allowed,
+                "User", user.Id.ToString(), null, null, null, null),
+            cancellationToken);
+
+        return Result.Success(plaintext);
+    }
+
+    public async Task<Result> DisableMfaAsync(Guid userId, string code, CancellationToken cancellationToken)
+    {
+        var user = await _db.Users
+            .Include(u => u.RecoveryCodes)
+            .SingleOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user is null || !user.MfaEnabled)
+        {
+            return Result.Failure(AuthErrors.MfaNotEnrolled);
+        }
+
+        var now = _clock.UtcNow;
+
+        // A current code, so a borrowed or hijacked session cannot quietly take
+        // the second factor off an account.
+        if (!VerifyTotp(user, code, now) && !ConsumeRecoveryCode(user, code, now))
+        {
+            return Result.Failure(AuthErrors.SecondFactorRejected);
+        }
+
+        user.DisableMfa();
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(user.Id, "Auth.MfaDisabled", AuditOutcome.Allowed,
+                "User", user.Id.ToString(), null, null, null, null),
+            cancellationToken);
+
+        return Result.Success();
+    }
+
+    private bool VerifyTotp(User user, string? code, DateTimeOffset now)
+    {
+        if (user.MfaSecretProtected is null)
+        {
+            return false;
+        }
+
+        return Totp.Verify(_secretProtector.Unprotect(user.MfaSecretProtected), code, now);
+    }
+
+    /// <summary>
+    /// Spends a recovery code if it matches an unused one. Single use: a code
+    /// that could be replayed is a password with extra steps.
+    /// </summary>
+    private static bool ConsumeRecoveryCode(User user, string? code, DateTimeOffset now)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return false;
+        }
+
+        var hash = RecoveryCode.Hash(code);
+        var match = user.RecoveryCodes.FirstOrDefault(r => r.IsAvailable && r.CodeHash == hash);
+
+        if (match is null)
+        {
+            return false;
+        }
+
+        match.Consume(now);
+        return true;
+    }
+
+    private async Task<IssuedSession> StartSessionAsync(
+        Guid userId,
+        string? deviceSummary,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var (token, tokenHash) = NewToken();
+        var session = new Session(Guid.NewGuid(), userId, tokenHash, now, deviceSummary);
 
         _db.Sessions.Add(session);
         await _db.SaveChangesAsync(cancellationToken);
 
         await _audit.RecordAsync(
-            new AuditEntry(user.Id, "Auth.SignIn", AuditOutcome.Allowed,
+            new AuditEntry(userId, "Auth.SignIn", AuditOutcome.Allowed,
                 "Session", session.Id.ToString(), null, null, null, null),
             cancellationToken);
 
-        return Result.Success(new IssuedSession(token, session.AbsoluteExpiresAt));
+        return new IssuedSession(token, session.AbsoluteExpiresAt);
     }
 
     public async Task<Result<Guid>> ValidateAsync(string token, CancellationToken cancellationToken)

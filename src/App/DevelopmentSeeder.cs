@@ -79,8 +79,15 @@ public static class DevelopmentSeeder
 
         public const string OrganizationWideEmail = "gm@dev.local";
         public const string FirstRooftopOnlyEmail = "advisor@dev.local";
+        /// <summary>
+        /// Reserved for second-factor tests, which switch MFA on and off. Kept
+        /// separate so enrolling it cannot stop every other test signing in.
+        /// </summary>
+        public static Guid SecondFactor { get; } = new("55555555-5555-5555-5555-555555555555");
+
         public const string UnassignedEmail = "nobody@dev.local";
         public const string SalespersonEmail = "sales@dev.local";
+        public const string SecondFactorEmail = "mfa@dev.local";
     }
 
     private static async Task SeedTenantAsync(
@@ -125,7 +132,8 @@ public static class DevelopmentSeeder
             new DevelopmentAccount(DevUsers.OrganizationWide, DevUsers.OrganizationWideEmail, "Organization Manager"),
             new DevelopmentAccount(DevUsers.FirstRooftopOnly, DevUsers.FirstRooftopOnlyEmail, "Single Rooftop Advisor"),
             new DevelopmentAccount(DevUsers.Unassigned, DevUsers.UnassignedEmail, "Unassigned User"),
-            new DevelopmentAccount(DevUsers.Salesperson, DevUsers.SalespersonEmail, "Rooftop Salesperson"));
+            new DevelopmentAccount(DevUsers.Salesperson, DevUsers.SalespersonEmail, "Rooftop Salesperson"),
+            new DevelopmentAccount(DevUsers.SecondFactor, DevUsers.SecondFactorEmail, "Second Factor Test"));
 
         await SeedCustomersAsync(tenantDb);
         await SeedStockAsync(tenantDb, clock);

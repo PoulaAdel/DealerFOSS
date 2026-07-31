@@ -17,7 +17,7 @@ that, customers and vehicles can now be recorded and found, and each location's
 stock is kept separate from every other location's. There are still no screens —
 this is the engine, not the dashboard.
 
-**About 22% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
+**About 25% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
 
 ---
 
@@ -48,6 +48,7 @@ months of focused work.
 - [x] Refused access attempts are recorded permanently and cannot be erased
 - [x] Automated checks guard all of the above, and were tested by deliberately breaking things
 - [x] **Signing in** — real accounts and passwords, with sign-out taking effect immediately
+- [x] **A second factor at sign-in**, with recovery codes for a lost phone
 - [ ] **Any screens at all** — there is no user interface yet, only the engine behind it
 - [ ] **A rehearsed backup and restore**
 
@@ -74,6 +75,11 @@ months of focused work.
   whole time so nobody else can sell it**
 - **A salesperson cannot approve their own deal, and the price cannot change after
   a manager has agreed to it**
+- **A second factor at sign-in.** Anyone can switch on the six-digit code from a
+  phone app; after that a password on its own is not enough to get in, and there
+  are ten printable one-time codes for the day the phone is lost
+- **Each dealership's database password is encrypted**, so a stolen copy of the
+  system does not hand over their data
 - **Every sale writes its own accounting entry — what came in, what went out, what
   the car cost — and it must balance or the sale does not go through. Nothing in
   that record can ever be edited; a mistake is corrected by an opposite entry that

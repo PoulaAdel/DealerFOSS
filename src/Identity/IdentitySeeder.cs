@@ -40,12 +40,14 @@ public static class IdentitySeeder
         DevelopmentAccount organizationWide,
         DevelopmentAccount rooftopScoped,
         DevelopmentAccount unassigned,
-        DevelopmentAccount salesperson)
+        DevelopmentAccount salesperson,
+        DevelopmentAccount secondFactor)
     {
         ArgumentNullException.ThrowIfNull(organizationWide);
         ArgumentNullException.ThrowIfNull(rooftopScoped);
         ArgumentNullException.ThrowIfNull(unassigned);
         ArgumentNullException.ThrowIfNull(salesperson);
+        ArgumentNullException.ThrowIfNull(secondFactor);
 
         var options = new DbContextOptionsBuilder<IdentityDb>()
             .UseSqlServer(tenantConnection)
@@ -127,6 +129,9 @@ public static class IdentitySeeder
 
         // No assignment at all, on purpose.
         await UpsertUserAsync(db, hasher, password, unassigned, assignment: null);
+
+        // Reserved for second-factor tests; needs to sign in, nothing more.
+        await UpsertUserAsync(db, hasher, password, secondFactor, assignment: null);
 
         await db.SaveChangesAsync();
     }

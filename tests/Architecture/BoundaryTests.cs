@@ -98,6 +98,7 @@ public sealed class BoundaryTests
         {
             "IAccessDirectory", "AuthorizedScope",
             "IAuthenticator", "IssuedSession", "AuthErrors",
+            "SignInOutcome", "SecondFactorChallenge", "MfaEnrolment",
             "IdentityRegistration", "IdentitySeeder", "DevelopmentAccount",
             "Permissions",
         };

@@ -44,6 +44,16 @@ prompts assume by default.
   installed. Invoke scripts with `& .\deploy\verify-e2e.ps1`, and avoid `&&`,
   `??`, and ternaries, which 5.1 does not parse.
 
+  **This applies to commands handed to the maintainer, not only to commands the
+  agent runs.** A `git add -A && git commit -m "..."` block fails on their shell
+  and they have to repair it by hand. Hand over one command per line instead, run
+  from the repository root:
+
+  ```
+  git add -A
+  git commit -m "..."
+  ```
+
 - **Node.js is not installed on the host, and does not need to be.** The `node`
   profile in `deploy/docker-compose.yml` provides Node 22 in a container with the
   repository mounted. Frontend work runs there. Do not report the host absence as

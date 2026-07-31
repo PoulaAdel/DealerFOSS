@@ -167,6 +167,70 @@ application runs perfectly well and simply exports nothing.
 
 ---
 
+## Secret protection — required outside Development
+
+Tenant connection strings are encrypted at rest. Without a key the application
+uses a pass-through and **refuses to start** in any environment but Development —
+storing them in plaintext is not a degraded mode, it is a breach waiting to be
+found.
+
+Generate a key:
+
+```powershell
+$b = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($b)
+[Convert]::ToBase64String($b)
+```
+
+Then supply it. Configuration keys map to environment variables by replacing `:`
+with `__`, which is how you avoid putting a key in a file on the two targets where
+that would be awkward.
+
+**Windows service**
+
+Set machine-level environment variables on the service account, or use a
+`appsettings.Production.json` with locked-down NTFS permissions:
+
+```
+setx /M Secrets__CurrentKeyId "2026-07"
+setx /M Secrets__Keys__2026-07 "<the base64 key>"
+```
+
+**Linux container**
+
+Pass it as an environment variable, ideally from a mounted secret rather than the
+compose file:
+
+```
+-e Secrets__CurrentKeyId=2026-07
+-e Secrets__Keys__2026-07=<the base64 key>
+```
+
+**Hosted**
+
+Use the platform's secret store — Key Vault, Secrets Manager, whatever it
+provides — surfaced as the same two environment variables. The application does
+not care where they came from.
+
+### Rotating a key
+
+Add the new key **alongside** the old one and point `CurrentKeyId` at it:
+
+```json
+"Secrets": {
+  "CurrentKeyId": "2026-10",
+  "Keys": {
+    "2026-07": "<old key>",
+    "2026-10": "<new key>"
+  }
+}
+```
+
+New values are written with the new key; existing ones still decrypt with the old.
+**Do not remove the old key** until everything written under it has been
+re-encrypted — and note that no tool does that re-encryption yet, so for now
+rotation means "add a key and keep the old one".
+
 ## Proving it works end to end
 
 ```bash

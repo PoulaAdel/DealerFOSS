@@ -2,7 +2,7 @@
 
 Current phase: **I0 complete (except container path) → I1 in progress**
 Current milestone: MFA foundation and OIDC federation
-Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 243/243,
+Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 282/282,
 `verify-e2e.ps1` PASS
 
 > **Layout note (2026-07-30).** The repository moved from seven backend projects to
@@ -45,14 +45,16 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - [x] **One organization contains multiple rooftops** — `northgroup` has `NAG-01` and `NAG-02` *(agent-verifiable)*
 - [x] Unresolvable tenant is rejected at the edge — missing header → 400, unknown tenant → 404 *(agent-verifiable)*
 - [x] Migrations and seeding are idempotent — second `verify-e2e.ps1` run reports "already up to date" and skips seeding *(agent-verifiable)*
-- [x] Secret-protector seam; development pass-through refused outside Development — `Program.cs` startup guard *(agent-verifiable)*
+- [x] **Secret protection implemented, not just seamed** — `EnvelopeSecretProtector` encrypts tenant connection strings with AES-256-GCM, a random nonce per value, and a key id carried with the ciphertext so keys rotate without rewriting stored data. Cross-platform by design: the maintainer targets Windows service, Linux container, and hosted, which rules DPAPI out. Real encryption is used in every environment where keys are configured, including Development, so what ships is what developers exercise. `Program.cs` still refuses to start on the pass-through outside Development, now with a message naming what to set. 13 tests cover round-trip, per-call nonce, tamper detection, wrong key, rotation, retired key, and every startup misconfiguration *(agent-verifiable)*
 - [x] Users, roles, permissions, scoped user assignments — `identity` schema, migration `InitialIdentity`; roles hold catalogued permissions, assignments are organization- or rooftop-scoped *(agent-verifiable)*
 - [x] **Unauthorized-rooftop reads fail in endpoint tests** — `RooftopAuthorizationTests` (7 tests): a rooftop-scoped user sees only their own rooftop in the list, is refused a sibling rooftop by direct id (403), and an unassigned user is refused entirely. **Regression-proven 2026-07-25:** removing the scope check fails exactly these tests *(agent-verifiable)*
 - [x] Audit events capture scoped security-sensitive changes — every denial writes an append-only `identity.AuditEvents` row; the context refuses to update or delete audit history (ADR-016) *(agent-verifiable)*
 - [ ] Background-job authorization tests — no jobs exist yet; due with the first scheduled job
 - [x] **Durable sessions and cookie sign-in** — password credentials, SQL-backed sessions, Secure/HttpOnly/SameSite=Strict cookie, sliding idle expiry (30 min) under a fixed 8-hour ceiling. Revocation takes effect on the next request, proven by `AuthenticationTests`. An unknown email and a wrong password return byte-identical responses. *(agent-verifiable)*
 - [ ] Explicit anti-forgery on writes — write endpoints now exist (customers, vehicles, inventory). The session cookie is `SameSite=Strict`, which is the current defence; a token-based check is still outstanding
-- [ ] MFA foundation and OIDC federation — not started (local password identity is done)
+- [x] **MFA foundation** — opt-in TOTP (RFC 6238). A password buys a short-lived, hashed, single-use challenge rather than a session; only a valid code completes sign-in. The shared secret is encrypted at rest with `ISecretProtector`; enrolment is two-phase so a mis-scanned QR cannot lock anybody out; ten single-use recovery codes are stored as hashes; disabling needs a current code. Verified against the published RFC test vectors, so authenticator apps agree with us. **Regression-proven:** silently skipping the challenge fails exactly the four tests that demand it *(agent-verifiable)*
+- [ ] OIDC federation — not started, and needs an identity provider to test against
+- [ ] MFA required by policy rather than by choice — enrolment is currently opt-in per user
 - [ ] Global-administration separation and time-limited support access — not started
 - [ ] Tenant-aware background job context — not started
 - [ ] React/TypeScript/Vite shell with accessible layout — not started *(blocked: Node not installed)*
@@ -87,9 +89,14 @@ them is written.
 
 | Decision | Answer | State |
 |---|---|---|
+| *(consequence of the deployment answer below)* | Secret protection must be cross-platform | **Implemented** — AES-256-GCM envelope encryption with key ids. No re-encryption tool yet, so rotation currently means "add a key and keep the old one". |
 | May a salesperson approve their own deal? | **No.** A sales manager approves it. | **Implemented** — enforced on the entity so background callers cannot route around it, and a denial is audited. Holding `Deals.Approve` is not sufficient if it is your own deal. |
 | When does an accounting month close? | Calendar month end, fiscal year = calendar year, prior-month entries accepted until the 10th, then locked. Per organization. | **Recorded, not enforced.** Standard franchised-dealer practice chosen as the default; see `src/App/Accounting/README.md`. Wants confirmation from a real dealer's accountant. |
-| Where does this deploy? | **All three:** Windows service, Linux container, and hosted. | **Recorded.** Consequence: `ISecretProtector` cannot be DPAPI-based, since that is Windows-only. It needs a certificate- or KMS-backed implementation that works on all three, and today's development pass-through still refuses to start outside Development. |
+| Where does this deploy? | **All three:** Windows service, Linux container, and hosted. | **Acted on.** DPAPI ruled out as Windows-only; replaced with AES-256-GCM envelope encryption keyed from configuration, which every target supplies the same way (`Secrets__Keys__<id>`). `deploy/README.md` covers all three. |
+
+- **2026-07-31 — Secret protection, so this can ship at all.** Tenant connection strings are encrypted at rest with AES-256-GCM: a fresh nonce per value, an authentication tag so a tampered value fails rather than decrypting to something wrong, and a key id carried with the ciphertext so a key can be rotated without making existing data unreadable. Cross-platform, because all three deployment targets are wanted. Evidence: `dotnet test` 258/258, including a tamper test and a rotation test. **Gap named, not hidden:** nothing re-encrypts values under a new key, so rotation today means adding a key and keeping the old one; and switching an existing installation from the development pass-through needs a migration pass that does not exist.
+
+- **2026-07-31 — A second factor at sign-in.** Opt-in TOTP: a password now buys a challenge rather than a session for an enrolled account, and only a code from an authenticator app — or a single-use recovery code — completes it. The secret is encrypted at rest with the protector built earlier the same day, enrolment is two-phase so a mis-scanned QR cannot lock somebody out, and guessing is cut off after five wrong codes. Verified against the published RFC 6238 test vectors, which is the only way to know real phones will agree. Evidence: `dotnet test` 282/282, plus a rehearsal in which silently skipping the challenge failed exactly the four tests that demand it. **Not yet:** requiring MFA by policy, and OIDC — which needs an identity provider to test against.
 
 ## Active risks and blockers
 

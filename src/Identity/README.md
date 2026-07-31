@@ -88,10 +88,41 @@ than by convention. Corrections are new records.
 Entries must never carry credentials, tokens, credit data, government
 identifiers, or document content.
 
+## The second factor
+
+Opt-in TOTP — the six digits in Google Authenticator, Authy, 1Password, or any
+other app implementing RFC 6238.
+
+Signing in becomes two steps for an enrolled account. The password buys a
+**challenge**, not a session: a short-lived, hashed, single-use token that grants
+nothing on its own and dies after five minutes or five wrong codes. Only a valid
+code exchanges it for a session.
+
+Four details worth keeping:
+
+- **The secret is encrypted at rest** with `ISecretProtector`, so a stolen
+  database does not hand over everybody's second factor.
+- **Enrolment is two-phase.** Generating a secret changes nothing about signing
+  in until the user proves they can produce a code. A one-phase enrolment locks
+  out anybody who mis-scans the QR.
+- **Ten recovery codes** are issued once, stored only as hashes, and each works
+  exactly once — a replayable code is a password with extra steps.
+- **Turning it off needs a current code**, so a borrowed session cannot quietly
+  strip the protection off an account.
+
+`Totp.cs` is verified against the published RFC 6238 test vectors. That matters
+more than it looks: the other implementation is on somebody's phone and cannot be
+adjusted to agree with us.
+
+> HMAC-SHA1 is used because the RFC specifies it and every authenticator app
+> implements only that. The analyser suppression at the call site explains why
+> that is not the weakness it appears to be.
+
 ## Not built yet
 
-MFA, OIDC federation, global-administration separation, and time-limited support
-access. See [`docs/implementation/STATUS.md`](../../docs/implementation/STATUS.md).
+Requiring MFA by policy rather than by choice, OIDC federation,
+global-administration separation, and time-limited support access. See
+[`docs/implementation/STATUS.md`](../../docs/implementation/STATUS.md).
 
 > `identity` is a reserved T-SQL keyword. EF quotes it automatically; hand-written
 > SQL must bracket it as `[identity].[AuditEvents]`.

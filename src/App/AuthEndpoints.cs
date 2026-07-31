@@ -26,8 +26,13 @@ internal static class AuthEndpoints
         var group = app.MapGroup("/api/v1/auth").WithTags("Auth");
 
         group.MapPost("/login", LoginAsync);
+        group.MapPost("/login/second-factor", SecondFactorAsync);
         group.MapPost("/logout", LogoutAsync);
         group.MapGet("/me", Me);
+
+        group.MapPost("/mfa/enrol", EnrolMfaAsync);
+        group.MapPost("/mfa/confirm", ConfirmMfaAsync);
+        group.MapPost("/mfa/disable", DisableMfaAsync);
     }
 
     private static async Task<IResult> LoginAsync(
@@ -46,19 +51,109 @@ internal static class AuthEndpoints
 
         if (result.IsFailure)
         {
-            // 401, not 403: the caller may retry with different credentials.
-            return Results.Problem(
-                title: result.Error.Code,
-                detail: result.Error.Message,
-                statusCode: StatusCodes.Status401Unauthorized);
+            return Unauthorized(result.Error);
         }
 
+        // An account with a second factor gets a challenge, not a cookie. The
+        // challenge is returned in the body rather than set as a cookie so it
+        // cannot be mistaken for a session by anything downstream.
+        if (!result.Value.IsComplete)
+        {
+            var challenge = result.Value.Challenge!;
+            return Results.Ok(new
+            {
+                secondFactorRequired = true,
+                challengeToken = challenge.Token,
+                expiresAt = challenge.ExpiresAt,
+            });
+        }
+
+        return CompleteSession(context, result.Value.Session!);
+    }
+
+    private static async Task<IResult> SecondFactorAsync(
+        SecondFactorRequest request,
+        HttpContext context,
+        IAuthenticator authenticator,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await authenticator.CompleteSignInAsync(
+            request.ChallengeToken, request.Code, cancellationToken);
+
+        return result.IsFailure
+            ? Unauthorized(result.Error)
+            : CompleteSession(context, result.Value);
+    }
+
+    private static async Task<IResult> EnrolMfaAsync(
+        ICurrentUser currentUser,
+        IAuthenticator authenticator,
+        CancellationToken cancellationToken)
+    {
+        var result = await authenticator.BeginMfaEnrolmentAsync(currentUser.Id, cancellationToken);
+
+        // The secret is returned once, to be shown as a QR code and then
+        // forgotten by the client.
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+    }
+
+    private static async Task<IResult> ConfirmMfaAsync(
+        SecondFactorCodeRequest request,
+        ICurrentUser currentUser,
+        IAuthenticator authenticator,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await authenticator.ConfirmMfaAsync(currentUser.Id, request.Code, cancellationToken);
+
+        return result.IsSuccess
+            ? Results.Ok(new { recoveryCodes = result.Value })
+            : Problem(result.Error);
+    }
+
+    private static async Task<IResult> DisableMfaAsync(
+        SecondFactorCodeRequest request,
+        ICurrentUser currentUser,
+        IAuthenticator authenticator,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await authenticator.DisableMfaAsync(currentUser.Id, request.Code, cancellationToken);
+
+        return result.IsSuccess ? Results.NoContent() : Problem(result.Error);
+    }
+
+    private static IResult CompleteSession(HttpContext context, IssuedSession session)
+    {
         context.Response.Cookies.Append(
             SessionCookie,
-            result.Value.Token,
-            BuildCookieOptions(context, result.Value.AbsoluteExpiresAt));
+            session.Token,
+            BuildCookieOptions(context, session.AbsoluteExpiresAt));
 
-        return Results.Ok(new { expiresAt = result.Value.AbsoluteExpiresAt });
+        return Results.Ok(new { expiresAt = session.AbsoluteExpiresAt });
+    }
+
+    /// <summary>401, not 403: the caller may retry with different credentials.</summary>
+    private static IResult Unauthorized(Error error) =>
+        Results.Problem(
+            title: error.Code,
+            detail: error.Message,
+            statusCode: StatusCodes.Status401Unauthorized);
+
+    private static IResult Problem(Error error)
+    {
+        var status = error.Type switch
+        {
+            ErrorType.Validation => StatusCodes.Status400BadRequest,
+            ErrorType.Conflict => StatusCodes.Status409Conflict,
+            _ => StatusCodes.Status401Unauthorized,
+        };
+
+        return Results.Problem(title: error.Code, detail: error.Message, statusCode: status);
     }
 
     private static async Task<IResult> LogoutAsync(
@@ -114,3 +209,9 @@ internal static class AuthEndpoints
 
 /// <summary>Credentials posted to the login endpoint.</summary>
 internal sealed record LoginRequest(string Email, string Password);
+
+/// <summary>The challenge from a password sign-in, plus the code from the app.</summary>
+internal sealed record SecondFactorRequest(string ChallengeToken, string Code);
+
+/// <summary>A code from the authenticator app, or a recovery code.</summary>
+internal sealed record SecondFactorCodeRequest(string Code);
