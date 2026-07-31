@@ -57,7 +57,7 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - [ ] MFA required by policy rather than by choice — enrolment is currently opt-in per user
 - [ ] Global-administration separation and time-limited support access — not started
 - [ ] Tenant-aware background job context — not started
-- [ ] React/TypeScript/Vite shell with accessible layout — not started *(blocked: Node not installed)*
+- [ ] React/TypeScript/Vite shell with accessible layout — **source written, never executed.** `frontend/` holds the Vite/React/TypeScript project, an API client, a sign-in screen covering the second factor, and an inventory list with loading, empty, permission-denied, failure, and retry states. It has not been compiled or run: that needs `npm install` inside the `odms-node` container, which the maintainer starts. Nothing here may be claimed as working until it has been *(blocked: awaiting the first run)*
 - [ ] Tenant creation, migration, backup, and restore rehearsed — migration rehearsed; **backup and restore not** *(partly human-verifiable)*
 
 ## Completed milestones
@@ -99,6 +99,8 @@ them is written.
 - **2026-07-31 — A second factor at sign-in.** Opt-in TOTP: a password now buys a challenge rather than a session for an enrolled account, and only a code from an authenticator app — or a single-use recovery code — completes it. The secret is encrypted at rest with the protector built earlier the same day, enrolment is two-phase so a mis-scanned QR cannot lock somebody out, and guessing is cut off after five wrong codes. Verified against the published RFC 6238 test vectors, which is the only way to know real phones will agree. Evidence: `dotnet test` 282/282, plus a rehearsal in which silently skipping the challenge failed exactly the four tests that demand it. **Not yet:** requiring MFA by policy, and OIDC — which needs an identity provider to test against.
 
 - **2026-07-31 — Each test run gets its own database.** The integration suite used to share one long-lived database, and assertions quietly became order-dependent as rows accumulated: three separate tests failed over time because a freshly created row fell off the end of a capped, sorted page. Each run now creates databases named for the run and drops them afterwards, sweeping anything a crashed run left behind. Tenant database names derive from the host catalog's name, so this needed no test-only branch in the seeder — and an installation whose catalog is named something else now keeps its databases together, which was arguably a latent bug. Evidence: `dotnet test` 282/282 with the integration suite unchanged at 7 seconds, and no `OpenDealer360_Test_*` database surviving the run.
+
+- **2026-07-31 — A frontend, written but not yet run.** `frontend/` is a Vite + React + TypeScript project: an API client that carries the tenant header and the session cookie, a sign-in screen that handles the second-factor step, an authenticated shell with a skip link and keyboard-visible focus, and an inventory list rendering every state a real screen needs. The dev server proxies `/api` because the session cookie is `SameSite=Strict` and would otherwise be dropped on a cross-origin call. **Explicitly unverified:** no `npm install`, no typecheck, no browser. Treat every line of it as unproven until the container has run it once.
 
 ## Active risks and blockers
 

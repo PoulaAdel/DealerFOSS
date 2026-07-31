@@ -1,0 +1,341 @@
+/* app.css — the whole visual language, for now.
+ *
+ * Use:  imported once by main.tsx.
+ * Edit: it stays one file until it genuinely stops scanning. Two rules are not
+ *       taste: every interactive element keeps a visible focus ring, and colour
+ *       never carries meaning on its own — a status chip says its own name.
+ */
+
+:root {
+  --ink: #16191f;
+  --ink-2: #4a525e;
+  --ink-3: #77808d;
+  --ground: #eef0f3;
+  --surface: #ffffff;
+  --line: #d5d9df;
+  --accent: #a85f0e;
+  --accent-soft: #f6e9d6;
+  --done: #256a4d;
+  --done-soft: #dff0e7;
+  --fail: #a5342b;
+  --fail-soft: #f8e3e0;
+  --idle: #8a929e;
+  --idle-soft: #e8eaee;
+  --mono: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8ecf1;
+    --ink-2: #a3adba;
+    --ink-3: #7b8593;
+    --ground: #0f1216;
+    --surface: #171b21;
+    --line: #272d36;
+    --accent: #e0973f;
+    --accent-soft: #33240f;
+    --done: #4fae83;
+    --done-soft: #12261d;
+    --fail: #e07a6d;
+    --fail-soft: #2b1512;
+    --idle: #6d7683;
+    --idle-soft: #1c2229;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Never removed, only restyled. Losing it makes the app unusable by keyboard. */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+button {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+button[type='submit'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+button.link {
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  text-decoration: underline;
+  padding: 8px 0;
+}
+
+label {
+  display: block;
+  margin-top: 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+input,
+select {
+  font: inherit;
+  width: 100%;
+  margin-top: 4px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* --- sign in --- */
+
+.signin {
+  max-width: 380px;
+  margin: 12vh auto;
+  padding: clamp(20px, 5vw, 32px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.signin__lede {
+  margin: 8px 0 4px;
+  color: var(--ink-3);
+  font-size: 0.9rem;
+}
+
+.signin button[type='submit'] {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.signin button.link {
+  width: 100%;
+  text-align: center;
+}
+
+/* Reserves its line so the form does not jump when a message appears. */
+.error {
+  margin: 12px 0 0;
+  min-height: 1.4em;
+  color: var(--fail);
+  font-size: 0.88rem;
+}
+
+/* --- shell --- */
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.skip:focus {
+  left: 8px;
+}
+
+.shell__bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px clamp(14px, 3vw, 28px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.shell__brand {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.shell__bar nav {
+  display: flex;
+  gap: 6px;
+}
+
+.shell__bar nav a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.shell__bar nav a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.shell__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shell__tenant {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink-3);
+}
+
+.shell__main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 32px);
+}
+
+.shell__main:focus {
+  outline: none;
+}
+
+.page__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.filter {
+  min-width: 180px;
+}
+
+.filter label {
+  margin-top: 0;
+}
+
+/* --- states --- */
+
+.state {
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.state button {
+  margin-top: 12px;
+}
+
+/* --- table --- */
+
+.scroll {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
+.vin {
+  color: var(--ink-3);
+}
+
+/* The chip says its own name, so colour is reinforcement and never the message. */
+.chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--available {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.chip--onhold,
+.chip--reconditioning {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip--sold {
+  background: var(--fail-soft);
+  color: var(--fail);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
