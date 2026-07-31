@@ -6,7 +6,30 @@ and does not need to be** — the toolchain runs in a container
 
 ## Running it
 
-Start the container once:
+**Start the backend first, and make sure it is actually serving the API.**
+
+Without `src/App/appsettings.Development.json` supplying a `HostCatalog`
+connection string, the application starts but maps **no API routes at all** — so
+every call answers `404` and it looks as though the frontend is pointed at the
+wrong place. Copy the example and fill it in:
+
+```bash
+cp src/App/appsettings.Development.json.example src/App/appsettings.Development.json
+```
+
+It needs a connection string and `Seed:Enabled` set to `true`. Then, on the host:
+
+```bash
+dotnet run --project src/App
+```
+
+Check it before going further — this should return the service banner:
+
+```bash
+curl http://localhost:5080/
+```
+
+Now the toolchain. Start the container once:
 
 ```bash
 docker compose -f deploy/docker-compose.yml --profile node up -d
@@ -26,11 +49,7 @@ cd /workspace/frontend && npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. The backend runs on the **host** meanwhile:
-
-```bash
-dotnet run --project src/App
-```
+Open `http://localhost:5173`.
 
 ### Why the dev server proxies `/api`
 
@@ -74,6 +93,14 @@ Not a later pass. A visible focus ring on everything interactive, a skip link
 ahead of the navigation, labels tied to inputs, errors announced with
 `role="alert"`, focus moved to the code field when the second-factor step
 appears, and status shown as a word rather than only a colour.
+
+## When something answers 404
+
+| What returned it | Why |
+|---|---|
+| Every `/api/v1/...` call | The backend has no `HostCatalog` connection string, so it mapped no API routes. See above — this is the common one. |
+| Only calls after signing in | The dealer group does not exist. An unknown tenant is a deliberate `404`, so the response cannot be used to discover which dealers are on an installation. `northgroup` and `citymotors` are the seeded ones. |
+| The page itself, at `:5173` | Vite is serving from the wrong directory. It must be started from `frontend/`. |
 
 ## Not built yet
 
