@@ -63,16 +63,19 @@ public static class IdentitySeeder
             Permissions.VehiclesRead,
             Permissions.InventoryRead,
             Permissions.InventoryManage,
+            Permissions.LeadsRead,
+            Permissions.LeadsManage,
         ]);
 
         // An advisor can look a customer up but not create one, and can see stock
-        // but not move it.
+        // and enquiries but not move either.
         var advisor = await UpsertRoleAsync(db, AdvisorRole,
         [
             Permissions.OrganizationRead,
             Permissions.CustomersRead,
             Permissions.VehiclesRead,
             Permissions.InventoryRead,
+            Permissions.LeadsRead,
         ]);
 
         if (await db.Users.AnyAsync())

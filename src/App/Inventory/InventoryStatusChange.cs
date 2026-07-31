@@ -6,9 +6,11 @@
 //       move with a reason, not by editing the record (doc 04 §4, ADR-016).
 //       TenantDb refuses to update or delete these rows.
 
+using OpenDealer360.Core;
+
 namespace OpenDealer360.Inventory;
 
-public sealed class InventoryStatusChange
+public sealed class InventoryStatusChange : IAppendOnly
 {
     public Guid Id { get; private set; }
 

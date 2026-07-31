@@ -1,9 +1,8 @@
-// ICustomers — the Customers module's public contract, and the only part
-// of it other modules may reference (ADR-008).
+// ICustomers — what other capabilities may call to reach customer records.
 //
-// Use:  Sales and Service will confirm a customer exists and read a summary
+// Use:  Leads, Sales, and Service confirm a customer exists and read a summary
 //       through this. They never touch the customer tables.
-// Edit: keep the returned shapes small. A module that needs a field not here
+// Edit: keep the returned shapes small. A capability that needs a field not here
 //       should say why — widening the contract couples every caller to it.
 
 using OpenDealer360.Core;
@@ -22,6 +21,16 @@ public interface ICustomers
         CancellationToken cancellationToken);
 
     Task<Result<CustomerDetail>> GetAsync(Guid customerId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Names for a known set of customers, in one query. A work list that shows
+    /// customer names would otherwise fetch them one at a time — this exists so a
+    /// caller never has to choose between a slow screen and a stale copy of the
+    /// name. Unknown ids are simply absent from the result.
+    /// </summary>
+    Task<Result<IReadOnlyList<CustomerSummary>>> GetManyAsync(
+        IReadOnlyCollection<Guid> customerIds,
+        CancellationToken cancellationToken);
 
     Task<Result<CustomerDetail>> AddAsync(NewCustomer customer, CancellationToken cancellationToken);
 }

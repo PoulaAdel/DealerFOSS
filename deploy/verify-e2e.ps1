@@ -76,11 +76,18 @@ try {
             -Headers @{ "X-Tenant" = $tenant } -WebSession $session
     }
 
-    function Get-Status([string]$path, [string]$tenant, $session, [string]$method = "Get") {
+    # A POST to an endpoint that expects a body must carry one, or model binding
+    # answers 415 before authorization is ever consulted — which would make a
+    # permission check look like it passed when it never ran.
+    function Get-Status([string]$path, [string]$tenant, $session, [string]$method = "Get", $body = $null) {
         try {
             $call = @{ Uri = "$baseUrl$path"; UseBasicParsing = $true; Method = $method }
             if ($tenant)  { $call.Headers = @{ "X-Tenant" = $tenant } }
             if ($session) { $call.WebSession = $session }
+            if ($body) {
+                $call.Body = ($body | ConvertTo-Json)
+                $call.ContentType = "application/json"
+            }
             return (Invoke-WebRequest @call).StatusCode
         } catch { return $_.Exception.Response.StatusCode.value__ }
     }
@@ -140,6 +147,25 @@ try {
     $vehicleCount = @($vehicles).Count
     "scoped user sees {0} vehicle(s)           (expect 1 or more: vehicles are shared)" -f $vehicleCount
 
+    Write-Host "`n--- lead rooftop scope ---" -ForegroundColor Cyan
+    $managerLeads = Invoke-RestMethod "$baseUrl/api/v1/leads?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $scopedLeads = Invoke-RestMethod "$baseUrl/api/v1/leads?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped
+
+    $siblingLeads = @($managerLeads | Where-Object { $_.rooftopId -eq $siblingId })
+    $leakedLeads = @($scopedLeads | Where-Object { $_.rooftopId -eq $siblingId }).Count
+    "manager sees {0} enquiry(ies) at NAG-02   (expect 1 or more)" -f $siblingLeads.Count
+    "scoped user sees {0} of them              (expect 0)" -f $leakedLeads
+
+    $siblingLeadId = $siblingLeads[0].id
+    $siblingLeadStatus = Get-Status "/api/v1/leads/$siblingLeadId" "northgroup" $scoped
+    "scoped user -> sibling enquiry by id  -> HTTP $siblingLeadStatus (expect 403)"
+
+    # Read is granted to the scoped user, manage is not.
+    $workStatus = Get-Status "/api/v1/leads/$($scopedLeads[0].id)/status" "northgroup" $scoped "Post" @{ status = "Working" }
+    "scoped user -> work own enquiry       -> HTTP $workStatus (expect 403: read-only role)"
+
     Write-Host "`n--- sessions ---" -ForegroundColor Cyan
     $noSession = Get-Status "/api/v1/organization" "northgroup" $null
     "no session                            -> HTTP $noSession (expect 401)"
@@ -167,11 +193,13 @@ try {
         -and ($siblingUnits.Count -ge 1) -and ($leaked -eq 0) `
         -and ($siblingUnitStatus -eq 403) -and ($siblingFilterStatus -eq 403) `
         -and ($vehicleCount -ge 1) `
+        -and ($siblingLeads.Count -ge 1) -and ($leakedLeads -eq 0) `
+        -and ($siblingLeadStatus -eq 403) -and ($workStatus -eq 403) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
         -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced and revocable, rooftop scope holds on structure and stock." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced and revocable, rooftop scope holds on structure, stock, and enquiries." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

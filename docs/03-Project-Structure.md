@@ -43,7 +43,8 @@ OpenDealer360/
 │       ├── Organization/       dealer organization → legal entity → rooftop → department
 │       ├── Customers/          people and businesses the dealership deals with
 │       ├── Vehicles/           vehicles as identities — VIN, year, make, model
-│       └── Inventory/          a vehicle on a rooftop's lot, with a status and a cost
+│       ├── Inventory/          a vehicle on a rooftop's lot, with a status and a cost
+│       └── Leads/              enquiries being worked at a rooftop
 ├── tests/
 │   ├── Unit/           domain rules, no infrastructure
 │   ├── Integration/    the real app against a real database
@@ -52,7 +53,7 @@ OpenDealer360/
 └── docs/
 ```
 
-Future capabilities — CRM, Sales, Finance, Service, Parts, Accounting, Documents,
+Future capabilities — Sales, Finance, Service, Parts, Accounting, Documents,
 Reporting — arrive as sibling folders inside `App/`. Speculative empty folders are
 forbidden. Tax/title, communications, and compliance begin as features inside
 their owning capability and separate only when they acquire independent data
@@ -132,8 +133,10 @@ Three contexts, not one per capability:
 schema it owns (`org`, `customers`, `vehicles`), and `TenantDb` collects them with
 `ApplyConfigurationsFromAssembly`. Two behaviours live centrally in `TenantDb`
 because forgetting either is a silent data-integrity failure: audit columns and
-the concurrency stamp are set on save, and inventory status history is refused any
-update or delete.
+the concurrency stamp are set on save, and anything marked `IAppendOnly` is
+refused any update or delete. The marker is why a history table added later is
+protected by implementing an interface rather than by somebody remembering to
+extend a guard.
 
 `IdentityDb` stays separate even though it lives in the same physical database.
 Merging it would hand every feature a `DbSet<User>`, undoing the wall that is the
@@ -147,8 +150,9 @@ whole reason `Identity` is its own project.
 - `Identity` has no dependency on the application or any feature.
 - `Identity` exports only its access and sign-in contracts — the list is asserted,
   so widening it is a deliberate decision.
-- No feature reaches into another feature. `Inventory` may see `Vehicles`; nothing
-  may see `Inventory`.
+- No feature reaches into another feature. `Inventory` may see `Vehicles`, and
+  `Leads` may see the `ICustomers` and `IVehicles` contracts — but not the entity
+  types behind them, which are named individually in the rule.
 - Entities — anything inheriting `AuditableEntity` — have no EF or ASP.NET
   dependency, wherever the file sits.
 - Tenancy knows about no business feature.

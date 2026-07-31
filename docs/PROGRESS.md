@@ -3,7 +3,7 @@
 Plain language, no jargon. For the engineering detail — every claim paired with
 the command that proves it — see [implementation/STATUS.md](implementation/STATUS.md).
 
-**Last updated:** 30 July 2026
+**Last updated:** 31 July 2026
 
 ---
 
@@ -17,7 +17,7 @@ that, customers and vehicles can now be recorded and found, and each location's
 stock is kept separate from every other location's. There are still no screens —
 this is the engine, not the dashboard.
 
-**About 12% of the first release. Stage 1 of 8, with two stage-3 features built early.**
+**About 15% of the first release. Stage 1 of 8, with the first stage-3 and stage-4 features built early.**
 
 ---
 
@@ -32,7 +32,7 @@ months of focused work.
 | 1 | Foundation | Keeping dealership groups apart, locations, staff permissions, and signing in. | **In progress** |
 | 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | Not started |
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Started early** |
-| 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | Not started |
+| 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | **Started early** |
 | 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | Not started |
 | 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | Not started |
 | 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | Not started |
@@ -66,11 +66,15 @@ months of focused work.
   through incoming → reconditioning → available → sold, with every move kept**
 - **One location cannot see or move another location's stock, while the vehicle
   records themselves stay shared across the group**
+- **Taking an enquiry from someone who might buy, chasing it through to a sale or
+  a dead end, handing it between salespeople, and keeping every note along the way
+  — including a lost lead who comes back months later**
 
 ## What does not exist
 
 - Prices, aging, or photos of a vehicle
 - Building a deal or selling anything
+- Appointments as real diary entries, or automatic follow-up reminders
 - Service appointments or repair orders
 - Accounting, parts, reports
 - Any screen a person would look at

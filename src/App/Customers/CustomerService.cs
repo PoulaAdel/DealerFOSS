@@ -88,6 +88,35 @@ public sealed class CustomerService(
             : Result.Success(Describe(customer));
     }
 
+    public async Task<Result<IReadOnlyList<CustomerSummary>>> GetManyAsync(
+        IReadOnlyCollection<Guid> customerIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(customerIds);
+
+        if (!await IsAllowedAsync(ReadPermission, cancellationToken))
+        {
+            return Result.Failure<IReadOnlyList<CustomerSummary>>(CustomerErrors.Forbidden);
+        }
+
+        if (customerIds.Count == 0)
+        {
+            return Result.Success<IReadOnlyList<CustomerSummary>>([]);
+        }
+
+        // Capped like every other read here: a caller asking for thousands of ids
+        // is a bug, and answering it would be a denial-of-service on ourselves.
+        var wanted = customerIds.Distinct().Take(MaxResults).ToList();
+
+        var customers = await _db.Customers
+            .AsNoTracking()
+            .Where(c => wanted.Contains(c.Id))
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IReadOnlyList<CustomerSummary>>(
+            customers.Select(Summarize).ToList());
+    }
+
     public async Task<Result<CustomerDetail>> AddAsync(
         NewCustomer customer,
         CancellationToken cancellationToken)

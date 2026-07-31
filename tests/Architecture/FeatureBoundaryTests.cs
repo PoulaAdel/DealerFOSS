@@ -27,11 +27,38 @@ public sealed class FeatureBoundaryTests
     /// </summary>
     public static TheoryData<string, string[]> ForbiddenFeatureDependencies() => new()
     {
-        { "OpenDealer360.Organization", ["OpenDealer360.Customers", "OpenDealer360.Vehicles", "OpenDealer360.Inventory"] },
-        { "OpenDealer360.Customers", ["OpenDealer360.Organization", "OpenDealer360.Vehicles", "OpenDealer360.Inventory"] },
-        { "OpenDealer360.Vehicles", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Inventory"] },
-        { "OpenDealer360.Inventory", ["OpenDealer360.Organization", "OpenDealer360.Customers"] },
+        { "OpenDealer360.Organization", ["OpenDealer360.Customers", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads"] },
+        { "OpenDealer360.Customers", ["OpenDealer360.Organization", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads"] },
+        { "OpenDealer360.Vehicles", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Inventory", "OpenDealer360.Leads"] },
+        { "OpenDealer360.Inventory", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Leads"] },
     };
+
+    /// <summary>
+    /// The entity types a capability owns. Another capability may use the
+    /// <c>I&lt;Feature&gt;</c> contract next to them, but never these.
+    /// </summary>
+    public static TheoryData<string, string[]> ForbiddenEntityDependencies() => new()
+    {
+        { "OpenDealer360.Leads", ["OpenDealer360.Customers.Customer", "OpenDealer360.Customers.ContactPoint", "OpenDealer360.Vehicles.Vehicle", "OpenDealer360.Inventory.InventoryUnit"] },
+    };
+
+    [Theory]
+    [MemberData(nameof(ForbiddenEntityDependencies))]
+    public void A_feature_may_use_a_siblings_contract_but_not_its_entities(string feature, string[] forbidden)
+    {
+        // Flattening the folders put ICustomers and Customer in the same
+        // namespace, so the namespace rule above cannot tell them apart. This
+        // one names the entity types directly — it is what keeps "through the
+        // contract only" a real rule rather than a convention (ADR-017).
+        var result = Types.InAssembly(App)
+            .That().ResideInNamespace(feature)
+            .Should().NotHaveDependencyOnAny(forbidden)
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: $"{feature} must go through the published interface, not the entity; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
 
     [Theory]
     [MemberData(nameof(ForbiddenFeatureDependencies))]

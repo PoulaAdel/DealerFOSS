@@ -28,6 +28,12 @@ public static class Permissions
     /// <summary>Taking stock in, moving its status, and recording a vehicle.</summary>
     public const string InventoryManage = "Inventory.Manage";
 
+    /// <summary>Seeing a lot's enquiries. Held per rooftop, or organization-wide.</summary>
+    public const string LeadsRead = "Leads.Read";
+
+    /// <summary>Capturing an enquiry, moving it on, and reassigning it.</summary>
+    public const string LeadsManage = "Leads.Manage";
+
     public static IReadOnlyCollection<string> All { get; } =
     [
         OrganizationRead,
@@ -37,6 +43,8 @@ public static class Permissions
         VehiclesRead,
         InventoryRead,
         InventoryManage,
+        LeadsRead,
+        LeadsManage,
     ];
 }
 

@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
 using OpenDealer360.Inventory;
+using OpenDealer360.Leads;
 using OpenDealer360.Organization;
 using OpenDealer360.Vehicles;
 
@@ -46,6 +47,10 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
     public DbSet<InventoryUnit> InventoryUnits => Set<InventoryUnit>();
 
     public DbSet<InventoryStatusChange> InventoryStatusHistory => Set<InventoryStatusChange>();
+
+    public DbSet<Lead> Leads => Set<Lead>();
+
+    public DbSet<LeadStatusChange> LeadHistory => Set<LeadStatusChange>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,19 +88,24 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
     }
 
     /// <summary>
-    /// Status history is the record of what happened to a car. Rewriting it would
-    /// make aging, cost, and deal reconciliation unauditable, so a correction is
-    /// an opposite move with a reason (doc 04 §4).
+    /// History is the record of what happened. Rewriting it would make aging,
+    /// cost, and reconciliation unauditable, so a correction is an opposite entry
+    /// with a reason (doc 04 §4, ADR-016).
     /// </summary>
+    /// <remarks>
+    /// Keyed off <see cref="IAppendOnly"/> rather than a list of types, so a
+    /// history table added later is protected by implementing the marker instead
+    /// of by somebody remembering to extend this method.
+    /// </remarks>
     private void GuardAppendOnlyHistory()
     {
-        foreach (var entry in ChangeTracker.Entries<InventoryStatusChange>())
+        foreach (var entry in ChangeTracker.Entries<IAppendOnly>())
         {
             if (entry.State is EntityState.Modified or EntityState.Deleted)
             {
                 throw new InvalidOperationException(
-                    "Inventory status history is append-only. Record the opposite move with a "
-                    + $"reason instead of attempting to {entry.State.ToString().ToLowerInvariant()} an entry.");
+                    $"{entry.Entity.GetType().Name} is append-only. Record the opposite entry with a "
+                    + $"reason instead of attempting to {entry.State.ToString().ToLowerInvariant()} one.");
             }
         }
     }

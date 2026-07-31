@@ -17,6 +17,7 @@ using OpenDealer360.Customers;
 using OpenDealer360.Data;
 using OpenDealer360.Identity;
 using OpenDealer360.Inventory;
+using OpenDealer360.Leads;
 using OpenDealer360.Organization;
 using OpenDealer360.Tenancy;
 using OpenDealer360.Vehicles;
@@ -118,6 +119,7 @@ public static class DevelopmentSeeder
 
         await SeedCustomersAsync(tenantDb);
         await SeedStockAsync(tenantDb, clock);
+        await SeedLeadsAsync(tenantDb, clock);
 
         var record = await hostCatalog.Tenants.SingleOrDefaultAsync(t => t.Slug == slug);
         if (record is null)
@@ -213,6 +215,55 @@ public static class DevelopmentSeeder
         otherLot.ChangeStatus(InventoryStatus.Available, now);
 
         db.InventoryUnits.AddRange(onLot, inShop, otherLot);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// A few enquiries in different states, spread across rooftops so the scope
+    /// rules have something to actually hide. One is deliberately lost and
+    /// reopened, because that is the path most likely to be broken by a careless
+    /// change to the status rules.
+    /// </summary>
+    private static async Task SeedLeadsAsync(TenantDb db, IClock clock)
+    {
+        if (await db.Leads.AnyAsync())
+        {
+            return;
+        }
+
+        var rooftops = await db.Rooftops.OrderBy(r => r.Code).Select(r => r.Id).ToListAsync();
+        var first = rooftops[0];
+        var second = rooftops.Count > 1 ? rooftops[1] : rooftops[0];
+
+        var customers = await db.Customers.OrderBy(c => c.LastName).Select(c => c.Id).ToListAsync();
+        if (customers.Count == 0)
+        {
+            return;
+        }
+
+        var vehicle = await db.Vehicles.OrderBy(v => v.Vin).Select(v => (Guid?)v.Id).FirstOrDefaultAsync();
+        var now = clock.UtcNow;
+
+        var walkIn = Lead.Capture(
+            Guid.NewGuid(), first, customers[0], LeadSource.WalkIn, now.AddDays(-6),
+            vehicleOfInterestId: vehicle, enquiry: "Wants something around 25k, part-exchanging a hatchback.");
+        walkIn.ChangeStatus(LeadStatus.Working, now.AddDays(-5), note: "Called back, sending options.");
+        walkIn.ChangeStatus(LeadStatus.Appointment, now.AddDays(-2), note: "Coming in Saturday at 10.");
+
+        var website = Lead.Capture(
+            Guid.NewGuid(), first, customers[Math.Min(1, customers.Count - 1)], LeadSource.Website, now.AddDays(-3),
+            enquiry: "Enquiry from the website contact form.");
+
+        // Lost in the spring, back in the summer — the path that proves a closed
+        // lead can legitimately reopen instead of becoming a duplicate record.
+        var revived = Lead.Capture(
+            Guid.NewGuid(), second, customers[^1], LeadSource.Phone, now.AddDays(-40),
+            enquiry: "Asked about finance on a pickup.");
+        revived.ChangeStatus(LeadStatus.Working, now.AddDays(-39));
+        revived.ChangeStatus(LeadStatus.Lost, now.AddDays(-30), note: "Went quiet.");
+        revived.ChangeStatus(LeadStatus.Working, now.AddDays(-1), note: "Rang back, still looking.");
+
+        db.Leads.AddRange(walkIn, website, revived);
         await db.SaveChangesAsync();
     }
 
