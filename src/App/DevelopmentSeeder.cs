@@ -54,6 +54,29 @@ public static class DevelopmentSeeder
     }
 
     /// <summary>
+    /// Names a tenant database from the host catalog's own name, so an
+    /// installation called something other than <c>OpenDealer360_Host</c> keeps
+    /// its databases together instead of scattering them under a fixed prefix.
+    /// </summary>
+    /// <remarks>
+    /// The integration suite relies on this: it points the host catalog at a
+    /// name unique to the run, and gets tenant databases unique to the run for
+    /// free — which is what stops one run's data leaking into the next one's
+    /// assertions.
+    /// </remarks>
+    public static string TenantDatabaseName(string hostConnectionString, string slug)
+    {
+        const string hostSuffix = "_Host";
+
+        var catalog = new SqlConnectionStringBuilder(hostConnectionString).InitialCatalog;
+        var prefix = catalog.EndsWith(hostSuffix, StringComparison.OrdinalIgnoreCase)
+            ? catalog[..^hostSuffix.Length]
+            : catalog;
+
+        return $"{prefix}_Tenant_{slug}";
+    }
+
+    /// <summary>
     /// Well-known development users. Fixed ids so tests and manual checks can
     /// act as a specific scope without first querying for one.
     /// </summary>
@@ -100,7 +123,7 @@ public static class DevelopmentSeeder
     {
         var tenantConnection = new SqlConnectionStringBuilder(hostConnectionString)
         {
-            InitialCatalog = $"OpenDealer360_Tenant_{slug}",
+            InitialCatalog = TenantDatabaseName(hostConnectionString, slug),
         }.ConnectionString;
 
         var options = new DbContextOptionsBuilder<TenantDb>()

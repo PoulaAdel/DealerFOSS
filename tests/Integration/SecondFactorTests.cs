@@ -191,10 +191,7 @@ public sealed class SecondFactorTests(HostFixture fixture)
     private static async Task ResetSecondFactorAsync()
     {
         await using var connection = new Microsoft.Data.SqlClient.SqlConnection(
-            new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(HostFixture.ConnectionString)
-            {
-                InitialCatalog = $"OpenDealer360_Tenant_{Tenant}",
-            }.ConnectionString);
+            HostFixture.TenantConnectionString(Tenant));
 
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();

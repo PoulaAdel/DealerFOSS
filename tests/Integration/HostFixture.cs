@@ -34,8 +34,43 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
     private const string LocalDbFallback =
         @"Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False";
 
-    public static string ConnectionString =>
+    /// <summary>Databases created by a test run all start with this.</summary>
+    private const string TestDatabasePrefix = "OpenDealer360_Test_";
+
+    private static string EngineConnection =>
         Environment.GetEnvironmentVariable("OPENDEALER360_TEST_SQL") ?? LocalDbFallback;
+
+    /// <summary>
+    /// Unique to this run. Declared before the connection string below, because
+    /// static field initializers run in the order they are written.
+    /// </summary>
+    private static readonly string RunId =
+        $"{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}"[..24];
+
+    /// <summary>
+    /// The host catalog for this run — a database nothing else is using.
+    ///
+    /// The suite used to share one long-lived database, and assertions quietly
+    /// became order-dependent as rows piled up: three separate tests failed over
+    /// time because a freshly created row fell off the end of a capped, sorted
+    /// page. A run that starts empty cannot develop that problem.
+    /// </summary>
+    public static string ConnectionString { get; } =
+        new SqlConnectionStringBuilder(EngineConnection)
+        {
+            InitialCatalog = $"{TestDatabasePrefix}{RunId}_Host",
+        }.ConnectionString;
+
+    /// <summary>
+    /// The connection for one dealer organization's database in this run. Tests
+    /// that read tables directly must go through this rather than assuming a
+    /// fixed name.
+    /// </summary>
+    public static string TenantConnectionString(string slug) =>
+        new SqlConnectionStringBuilder(ConnectionString)
+        {
+            InitialCatalog = DevelopmentSeeder.TenantDatabaseName(ConnectionString, slug),
+        }.ConnectionString;
 
     static HostFixture()
     {
@@ -61,14 +96,76 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
     {
         await EnsureSqlReachableAsync();
 
-        // Force host construction (and therefore migration + seeding) once,
-        // before any test runs.
+        // Databases left behind by a run that crashed before it could tidy up.
+        // Swept on a delay so a run happening right now on the same engine is
+        // not pulled out from under itself.
+        await DropDatabasesAsync(
+            "name LIKE @prefix + '%' AND create_date < DATEADD(hour, -6, GETUTCDATE())");
+
+        // Force host construction (and therefore database creation, migration,
+        // and seeding) once, before any test runs.
         using var client = CreateClient();
         using var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
         response.EnsureSuccessStatusCode();
     }
 
-    Task IAsyncLifetime.DisposeAsync() => Task.CompletedTask;
+    async Task IAsyncLifetime.DisposeAsync()
+    {
+        // Everything this run created — the host catalog and both tenants.
+        await DropDatabasesAsync("name LIKE @prefix + @run + '%'");
+    }
+
+    /// <summary>
+    /// Drops every database matching a predicate, forcing other connections off
+    /// first. Best effort: a failure to tidy up must not fail the test run, or a
+    /// green suite would go red for a reason unrelated to the code.
+    /// </summary>
+    private static async Task DropDatabasesAsync(string predicate)
+    {
+        try
+        {
+            var master = new SqlConnectionStringBuilder(ConnectionString)
+            {
+                InitialCatalog = "master",
+            }.ConnectionString;
+
+            await using var connection = new SqlConnection(master);
+            await connection.OpenAsync();
+
+            var names = new List<string>();
+            await using (var find = connection.CreateCommand())
+            {
+                find.CommandText = $"SELECT name FROM sys.databases WHERE {predicate}";
+                find.Parameters.AddWithValue("@prefix", TestDatabasePrefix);
+                find.Parameters.AddWithValue("@run", RunId);
+
+                await using var reader = await find.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    names.Add(reader.GetString(0));
+                }
+            }
+
+            foreach (var name in names)
+            {
+                await using var drop = connection.CreateCommand();
+
+                // The name comes from sys.databases, not from input, and is
+                // bracketed — but it still cannot be a parameter, because DROP
+                // DATABASE does not take one.
+                drop.CommandText =
+                    $"ALTER DATABASE [{name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; "
+                    + $"DROP DATABASE [{name}];";
+
+                await drop.ExecuteNonQueryAsync();
+            }
+        }
+        catch (SqlException)
+        {
+            // Leaving a database behind costs disk, not correctness. The next
+            // run sweeps it.
+        }
+    }
 
     /// <summary>
     /// Signs a development user in and returns their session token, caching it

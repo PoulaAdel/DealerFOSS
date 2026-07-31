@@ -10,6 +10,10 @@
     SQL-backed integration tests. These drive the real application through
     WebApplicationFactory against a real database, so tenant isolation is
     proven in CI rather than only by the manual verify-e2e.ps1 run.
+
+    Each run creates its own databases and drops them afterwards — see
+    HostFixture. Sharing one long-lived database made assertions quietly
+    order-dependent as rows accumulated.
   -->
 
   <ItemGroup>

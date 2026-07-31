@@ -98,6 +98,8 @@ them is written.
 
 - **2026-07-31 — A second factor at sign-in.** Opt-in TOTP: a password now buys a challenge rather than a session for an enrolled account, and only a code from an authenticator app — or a single-use recovery code — completes it. The secret is encrypted at rest with the protector built earlier the same day, enrolment is two-phase so a mis-scanned QR cannot lock somebody out, and guessing is cut off after five wrong codes. Verified against the published RFC 6238 test vectors, which is the only way to know real phones will agree. Evidence: `dotnet test` 282/282, plus a rehearsal in which silently skipping the challenge failed exactly the four tests that demand it. **Not yet:** requiring MFA by policy, and OIDC — which needs an identity provider to test against.
 
+- **2026-07-31 — Each test run gets its own database.** The integration suite used to share one long-lived database, and assertions quietly became order-dependent as rows accumulated: three separate tests failed over time because a freshly created row fell off the end of a capped, sorted page. Each run now creates databases named for the run and drops them afterwards, sweeping anything a crashed run left behind. Tenant database names derive from the host catalog's name, so this needed no test-only branch in the seeder — and an installation whose catalog is named something else now keeps its databases together, which was arguably a latent bug. Evidence: `dotnet test` 282/282 with the integration suite unchanged at 7 seconds, and no `OpenDealer360_Test_*` database surviving the run.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |

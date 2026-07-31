@@ -140,10 +140,7 @@ public sealed class RooftopAuthorizationTests(HostFixture fixture)
     private static async Task<int> CountDeniedAuditEventsAsync(Guid actorUserId)
     {
         await using var connection = new Microsoft.Data.SqlClient.SqlConnection(
-            new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(HostFixture.ConnectionString)
-            {
-                InitialCatalog = $"OpenDealer360_Tenant_{Tenant}",
-            }.ConnectionString);
+            HostFixture.TenantConnectionString(Tenant));
 
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();

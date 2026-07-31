@@ -256,5 +256,5 @@ Pass `-HostConnection` to point it at the container instead of LocalDB:
 |---|---|
 | SQL container exits, log mentions `sqlpal.dll` or `Failed to load LSA` | The data volume is a bind mount to a Windows path. It must be a named volume. |
 | `dotnet ef` cannot reach a database | It uses its own design-time connection. Override with `OPENDEALER360_TENANT_CONNECTION` or `OPENDEALER360_HOST_CONNECTION`. |
-| Tests fail after a lot of runs | Development data accumulates. `down -v` and let the seeder rebuild. |
+| A stray `OpenDealer360_Test_*` database | A test run crashed before tidying up. The next run sweeps anything over six hours old; dropping it by hand is safe. |
 | Port 1433 already in use | A local SQL Server instance is running. Stop it, or change the published port in the compose file. |
