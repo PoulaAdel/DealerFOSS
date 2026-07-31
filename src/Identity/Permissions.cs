@@ -46,6 +46,15 @@ public static class Permissions
     /// </summary>
     public const string DealsApprove = "Deals.Approve";
 
+    /// <summary>Reading the ledger.</summary>
+    public const string AccountingRead = "Accounting.Read";
+
+    /// <summary>
+    /// Putting something in the ledger, or reversing it. Held by whoever is
+    /// accountable for the numbers — normally not the salesperson.
+    /// </summary>
+    public const string AccountingPost = "Accounting.Post";
+
     public static IReadOnlyCollection<string> All { get; } =
     [
         OrganizationRead,
@@ -60,6 +69,8 @@ public static class Permissions
         DealsRead,
         DealsWrite,
         DealsApprove,
+        AccountingRead,
+        AccountingPost,
     ];
 }
 

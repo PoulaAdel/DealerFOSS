@@ -74,7 +74,10 @@ public sealed class OrganizationService(
                         r.Departments
                             .OrderBy(d => d.Kind)
                             .Select(d => new DepartmentView(d.Id, d.Name, d.Kind.ToString()))
-                            .ToList()))
+                            .ToList())
+                    {
+                        LegalEntityId = le.Id,
+                    })
                     .ToList()))
             .Where(le => le.Rooftops.Count > 0)
             .ToList();
@@ -114,7 +117,10 @@ public sealed class OrganizationService(
             rooftop.Departments
                 .OrderBy(d => d.Kind)
                 .Select(d => new DepartmentView(d.Id, d.Name, d.Kind.ToString()))
-                .ToList()));
+                .ToList())
+        {
+            LegalEntityId = rooftop.LegalEntityId,
+        });
     }
 
     public async Task<bool> RooftopExistsAsync(RooftopId rooftopId, CancellationToken cancellationToken) =>

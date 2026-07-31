@@ -174,11 +174,15 @@ public sealed class InventoryTests(HostFixture fixture)
         await ReceiveAsync(Manager, await RooftopIdAsync("NAG-01"), mine);
         await ReceiveAsync(Manager, await RooftopIdAsync("NAG-02"), theirs);
 
-        var visible = await ListAsync($"{Inventory}?limit=200", Advisor);
+        // Asked for by stock number rather than read off a page. A capped,
+        // stock-number-ordered list makes "is it in the first 200?" depend on how
+        // much data happens to exist, which is not what this test is about.
+        var ownStock = await ListAsync($"{Inventory}?stock={mine}", Advisor);
+        var siblingStock = await ListAsync($"{Inventory}?stock={theirs}", Advisor);
 
-        visible.Should().Contain(mine);
-        visible.Should().NotContain(theirs,
-            because: "the response must never carry another rooftop's stock");
+        ownStock.Should().ContainSingle().Which.Should().Be(mine);
+        siblingStock.Should().BeEmpty(
+            because: "the response must never carry another rooftop's stock, by any route");
     }
 
     [Fact]

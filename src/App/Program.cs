@@ -11,6 +11,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OpenDealer360.Accounting;
 using OpenDealer360.App;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
@@ -67,6 +68,7 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IInventory, InventoryService>();
     builder.Services.AddScoped<ILeads, LeadService>();
     builder.Services.AddScoped<IDeals, DealService>();
+    builder.Services.AddScoped<IAccounting, AccountingService>();
 }
 
 // --- Health: liveness, readiness, and degraded dependencies are separated
@@ -147,6 +149,7 @@ if (tenancyEnabled)
     app.MapInventory();
     app.MapLeads();
     app.MapDeals();
+    app.MapAccounting();
 }
 
 // Development-only sample data (doc 08 §8), gated behind an explicit flag.

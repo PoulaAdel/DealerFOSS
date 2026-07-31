@@ -216,6 +216,29 @@ try {
     }
     "second deal on the same car           -> HTTP $doubleSell (expect 409)"
 
+    Write-Host "`n--- the ledger behind the sale ---" -ForegroundColor Cyan
+    $null = Invoke-Api "/api/v1/deals/$($deal.id)/status" $orgWide @{ status = "Delivered" }
+
+    $entries = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($deal.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $entryCount = @($entries).Count
+    "delivering the car posted {0} entry(ies)  (expect exactly 1)" -f $entryCount
+
+    $posted = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal/$(@($entries)[0].id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    "entry debits {0} vs credits {1}        (expect equal)" -f $posted.totalDebits, $posted.totalCredits
+    $balanced = ($posted.totalDebits -eq $posted.totalCredits)
+
+    # A correction is a reversal; the original must survive it untouched.
+    $reversal = Invoke-Api "/api/v1/accounting/journal/$($posted.id)/reverse" $orgWide @{ reason = "End-to-end check." }
+    $originalAfter = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal/$($posted.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $originalIntact = ($originalAfter.totalDebits -eq $posted.totalDebits)
+    "reversal posted, original intact: {0}   (expect True)" -f $originalIntact
+
+    $reverseTwice = Get-Status "/api/v1/accounting/journal/$($posted.id)/reverse" "northgroup" $orgWide "Post" @{ reason = "Again." }
+    "reversing the same entry twice        -> HTTP $reverseTwice (expect 409)"
+
     Write-Host "`n--- sessions ---" -ForegroundColor Cyan
     $noSession = Get-Status "/api/v1/organization" "northgroup" $null
     "no session                            -> HTTP $noSession (expect 401)"
@@ -247,11 +270,12 @@ try {
         -and ($siblingLeadStatus -eq 403) -and ($workStatus -eq 403) `
         -and ($submitStatus -eq 200) -and ($salesApprove -eq 403) -and ($managerApprove -eq 200) `
         -and ($doubleSell -eq 409) `
+        -and ($entryCount -eq 1) -and $balanced -and $originalIntact -and ($reverseTwice -eq 409) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
         -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced and revocable, rooftop scope holds, and a deal needs a manager." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

@@ -31,7 +31,8 @@ public sealed class FeatureBoundaryTests
         { "OpenDealer360.Customers", ["OpenDealer360.Organization", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
         { "OpenDealer360.Vehicles", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
         { "OpenDealer360.Inventory", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
-        { "OpenDealer360.Leads", ["OpenDealer360.Organization", "OpenDealer360.Deals"] },
+        { "OpenDealer360.Leads", ["OpenDealer360.Organization", "OpenDealer360.Deals", "OpenDealer360.Accounting"] },
+        { "OpenDealer360.Accounting", ["OpenDealer360.Customers", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
     };
 
     /// <summary>
@@ -41,7 +42,8 @@ public sealed class FeatureBoundaryTests
     public static TheoryData<string, string[]> ForbiddenEntityDependencies() => new()
     {
         { "OpenDealer360.Leads", ["OpenDealer360.Customers.Customer", "OpenDealer360.Customers.ContactPoint", "OpenDealer360.Vehicles.Vehicle", "OpenDealer360.Inventory.InventoryUnit"] },
-        { "OpenDealer360.Deals", ["OpenDealer360.Customers.Customer", "OpenDealer360.Customers.ContactPoint", "OpenDealer360.Vehicles.Vehicle", "OpenDealer360.Inventory.InventoryUnit", "OpenDealer360.Inventory.InventoryStatusChange"] },
+        { "OpenDealer360.Deals", ["OpenDealer360.Customers.Customer", "OpenDealer360.Customers.ContactPoint", "OpenDealer360.Vehicles.Vehicle", "OpenDealer360.Inventory.InventoryUnit", "OpenDealer360.Inventory.InventoryStatusChange", "OpenDealer360.Accounting.JournalEntry", "OpenDealer360.Accounting.Account"] },
+        { "OpenDealer360.Accounting", ["OpenDealer360.Organization.Rooftop", "OpenDealer360.Organization.LegalEntity", "OpenDealer360.Organization.DealerOrganization"] },
     };
 
     [Theory]

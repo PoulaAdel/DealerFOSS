@@ -29,7 +29,15 @@ public sealed record RooftopView(
     string Name,
     string Code,
     string TimeZone,
-    IReadOnlyList<DepartmentView> Departments);
+    IReadOnlyList<DepartmentView> Departments)
+{
+    /// <summary>
+    /// Which legal entity owns this rooftop. Money belongs to a legal entity, not
+    /// to a building, so anything posting an accounting entry needs this — and it
+    /// cannot be added retrospectively to entries that are already immutable.
+    /// </summary>
+    public LegalEntityId LegalEntityId { get; init; }
+}
 
 public sealed record DepartmentView(
     DepartmentId Id,

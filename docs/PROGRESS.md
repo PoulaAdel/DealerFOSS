@@ -17,7 +17,7 @@ that, customers and vehicles can now be recorded and found, and each location's
 stock is kept separate from every other location's. There are still no screens —
 this is the engine, not the dashboard.
 
-**About 19% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
+**About 22% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
 
 ---
 
@@ -74,9 +74,15 @@ months of focused work.
   whole time so nobody else can sell it**
 - **A salesperson cannot approve their own deal, and the price cannot change after
   a manager has agreed to it**
+- **Every sale writes its own accounting entry — what came in, what went out, what
+  the car cost — and it must balance or the sale does not go through. Nothing in
+  that record can ever be edited; a mistake is corrected by an opposite entry that
+  leaves both visible**
 
 ## What does not exist
 
+- **A full set of books.** The sales are recorded; there are no accounting
+  periods, no trial balance, and no account totals yet
 - Finance applications, lenders, or F&I products
 - Taxes and registration fees calculated by jurisdiction
 - Printed or signed paperwork

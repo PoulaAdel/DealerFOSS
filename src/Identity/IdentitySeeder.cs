@@ -72,6 +72,8 @@ public static class IdentitySeeder
             Permissions.DealsRead,
             Permissions.DealsWrite,
             Permissions.DealsApprove,
+            Permissions.AccountingRead,
+            Permissions.AccountingPost,
         ]);
 
         // An advisor can look a customer up but not create one, and can see stock,
@@ -84,6 +86,7 @@ public static class IdentitySeeder
             Permissions.InventoryRead,
             Permissions.LeadsRead,
             Permissions.DealsRead,
+            Permissions.AccountingRead,
         ]);
 
         // A salesperson does the whole job except sign their own deal off. That
@@ -101,6 +104,11 @@ public static class IdentitySeeder
             Permissions.LeadsManage,
             Permissions.DealsRead,
             Permissions.DealsWrite,
+            // Delivering a car posts the sale, so a salesperson who can deliver
+            // must be able to post it. Reversing is still a manager's job,
+            // because that is the operation that can hide a mistake.
+            Permissions.AccountingRead,
+            Permissions.AccountingPost,
         ]);
 
         // Accounts are reconciled one at a time rather than all-or-nothing, for the

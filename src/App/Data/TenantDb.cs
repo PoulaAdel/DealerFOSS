@@ -12,6 +12,7 @@
 //       append-only.
 
 using Microsoft.EntityFrameworkCore;
+using OpenDealer360.Accounting;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
 using OpenDealer360.Deals;
@@ -58,6 +59,12 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
     public DbSet<DealCharge> DealCharges => Set<DealCharge>();
 
     public DbSet<DealStatusChange> DealHistory => Set<DealStatusChange>();
+
+    public DbSet<Account> Accounts => Set<Account>();
+
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+
+    public DbSet<JournalLine> JournalLines => Set<JournalLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

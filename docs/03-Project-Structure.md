@@ -45,7 +45,8 @@ OpenDealer360/
 │       ├── Vehicles/           vehicles as identities — VIN, year, make, model
 │       ├── Inventory/          a vehicle on a rooftop's lot, with a status and a cost
 │       ├── Leads/              enquiries being worked at a rooftop
-│       └── Deals/              one customer buying one car, priced and approved
+│       ├── Deals/              one customer buying one car, priced and approved
+│       └── Accounting/         the ledger behind a delivered sale
 ├── tests/
 │   ├── Unit/           domain rules, no infrastructure
 │   ├── Integration/    the real app against a real database
@@ -54,8 +55,8 @@ OpenDealer360/
 └── docs/
 ```
 
-Future capabilities — Finance, Service, Parts, Accounting, Documents, Reporting —
-arrive as sibling folders inside `App/`. Speculative empty folders are
+Future capabilities — Finance, Service, Parts, Documents, Reporting — arrive as
+sibling folders inside `App/`. Speculative empty folders are
 forbidden. Tax/title, communications, and compliance begin as features inside
 their owning capability and separate only when they acquire independent data
 ownership and workflows.

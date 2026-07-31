@@ -16,6 +16,7 @@
 //       both services within a request, so a single transaction covers both.
 
 using Microsoft.EntityFrameworkCore;
+using OpenDealer360.Accounting;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
 using OpenDealer360.Data;
@@ -29,6 +30,7 @@ public sealed class DealService(
     IAccessDirectory access,
     ICustomers customers,
     IInventory inventory,
+    IAccounting accounting,
     ICurrentUser currentUser,
     IAuditSink audit,
     IClock clock)
@@ -47,6 +49,7 @@ public sealed class DealService(
     private readonly IAccessDirectory _access = access;
     private readonly ICustomers _customers = customers;
     private readonly IInventory _inventory = inventory;
+    private readonly IAccounting _accounting = accounting;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
@@ -325,6 +328,20 @@ public sealed class DealService(
 
         var from = deal.Status;
 
+        // Read the cost before the car moves — a delivered unit still has to
+        // report what it cost, and the ledger needs it to show gross profit.
+        decimal vehicleCost = 0m;
+        if (next == DealStatus.Delivered)
+        {
+            var unit = await _inventory.GetAsync(deal.InventoryUnitId, cancellationToken);
+            if (unit.IsFailure)
+            {
+                return Result.Failure<DealDetail>(unit.Error);
+            }
+
+            vehicleCost = unit.Value.CostAmount ?? 0m;
+        }
+
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         try
@@ -360,6 +377,21 @@ public sealed class DealService(
             }
         }
 
+        // A car leaving the lot is an accounting event. It posts inside the same
+        // transaction as the delivery, so the ledger and the deal can never
+        // disagree about whether the sale happened.
+        if (next == DealStatus.Delivered)
+        {
+            var posted = await _accounting.PostDeliveryAsync(
+                BuildPosting(deal, vehicleCost), cancellationToken);
+
+            if (posted.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<DealDetail>(posted.Error);
+            }
+        }
+
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
@@ -379,6 +411,27 @@ public sealed class DealService(
 
         return await DescribeAsync(deal, cancellationToken);
     }
+
+    /// <summary>
+    /// Restates the deal in the terms the ledger needs, so Accounting never has
+    /// to know what a charge kind is and Deals never has to know what an account
+    /// is.
+    /// </summary>
+    private static DeliveryPosting BuildPosting(Deal deal, decimal vehicleCost) =>
+        new(
+            deal.RooftopId,
+            deal.Id.ToString(),
+            deal.Currency,
+            VehiclePrice: deal.Charges.Where(c => c.Kind == ChargeKind.VehiclePrice).Sum(c => c.Amount),
+            Fees: deal.Charges
+                .Where(c => c.Kind is ChargeKind.Fee or ChargeKind.Accessory)
+                .Sum(c => c.Amount),
+            Discount: deal.Charges.Where(c => c.Kind == ChargeKind.Discount).Sum(c => c.Amount),
+            TradeAllowance: deal.Trade?.Allowance ?? 0m,
+            TradePayoff: deal.Trade?.Payoff ?? 0m,
+            AmountDue: deal.AmountDue.Amount,
+            VehicleCost: vehicleCost,
+            Memo: $"Delivered deal {deal.Id}");
 
     private async Task<Deal?> LoadAsync(Guid dealId, bool tracked, CancellationToken cancellationToken)
     {

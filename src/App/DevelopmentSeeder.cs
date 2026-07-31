@@ -13,6 +13,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Core;
+using OpenDealer360.Accounting;
 using OpenDealer360.Customers;
 using OpenDealer360.Data;
 using OpenDealer360.Deals;
@@ -128,6 +129,7 @@ public static class DevelopmentSeeder
 
         await SeedCustomersAsync(tenantDb);
         await SeedStockAsync(tenantDb, clock);
+        await SeedChartOfAccountsAsync(tenantDb);
         await SeedLeadsAsync(tenantDb, clock);
         await SeedDealsAsync(tenantDb, clock);
 
@@ -322,6 +324,36 @@ public static class DevelopmentSeeder
         unit.ChangeStatus(InventoryStatus.OnHold, now, DevUsers.Salesperson, "Held for a deal.");
 
         db.Deals.Add(deal);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// The minimum chart of accounts a retail sale needs. Reconciled every run
+    /// rather than created once, so a database seeded before accounting existed
+    /// picks it up instead of failing to post.
+    /// </summary>
+    private static async Task SeedChartOfAccountsAsync(TenantDb db)
+    {
+        (string Code, string Name, AccountKind Kind)[] chart =
+        [
+            (AccountCodes.Cash, "Cash", AccountKind.Asset),
+            (AccountCodes.VehicleInventory, "Vehicle inventory", AccountKind.Asset),
+            (AccountCodes.TradeInventory, "Trade-in inventory", AccountKind.Asset),
+            (AccountCodes.VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
+            (AccountCodes.FeeRevenue, "Fee income", AccountKind.Revenue),
+            (AccountCodes.SalesDiscounts, "Sales discounts", AccountKind.Revenue),
+            (AccountCodes.CostOfVehicleSales, "Cost of vehicle sales", AccountKind.Expense),
+        ];
+
+        var existing = await db.Accounts.Select(a => a.Code).ToListAsync();
+        var missing = chart.Where(a => !existing.Contains(a.Code)).ToList();
+
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        db.Accounts.AddRange(missing.Select(a => new Account(Guid.NewGuid(), a.Code, a.Name, a.Kind)));
         await db.SaveChangesAsync();
     }
 
