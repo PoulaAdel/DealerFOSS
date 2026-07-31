@@ -146,6 +146,27 @@ public sealed class DealTests
     }
 
     [Fact]
+    public void The_salesperson_cannot_approve_their_own_deal()
+    {
+        var salesperson = Guid.NewGuid();
+        var deal = Deal.Start(
+            Guid.NewGuid(), RooftopId.New(), Guid.NewGuid(), Guid.NewGuid(), "USD",
+            DateTimeOffset.UtcNow, salespersonUserId: salesperson);
+
+        deal.SetTerms([(ChargeKind.VehiclePrice, "2021 RAV4", 26995m)], null);
+        deal.ChangeStatus(DealStatus.Submitted, DateTimeOffset.UtcNow, salesperson);
+
+        var ownApproval = () => deal.ChangeStatus(DealStatus.Approved, DateTimeOffset.UtcNow, salesperson);
+
+        ownApproval.Should().Throw<InvalidOperationException>()
+            .WithMessage("*sales manager*", because: "the message should say who is supposed to do it");
+
+        // Somebody else signs it off, and that works.
+        deal.ChangeStatus(DealStatus.Approved, DateTimeOffset.UtcNow, Guid.NewGuid());
+        deal.Status.Should().Be(DealStatus.Approved);
+    }
+
+    [Fact]
     public void Approving_records_who_approved_it_and_the_amount_they_saw()
     {
         var deal = Submitted();

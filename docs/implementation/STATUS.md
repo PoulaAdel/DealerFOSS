@@ -33,7 +33,7 @@ Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 2
 - [x] Architecture tests demonstrably fail on a forbidden reference — rehearsed 2026-07-25: an EF Core dependency added to `Core/Result.cs` failed `Core_must_not_depend_on_web_or_persistence_frameworks` naming the offending type, then was reverted. Procedure: `tests/Architecture/README.md` *(agent-verifiable)*
 - [x] Code of conduct — `.github/CODE_OF_CONDUCT.md` *(agent-verifiable)*
 - [x] One immutable ADR file per Accepted decision — `docs/adr/0001…0016`, index repointed to the files *(agent-verifiable)*
-- [ ] Windows and container development paths documented — Windows path documented in `CLAUDE.md`; container path unverified on this host *(human-verifiable: needs a working container host)*
+- [x] Windows and container development paths documented — both verified 2026-07-31 and written up in `deploy/README.md`. The container path was previously believed broken on this host; the cause was a Windows bind mount in the compose file, not the host. SQL Server 2022 (16.0.4265.3) accepts connections from a named volume. Node 22 is provided the same way, so the frontend needs nothing installed *(agent-verifiable)*
 
 Frontend shell is **not** an I0 item; it moved to I1, where the session it depends on exists.
 
@@ -79,12 +79,22 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 
 - **2026-07-31 — The ledger behind a sale.** Delivering a car posts a balanced journal entry against a seeded chart of accounts, inside the same transaction as the delivery — so the deal, the inventory move, and the ledger can never disagree. Entries carry both the legal entity that owns the money and the rooftop that earned it, resolved through `IOrganization`. **Nothing is ever edited or deleted**: `JournalEntry` and `JournalLine` are `IAppendOnly`, and a mistake is corrected by posting a reversal, which cannot itself be reversed and cannot be applied twice. A delivery cannot be posted twice. Evidence: `dotnet test` 243/243 and `verify-e2e.ps1` PASS, plus a regression rehearsal in which putting the posting map one penny out failed eight tests **and blocked the sale**, which is the intended behaviour. **Scope caution:** this is a sale ledger, not a set of books — no periods, no trial balance, no tax, and it assumes the customer pays in full. See `src/App/Accounting/README.md`.
 
+## Decisions recorded (2026-07-31)
+
+Three open questions were answered by the maintainer. None is fully implemented;
+they are recorded here so the design is settled before the code that depends on
+them is written.
+
+| Decision | Answer | State |
+|---|---|---|
+| May a salesperson approve their own deal? | **No.** A sales manager approves it. | **Implemented** — enforced on the entity so background callers cannot route around it, and a denial is audited. Holding `Deals.Approve` is not sufficient if it is your own deal. |
+| When does an accounting month close? | Calendar month end, fiscal year = calendar year, prior-month entries accepted until the 10th, then locked. Per organization. | **Recorded, not enforced.** Standard franchised-dealer practice chosen as the default; see `src/App/Accounting/README.md`. Wants confirmation from a real dealer's accountant. |
+| Where does this deploy? | **All three:** Windows service, Linux container, and hosted. | **Recorded.** Consequence: `ISecretProtector` cannot be DPAPI-based, since that is Windows-only. It needs a certificate- or KMS-backed implementation that works on all three, and today's development pass-through still refuses to start outside Development. |
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
 |---|---|---|---|
-| Host env | SQL Server container unusable here (`LSA 0xc000004b`) | A working container host, or accept LocalDB for local development | Container development path unverified; ADR-015 unchanged |
-| Host env | Node.js absent | Node installed | All frontend work blocked |
 | Human | Backup and restore rehearsal | A timed restore producing a working system | I1 exit criterion cannot close |
 | Human | Delivery Phase 0 — pilot dealers, provider access, sandbox data | Signed access and representative extracts | I2 connector certification cannot start |
 

@@ -1,12 +1,15 @@
 # Local development dependencies for OpenDealer360.
 #
-# The small-install default needs only the application, SQL Server, and document
-# storage (doc 07 §6). Redis and an OTel collector are OPTIONAL and live behind
-# Compose profiles so a single-node dev loop stays lean.
+# Nothing here installs onto the host. SQL Server, Node, and the optional extras
+# live in containers so a development machine stays clean and every contributor
+# gets the same versions.
 #
-#   Core (SQL Server only):     docker compose -f deploy/docker-compose.yml up -d
+#   SQL only (the usual):        docker compose -f deploy/docker-compose.yml up -d sql
+#   Add the frontend toolchain:  docker compose -f deploy/docker-compose.yml --profile node up -d
 #   With Redis (scale-out dev):  docker compose -f deploy/docker-compose.yml --profile redis up -d
 #   With telemetry collector:    docker compose -f deploy/docker-compose.yml --profile otel up -d
+#
+# See deploy/README.md for what each of these does and how to undo it.
 
 name: opendealer360-dev
 
@@ -22,13 +25,37 @@ services:
     ports:
       - "1433:1433"
     volumes:
-      - ./.data/sql:/var/opt/mssql
+      # A NAMED VOLUME, not a bind mount to a Windows folder.
+      #
+      # This is load-bearing on Windows hosts. Mounting /var/opt/mssql onto an
+      # NTFS path through the Docker Desktop filesystem bridge breaks the file
+      # semantics SQL Server needs, and the engine dies inside SQLPAL before it
+      # ever starts — "Failed to load LSA", with a stack full of sqlpal.dll and
+      # no useful message. It looks exactly like a host incompatibility and is
+      # not one. Verified on this repository's development machine 2026-07-31.
+      - odms-sql-data:/var/opt/mssql
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 12
-      start_period: 30s
+      start_period: 60s
+
+  # The frontend toolchain, so Node never has to be installed on the host.
+  # It idles until you exec into it; it is a workspace, not a service.
+  node:
+    image: node:22-alpine
+    container_name: odms-node
+    profiles: ["node"]
+    working_dir: /workspace
+    volumes:
+      - ../:/workspace
+      # node_modules stays in a named volume: it holds platform-specific
+      # binaries, and sharing it with the Windows host is both slow and wrong.
+      - odms-node-modules:/workspace/frontend/node_modules
+    ports:
+      - "5173:5173"   # Vite dev server
+    command: ["sleep", "infinity"]
 
   redis:
     image: redis:7-alpine
@@ -38,7 +65,7 @@ services:
       - "6379:6379"
     command: ["redis-server", "--save", "60", "1"]
     volumes:
-      - ./.data/redis:/data
+      - odms-redis-data:/data
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -50,3 +77,8 @@ services:
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
       - ./otel-collector.yaml:/etc/otel/config.yaml:ro
+
+volumes:
+  odms-sql-data:
+  odms-node-modules:
+  odms-redis-data:

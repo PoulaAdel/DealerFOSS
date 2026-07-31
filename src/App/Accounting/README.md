@@ -81,10 +81,34 @@ roles express rather than the code.
   sale in ledger terms before calling it, so neither side has to learn the other's
   vocabulary.
 
+## The closing period, decided but not yet enforced
+
+The maintainer had no strong preference here, so the default is standard
+franchised-dealer practice:
+
+- **Close monthly, on the calendar month end.** Dealerships close hard and fast
+  because manufacturers want a financial statement within roughly the first ten
+  days of the following month.
+- **Fiscal year is the calendar year.**
+- **A grace window** — prior-month entries may post until the 10th of the
+  following month, after which the period locks and a correction has to be made
+  in the open period instead.
+- **Per organization**, because a group with several franchises may be pushed to
+  a different rhythm by a manufacturer.
+
+> This is general industry practice written down as a starting point, not advice
+> checked against any specific franchise agreement. It should be confirmed with a
+> dealer's own accountant before a pilot, and it is deliberately configuration
+> rather than a constant so that confirming it is cheap.
+
+**None of this is enforced yet.** Nothing currently stops an entry posting into a
+month somebody already reported on. The decision is recorded here so the period
+model is designed once, correctly — journal rows are immutable, so a period
+column cannot be backfilled onto them later.
+
 ## Not built yet — and this list matters
 
-- **Accounting periods, closing, and locking.** Nothing stops an entry being
-  posted into a period somebody already reported on.
+- **Accounting periods, closing, and locking**, as above.
 - **A trial balance, or any account balance at all.** The entries are there; the
   totals are not.
 - **Finance.** The posting assumes the customer pays in full. A financed sale

@@ -21,23 +21,33 @@ passing command is.
 These are verified facts, not assumptions. They differ from what the execution
 prompts assume by default.
 
-- **SQL: use LocalDB, not Docker.** The SQL Server 2022 Linux container crashes
-  on this host (`LSA initialization failed 0xc000004b` — a SQLPAL/WSL2
-  incompatibility, not a memory or configuration problem). `deploy/docker-compose.yml`
-  remains the committed target per ADR-015; only this host cannot run it.
+- **SQL: both the container and LocalDB work.** Verified 2026-07-31 by connecting
+  to each. An earlier note here claimed the container was unusable on this host;
+  that was wrong. The failure was `deploy/docker-compose.yml` bind-mounting
+  `/var/opt/mssql` to a Windows path, which the SQL Server Linux image cannot use —
+  it dies inside SQLPAL with a message that reads like a host incompatibility. A
+  named Docker volume fixes it, and the compose file now uses one.
 
   ```
   Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False
   ```
 
-  Start it with `sqllocaldb start MSSQLLocalDB`.
+  LocalDB starts with `sqllocaldb start MSSQLLocalDB` and is what the verification
+  script defaults to. See `deploy/README.md` for the container path.
+
+- **The maintainer runs anything outside this folder.** Containers, image pulls,
+  installs, services — write the command into the handoff with an explanation of
+  what it creates and how to undo it; do not run it. Reading host state
+  (`docker ps`, `--version`) is fine.
 
 - **Shell is Windows PowerShell 5.1.** `pwsh` (PowerShell 7) is **not**
   installed. Invoke scripts with `& .\deploy\verify-e2e.ps1`, and avoid `&&`,
   `??`, and ternaries, which 5.1 does not parse.
 
-- **Node.js is not installed.** Any frontend work requires installing it first;
-  do not report the absence as a code defect.
+- **Node.js is not installed on the host, and does not need to be.** The `node`
+  profile in `deploy/docker-compose.yml` provides Node 22 in a container with the
+  repository mounted. Frontend work runs there. Do not report the host absence as
+  a code defect, and do not ask for a host install.
 
 ## Canonical commands
 

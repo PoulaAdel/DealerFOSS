@@ -137,6 +137,33 @@ public sealed class DealTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task Nobody_approves_their_own_deal_even_holding_the_permission()
+    {
+        // The manager holds Deals.Approve and every other right. It is still
+        // their own deal, so a sales manager has to sign it off instead.
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var unitId = await ReceiveAvailableUnitAsync(rooftop);
+
+        using var started = await PostAsync(Deals, Manager, new
+        {
+            rooftopId = rooftop,
+            customerId = await AddCustomerAsync(),
+            inventoryUnitId = unitId,
+            currency = "USD",
+            // No salesperson given, so it defaults to whoever started it.
+        });
+        var dealId = (await started.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+
+        await PriceAsync(dealId, Manager);
+        (await MoveAsync(dealId, Manager, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        using var ownApproval = await PostAsync($"{Deals}/{dealId}/status", Manager, new { status = "Approved" });
+
+        ownApproval.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await ownApproval.Content.ReadAsStringAsync()).Should().Contain("your own deal");
+    }
+
+    [Fact]
     public async Task An_advisor_can_see_deals_but_cannot_start_one()
     {
         using var read = await SendAsync(HttpMethod.Get, Deals, Advisor);
@@ -243,6 +270,11 @@ public sealed class DealTests(HostFixture fixture)
         return unitId;
     }
 
+    /// <summary>
+    /// Starts a deal belonging to the salesperson, so a manager is free to approve
+    /// it. A deal whose salesperson is the manager cannot be approved by them —
+    /// that is the segregation-of-duties rule, not a quirk of the fixture.
+    /// </summary>
     private async Task<string> StartDealAsync(string email, string rooftopId, string? unitId = null)
     {
         var inventoryUnitId = unitId ?? await ReceiveAvailableUnitAsync(rooftopId);
@@ -253,6 +285,7 @@ public sealed class DealTests(HostFixture fixture)
             customerId = await AddCustomerAsync(),
             inventoryUnitId,
             currency = "USD",
+            salespersonUserId = DevelopmentSeeder.DevUsers.Salesperson,
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);

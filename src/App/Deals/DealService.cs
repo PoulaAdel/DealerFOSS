@@ -326,6 +326,19 @@ public sealed class DealService(
                 next == DealStatus.Approved ? DealErrors.ApprovalForbidden : DealErrors.Forbidden);
         }
 
+        // Holding Deals.Approve is not enough: it must not be your own deal. The
+        // entity enforces this too; checking here is what makes the answer a 403
+        // with a readable reason rather than a generic conflict.
+        if (next == DealStatus.Approved && deal.SalespersonUserId == _currentUser.Id)
+        {
+            await _audit.RecordAsync(
+                AuditEntry.Denied(_currentUser.Id, ApprovePermission, "Deal", deal.Id.ToString(),
+                    deal.RooftopId.Value, "Attempted to approve their own deal."),
+                cancellationToken);
+
+            return Result.Failure<DealDetail>(DealErrors.CannotApproveOwnDeal);
+        }
+
         var from = deal.Status;
 
         // Read the cost before the car moves — a delivered unit still has to
@@ -557,6 +570,10 @@ internal static class DealErrors
     public static Error ApprovalForbidden { get; } = Error.Forbidden(
         "deals.approval_forbidden",
         "Approving a deal needs a manager. Ask somebody who holds Deals.Approve.");
+
+    public static Error CannotApproveOwnDeal { get; } = Error.Forbidden(
+        "deals.cannot_approve_own_deal",
+        "You cannot approve your own deal. A sales manager approves it.");
 
     public static Error UnknownStatus { get; } = Error.Validation(
         "deals.unknown_status",

@@ -209,6 +209,23 @@ try {
     $managerApprove = Get-Status "/api/v1/deals/$($deal.id)/status" "northgroup" $orgWide "Post" @{ status = "Approved" }
     "manager approves the same deal        -> HTTP $managerApprove (expect 200)"
 
+    # Holding the permission is not enough: it must not be your own deal.
+    $ownUnit = Invoke-Api "/api/v1/inventory" $orgWide @{
+        vehicleId = $vehicle.id; rooftopId = $firstRooftopId; stockNumber = "W$suffix"
+    }
+    $null = Invoke-Api "/api/v1/inventory/$($ownUnit.id)/status" $orgWide @{ status = "Available" }
+
+    $ownDeal = Invoke-Api "/api/v1/deals" $orgWide @{
+        rooftopId = $firstRooftopId; customerId = $customer.id
+        inventoryUnitId = $ownUnit.id; currency = "USD"
+    }
+    $null = Invoke-Api "/api/v1/deals/$($ownDeal.id)/terms" $orgWide @{
+        charges = @(@{ kind = "VehiclePrice"; description = "The car"; amount = 20000 })
+    }
+    $null = Get-Status "/api/v1/deals/$($ownDeal.id)/status" "northgroup" $orgWide "Post" @{ status = "Submitted" }
+    $selfApprove = Get-Status "/api/v1/deals/$($ownDeal.id)/status" "northgroup" $orgWide "Post" @{ status = "Approved" }
+    "manager approves their OWN deal       -> HTTP $selfApprove (expect 403)"
+
     # The car is held by that deal, so a second deal on it must be refused.
     $doubleSell = Get-Status "/api/v1/deals" "northgroup" $orgWide "Post" @{
         rooftopId = $firstRooftopId; customerId = $customer.id
@@ -269,6 +286,7 @@ try {
         -and ($siblingLeads.Count -ge 1) -and ($leakedLeads -eq 0) `
         -and ($siblingLeadStatus -eq 403) -and ($workStatus -eq 403) `
         -and ($submitStatus -eq 200) -and ($salesApprove -eq 403) -and ($managerApprove -eq 200) `
+        -and ($selfApprove -eq 403) `
         -and ($doubleSell -eq 409) `
         -and ($entryCount -eq 1) -and $balanced -and $originalIntact -and ($reverseTwice -eq 409) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `

@@ -195,9 +195,12 @@ public sealed class LedgerTests(HostFixture fixture)
             new { status = "Available" });
         available.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        // The deal belongs to the salesperson so the manager can approve it —
+        // nobody signs off their own numbers.
         var dealId = await CreatedIdAsync(Deals, new
         {
             rooftopId, customerId, inventoryUnitId = unitId, currency = "USD",
+            salespersonUserId = DevelopmentSeeder.DevUsers.Salesperson,
         });
 
         var charges = new List<object> { new { kind = "VehiclePrice", description = "The car", amount = price } };

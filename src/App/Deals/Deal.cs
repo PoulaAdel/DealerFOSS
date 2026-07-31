@@ -171,6 +171,11 @@ public sealed class Deal : AuditableEntity
             EnsureReadyToSubmit();
         }
 
+        if (next == DealStatus.Approved)
+        {
+            EnsureApproverIsNotTheSalesperson(changedByUserId);
+        }
+
         _history.Add(new DealStatusChange(
             Guid.NewGuid(), Id, Status, next, occurredAt, changedByUserId, note, AmountDue.Amount));
 
@@ -189,6 +194,28 @@ public sealed class Deal : AuditableEntity
         {
             ApprovedByUserId = null;
             ApprovedAt = null;
+        }
+    }
+
+    /// <summary>
+    /// A salesperson does not approve their own deal — a sales manager does.
+    /// Holding the permission is not enough, because a manager who also sells
+    /// would otherwise sign off their own numbers.
+    /// </summary>
+    /// <remarks>
+    /// Checked on the entity rather than only in the service, so a background job
+    /// or an import cannot route around it. Reassigning the deal to somebody else
+    /// and then approving it is still possible, and is deliberately left visible
+    /// in the history rather than blocked — the alternative locks a rooftop out
+    /// when its salesperson leaves.
+    /// </remarks>
+    private void EnsureApproverIsNotTheSalesperson(Guid? approver)
+    {
+        if (approver is { } who && SalespersonUserId == who)
+        {
+            throw new InvalidOperationException(
+                "A deal cannot be approved by the salesperson who built it. "
+                + "A sales manager approves it.");
         }
     }
 
