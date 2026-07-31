@@ -81,10 +81,11 @@ Development seeds two dealer organizations — `northgroup` (two rooftops) and
 `citymotors` (one) — and three accounts in each, all sharing the password
 `Dev@Pass1!`:
 
-| Sign in as | Scope | Sees |
+| Sign in as | Scope | Can |
 |---|---|---|
-| `gm@dev.local` | organization-wide, every permission | every rooftop and every lot |
-| `advisor@dev.local` | one rooftop, read-only | `NAG-01` only; cannot move stock |
+| `gm@dev.local` | organization-wide, every permission | everything, including approving a deal |
+| `sales@dev.local` | one rooftop, the sales job | build and submit a deal — but **not** approve it |
+| `advisor@dev.local` | one rooftop, read-only | look at `NAG-01`; change nothing |
 | `nobody@dev.local` | no assignment | nothing — `403` |
 
 Sign in, keep the session cookie, then call an endpoint:
@@ -96,6 +97,10 @@ $s = $null; Invoke-RestMethod http://localhost:5080/api/v1/auth/login -Method Po
 Sign in as `gm@dev.local` instead and the same call returns both lots. Change
 `X-Tenant` to `citymotors` and the data changes entirely — that is a different
 database. This demonstrates the model faster than any diagram.
+
+For the other half of the model, sign in as `sales@dev.local`, build a deal, and
+try to approve it. The refusal is the control: writing a deal and signing it off
+are different rights on purpose.
 
 The whole thing, asserted end to end:
 
@@ -153,10 +158,10 @@ comment explaining why it is legitimate — that is the standard for adding anot
 
 Calibrate your confidence — these are current, honest limitations:
 
-- **Four capabilities exist** (Organization, Identity, Customers, Vehicles +
-  Inventory) out of roughly thirteen planned. The shape in
-  [ADR-017](adr/0017-three-projects-flat-features.md) is one week old; expect it
-  to bend when the first large capability lands.
+- **Seven capabilities exist** (Organization, Identity, Customers, Vehicles,
+  Inventory, Leads, Deals) out of roughly thirteen planned. The shape in
+  [ADR-017](adr/0017-three-projects-flat-features.md) is days old; expect it to
+  bend when Accounting lands.
 - **The features inside `App` are held apart by tests, not by the compiler.** That
   is deliberate, and it means a cross-feature `using` compiles and fails later.
 - **CI has never executed** (no remote configured). The workflow is a claim.

@@ -17,7 +17,7 @@ that, customers and vehicles can now be recorded and found, and each location's
 stock is kept separate from every other location's. There are still no screens —
 this is the engine, not the dashboard.
 
-**About 15% of the first release. Stage 1 of 8, with the first stage-3 and stage-4 features built early.**
+**About 19% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
 
 ---
 
@@ -32,7 +32,7 @@ months of focused work.
 | 1 | Foundation | Keeping dealership groups apart, locations, staff permissions, and signing in. | **In progress** |
 | 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | Not started |
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Started early** |
-| 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | **Started early** |
+| 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | **Well under way** |
 | 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | Not started |
 | 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | Not started |
 | 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | Not started |
@@ -69,12 +69,20 @@ months of focused work.
 - **Taking an enquiry from someone who might buy, chasing it through to a sale or
   a dead end, handing it between salespeople, and keeping every note along the way
   — including a lost lead who comes back months later**
+- **Selling a car: putting a price on it, taking a trade-in, sending it to a
+  manager for approval, and handing it over — with the car held on the lot the
+  whole time so nobody else can sell it**
+- **A salesperson cannot approve their own deal, and the price cannot change after
+  a manager has agreed to it**
 
 ## What does not exist
 
-- Prices, aging, or photos of a vehicle
-- Building a deal or selling anything
+- Finance applications, lenders, or F&I products
+- Taxes and registration fees calculated by jurisdiction
+- Printed or signed paperwork
+- Accounting entries behind a sale
 - Appointments as real diary entries, or automatic follow-up reminders
+- Photos of a vehicle, or aging reports
 - Service appointments or repair orders
 - Accounting, parts, reports
 - Any screen a person would look at

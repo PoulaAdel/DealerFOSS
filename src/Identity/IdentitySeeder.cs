@@ -30,6 +30,8 @@ public static class IdentitySeeder
 
     public const string AdvisorRole = "Advisor";
 
+    public const string SalespersonRole = "Salesperson";
+
     public static async Task SeedDevelopmentAsync(
         string tenantConnection,
         IClock clock,
@@ -37,11 +39,13 @@ public static class IdentitySeeder
         string password,
         DevelopmentAccount organizationWide,
         DevelopmentAccount rooftopScoped,
-        DevelopmentAccount unassigned)
+        DevelopmentAccount unassigned,
+        DevelopmentAccount salesperson)
     {
         ArgumentNullException.ThrowIfNull(organizationWide);
         ArgumentNullException.ThrowIfNull(rooftopScoped);
         ArgumentNullException.ThrowIfNull(unassigned);
+        ArgumentNullException.ThrowIfNull(salesperson);
 
         var options = new DbContextOptionsBuilder<IdentityDb>()
             .UseSqlServer(tenantConnection)
@@ -65,10 +69,13 @@ public static class IdentitySeeder
             Permissions.InventoryManage,
             Permissions.LeadsRead,
             Permissions.LeadsManage,
+            Permissions.DealsRead,
+            Permissions.DealsWrite,
+            Permissions.DealsApprove,
         ]);
 
-        // An advisor can look a customer up but not create one, and can see stock
-        // and enquiries but not move either.
+        // An advisor can look a customer up but not create one, and can see stock,
+        // enquiries and deals but not move any of them.
         var advisor = await UpsertRoleAsync(db, AdvisorRole,
         [
             Permissions.OrganizationRead,
@@ -76,41 +83,77 @@ public static class IdentitySeeder
             Permissions.VehiclesRead,
             Permissions.InventoryRead,
             Permissions.LeadsRead,
+            Permissions.DealsRead,
         ]);
 
-        if (await db.Users.AnyAsync())
+        // A salesperson does the whole job except sign their own deal off. That
+        // one missing permission is what makes segregation of duties a real thing
+        // the tests can assert rather than a claim in a document.
+        var sales = await UpsertRoleAsync(db, SalespersonRole,
+        [
+            Permissions.OrganizationRead,
+            Permissions.CustomersRead,
+            Permissions.CustomersCreate,
+            Permissions.VehiclesRead,
+            Permissions.InventoryRead,
+            Permissions.InventoryManage,
+            Permissions.LeadsRead,
+            Permissions.LeadsManage,
+            Permissions.DealsRead,
+            Permissions.DealsWrite,
+        ]);
+
+        // Accounts are reconciled one at a time rather than all-or-nothing, for the
+        // same reason roles are: a database seeded before an account existed
+        // should grow the new one instead of needing a wipe.
+        await UpsertUserAsync(db, hasher, password, organizationWide,
+            () => UserAssignment.ForOrganization(Guid.NewGuid(), organizationWide.Id, manager.Id));
+
+        // Deliberately tied to one rooftop, so reaching a sibling rooftop is a
+        // genuine authorization failure rather than an arranged one.
+        await UpsertUserAsync(db, hasher, password, rooftopScoped,
+            () => UserAssignment.ForRooftop(Guid.NewGuid(), rooftopScoped.Id, advisor.Id, firstRooftop));
+
+        await UpsertUserAsync(db, hasher, password, salesperson,
+            () => UserAssignment.ForRooftop(Guid.NewGuid(), salesperson.Id, sales.Id, firstRooftop));
+
+        // No assignment at all, on purpose.
+        await UpsertUserAsync(db, hasher, password, unassigned, assignment: null);
+
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Creates the account if it is missing, and heals a missing password if the
+    /// account predates credentials. Never overwrites an existing password.
+    /// </summary>
+    private static async Task UpsertUserAsync(
+        IdentityDb db,
+        PasswordHasher<User> hasher,
+        string password,
+        DevelopmentAccount account,
+        Func<UserAssignment>? assignment)
+    {
+        var existing = await db.Users.SingleOrDefaultAsync(u => u.Id == account.Id);
+
+        if (existing is not null)
         {
-            // Same reasoning for credentials: a database seeded before passwords
-            // existed heals instead of needing a wipe.
-            var passwordless = await db.Users.Where(u => u.PasswordHash == null).ToListAsync();
-            foreach (var existing in passwordless)
+            if (existing.PasswordHash is null)
             {
                 existing.SetPasswordHash(hasher.HashPassword(existing, password));
             }
 
-            await db.SaveChangesAsync();
             return;
         }
 
-        var users = new[]
-        {
-            new User(organizationWide.Id, organizationWide.Email, organizationWide.DisplayName),
-            new User(rooftopScoped.Id, rooftopScoped.Email, rooftopScoped.DisplayName),
-            new User(unassigned.Id, unassigned.Email, unassigned.DisplayName),
-        };
+        var user = new User(account.Id, account.Email, account.DisplayName);
+        user.SetPasswordHash(hasher.HashPassword(user, password));
+        db.Users.Add(user);
 
-        foreach (var user in users)
+        if (assignment is not null)
         {
-            user.SetPasswordHash(hasher.HashPassword(user, password));
+            db.UserAssignments.Add(assignment());
         }
-
-        db.Users.AddRange(users);
-
-        // The scoped user is deliberately tied to one rooftop, so an attempt to
-        // reach a sibling rooftop is a genuine authorization failure.
-        db.UserAssignments.AddRange(
-            UserAssignment.ForOrganization(Guid.NewGuid(), organizationWide.Id, manager.Id),
-            UserAssignment.ForRooftop(Guid.NewGuid(), rooftopScoped.Id, advisor.Id, firstRooftop));
 
         await db.SaveChangesAsync();
     }

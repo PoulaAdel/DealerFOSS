@@ -71,6 +71,14 @@ try {
         return $ws
     }
 
+    # POSTs JSON and returns the parsed response, for the steps that need the
+    # created record's id rather than just its status code.
+    function Invoke-Api([string]$path, $session, $body) {
+        return Invoke-RestMethod "$baseUrl$path" -Method Post `
+            -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" `
+            -Headers @{ "X-Tenant" = "northgroup" } -WebSession $session
+    }
+
     function Get-Org([string]$tenant, $session) {
         return Invoke-RestMethod "$baseUrl/api/v1/organization" `
             -Headers @{ "X-Tenant" = $tenant } -WebSession $session
@@ -166,6 +174,48 @@ try {
     $workStatus = Get-Status "/api/v1/leads/$($scopedLeads[0].id)/status" "northgroup" $scoped "Post" @{ status = "Working" }
     "scoped user -> work own enquiry       -> HTTP $workStatus (expect 403: read-only role)"
 
+    Write-Host "`n--- deals: approval is a separate right ---" -ForegroundColor Cyan
+    # Built fresh rather than read from the seed, so the check is repeatable and
+    # does not depend on what an earlier test run left behind.
+    $sales = New-DealerSession "northgroup" "sales@dev.local"
+    $firstRooftopId = ($north.legalEntities.rooftops | Where-Object { $_.code -eq "NAG-01" }).id
+    $suffix = (New-Guid).ToString("N").Substring(0, 8).ToUpper()
+
+    $customer = Invoke-Api "/api/v1/customers" $orgWide @{
+        kind = "Person"; firstName = "Verify"; lastName = "Case$suffix"
+    }
+    $vehicle = Invoke-Api "/api/v1/vehicles" $orgWide @{
+        vin = "VERIFY$suffix"; modelYear = 2021; make = "Toyota"; model = "RAV4"
+        vinExceptionReason = "Synthetic VIN for the end-to-end check."
+    }
+    $unit = Invoke-Api "/api/v1/inventory" $orgWide @{
+        vehicleId = $vehicle.id; rooftopId = $firstRooftopId; stockNumber = "V$suffix"
+    }
+    $null = Invoke-Api "/api/v1/inventory/$($unit.id)/status" $orgWide @{ status = "Available" }
+
+    $deal = Invoke-Api "/api/v1/deals" $sales @{
+        rooftopId = $firstRooftopId; customerId = $customer.id
+        inventoryUnitId = $unit.id; currency = "USD"
+    }
+    $null = Invoke-Api "/api/v1/deals/$($deal.id)/terms" $sales @{
+        charges = @(@{ kind = "VehiclePrice"; description = "The car"; amount = 24000 })
+    }
+    $submitStatus = Get-Status "/api/v1/deals/$($deal.id)/status" "northgroup" $sales "Post" @{ status = "Submitted" }
+    "salesperson submits own deal          -> HTTP $submitStatus (expect 200)"
+
+    $salesApprove = Get-Status "/api/v1/deals/$($deal.id)/status" "northgroup" $sales "Post" @{ status = "Approved" }
+    "salesperson approves own deal         -> HTTP $salesApprove (expect 403)"
+
+    $managerApprove = Get-Status "/api/v1/deals/$($deal.id)/status" "northgroup" $orgWide "Post" @{ status = "Approved" }
+    "manager approves the same deal        -> HTTP $managerApprove (expect 200)"
+
+    # The car is held by that deal, so a second deal on it must be refused.
+    $doubleSell = Get-Status "/api/v1/deals" "northgroup" $orgWide "Post" @{
+        rooftopId = $firstRooftopId; customerId = $customer.id
+        inventoryUnitId = $unit.id; currency = "USD"
+    }
+    "second deal on the same car           -> HTTP $doubleSell (expect 409)"
+
     Write-Host "`n--- sessions ---" -ForegroundColor Cyan
     $noSession = Get-Status "/api/v1/organization" "northgroup" $null
     "no session                            -> HTTP $noSession (expect 401)"
@@ -195,11 +245,13 @@ try {
         -and ($vehicleCount -ge 1) `
         -and ($siblingLeads.Count -ge 1) -and ($leakedLeads -eq 0) `
         -and ($siblingLeadStatus -eq 403) -and ($workStatus -eq 403) `
+        -and ($submitStatus -eq 200) -and ($salesApprove -eq 403) -and ($managerApprove -eq 200) `
+        -and ($doubleSell -eq 409) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
         -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced and revocable, rooftop scope holds on structure, stock, and enquiries." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced and revocable, rooftop scope holds, and a deal needs a manager." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

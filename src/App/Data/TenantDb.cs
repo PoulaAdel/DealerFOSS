@@ -14,6 +14,7 @@
 using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
+using OpenDealer360.Deals;
 using OpenDealer360.Inventory;
 using OpenDealer360.Leads;
 using OpenDealer360.Organization;
@@ -51,6 +52,12 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
     public DbSet<Lead> Leads => Set<Lead>();
 
     public DbSet<LeadStatusChange> LeadHistory => Set<LeadStatusChange>();
+
+    public DbSet<Deal> Deals => Set<Deal>();
+
+    public DbSet<DealCharge> DealCharges => Set<DealCharge>();
+
+    public DbSet<DealStatusChange> DealHistory => Set<DealStatusChange>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

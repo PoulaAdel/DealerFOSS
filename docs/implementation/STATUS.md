@@ -2,7 +2,7 @@
 
 Current phase: **I0 complete (except container path) → I1 in progress**
 Current milestone: MFA foundation and OIDC federation
-Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 198/198,
+Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 223/223,
 `verify-e2e.ps1` PASS
 
 > **Layout note (2026-07-30).** The repository moved from seven backend projects to
@@ -74,6 +74,8 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - **2026-07-30 — Vehicles and inventory.** A vehicle can be recorded and found by whole or partial VIN; a unit can be taken into a rooftop's stock under a stock number, listed by rooftop or status, and moved through its life cycle with every move kept. Vehicles are organization-shared; **units are rooftop-owned and scoped**, proven by list, direct-id, and filtered-list routes. Stock numbers are unique within a rooftop and reusable across rooftops. A non-standard VIN is recordable with a written reason and no unique index is imposed on VIN (doc 04 §4). Evidence: `dotnet test` 178/178 and `verify-e2e.ps1` PASS, plus a regression rehearsal in which inverting the rooftop filter in `InventoryService.ListAsync` failed exactly the stock-leak tests.
 
 - **2026-07-31 — Leads (first stage-4 feature).** An enquiry can be captured against a customer, optionally against a vehicle, worked through New → Working → Appointment → Won, lost and reopened, and handed between salespeople — with every move kept. Leads are **rooftop-owned and scoped**, proven on the list, direct-id, and filtered-list routes. The capability reaches Customers and Vehicles only through `ICustomers` and `IVehicles`; a new architecture rule names their entity types and fails the build if a lead touches one. Append-only history now keys off the `IAppendOnly` marker in Core rather than a hand-maintained type list, so a future history table is protected by implementing the interface. Evidence: `dotnet test` 198/198 and `verify-e2e.ps1` PASS, plus two regression rehearsals — inverting the rooftop filter failed exactly the leak test, and referencing `Customer` from `Lead` failed exactly the new boundary rule.
+
+- **2026-07-31 — Deals (a car can actually be sold).** A deal is started on a specific car, priced with charges and a trade-in, submitted, approved, and delivered — or cancelled at any point. Terms freeze the moment the deal leaves Draft, and sending it back for changes withdraws the approval. **`Deals.Write` and `Deals.Approve` are separate**: a new `Salesperson` development account can build and submit a deal but cannot sign it off. **Starting a deal holds the car and cancelling releases it**, through `IInventory` and committed in one transaction, so the same car cannot be sold twice. Each history entry records the amount at that moment, so an approval records the number that was approved. Evidence: `dotnet test` 223/223 and `verify-e2e.ps1` PASS, plus a regression rehearsal in which collapsing `Deals.Approve` into `Deals.Write` failed exactly the segregation-of-duties test.
 
 ## Active risks and blockers
 

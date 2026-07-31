@@ -27,10 +27,11 @@ public sealed class FeatureBoundaryTests
     /// </summary>
     public static TheoryData<string, string[]> ForbiddenFeatureDependencies() => new()
     {
-        { "OpenDealer360.Organization", ["OpenDealer360.Customers", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads"] },
-        { "OpenDealer360.Customers", ["OpenDealer360.Organization", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads"] },
-        { "OpenDealer360.Vehicles", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Inventory", "OpenDealer360.Leads"] },
-        { "OpenDealer360.Inventory", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Leads"] },
+        { "OpenDealer360.Organization", ["OpenDealer360.Customers", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
+        { "OpenDealer360.Customers", ["OpenDealer360.Organization", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
+        { "OpenDealer360.Vehicles", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
+        { "OpenDealer360.Inventory", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
+        { "OpenDealer360.Leads", ["OpenDealer360.Organization", "OpenDealer360.Deals"] },
     };
 
     /// <summary>
@@ -40,6 +41,7 @@ public sealed class FeatureBoundaryTests
     public static TheoryData<string, string[]> ForbiddenEntityDependencies() => new()
     {
         { "OpenDealer360.Leads", ["OpenDealer360.Customers.Customer", "OpenDealer360.Customers.ContactPoint", "OpenDealer360.Vehicles.Vehicle", "OpenDealer360.Inventory.InventoryUnit"] },
+        { "OpenDealer360.Deals", ["OpenDealer360.Customers.Customer", "OpenDealer360.Customers.ContactPoint", "OpenDealer360.Vehicles.Vehicle", "OpenDealer360.Inventory.InventoryUnit", "OpenDealer360.Inventory.InventoryStatusChange"] },
     };
 
     [Theory]

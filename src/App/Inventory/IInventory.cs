@@ -25,6 +25,15 @@ public interface IInventory
 
     Task<Result<InventoryUnitDetail>> GetAsync(Guid unitId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Summaries for a known set of units, in one query and still filtered to the
+    /// caller's rooftops. A desk list showing stock numbers would otherwise fetch
+    /// them one at a time. Units the caller may not see are simply absent.
+    /// </summary>
+    Task<Result<IReadOnlyList<InventoryUnitSummary>>> GetManyAsync(
+        IReadOnlyCollection<Guid> unitIds,
+        CancellationToken cancellationToken);
+
     Task<Result<InventoryUnitDetail>> ReceiveAsync(
         NewInventoryUnit unit,
         CancellationToken cancellationToken);

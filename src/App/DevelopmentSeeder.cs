@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
 using OpenDealer360.Data;
+using OpenDealer360.Deals;
 using OpenDealer360.Identity;
 using OpenDealer360.Inventory;
 using OpenDealer360.Leads;
@@ -66,12 +67,19 @@ public static class DevelopmentSeeder
         /// <summary>Exists and is active, but holds no assignment at all.</summary>
         public static Guid Unassigned { get; } = new("33333333-3333-3333-3333-333333333333");
 
+        /// <summary>
+        /// Does the whole sales job at the first rooftop — except approve a deal.
+        /// That one gap is what makes segregation of duties testable.
+        /// </summary>
+        public static Guid Salesperson { get; } = new("44444444-4444-4444-4444-444444444444");
+
         /// <summary>Shared password for every development account.</summary>
         public const string Password = "Dev@Pass1!";
 
         public const string OrganizationWideEmail = "gm@dev.local";
         public const string FirstRooftopOnlyEmail = "advisor@dev.local";
         public const string UnassignedEmail = "nobody@dev.local";
+        public const string SalespersonEmail = "sales@dev.local";
     }
 
     private static async Task SeedTenantAsync(
@@ -115,11 +123,13 @@ public static class DevelopmentSeeder
             DevUsers.Password,
             new DevelopmentAccount(DevUsers.OrganizationWide, DevUsers.OrganizationWideEmail, "Organization Manager"),
             new DevelopmentAccount(DevUsers.FirstRooftopOnly, DevUsers.FirstRooftopOnlyEmail, "Single Rooftop Advisor"),
-            new DevelopmentAccount(DevUsers.Unassigned, DevUsers.UnassignedEmail, "Unassigned User"));
+            new DevelopmentAccount(DevUsers.Unassigned, DevUsers.UnassignedEmail, "Unassigned User"),
+            new DevelopmentAccount(DevUsers.Salesperson, DevUsers.SalespersonEmail, "Rooftop Salesperson"));
 
         await SeedCustomersAsync(tenantDb);
         await SeedStockAsync(tenantDb, clock);
         await SeedLeadsAsync(tenantDb, clock);
+        await SeedDealsAsync(tenantDb, clock);
 
         var record = await hostCatalog.Tenants.SingleOrDefaultAsync(t => t.Slug == slug);
         if (record is null)
@@ -264,6 +274,54 @@ public static class DevelopmentSeeder
         revived.ChangeStatus(LeadStatus.Working, now.AddDays(-1), note: "Rang back, still looking.");
 
         db.Leads.AddRange(walkIn, website, revived);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// One deal waiting for a manager, on a car that is consequently held rather
+    /// than available. Seeded directly rather than through DealService, because
+    /// the seeder has no signed-in user to authorize — the reservation is done by
+    /// hand here to match what the service would have produced.
+    /// </summary>
+    private static async Task SeedDealsAsync(TenantDb db, IClock clock)
+    {
+        if (await db.Deals.AnyAsync())
+        {
+            return;
+        }
+
+        var unit = await db.InventoryUnits
+            .Where(u => u.Status == InventoryStatus.Available)
+            .OrderBy(u => u.StockNumber)
+            .FirstOrDefaultAsync();
+
+        var customerId = await db.Customers.OrderBy(c => c.LastName).Select(c => c.Id).FirstOrDefaultAsync();
+
+        if (unit is null || customerId == Guid.Empty)
+        {
+            return;
+        }
+
+        var now = clock.UtcNow;
+
+        var deal = Deal.Start(
+            Guid.NewGuid(), unit.RooftopId, customerId, unit.Id, "USD", now.AddDays(-1),
+            salespersonUserId: DevUsers.Salesperson);
+
+        deal.SetTerms(
+            [
+                (ChargeKind.VehiclePrice, "2021 Toyota RAV4 XLE", 26995m),
+                (ChargeKind.Fee, "Documentation fee", 399m),
+                (ChargeKind.Discount, "Manager discount", -500m),
+            ],
+            TradeIn.Create("2014 Honda Civic, 96,000 miles", 4500m, 1200m));
+
+        deal.ChangeStatus(DealStatus.Submitted, now, DevUsers.Salesperson, "Ready for review.");
+
+        // The car is spoken for while the deal is live.
+        unit.ChangeStatus(InventoryStatus.OnHold, now, DevUsers.Salesperson, "Held for a deal.");
+
+        db.Deals.Add(deal);
         await db.SaveChangesAsync();
     }
 

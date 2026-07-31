@@ -34,6 +34,18 @@ public static class Permissions
     /// <summary>Capturing an enquiry, moving it on, and reassigning it.</summary>
     public const string LeadsManage = "Leads.Manage";
 
+    /// <summary>Seeing a lot's deals.</summary>
+    public const string DealsRead = "Deals.Read";
+
+    /// <summary>Building a deal: starting one, pricing it, submitting it.</summary>
+    public const string DealsWrite = "Deals.Write";
+
+    /// <summary>
+    /// Signing a deal off. Deliberately separate from writing one — a salesperson
+    /// who can approve their own numbers is not a control at all.
+    /// </summary>
+    public const string DealsApprove = "Deals.Approve";
+
     public static IReadOnlyCollection<string> All { get; } =
     [
         OrganizationRead,
@@ -45,6 +57,9 @@ public static class Permissions
         InventoryManage,
         LeadsRead,
         LeadsManage,
+        DealsRead,
+        DealsWrite,
+        DealsApprove,
     ];
 }
 

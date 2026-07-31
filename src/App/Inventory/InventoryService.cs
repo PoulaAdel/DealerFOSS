@@ -143,6 +143,40 @@ public sealed class InventoryService(
         return Result.Success(Describe(row.Unit, row.Vehicle, history));
     }
 
+    public async Task<Result<IReadOnlyList<InventoryUnitSummary>>> GetManyAsync(
+        IReadOnlyCollection<Guid> unitIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(unitIds);
+
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<IReadOnlyList<InventoryUnitSummary>>(InventoryErrors.Forbidden);
+        }
+
+        if (unitIds.Count == 0)
+        {
+            return Result.Success<IReadOnlyList<InventoryUnitSummary>>([]);
+        }
+
+        var wanted = unitIds.Distinct().Take(MaxResults).ToList();
+        var units = _db.InventoryUnits.AsNoTracking().Where(u => wanted.Contains(u.Id));
+
+        // The scope filter applies here exactly as it does to a list: asking by id
+        // must not be a way around it.
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            units = units.Where(u => allowed.Contains(u.RooftopId));
+        }
+
+        var rows = await Join(units).ToListAsync(cancellationToken);
+
+        return Result.Success<IReadOnlyList<InventoryUnitSummary>>(
+            rows.Select(row => Summarize(row.Unit, row.Vehicle)).ToList());
+    }
+
     public async Task<Result<InventoryUnitDetail>> ReceiveAsync(
         NewInventoryUnit unit,
         CancellationToken cancellationToken)

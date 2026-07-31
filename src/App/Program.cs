@@ -15,6 +15,7 @@ using OpenDealer360.App;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
 using OpenDealer360.Data;
+using OpenDealer360.Deals;
 using OpenDealer360.Identity;
 using OpenDealer360.Inventory;
 using OpenDealer360.Leads;
@@ -65,6 +66,7 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IVehicles, VehicleService>();
     builder.Services.AddScoped<IInventory, InventoryService>();
     builder.Services.AddScoped<ILeads, LeadService>();
+    builder.Services.AddScoped<IDeals, DealService>();
 }
 
 // --- Health: liveness, readiness, and degraded dependencies are separated
@@ -144,6 +146,7 @@ if (tenancyEnabled)
     app.MapVehicles();
     app.MapInventory();
     app.MapLeads();
+    app.MapDeals();
 }
 
 // Development-only sample data (doc 08 §8), gated behind an explicit flag.
