@@ -24,6 +24,7 @@ internal static class AccountingEndpoints
         var group = app.MapGroup("/api/v1/accounting").WithTags("Accounting");
 
         group.MapGet("/accounts", ListAccountsAsync);
+        group.MapGet("/balances", TrialBalanceAsync);
         group.MapGet("/journal", ListAsync);
         group.MapGet("/journal/{entryId:guid}", GetAsync);
         group.MapPost("/journal/{entryId:guid}/reverse", ReverseAsync);
@@ -34,6 +35,20 @@ internal static class AccountingEndpoints
         CancellationToken cancellationToken)
     {
         var result = await accounting.ListAccountsAsync(cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> TrialBalanceAsync(
+        IAccounting accounting,
+        CancellationToken cancellationToken,
+        Guid? rooftopId = null,
+        DateOnly? from = null,
+        DateOnly? to = null)
+    {
+        var query = new BalanceQuery(
+            rooftopId is null ? null : new RooftopId(rooftopId.Value), from, to);
+
+        var result = await accounting.TrialBalanceAsync(query, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 

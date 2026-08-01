@@ -23,6 +23,13 @@ public interface IAccounting
     Task<Result<JournalEntryDetail>> GetAsync(Guid entryId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// What every account adds up to over a period. This is the report that turns
+    /// a pile of entries into something somebody can act on, and its own totals
+    /// are the check that nothing was lost on the way in.
+    /// </summary>
+    Task<Result<TrialBalance>> TrialBalanceAsync(BalanceQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Records the accounting consequence of a car leaving the lot. Called by
     /// Deals when a deal is delivered; it is not something a person does.
     /// </summary>
@@ -92,6 +99,39 @@ public sealed record JournalLineView(
     decimal Debit,
     decimal Credit,
     string? Memo);
+
+/// <summary>Which entries a balance covers.</summary>
+public sealed record BalanceQuery(
+    RooftopId? RooftopId = null,
+    DateOnly? From = null,
+    DateOnly? To = null);
+
+/// <summary>
+/// Every account that moved in the period, and the proof that the two sides
+/// agree. A trial balance whose totals differ means something was lost, and
+/// saying so plainly is the entire purpose of the report.
+/// </summary>
+public sealed record TrialBalance(
+    DateOnly? From,
+    DateOnly? To,
+    string Currency,
+    decimal TotalDebits,
+    decimal TotalCredits,
+    bool Balances,
+    IReadOnlyList<AccountBalance> Accounts);
+
+/// <summary>
+/// One account's activity. <paramref name="Balance"/> is stated on the account's
+/// normal side, so an asset with more debits than credits reads positive — which
+/// is how an accountant expects to see it.
+/// </summary>
+public sealed record AccountBalance(
+    string Code,
+    string Name,
+    string Kind,
+    decimal Debits,
+    decimal Credits,
+    decimal Balance);
 
 public sealed record JournalQuery(
     RooftopId? RooftopId = null,

@@ -2,8 +2,8 @@
 
 Current phase: **I0 complete (except container path) → I1 in progress**
 Current milestone: MFA foundation and OIDC federation
-Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 282/282,
-`verify-e2e.ps1` PASS
+Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 285/285,
+`verify-e2e.ps1` PASS against **both** LocalDB and the SQL Server container
 
 > **Layout note (2026-07-30).** The repository moved from seven backend projects to
 > three — `src/Core`, `src/Identity`, `src/App` — with one flat folder per
@@ -101,6 +101,8 @@ them is written.
 - **2026-07-31 — Each test run gets its own database.** The integration suite used to share one long-lived database, and assertions quietly became order-dependent as rows accumulated: three separate tests failed over time because a freshly created row fell off the end of a capped, sorted page. Each run now creates databases named for the run and drops them afterwards, sweeping anything a crashed run left behind. Tenant database names derive from the host catalog's name, so this needed no test-only branch in the seeder — and an installation whose catalog is named something else now keeps its databases together, which was arguably a latent bug. Evidence: `dotnet test` 282/282 with the integration suite unchanged at 7 seconds, and no `OpenDealer360_Test_*` database surviving the run.
 
 - **2026-07-31 — A frontend, written but not yet run.** `frontend/` is a Vite + React + TypeScript project: an API client that carries the tenant header and the session cookie, a sign-in screen that handles the second-factor step, an authenticated shell with a skip link and keyboard-visible focus, and an inventory list rendering every state a real screen needs. The dev server proxies `/api` because the session cookie is `SameSite=Strict` and would otherwise be dropped on a cross-origin call. **Explicitly unverified:** no `npm install`, no typecheck, no browser. Treat every line of it as unproven until the container has run it once.
+
+- **2026-07-31 — The ledger produces totals.** `GET /api/v1/accounting/balances` groups posted lines per account over a period and states each balance on the account's normal side, so an asset with more debits than credits reads positive. It reports whether the two columns agree — the headline of a trial balance is whether it balances, and a difference means something was lost on the way in. Rooftop-scoped, because a total is as revealing as the entries behind it, and it refuses to sum two currencies rather than printing a number that means nothing. Evidence: `dotnet test` 285/285, plus a rehearsal in which inverting the scope filter failed the totals test.
 
 ## Active risks and blockers
 

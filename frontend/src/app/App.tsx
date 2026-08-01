@@ -9,6 +9,7 @@ import { NavLink, Navigate, Outlet, Route, BrowserRouter as Router, Routes } fro
 import { SessionProvider, useSession } from './session';
 import { SignIn } from '../features/auth/SignIn';
 import { InventoryPage } from '../features/inventory/InventoryPage';
+import { TrialBalancePage } from '../features/accounting/TrialBalancePage';
 
 export function App() {
   return (
@@ -46,6 +47,7 @@ function AppRoutes() {
     <Routes>
       <Route element={<Shell />}>
         <Route path="/inventory" element={<InventoryPage />} />
+        <Route path="/accounting" element={<TrialBalancePage />} />
         <Route path="*" element={<Navigate to="/inventory" replace />} />
       </Route>
     </Routes>
@@ -68,6 +70,7 @@ function Shell() {
 
         <nav aria-label="Main">
           <NavLink to="/inventory">Stock</NavLink>
+          <NavLink to="/accounting">Trial balance</NavLink>
         </nav>
 
         <div className="shell__right">

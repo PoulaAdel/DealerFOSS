@@ -109,8 +109,11 @@ column cannot be backfilled onto them later.
 ## Not built yet — and this list matters
 
 - **Accounting periods, closing, and locking**, as above.
-- **A trial balance, or any account balance at all.** The entries are there; the
-  totals are not.
+- ~~A trial balance~~ — built. `GET /api/v1/accounting/balances` totals every
+  account over a period, states each balance on the account's normal side, and
+  reports whether the two columns agree. Rooftop-scoped like everything else: a
+  total is as revealing as the entries behind it. It refuses to add up two
+  currencies rather than printing a meaningless number.
 - **Finance.** The posting assumes the customer pays in full. A financed sale
   should create a receivable from the lender, and does not.
 - **Tax.** No sales tax, registration, or title fees.

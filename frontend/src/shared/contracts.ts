@@ -47,6 +47,25 @@ export type InventoryStatus =
   | 'Sold'
   | 'Removed';
 
+export interface AccountBalance {
+  code: string;
+  name: string;
+  kind: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
+  debits: number;
+  credits: number;
+  balance: number;
+}
+
+export interface TrialBalance {
+  from: string | null;
+  to: string | null;
+  currency: string;
+  totalDebits: number;
+  totalCredits: number;
+  balances: boolean;
+  accounts: AccountBalance[];
+}
+
 export const inventoryStatuses: InventoryStatus[] = [
   'Incoming',
   'Reconditioning',

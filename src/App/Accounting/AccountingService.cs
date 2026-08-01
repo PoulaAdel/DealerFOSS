@@ -144,6 +144,106 @@ public sealed class AccountingService(
         return Result.Success(await DescribeAsync(entry, cancellationToken));
     }
 
+    public async Task<Result<TrialBalance>> TrialBalanceAsync(
+        BalanceQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<TrialBalance>(LedgerErrors.Forbidden);
+        }
+
+        if (query.RooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<TrialBalance>(LedgerErrors.Forbidden);
+        }
+
+        var entries = _db.JournalEntries.AsNoTracking();
+
+        // The same rooftop filter as every other read: a balance must never
+        // total up a location the caller cannot see.
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            entries = entries.Where(e => allowed.Contains(e.RooftopId));
+        }
+
+        if (query.RooftopId is { } only)
+        {
+            entries = entries.Where(e => e.RooftopId == only);
+        }
+
+        if (query.From is { } from)
+        {
+            entries = entries.Where(e => e.EntryDate >= from);
+        }
+
+        if (query.To is { } to)
+        {
+            entries = entries.Where(e => e.EntryDate <= to);
+        }
+
+        // Mixing currencies in one column would produce a number that means
+        // nothing. Better to refuse than to print it.
+        var currencies = await entries.Select(e => e.Currency).Distinct().ToListAsync(cancellationToken);
+        if (currencies.Count > 1)
+        {
+            return Result.Failure<TrialBalance>(LedgerErrors.MixedCurrencies(currencies));
+        }
+
+        var totals = await (
+            from line in _db.JournalLines.AsNoTracking()
+            join entry in entries on line.EntryId equals entry.Id
+            group line by line.AccountId into byAccount
+            select new
+            {
+                AccountId = byAccount.Key,
+                Debits = byAccount.Sum(l => l.Debit),
+                Credits = byAccount.Sum(l => l.Credit),
+            }).ToListAsync(cancellationToken);
+
+        var accounts = await _db.Accounts.AsNoTracking().ToListAsync(cancellationToken);
+
+        var balances = totals
+            .Select(total =>
+            {
+                var account = accounts.Find(a => a.Id == total.AccountId);
+                var debits = total.Debits;
+                var credits = total.Credits;
+
+                // Stated on the account's normal side, so a healthy account reads
+                // positive whichever kind it is.
+                var balance = account?.IncreasesOnDebit == true
+                    ? debits - credits
+                    : credits - debits;
+
+                return new AccountBalance(
+                    account?.Code ?? "?",
+                    account?.Name ?? "(account removed)",
+                    account?.Kind.ToString() ?? "Unknown",
+                    debits,
+                    credits,
+                    balance);
+            })
+            .OrderBy(a => a.Code, StringComparer.Ordinal)
+            .ToList();
+
+        var totalDebits = balances.Sum(a => a.Debits);
+        var totalCredits = balances.Sum(a => a.Credits);
+
+        return Result.Success(new TrialBalance(
+            query.From,
+            query.To,
+            currencies.Count == 1 ? currencies[0] : string.Empty,
+            totalDebits,
+            totalCredits,
+            totalDebits == totalCredits,
+            balances));
+    }
+
     public async Task<Result<JournalEntryDetail>> PostDeliveryAsync(
         DeliveryPosting delivery,
         CancellationToken cancellationToken)
@@ -398,4 +498,10 @@ internal static class LedgerErrors
     public static Error ChartIncomplete(IEnumerable<string> missing) => Error.Validation(
         "accounting.chart_incomplete",
         $"The chart of accounts is missing: {string.Join(", ", missing)}.");
+
+    public static Error MixedCurrencies(IEnumerable<string> currencies) => Error.Validation(
+        "accounting.mixed_currencies",
+        $"These entries are in more than one currency ({string.Join(", ", currencies)}). "
+        + "Totalling them would produce a number that means nothing — narrow the period "
+        + "or the rooftop.");
 }

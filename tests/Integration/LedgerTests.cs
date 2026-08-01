@@ -129,6 +129,57 @@ public sealed class LedgerTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task The_trial_balance_totals_the_entries_and_proves_it_balances()
+    {
+        await DeliverAsync(price: 24000m, fee: 400m, discount: -300m,
+            tradeAllowance: 3000m, tradePayoff: 1000m, cost: 19000m);
+
+        using var response = await SendAsync(HttpMethod.Get, "/api/v1/accounting/balances", Manager);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var balance = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        balance.GetProperty("balances").GetBoolean().Should().BeTrue(
+            because: "a trial balance that does not balance means something was lost");
+        balance.GetProperty("totalDebits").GetDecimal().Should()
+            .Be(balance.GetProperty("totalCredits").GetDecimal());
+
+        // Revenue is stated on its normal side, so a credit balance reads positive.
+        var sales = AccountIn(balance, "4000");
+        sales.GetProperty("credits").GetDecimal().Should().BeGreaterThanOrEqualTo(24000m);
+        sales.GetProperty("balance").GetDecimal().Should().BeGreaterThan(0m);
+
+        // An asset does the same on the debit side.
+        var cost = AccountIn(balance, "5000");
+        cost.GetProperty("kind").GetString().Should().Be("Expense");
+        cost.GetProperty("balance").GetDecimal().Should().BeGreaterThan(0m);
+    }
+
+    [Fact]
+    public async Task A_period_with_nothing_in_it_balances_at_zero()
+    {
+        using var response = await SendAsync(
+            HttpMethod.Get, "/api/v1/accounting/balances?from=2000-01-01&to=2000-01-31", Manager);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var balance = await response.Content.ReadFromJsonAsync<JsonElement>();
+        balance.GetProperty("totalDebits").GetDecimal().Should().Be(0m);
+        balance.GetProperty("balances").GetBoolean().Should().BeTrue();
+        balance.GetProperty("accounts").EnumerateArray().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_rooftop_scoped_user_is_refused_another_rooftops_balances()
+    {
+        using var response = await SendAsync(
+            HttpMethod.Get, $"/api/v1/accounting/balances?rooftopId={await RooftopIdAsync("NAG-02")}", Advisor);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            because: "a total is as revealing as the entries behind it");
+    }
+
+    [Fact]
     public async Task An_advisor_can_read_the_ledger_but_cannot_reverse_anything()
     {
         var sale = await DeliverAsync();
@@ -144,6 +195,10 @@ public sealed class LedgerTests(HostFixture fixture)
     // --- helpers -----------------------------------------------------------
 
     private sealed record Sale(string DealId);
+
+    private static JsonElement AccountIn(JsonElement balance, string code) =>
+        balance.GetProperty("accounts").EnumerateArray()
+            .Single(a => a.GetProperty("code").GetString() == code);
 
     private static decimal SumFor(JsonElement entry, string code, string side) =>
         entry.GetProperty("lines").EnumerateArray()
