@@ -26,7 +26,8 @@ exported type list, so widening it is a decision someone has to make on purpose.
 | Type | Purpose |
 |---|---|
 | `IAccessDirectory`, `AuthorizedScope` | "what may this user reach?" |
-| `IAuthenticator`, `IssuedSession`, `AuthErrors` | sign in, validate a session, sign out |
+| `IAuthenticator`, `IssuedSession`, `AuthenticatedCaller`, `AuthErrors` | sign in, validate a session, sign out |
+| `ISecurityPolicy`, `RoleSecondFactorPolicy` | read and set which roles must hold a second factor |
 | `IdentityRegistration` | `services.AddIdentity()` |
 | `IdentitySeeder`, `DevelopmentAccount` | Development-only account seeding |
 | `Permissions` | the catalogue of action names — a shared vocabulary, not an internal |
@@ -79,6 +80,13 @@ Three rules hold sign-in together, and none may be relaxed for convenience:
   revocation — that trade is the whole reason sessions are durable rather than
   stateless.
 
+A session carries a second, independent secret: the anti-forgery token. It is
+generated at sign-in, stored as a hash on the same row, and returned to the
+browser in a cookie that script *can* read — the client has to read it to put it
+in a header, and a header is what a cross-site request cannot forge. It is not a
+credential and opens nothing on its own. `VerifyAntiForgeryAsync` is the only way
+to check it, and it refuses a token belonging to a different or inactive session.
+
 ## Audit
 
 Audit events are append-only (ADR-016). `IdentityDb.SaveChangesAsync` throws if
@@ -90,8 +98,9 @@ identifiers, or document content.
 
 ## The second factor
 
-Opt-in TOTP — the six digits in Google Authenticator, Authy, 1Password, or any
-other app implementing RFC 6238.
+TOTP — the six digits in Google Authenticator, Authy, 1Password, or any other app
+implementing RFC 6238. Anyone may enrol; a dealer organization may also *require*
+it (see below).
 
 Signing in becomes two steps for an enrolled account. The password buys a
 **challenge**, not a session: a short-lived, hashed, single-use token that grants
@@ -113,6 +122,23 @@ Four details worth keeping:
 `Totp.cs` is verified against the published RFC 6238 test vectors. That matters
 more than it looks: the other implementation is on somebody's phone and cannot be
 adjusted to agree with us.
+
+### Requiring it
+
+`Role.RequiresSecondFactor` says whether holding that role obliges the user to
+have one, and `ISecurityPolicy` is how the application reads and changes it. The
+rule sits on the role because "who must" is a statement about responsibility —
+a new salesperson is covered the day they are hired, without anybody remembering.
+
+`ValidateAsync` works the obligation out on **every** request, for the same
+reason sessions are checked on every request: a rule that waits eight hours for
+everyone to sign out is not in force. A caller who owes one still gets a real
+session; `CurrentUserMiddleware` then lets them reach enrolment and nothing else.
+
+Nobody is ever locked out by turning it on, and that is the property to protect
+if this code changes. Disabling a second factor is not reachable from a
+restricted session — otherwise the policy could be answered by removing the very
+thing it asks for.
 
 > HMAC-SHA1 is used because the RFC specifies it and every authenticator app
 > implements only that. The analyser suppression at the call site explains why

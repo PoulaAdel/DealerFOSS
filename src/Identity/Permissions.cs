@@ -55,8 +55,16 @@ public static class Permissions
     /// </summary>
     public const string AccountingPost = "Accounting.Post";
 
+    /// <summary>
+    /// Changing the security rules the organization applies to its own staff —
+    /// today, which roles must hold a second factor. Held organization-wide by
+    /// design: a rule about the whole dealership is not set from one lot.
+    /// </summary>
+    public const string SecurityManagePolicy = "Security.ManagePolicy";
+
     public static IReadOnlyCollection<string> All { get; } =
     [
+        SecurityManagePolicy,
         OrganizationRead,
         OrganizationManage,
         CustomersRead,

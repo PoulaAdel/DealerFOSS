@@ -13,13 +13,18 @@
 # Usage (from repo root, Windows PowerShell 5.1):
 #   & .\deploy\verify-e2e.ps1
 #   & .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
+#
+# Pass -Port when something is already on 5080 — typically a development host
+# left running for the frontend. Without it the script's own host cannot bind,
+# and it silently measures whatever is already there instead.
 
 param(
-    [string]$HostConnection = "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
+    [string]$HostConnection = "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False",
+    [int]$Port = 5080
 )
 
 $ErrorActionPreference = "Stop"
-$port = 5080
+$port = $Port
 $baseUrl = "http://localhost:$port"
 $hostConn = $HostConnection
 
@@ -28,6 +33,13 @@ $emailOrgWide  = "gm@dev.local"       # every rooftop
 $emailScoped   = "advisor@dev.local"  # first rooftop only
 $emailNoAccess = "nobody@dev.local"   # no assignment
 $devPassword   = "Dev@Pass1!"
+
+# Refuse to run against somebody else's process. Without this the script's own
+# host fails to bind, the readiness probe succeeds against whatever was already
+# listening, and the whole run silently verifies a stale build.
+if (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) {
+    throw "Port $port is already in use. Stop what is listening, or pass -Port with a free one."
+}
 
 Write-Host "Starting Host (Development, seeding enabled)..." -ForegroundColor Cyan
 $env:ASPNETCORE_ENVIRONMENT = "Development"
@@ -39,9 +51,12 @@ $env:Seed__Enabled = "true"
 $env:Serilog__MinimumLevel__Default = "Warning"
 $hostLog = Join-Path $env:TEMP "opendealer360-verify-host.log"
 
+# --urls is passed on the command line rather than left to ASPNETCORE_URLS,
+# because launchSettings.json pins 5080 and its applicationUrl would otherwise
+# win over the environment variable.
 $proc = Start-Process dotnet -PassThru -NoNewWindow `
     -RedirectStandardOutput $hostLog `
-    -ArgumentList "run --project src/App -c Release --no-build"
+    -ArgumentList "run --project src/App -c Release --no-build -- --urls $baseUrl"
 
 try {
     $ready = $false
@@ -54,20 +69,40 @@ try {
     if (-not $ready) { throw "Host did not become ready." }
     Write-Host "Host ready." -ForegroundColor Green
 
-    # Signs in and returns a web session carrying the cookie. PowerShell 5.1 will
-    # not accept "Cookie" as a plain header, so use a cookie container.
+    # Signs in and returns a web session carrying the cookies. PowerShell 5.1 will
+    # not accept "Cookie" as a plain header, so use a cookie container. The
+    # anti-forgery token is hung off the session object as well, because every
+    # write has to present it in a header — a cookie alone is exactly what this
+    # protection refuses.
     function New-DealerSession([string]$tenant, [string]$email) {
         $body = @{ email = $email; password = $devPassword } | ConvertTo-Json
         $login = Invoke-WebRequest "$baseUrl/api/v1/auth/login" -Method Post `
             -Body $body -ContentType "application/json" `
             -Headers @{ "X-Tenant" = $tenant } -UseBasicParsing
 
-        $raw = $login.Headers['Set-Cookie']
-        if ($raw -is [array]) { $raw = $raw | Where-Object { $_ -like 'odms_session=*' } | Select-Object -First 1 }
-        $token = ($raw -split ';')[0] -replace '^odms_session=', ''
+        # PowerShell 5.1 sometimes hands back one joined string for repeated
+        # headers and sometimes an array, so match on the text either way rather
+        # than trusting the shape.
+        $cookies = $login.Headers['Set-Cookie']
+        if ($cookies -is [array]) { $cookies = $cookies -join ', ' }
+        function Read-Cookie([string]$name) {
+            $match = [regex]::Match($cookies, "(?:^|[,;]\s*)$name=([^;,]*)")
+            if ($match.Success) { return $match.Groups[1].Value }
+            throw "The $name cookie was not set at sign-in."
+        }
+
+        $token = Read-Cookie "odms_session"
+        $csrf  = Read-Cookie "odms_csrf"
 
         $ws = New-Object Microsoft.PowerShell.Commands.WebRequestSession
         $ws.Cookies.Add((New-Object System.Net.Cookie("odms_session", $token, "/", "localhost")))
+        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_csrf", $csrf, "/", "localhost")))
+
+        # A Set-Cookie value arrives percent-encoded. The cookie container sends
+        # it back as it came and the server decodes it; a plain header is not
+        # decoded, so the header form has to be unescaped here.
+        $ws | Add-Member -NotePropertyName Csrf `
+            -NotePropertyValue ([System.Uri]::UnescapeDataString($csrf)) -Force
         return $ws
     }
 
@@ -76,7 +111,8 @@ try {
     function Invoke-Api([string]$path, $session, $body) {
         return Invoke-RestMethod "$baseUrl$path" -Method Post `
             -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" `
-            -Headers @{ "X-Tenant" = "northgroup" } -WebSession $session
+            -Headers @{ "X-Tenant" = "northgroup"; "X-CSRF-Token" = $session.Csrf } `
+            -WebSession $session
     }
 
     function Get-Org([string]$tenant, $session) {
@@ -91,7 +127,13 @@ try {
         try {
             $call = @{ Uri = "$baseUrl$path"; UseBasicParsing = $true; Method = $method }
             if ($tenant)  { $call.Headers = @{ "X-Tenant" = $tenant } }
-            if ($session) { $call.WebSession = $session }
+            if ($session) {
+                $call.WebSession = $session
+                if ($method -ne "Get" -and $session.Csrf) {
+                    if (-not $call.Headers) { $call.Headers = @{} }
+                    $call.Headers["X-CSRF-Token"] = $session.Csrf
+                }
+            }
             if ($body) {
                 $call.Body = ($body | ConvertTo-Json)
                 $call.ContentType = "application/json"
@@ -256,6 +298,76 @@ try {
     $reverseTwice = Get-Status "/api/v1/accounting/journal/$($posted.id)/reverse" "northgroup" $orgWide "Post" @{ reason = "Again." }
     "reversing the same entry twice        -> HTTP $reverseTwice (expect 409)"
 
+    Write-Host "`n--- anti-forgery on writes ---" -ForegroundColor Cyan
+    # The shape of a cross-site forged write: the browser's cookies ride along,
+    # but nothing can set the header. It must be refused even though the session
+    # is perfectly valid.
+    #
+    # A used WebRequestSession remembers the headers it was last given, so this
+    # needs a fresh one carrying only the cookies — otherwise the check quietly
+    # re-sends the very token it is supposed to be doing without.
+    $cookiesOnly = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+    foreach ($cookie in $orgWide.Cookies.GetCookies($baseUrl)) { $cookiesOnly.Cookies.Add($cookie) }
+
+    try {
+        $forgedBody = @{ kind = "Person"; firstName = "Forged"; lastName = "Case$suffix" } | ConvertTo-Json
+        $forged = (Invoke-WebRequest "$baseUrl/api/v1/customers" -Method Post `
+            -Body $forgedBody -ContentType "application/json" `
+            -Headers @{ "X-Tenant" = "northgroup" } -WebSession $cookiesOnly -UseBasicParsing).StatusCode
+    } catch { $forged = $_.Exception.Response.StatusCode.value__ }
+    "write with the cookie but no token    -> HTTP $forged (expect 403)"
+
+    $honest = Get-Status "/api/v1/customers" "northgroup" $orgWide "Post" @{
+        kind = "Person"; firstName = "Honest"; lastName = "Case$suffix"
+    }
+    "the same write carrying the token     -> HTTP $honest (expect 201)"
+
+    Write-Host "`n--- the dealership can demand a second factor ---" -ForegroundColor Cyan
+    # Turned on, observed, and turned off again in a finally block below: the
+    # policy is a real row, and leaving it on would break the next run.
+    $roles = Invoke-RestMethod "$baseUrl/api/v1/security/second-factor-policy" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $salesRole = @($roles | Where-Object { $_.roleName -eq "Salesperson" })[0]
+    "salesperson role: {0} holder(s), {1} still to enrol" -f $salesRole.usersHolding, $salesRole.usersStillToEnrol
+
+    $advisorSetsPolicy = Get-Status "/api/v1/security/second-factor-policy" "northgroup" $scoped "Post" @{
+        roleId = $salesRole.roleId; required = $true
+    }
+    "a one-lot user sets group policy      -> HTTP $advisorSetsPolicy (expect 403)"
+
+    $policyOn = 0
+    try {
+        $null = Invoke-Api "/api/v1/security/second-factor-policy" $orgWide @{
+            roleId = $salesRole.roleId; required = $true
+        }
+        $policyOn = 1
+
+        # The same salesperson session as before, untouched. The policy has to
+        # bite without waiting for them to sign out.
+        $blocked = Get-Status "/api/v1/inventory?limit=1" "northgroup" $sales
+        "salesperson mid-session, policy on    -> HTTP $blocked (expect 403)"
+
+        $stillIn = Get-Status "/api/v1/auth/me" "northgroup" $sales
+        "...but can still be told what to do   -> HTTP $stillIn (expect 200)"
+
+        # This begins an enrolment and does not finish it, so sales@dev.local is
+        # left holding an unconfirmed secret. Harmless and re-runnable: a second
+        # factor is only in force once a code has confirmed it, and beginning
+        # again simply replaces the secret.
+        $canEnrol = Get-Status "/api/v1/auth/mfa/enrol" "northgroup" $sales "Post" @{}
+        "...and the way out is open           -> HTTP $canEnrol (expect 200)"
+
+        $managerUnaffected = Get-Status "/api/v1/inventory?limit=1" "northgroup" $orgWide
+        "manager holds another role            -> HTTP $managerUnaffected (expect 200)"
+    }
+    finally {
+        if ($policyOn -eq 1) {
+            $null = Invoke-Api "/api/v1/security/second-factor-policy" $orgWide @{
+                roleId = $salesRole.roleId; required = $false
+            }
+        }
+    }
+
     Write-Host "`n--- sessions ---" -ForegroundColor Cyan
     $noSession = Get-Status "/api/v1/organization" "northgroup" $null
     "no session                            -> HTTP $noSession (expect 401)"
@@ -289,11 +401,14 @@ try {
         -and ($selfApprove -eq 403) `
         -and ($doubleSell -eq 409) `
         -and ($entryCount -eq 1) -and $balanced -and $originalIntact -and ($reverseTwice -eq 409) `
+        -and ($forged -eq 403) -and ($honest -eq 201) `
+        -and ($advisorSetsPolicy -eq 403) -and ($blocked -eq 403) -and ($stillIn -eq 200) `
+        -and ($canEnrol -eq 200) -and ($managerUnaffected -eq 200) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
         -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, and the ledger balances." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, a forged write is refused, a second factor can be demanded, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

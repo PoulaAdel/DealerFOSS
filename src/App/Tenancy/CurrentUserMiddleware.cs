@@ -7,6 +7,11 @@
 //       revoking one takes effect immediately rather than whenever a token would
 //       have expired. Do not cache that lookup without also solving revocation —
 //       that trade is the whole reason sessions are durable rather than stateless.
+//
+//       The same check reports whether the caller owes their organization a
+//       second factor. If they do, this middleware lets them reach the enrolment
+//       path and nothing else. Enforcing it here rather than in each endpoint is
+//       the point: a capability added next year is covered without being told.
 
 using OpenDealer360.Core;
 using OpenDealer360.App;
@@ -34,6 +39,20 @@ public sealed class CurrentUserMiddleware(RequestDelegate next)
     [
         "/api/v1/auth/login",
         "/api/v1/auth/login/second-factor",
+        "/api/v1/auth/logout",
+    ];
+
+    /// <summary>
+    /// All a caller who owes a second factor may reach. Enrolling and confirming
+    /// are the way out; <c>me</c> is how a client knows to show that screen; and
+    /// signing out must always be possible. Disabling is deliberately absent —
+    /// it would be a way to answer the policy by removing the thing it asks for.
+    /// </summary>
+    private static readonly string[] EnrolmentPaths =
+    [
+        "/api/v1/auth/me",
+        "/api/v1/auth/mfa/enrol",
+        "/api/v1/auth/mfa/confirm",
         "/api/v1/auth/logout",
     ];
 
@@ -76,7 +95,20 @@ public sealed class CurrentUserMiddleware(RequestDelegate next)
             return;
         }
 
-        currentUser.Set(result.Value);
+        var caller = result.Value;
+        currentUser.Set(caller.UserId, caller.MustEnrolSecondFactor);
+
+        if (caller.MustEnrolSecondFactor
+            && !EnrolmentPaths.Contains(context.Request.Path.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            // 403 and not 401: the session is genuinely valid, and signing in
+            // again would change nothing. The message names the way out.
+            var error = AuthErrors.SecondFactorRequiredByPolicy;
+            await WriteProblemAsync(
+                context, StatusCodes.Status403Forbidden, error.Code, error.Message);
+            return;
+        }
+
         await _next(context);
     }
 

@@ -94,6 +94,9 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
             builder.Property(x => x.Id).ValueGeneratedNever();
             builder.Property(x => x.Name).HasMaxLength(100).IsRequired();
             builder.HasIndex(x => x.Name).IsUnique();
+            // Off for every role that already exists: an upgrade must not
+            // suddenly demand a second factor nobody was told about.
+            builder.Property(x => x.RequiresSecondFactor).HasDefaultValue(false);
             builder.HasMany(x => x.Permissions)
                 .WithOne()
                 .HasForeignKey(x => x.RoleId)
@@ -129,6 +132,10 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Id).ValueGeneratedNever();
             builder.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            // Sessions created before anti-forgery existed carry an empty string,
+            // which no SHA-256 hex value can equal — so their writes are refused
+            // and the user signs in again. That is the safe direction to fail.
+            builder.Property(x => x.AntiForgeryHash).HasMaxLength(64).IsRequired();
             builder.Property(x => x.DeviceSummary).HasMaxLength(200);
             // Every request looks a session up by token hash, so this index is
             // on the hot path, and it is unique because a token identifies one

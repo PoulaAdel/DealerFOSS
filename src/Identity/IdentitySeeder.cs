@@ -76,6 +76,10 @@ public static class IdentitySeeder
             Permissions.DealsApprove,
             Permissions.AccountingRead,
             Permissions.AccountingPost,
+            // Who must hold a second factor is a management decision, so the
+            // manager role is where it sits. No role is seeded as requiring one
+            // — that is the dealership's call, not ours.
+            Permissions.SecurityManagePolicy,
         ]);
 
         // An advisor can look a customer up but not create one, and can see stock,

@@ -3,10 +3,15 @@
 // Use:  POST /api/v1/auth/login sets the session cookie; POST .../logout clears
 //       and revokes it; GET .../me confirms the caller. All require X-Tenant,
 //       because a user belongs to one dealer organization.
-// Edit: the cookie is HttpOnly so script cannot read it, SameSite=Strict so
-//       another site cannot cause a request with it, and Secure outside
+// Edit: the session cookie is HttpOnly so script cannot read it, SameSite=Strict
+//       so another site cannot cause a request with it, and Secure outside
 //       Development. Do not relax any of the three to make a client easier to
 //       write. The token is returned only in the cookie, never in the body.
+//
+//       Sign-in sets a second cookie carrying the anti-forgery token. That one
+//       is deliberately readable by script — the client has to read it to put it
+//       in a header, and a header is the thing a cross-site form cannot forge.
+//       It is not a credential: on its own it opens nothing.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -20,6 +25,18 @@ internal static class AuthEndpoints
 {
     /// <summary>Name of the cookie carrying the session token.</summary>
     public const string SessionCookie = "odms_session";
+
+    /// <summary>
+    /// Name of the cookie carrying this session's anti-forgery token. Readable by
+    /// script on purpose, so the client can copy it into <see cref="AntiForgeryHeader"/>.
+    /// </summary>
+    public const string AntiForgeryCookie = "odms_csrf";
+
+    /// <summary>
+    /// The header a write must carry. "CSRF" rather than "anti-forgery" because
+    /// every proxy, browser tool, and developer already recognises the name.
+    /// </summary>
+    public const string AntiForgeryHeader = "X-CSRF-Token";
 
     public static void MapAuth(this IEndpointRouteBuilder app)
     {
@@ -134,6 +151,14 @@ internal static class AuthEndpoints
             session.Token,
             BuildCookieOptions(context, session.AbsoluteExpiresAt));
 
+        // Same lifetime and same SameSite rule as the session, so the pair can
+        // never drift apart. HttpOnly is off only for this one: the client must
+        // read it to echo it back.
+        context.Response.Cookies.Append(
+            AntiForgeryCookie,
+            session.AntiForgeryToken,
+            BuildCookieOptions(context, session.AbsoluteExpiresAt, readableByScript: true));
+
         return Results.Ok(new { expiresAt = session.AbsoluteExpiresAt });
     }
 
@@ -166,21 +191,37 @@ internal static class AuthEndpoints
             await authenticator.RevokeAsync(token, cancellationToken);
         }
 
-        // Clear the cookie with the same attributes it was set with, or the
-        // browser keeps it.
+        // Clear both cookies with the same attributes they were set with, or the
+        // browser keeps them.
         context.Response.Cookies.Append(
             SessionCookie, string.Empty, BuildCookieOptions(context, DateTimeOffset.UnixEpoch));
+        context.Response.Cookies.Append(
+            AntiForgeryCookie,
+            string.Empty,
+            BuildCookieOptions(context, DateTimeOffset.UnixEpoch, readableByScript: true));
 
         return Results.NoContent();
     }
 
+    /// <summary>
+    /// Reachable even by a caller who owes a second factor — it is how a client
+    /// finds out that it must show the enrolment screen rather than the
+    /// application.
+    /// </summary>
     private static IResult Me(ICurrentUser currentUser) =>
-        Results.Ok(new { userId = currentUser.Id });
+        Results.Ok(new
+        {
+            userId = currentUser.Id,
+            mustEnrolSecondFactor = currentUser.MustEnrolSecondFactor,
+        });
 
-    private static CookieOptions BuildCookieOptions(HttpContext context, DateTimeOffset expiresAt) =>
+    private static CookieOptions BuildCookieOptions(
+        HttpContext context,
+        DateTimeOffset expiresAt,
+        bool readableByScript = false) =>
         new()
         {
-            HttpOnly = true,
+            HttpOnly = !readableByScript,
             SameSite = SameSiteMode.Strict,
             // Development runs over plain HTTP; everywhere else the cookie must
             // never travel unencrypted.

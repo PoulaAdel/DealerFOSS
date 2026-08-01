@@ -280,7 +280,13 @@ internal sealed class Authenticator(
         CancellationToken cancellationToken)
     {
         var (token, tokenHash) = NewToken();
-        var session = new Session(Guid.NewGuid(), userId, tokenHash, now, deviceSummary);
+
+        // A second, independent secret. The browser reads this one and echoes it
+        // on writes; it is generated here so it lives and dies with the session.
+        var (antiForgeryToken, antiForgeryHash) = NewToken();
+
+        var session = new Session(
+            Guid.NewGuid(), userId, tokenHash, antiForgeryHash, now, deviceSummary);
 
         _db.Sessions.Add(session);
         await _db.SaveChangesAsync(cancellationToken);
@@ -290,14 +296,16 @@ internal sealed class Authenticator(
                 "Session", session.Id.ToString(), null, null, null, null),
             cancellationToken);
 
-        return new IssuedSession(token, session.AbsoluteExpiresAt);
+        return new IssuedSession(token, antiForgeryToken, session.AbsoluteExpiresAt);
     }
 
-    public async Task<Result<Guid>> ValidateAsync(string token, CancellationToken cancellationToken)
+    public async Task<Result<AuthenticatedCaller>> ValidateAsync(
+        string token,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            return Result.Failure<Guid>(AuthErrors.SessionInvalid);
+            return Result.Failure<AuthenticatedCaller>(AuthErrors.SessionInvalid);
         }
 
         var hash = Hash(token);
@@ -307,24 +315,79 @@ internal sealed class Authenticator(
         var now = _clock.UtcNow;
         if (session is null || !session.IsActiveAt(now))
         {
-            return Result.Failure<Guid>(AuthErrors.SessionInvalid);
+            return Result.Failure<AuthenticatedCaller>(AuthErrors.SessionInvalid);
         }
 
-        // A user deactivated mid-session loses access at once, without waiting
-        // for the session to expire.
-        var stillActive = await _db.Users
+        // One round trip answers both questions: is this user still allowed in
+        // at all, and does their organization's policy oblige them to set a
+        // second factor up first. A user deactivated mid-session loses access at
+        // once, without waiting for the session to expire.
+        var caller = await _db.Users
             .AsNoTracking()
-            .AnyAsync(u => u.Id == session.UserId && u.IsActive, cancellationToken);
+            .Where(u => u.Id == session.UserId && u.IsActive)
+            .Select(u => new
+            {
+                HasSecondFactor = u.MfaConfirmedAt != null && u.MfaSecretProtected != null,
+                PolicyDemandsOne = _db.UserAssignments.Any(a =>
+                    a.UserId == u.Id
+                    && _db.Roles.Any(r => r.Id == a.RoleId && r.RequiresSecondFactor)),
+            })
+            .SingleOrDefaultAsync(cancellationToken);
 
-        if (!stillActive)
+        if (caller is null)
         {
-            return Result.Failure<Guid>(AuthErrors.SessionInvalid);
+            return Result.Failure<AuthenticatedCaller>(AuthErrors.SessionInvalid);
         }
 
         session.Touch(now);
         await _db.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(session.UserId);
+        return Result.Success(new AuthenticatedCaller(
+            session.UserId,
+            MustEnrolSecondFactor: caller.PolicyDemandsOne && !caller.HasSecondFactor));
+    }
+
+    public async Task<bool> VerifyAntiForgeryAsync(
+        string sessionToken,
+        string? antiForgeryToken,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken) || string.IsNullOrWhiteSpace(antiForgeryToken))
+        {
+            return false;
+        }
+
+        var sessionHash = Hash(sessionToken);
+        var session = await _db.Sessions
+            .AsNoTracking()
+            .SingleOrDefaultAsync(s => s.TokenHash == sessionHash, cancellationToken);
+
+        // A revoked or expired session authorizes nothing, even if its
+        // anti-forgery token is presented correctly.
+        if (session is null || !session.IsActiveAt(_clock.UtcNow))
+        {
+            return false;
+        }
+
+        var presented = Encoding.UTF8.GetBytes(Hash(antiForgeryToken));
+        var expected = Encoding.UTF8.GetBytes(session.AntiForgeryHash);
+
+        if (CryptographicOperations.FixedTimeEquals(presented, expected))
+        {
+            return true;
+        }
+
+        await _audit.RecordAsync(
+            AuditEntry.Denied(
+                session.UserId,
+                "Auth.AntiForgery",
+                "Session",
+                session.Id.ToString(),
+                null,
+                "Write refused: the anti-forgery token did not belong to this session."),
+            cancellationToken);
+
+        return false;
     }
 
     public async Task RevokeAsync(string token, CancellationToken cancellationToken)

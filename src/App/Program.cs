@@ -130,9 +130,11 @@ app.UseSerilogRequestLogging();
 
 if (tenancyEnabled)
 {
-    // Order matters: the tenant is resolved first, then the caller within it.
+    // Order matters: the tenant is resolved first, then the caller within it,
+    // and only then is a write allowed to prove it was not forged.
     app.UseMiddleware<TenantMiddleware>();
     app.UseMiddleware<CurrentUserMiddleware>();
+    app.UseMiddleware<AntiForgeryMiddleware>();
 }
 
 // Liveness: is the process up at all? Runs no dependency checks.
@@ -154,6 +156,7 @@ app.MapGet("/", () => Results.Ok(new
 if (tenancyEnabled)
 {
     app.MapAuth();
+    app.MapSecurity();
     app.MapOrganization();
     app.MapCustomers();
     app.MapVehicles();

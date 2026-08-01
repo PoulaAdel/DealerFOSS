@@ -4,6 +4,10 @@
 // Use:  new Role(id, "Service Advisor"), then Grant(Permissions.X).
 // Edit: Grant deliberately rejects anything outside the Permissions catalogue.
 //       Keep that check — it is what stops a typo becoming a silent non-grant.
+//
+//       The second-factor requirement lives here rather than on the user,
+//       because "who must have one" is a statement about responsibility, not a
+//       list somebody has to remember to update when staff change.
 
 using OpenDealer360.Core;
 
@@ -24,6 +28,13 @@ internal sealed class Role : AuditableEntity
 
     public IReadOnlyCollection<RolePermission> Permissions => _permissions;
 
+    /// <summary>
+    /// Whether holding this role obliges the user to have a second factor. Off
+    /// by default: switching it on is a decision a dealer organization makes,
+    /// not something that happens to them on an upgrade.
+    /// </summary>
+    public bool RequiresSecondFactor { get; private set; }
+
     private Role()
     {
     }
@@ -38,6 +49,13 @@ internal sealed class Role : AuditableEntity
         Id = id;
         Name = name;
     }
+
+    /// <summary>
+    /// Turns the second-factor obligation on or off for everyone holding this
+    /// role. Nobody is locked out by it: a user who is required but not yet
+    /// enrolled can still sign in, and can do nothing but enrol.
+    /// </summary>
+    public void RequireSecondFactor(bool required) => RequiresSecondFactor = required;
 
     public void Grant(string permission)
     {

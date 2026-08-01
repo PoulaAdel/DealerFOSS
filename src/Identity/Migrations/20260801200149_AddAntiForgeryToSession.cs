@@ -1,0 +1,32 @@
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace OpenDealer360.Identity.Migrations
+{
+    /// <inheritdoc />
+    public partial class AddAntiForgeryToSession : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AddColumn<string>(
+                name: "AntiForgeryHash",
+                schema: "identity",
+                table: "Sessions",
+                type: "nvarchar(64)",
+                maxLength: 64,
+                nullable: false,
+                defaultValue: "");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "AntiForgeryHash",
+                schema: "identity",
+                table: "Sessions");
+        }
+    }
+}

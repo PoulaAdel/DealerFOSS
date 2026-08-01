@@ -158,17 +158,18 @@ comment explaining why it is legitimate — that is the standard for adding anot
 
 Calibrate your confidence — these are current, honest limitations:
 
-- **Seven capabilities exist** (Organization, Identity, Customers, Vehicles,
-  Inventory, Leads, Deals) out of roughly thirteen planned. The shape in
-  [ADR-017](adr/0017-three-projects-flat-features.md) is days old; expect it to
-  bend when Accounting lands.
+- **Eight capabilities exist** (Organization, Identity, Customers, Vehicles,
+  Inventory, Leads, Deals, Accounting) out of roughly thirteen planned.
 - **The features inside `App` are held apart by tests, not by the compiler.** That
   is deliberate, and it means a cross-feature `using` compiles and fails later.
 - **CI has never executed** (no remote configured). The workflow is a claim.
-- **Second-factor authentication and federation do not exist.** Passwords and
-  sessions are real; MFA and OIDC are the next milestone.
-- **No explicit anti-forgery token on writes.** The session cookie is
-  `SameSite=Strict`, which is the current defence.
+- **Federation (OIDC) does not exist**, and cannot be honestly built until there
+  is a real identity provider to test against. Local passwords and TOTP —
+  optional or required by role — are the whole of sign-in today.
+- **Global administration is not separated yet.** There is no control-plane
+  identity, and no time-limited support-access flow.
+- **The frontend has never been seen rendering.** It serves, typechecks, and
+  reaches the API; nobody has watched it paint.
 - **Backup and restore have never been rehearsed.**
 
 `STATUS.md` is the live version of this list. If it disagrees with this section,

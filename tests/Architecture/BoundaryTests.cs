@@ -97,8 +97,13 @@ public sealed class BoundaryTests
         var allowed = new[]
         {
             "IAccessDirectory", "AuthorizedScope",
-            "IAuthenticator", "IssuedSession", "AuthErrors",
+            "IAuthenticator", "IssuedSession", "AuthenticatedCaller", "AuthErrors",
             "SignInOutcome", "SecondFactorChallenge", "MfaEnrolment",
+            // Added deliberately: a policy nobody can change is not a policy, so
+            // the application needs a way to read and set which roles must hold
+            // a second factor. It exposes the rule and the role names — not the
+            // Role entity, not assignments, and no way to grant anything.
+            "ISecurityPolicy", "RoleSecondFactorPolicy",
             "IdentityRegistration", "IdentitySeeder", "DevelopmentAccount",
             "Permissions",
         };

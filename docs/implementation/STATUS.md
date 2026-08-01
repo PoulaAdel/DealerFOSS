@@ -1,9 +1,9 @@
 # Implementation Status
 
 Current phase: **I0 complete (except container path) → I1 in progress**
-Current milestone: MFA foundation and OIDC federation
-Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 285/285,
-`verify-e2e.ps1` PASS against **both** LocalDB and the SQL Server container
+Current milestone: anti-forgery on writes and MFA by policy (both complete); next is OIDC, which is blocked
+Last verified: 2026-08-01 · `dotnet build` 0 warnings/0 errors, `dotnet test` 301/301,
+`verify-e2e.ps1` PASS against LocalDB
 
 > **Layout note (2026-07-30).** The repository moved from seven backend projects to
 > three — `src/Core`, `src/Identity`, `src/App` — with one flat folder per
@@ -51,13 +51,17 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - [x] Audit events capture scoped security-sensitive changes — every denial writes an append-only `identity.AuditEvents` row; the context refuses to update or delete audit history (ADR-016) *(agent-verifiable)*
 - [ ] Background-job authorization tests — no jobs exist yet; due with the first scheduled job
 - [x] **Durable sessions and cookie sign-in** — password credentials, SQL-backed sessions, Secure/HttpOnly/SameSite=Strict cookie, sliding idle expiry (30 min) under a fixed 8-hour ceiling. Revocation takes effect on the next request, proven by `AuthenticationTests`. An unknown email and a wrong password return byte-identical responses. *(agent-verifiable)*
-- [ ] Explicit anti-forgery on writes — write endpoints now exist (customers, vehicles, inventory). The session cookie is `SameSite=Strict`, which is the current defence; a token-based check is still outstanding
+- [x] **Explicit anti-forgery on writes** — sign-in issues a second random secret alongside the session token, stores only its hash on the session row, and returns it in a script-readable cookie. Every request that is not GET, HEAD, OPTIONS, or TRACE must repeat it in `X-CSRF-Token`; a valid session cookie on its own is refused with 403 `auth.antiforgery_failed`, and the denial is audited. Only sign-in and second-factor completion are exempt, because no session exists yet to have issued a token. Binding the token to the session means revocation kills both halves together and a token from one session cannot authorize a write on another — the hole a plain double-submit cookie leaves open. **Regression-proven:** removing the check failed exactly the three tests that demand a refusal *(agent-verifiable)*
 - [x] **MFA foundation** — opt-in TOTP (RFC 6238). A password buys a short-lived, hashed, single-use challenge rather than a session; only a valid code completes sign-in. The shared secret is encrypted at rest with `ISecretProtector`; enrolment is two-phase so a mis-scanned QR cannot lock anybody out; ten single-use recovery codes are stored as hashes; disabling needs a current code. Verified against the published RFC test vectors, so authenticator apps agree with us. **Regression-proven:** silently skipping the challenge fails exactly the four tests that demand it *(agent-verifiable)*
 - [ ] OIDC federation — not started, and needs an identity provider to test against
-- [ ] MFA required by policy rather than by choice — enrolment is currently opt-in per user
+- [x] **MFA required by policy rather than by choice** — `Role.RequiresSecondFactor` says whether holding a role obliges the user to have one, read and set through `ISecurityPolicy` behind `Security.ManagePolicy`, which must be held **organization-wide**: a rule about the whole dealership is not set from one lot. The obligation is evaluated on every request rather than frozen at sign-in, so turning it on bites immediately instead of waiting eight hours for everyone to sign out. A user who owes one still gets a real session and may reach enrolment, confirmation, `auth/me`, and sign-out — and nothing else, `mfa/disable` included, since that would answer the policy by removing what it asks for. No role is seeded as requiring it. **Regression-proven:** removing the enforcement failed exactly the two tests that demand a refusal *(agent-verifiable)*
 - [ ] Global-administration separation and time-limited support access — not started
 - [ ] Tenant-aware background job context — not started
-- [ ] React/TypeScript/Vite shell with accessible layout — **compiles, never run.** `frontend/` holds the project, an API client, a sign-in screen covering the second factor, a stock list, and a trial balance, each rendering loading, empty, permission-denied, failure, and retry states. `npm ci && npm run typecheck` passes clean in the `odms-node` container, and CI now runs typecheck plus a production build on every push. **That proves it compiles and nothing more.** Whether React Router behaves as assumed, whether the dev-server proxy reaches the API, and whether the session cookie survives the round trip are all unverified until somebody loads it in a browser *(blocked: awaiting the first run)*
+- [ ] React/TypeScript/Vite shell with accessible layout — **serves and talks to the API; not yet seen rendered.** `frontend/` holds the project, an API client, a sign-in screen covering the second factor, a stock list, and a trial balance, each rendering loading, empty, permission-denied, failure, and retry states.
+
+  Proven 2026-08-01 with the dev server running in the `odms-node` container and the API on the host: `npm run typecheck` clean; Vite serves `index.html` with the React Fast Refresh preamble; every module transforms and returns 200; and the **whole request chain works through the dev-server proxy** — `X-Tenant` passes through, `POST /auth/login` returns 200 and sets the session cookie, and that cookie authenticates `GET /inventory` and `GET /accounting/balances`, the latter returning `totalDebits == totalCredits == 96000.00`. CI runs typecheck plus a production build on every push.
+
+  **Still unverified:** whether it actually paints. React executing, React Router resolving routes, and the components rendering have not been observed — that needs a human with a browser, since the agent's browser pane cannot reach the host's localhost *(blocked: awaiting visual confirmation)*
 - [ ] Tenant creation, migration, backup, and restore rehearsed — migration rehearsed; **backup and restore not** *(partly human-verifiable)*
 
 ## Completed milestones
@@ -104,6 +108,10 @@ them is written.
 
 - **2026-07-31 — The ledger produces totals.** `GET /api/v1/accounting/balances` groups posted lines per account over a period and states each balance on the account's normal side, so an asset with more debits than credits reads positive. It reports whether the two columns agree — the headline of a trial balance is whether it balances, and a difference means something was lost on the way in. Rooftop-scoped, because a total is as revealing as the entries behind it, and it refuses to sum two currencies rather than printing a number that means nothing. Evidence: `dotnet test` 285/285, plus a rehearsal in which inverting the scope filter failed the totals test.
 
+- **2026-08-01 — A forged write is refused.** A write now needs more than the browser's cookies. Signing in hands the browser a second secret, and every change it asks for must carry that secret in a header — which is the one thing a malicious site cannot add to a request it causes your browser to send. The secret is stored only as a hash, belongs to one session, and stops working the moment that session ends, so a token borrowed from another sign-in is refused too. Sessions that existed before this change cannot write until the user signs in again, which is the safe direction to fail. The end-to-end script now shows both halves: the same customer, refused without the token and accepted with it. Evidence: `dotnet test` 293/293 and `verify-e2e.ps1` PASS, plus a rehearsal in which switching the check off failed exactly the three tests that demand a refusal. **Also fixed here:** the verification script used to bind port 5080 silently, and if a development host was already running it would test *that* process instead of the build in front of it — it now refuses to start and takes `-Port`.
+
+- **2026-08-01 — A dealership can demand a second factor instead of hoping for one.** Requiring it is a property of the *role*, so a salesperson hired next year is covered on their first day without anybody remembering to add them. Turning it on takes effect on the next request, not at the next sign-in — a rule that waits eight hours for everyone to sign out is not a rule. And it locks nobody out: somebody who owes a second factor still signs in normally, is told exactly what to do, and can reach the enrolment path and nothing else until they have done it. Turning off their own second factor is deliberately not one of the things they can reach. Only an organization-wide permission can change the policy, so one lot cannot set the group's rules. Evidence: `dotnet test` 301/301 and `verify-e2e.ps1` PASS — which now shows a salesperson mid-session being refused the moment the policy is switched on, still able to reach the way out, and the manager unaffected — plus a rehearsal in which removing the enforcement failed exactly the two tests that demand a refusal. **Not included:** a screen for any of it. Enrolment needs a QR code the frontend cannot yet draw, so this is API-only today.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -113,10 +121,12 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** a second factor can be enrolled and is demanded at sign-in, and an existing identity provider can be used instead of a local password.
+**Outcome:** a global administrator can operate the deployment without being able to read any dealership's business data, and support access to one tenant is deliberate, time-limited, and visible.
 
-This is the last unmet **security** criterion in I1 that does not need a person or a machine we do not have. It comes before more dealership features because every later feature inherits the sign-in path, and retrofitting a second factor after deals and finance data exist is far more disruptive.
+This is the last I1 security criterion that needs neither a person nor a machine we do not have. OIDC federation is the other unmet identity item and stays blocked: it cannot be honestly tested without an identity provider to test against, and a fixture pretending to be one would prove nothing.
 
-- **Included:** TOTP enrolment and verification, recovery codes, a per-organization policy for who must use it, and OIDC federation as an alternative to the local password — with local accounts still working for organizations that do not federate.
-- **Explicitly excluded:** WebAuthn/passkeys, SCIM user provisioning, and global-administration separation — each is its own milestone.
-- **Caution:** enrolment secrets and recovery codes are credentials. They must go through `ISecretProtector`, must never reach a log or an audit row (ADR-016), and a failed second factor must be indistinguishable in timing and response from a wrong password, exactly as the existing sign-in path already is.
+- **Included:** a global-administration identity that is not a tenant user, endpoints it may reach (tenant provisioning and health) versus those it may not (anything under a tenant's business capabilities), a support-access flow that mints a *separate*, time-limited, audited tenant session with a recorded reason, and tests proving an administrator who has not gone through that flow is refused.
+- **Explicitly excluded:** dual approval for support access, a screen for any of it, and OIDC.
+- **Caution:** the refusal must not be a permission check inside each capability, which the next capability would forget. It belongs where the tenant and caller are resolved, so a control-plane identity simply cannot become a business caller by accident. The support session must be a real session with its own expiry and its own audit trail — not a flag on an administrator's existing one.
+
+**Also outstanding, and cheaper:** the second-factor work is API-only. A screen for enrolment needs a QR code the frontend cannot draw yet; the enrolment endpoint already returns the `otpauth://` URI it would encode.

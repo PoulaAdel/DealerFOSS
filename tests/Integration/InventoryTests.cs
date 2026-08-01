@@ -407,14 +407,15 @@ public sealed class InventoryTests(HostFixture fixture)
     private async Task<HttpResponseMessage> PostAsync(string path, string email, object body)
     {
         using var client = _fixture.CreateClient();
-        var token = await _fixture.TokenForAsync(email, Tenant);
+        var session = await _fixture.SignInAsync(email, Tenant);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(path, UriKind.Relative))
         {
             Content = JsonContent.Create(body),
         };
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={token}");
+        request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+        request.Headers.Add("X-CSRF-Token", session.AntiForgeryToken);
 
         return await client.SendAsync(request);
     }
@@ -422,11 +423,16 @@ public sealed class InventoryTests(HostFixture fixture)
     private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, string email)
     {
         using var client = _fixture.CreateClient();
-        var token = await _fixture.TokenForAsync(email, Tenant);
+        var session = await _fixture.SignInAsync(email, Tenant);
 
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={token}");
+        request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+
+        if (method != HttpMethod.Get)
+        {
+            request.Headers.Add("X-CSRF-Token", session.AntiForgeryToken);
+        }
 
         return await client.SendAsync(request);
     }

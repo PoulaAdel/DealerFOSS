@@ -31,6 +31,7 @@ public static class IdentityRegistration
 
         services.AddScoped<IAuditSink, SqlAuditSink>();
         services.AddScoped<IAccessDirectory, AccessService>();
+        services.AddScoped<ISecurityPolicy, SecurityPolicyService>();
 
         // Password hashing algorithm and parameters live here, so upgrading them
         // is one change rather than a search through call sites.

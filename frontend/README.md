@@ -80,7 +80,10 @@ counts. Hiding a link protects nothing.
 **The session cookie is HttpOnly, so this code cannot read it.** "Am I signed
 in?" is answered by asking the server — which is also the only answer worth
 having, because a session revoked on another device has to stop working here on
-the next request.
+the next request. The *other* cookie, `odms_csrf`, is readable on purpose: `api`
+copies it into the `X-CSRF-Token` header on every write, and the server refuses
+writes that arrive without it. That happens in one place so no screen has to
+remember it.
 
 **Every screen renders every state.** Loading, empty, permission-denied, failure,
 and retry. A screen that only handles the happy path is not finished

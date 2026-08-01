@@ -253,17 +253,17 @@ public sealed class SecondFactorTests(HostFixture fixture)
         }
     }
 
-    private async Task<string> PasswordOnlySessionAsync()
+    private async Task<SignedInSession> PasswordOnlySessionAsync()
     {
         using var login = await LoginAsync(Email);
-        return SessionCookie(login)
+        return SignedInSessionFrom(login)
             ?? throw new InvalidOperationException("Expected a session; the account already has MFA on.");
     }
 
-    private async Task<string> SignedInSessionAsync(string secret)
+    private async Task<SignedInSession> SignedInSessionAsync(string secret)
     {
         using var login = await LoginAsync(Email);
-        var direct = SessionCookie(login);
+        var direct = SignedInSessionFrom(login);
         if (direct is not null)
         {
             return direct;
@@ -275,7 +275,7 @@ public sealed class SecondFactorTests(HostFixture fixture)
         using var completed = await PostAsync("/api/v1/auth/login/second-factor",
             new { challengeToken = token, code = Totp.Generate(secret, DateTimeOffset.UtcNow) });
 
-        return SessionCookie(completed)!;
+        return SignedInSessionFrom(completed)!;
     }
 
     private async Task<string> ChallengeTokenAsync()
@@ -285,27 +285,43 @@ public sealed class SecondFactorTests(HostFixture fixture)
             .GetProperty("challengeToken").GetString()!;
     }
 
-    private static string? SessionCookie(HttpResponseMessage response)
+    private static string? SessionCookie(HttpResponseMessage response) =>
+        CookieValue(response, "odms_session");
+
+    /// <summary>Both cookies a completed sign-in sets, or null when it set none.</summary>
+    private static SignedInSession? SignedInSessionFrom(HttpResponseMessage response)
+    {
+        var session = CookieValue(response, "odms_session");
+        return session is null
+            ? null
+            : new SignedInSession(session, CookieValue(response, "odms_csrf")!);
+    }
+
+    private static string? CookieValue(HttpResponseMessage response, string name)
     {
         if (!response.Headers.TryGetValues("Set-Cookie", out var cookies))
         {
             return null;
         }
 
-        var raw = cookies.FirstOrDefault(c => c.StartsWith("odms_session=", StringComparison.Ordinal));
+        var raw = cookies.FirstOrDefault(c => c.StartsWith($"{name}=", StringComparison.Ordinal));
         if (raw is null)
         {
             return null;
         }
 
-        var value = raw.Split(';')[0]["odms_session=".Length..];
-        return string.IsNullOrEmpty(value) ? null : value;
+        // Set-Cookie values arrive percent-encoded. The server decodes an
+        // incoming Cookie header for us but not a plain one, so the anti-forgery
+        // token has to be decoded here or the comparison fails on the padding.
+        var value = raw.Split(';')[0][(name.Length + 1)..];
+        return string.IsNullOrEmpty(value) ? null : Uri.UnescapeDataString(value);
     }
 
     private Task<HttpResponseMessage> LoginAsync(string email) =>
         PostAsync("/api/v1/auth/login", new { email, password = Password });
 
-    private async Task<HttpResponseMessage> PostAsync(string path, object body, string? sessionToken = null)
+    private async Task<HttpResponseMessage> PostAsync(
+        string path, object body, SignedInSession? session = null)
     {
         using var client = _fixture.CreateClient();
 
@@ -315,9 +331,10 @@ public sealed class SecondFactorTests(HostFixture fixture)
         };
         request.Headers.Add("X-Tenant", Tenant);
 
-        if (sessionToken is not null)
+        if (session is not null)
         {
-            request.Headers.Add("Cookie", $"odms_session={sessionToken}");
+            request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+            request.Headers.Add("X-CSRF-Token", session.AntiForgeryToken);
         }
 
         return await client.SendAsync(request);

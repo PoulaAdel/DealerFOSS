@@ -109,7 +109,8 @@ public sealed class AuthenticationTests(HostFixture fixture)
     public async Task Signing_out_stops_the_session_immediately()
     {
         using var client = _fixture.CreateClient();
-        var token = await SignInAsync(client, DevelopmentSeeder.DevUsers.OrganizationWideEmail);
+        using var login = await LogInAsync(client, DevelopmentSeeder.DevUsers.OrganizationWideEmail);
+        var token = SessionCookieFrom(login);
 
         // Confirm it works before revoking, so the failure afterwards means
         // something.
@@ -118,7 +119,8 @@ public sealed class AuthenticationTests(HostFixture fixture)
             before.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
-        using (var logout = await PostAsync(client, "/api/v1/auth/logout", token))
+        using (var logout = await PostAsync(
+            client, "/api/v1/auth/logout", token, CookieFrom(login, "odms_csrf")))
         {
             logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
@@ -212,20 +214,25 @@ public sealed class AuthenticationTests(HostFixture fixture)
         return client.SendAsync(request);
     }
 
-    private static Task<HttpResponseMessage> PostAsync(HttpClient client, string path, string token)
+    private static Task<HttpResponseMessage> PostAsync(
+        HttpClient client, string path, string token, string antiForgeryToken)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, new Uri(path, UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
         request.Headers.Add("Cookie", $"odms_session={token}");
+        request.Headers.Add("X-CSRF-Token", antiForgeryToken);
         return client.SendAsync(request);
     }
 
-    private static string SessionCookieFrom(HttpResponseMessage response)
+    private static string SessionCookieFrom(HttpResponseMessage response) =>
+        CookieFrom(response, "odms_session");
+
+    internal static string CookieFrom(HttpResponseMessage response, string name)
     {
         var header = response.Headers.GetValues("Set-Cookie")
-            .Single(v => v.StartsWith("odms_session=", StringComparison.Ordinal));
+            .Single(v => v.StartsWith($"{name}=", StringComparison.Ordinal));
 
-        return Uri.UnescapeDataString(header.Split(';')[0]["odms_session=".Length..]);
+        return Uri.UnescapeDataString(header.Split(';')[0][(name.Length + 1)..]);
     }
 
     private sealed record MeResponse(Guid UserId);

@@ -171,10 +171,18 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
     /// Signs a development user in and returns their session token, caching it
     /// so a suite of tests does not re-authenticate on every call.
     /// </summary>
-    public async Task<string> TokenForAsync(string email, string tenant)
+    public async Task<string> TokenForAsync(string email, string tenant) =>
+        (await SignInAsync(email, tenant)).SessionToken;
+
+    /// <summary>
+    /// Both halves of a signed-in session: the cookie, and the token every write
+    /// must present alongside it. Tests go through this rather than forging a
+    /// request the application would never accept from a browser.
+    /// </summary>
+    public async Task<SignedInSession> SignInAsync(string email, string tenant)
     {
         var key = $"{tenant}|{email}";
-        if (_tokens.TryGetValue(key, out var cached))
+        if (_sessions.TryGetValue(key, out var cached))
         {
             return cached;
         }
@@ -190,15 +198,23 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
         using var response = await client.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
-        var header = response.Headers.GetValues("Set-Cookie")
-            .Single(v => v.StartsWith("odms_session=", StringComparison.Ordinal));
-        var token = Uri.UnescapeDataString(header.Split(';')[0]["odms_session=".Length..]);
+        var session = new SignedInSession(
+            CookieFrom(response, "odms_session"),
+            CookieFrom(response, "odms_csrf"));
 
-        _tokens[key] = token;
-        return token;
+        _sessions[key] = session;
+        return session;
     }
 
-    private readonly Dictionary<string, string> _tokens = [];
+    private static string CookieFrom(HttpResponseMessage response, string name)
+    {
+        var header = response.Headers.GetValues("Set-Cookie")
+            .Single(v => v.StartsWith($"{name}=", StringComparison.Ordinal));
+
+        return Uri.UnescapeDataString(header.Split(';')[0][(name.Length + 1)..]);
+    }
+
+    private readonly Dictionary<string, SignedInSession> _sessions = [];
 
     private static async Task EnsureSqlReachableAsync()
     {
@@ -234,6 +250,12 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
         return builder.ConnectionString;
     }
 }
+
+/// <summary>
+/// What a browser holds after signing in: the session cookie it cannot read, and
+/// the anti-forgery token it must echo on every write.
+/// </summary>
+public sealed record SignedInSession(string SessionToken, string AntiForgeryToken);
 
 [CollectionDefinition(nameof(HostCollection))]
 public sealed class HostCollection : ICollectionFixture<HostFixture>;

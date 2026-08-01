@@ -20,7 +20,14 @@ public interface ICurrentUser
     /// <summary>The caller's id. Throws when the request is unauthenticated.</summary>
     Guid Id { get; }
 
-    void Set(Guid userId);
+    /// <summary>
+    /// Whether this caller is signed in but owes their organization a second
+    /// factor. Such a caller may do nothing except set one up; the refusal is
+    /// enforced before any endpoint runs, not by each endpoint remembering.
+    /// </summary>
+    bool MustEnrolSecondFactor { get; }
+
+    void Set(Guid userId, bool mustEnrolSecondFactor = false);
 }
 
 /// <summary>Scoped, write-once holder of the caller for the current request.</summary>
@@ -34,7 +41,9 @@ public sealed class CurrentUser : ICurrentUser
         ?? throw new InvalidOperationException(
             "No user is resolved for this request. An authorized operation ran outside authentication.");
 
-    public void Set(Guid userId)
+    public bool MustEnrolSecondFactor { get; private set; }
+
+    public void Set(Guid userId, bool mustEnrolSecondFactor = false)
     {
         if (_id is not null)
         {
@@ -42,5 +51,6 @@ public sealed class CurrentUser : ICurrentUser
         }
 
         _id = userId;
+        MustEnrolSecondFactor = mustEnrolSecondFactor;
     }
 }
