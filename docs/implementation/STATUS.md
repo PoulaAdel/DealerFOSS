@@ -27,7 +27,7 @@ Last verified: 2026-07-31 · `dotnet build` 0 warnings/0 errors, `dotnet test` 2
 - [x] Structured logs and OpenTelemetry wired, no secrets emitted — Serilog console output; OTLP exporter registered only when configured *(agent-verifiable)*
 - [x] Architecture tests present and passing — `dotnet test` → 7/7 *(agent-verifiable)*
 - [x] Domain unit tests — `tests/Unit`, 58 tests covering money/currency, `Result` invariants, authorization scope, the permission catalogue, entity invariants, and request-context write-once semantics. **Mutation-proven 2026-07-27:** breaking cross-currency refusal, rooftop coverage, and the catalogue check failed exactly the 6 tests guarding them *(agent-verifiable)*
-- [x] CI runs build + tests with the audit gate — `.github/workflows/ci.yml` *(agent-verifiable)*
+- [x] CI runs build + tests with the audit gate — `.github/workflows/ci.yml`, plus a separate frontend job running `npm ci`, typecheck, and a production build *(agent-verifiable — though CI has still never executed, since no remote is configured)*
 - [x] AGPLv3, contribution guide, security policy, ADR index *(agent-verifiable)*
 - [x] SQL-backed integration tests run repeatably — `dotnet test` → 8/8 in `IntegrationTests`, driving the real Host against SQL via `WebApplicationFactory`; CI supplies a SQL Server service container *(agent-verifiable)*
 - [x] Architecture tests demonstrably fail on a forbidden reference — rehearsed 2026-07-25: an EF Core dependency added to `Core/Result.cs` failed `Core_must_not_depend_on_web_or_persistence_frameworks` naming the offending type, then was reverted. Procedure: `tests/Architecture/README.md` *(agent-verifiable)*
@@ -57,7 +57,7 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 - [ ] MFA required by policy rather than by choice — enrolment is currently opt-in per user
 - [ ] Global-administration separation and time-limited support access — not started
 - [ ] Tenant-aware background job context — not started
-- [ ] React/TypeScript/Vite shell with accessible layout — **source written, never executed.** `frontend/` holds the Vite/React/TypeScript project, an API client, a sign-in screen covering the second factor, and an inventory list with loading, empty, permission-denied, failure, and retry states. It has not been compiled or run: that needs `npm install` inside the `odms-node` container, which the maintainer starts. Nothing here may be claimed as working until it has been *(blocked: awaiting the first run)*
+- [ ] React/TypeScript/Vite shell with accessible layout — **compiles, never run.** `frontend/` holds the project, an API client, a sign-in screen covering the second factor, a stock list, and a trial balance, each rendering loading, empty, permission-denied, failure, and retry states. `npm ci && npm run typecheck` passes clean in the `odms-node` container, and CI now runs typecheck plus a production build on every push. **That proves it compiles and nothing more.** Whether React Router behaves as assumed, whether the dev-server proxy reaches the API, and whether the session cookie survives the round trip are all unverified until somebody loads it in a browser *(blocked: awaiting the first run)*
 - [ ] Tenant creation, migration, backup, and restore rehearsed — migration rehearsed; **backup and restore not** *(partly human-verifiable)*
 
 ## Completed milestones
