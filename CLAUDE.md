@@ -59,6 +59,14 @@ prompts assume by default.
   repository mounted. Frontend work runs there. Do not report the host absence as
   a code defect, and do not ask for a host install.
 
+  Starting or stopping that container is the maintainer's call. Running a command
+  in one that is **already up** is not — the repository is mounted, so the work
+  happens inside this folder:
+
+  ```
+  docker exec odms-node sh -c "cd /workspace/frontend && npm test"
+  ```
+
 ## Canonical commands
 
 ```bash
@@ -77,6 +85,13 @@ Tenant-isolation proof (the end-to-end check; expects `PASS`):
 
 ```bash
 & .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
+```
+
+Frontend, when the change touches `frontend/` (all four, and `npm audit` is the
+counterpart of `NuGetAudit` — a high advisory fails CI):
+
+```bash
+docker exec odms-node sh -c "cd /workspace/frontend && npm audit --audit-level=high && npm run typecheck && npm test && npm run build"
 ```
 
 Notes: the solution is `.slnx` (the .NET 10 format) — `OpenDealer360.sln` does

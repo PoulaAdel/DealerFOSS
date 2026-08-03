@@ -64,7 +64,7 @@ jobs:
         run: dotnet test OpenDealer360.slnx -c Release --no-build --verbosity normal
 
   frontend:
-    name: Frontend typecheck and build
+    name: Frontend typecheck, tests, and build
     runs-on: ubuntu-latest
 
     # Separate from the backend job: it needs no database, so it should not wait
@@ -89,8 +89,21 @@ jobs:
       - name: Install
         run: npm ci
 
+      # An install that pulls a package with a known advisory fails here, the
+      # same way NuGetAudit fails the backend build. react-router carried one
+      # (GHSA-qwww-vcr4-c8h2) and it went unnoticed until somebody ran an audit
+      # by hand — which is the argument for not leaving it to somebody.
+      - name: Audit
+        run: npm audit --audit-level=high
+
       - name: Typecheck
         run: npm run typecheck
+
+      # The screens are mounted into a real DOM and read the way a person would
+      # read them. Before these existed, "the frontend has never been seen
+      # rendering" was a limitation nobody could close without opening a browser.
+      - name: Test
+        run: npm test
 
       # Catches what a typecheck cannot — an unresolvable import, a broken asset
       # path, anything that only surfaces when the bundle is actually produced.

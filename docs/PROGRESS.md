@@ -10,15 +10,17 @@ the command that proves it — see [implementation/STATUS.md](implementation/STA
 ## The short answer
 
 **The foundation is done bar one item, the first dealership records work, and
-there are two screens nobody has watched draw yet.**
+there are three screens that provably draw.**
 
 Several dealership groups can already share one installation without ever seeing
 each other's data, and staff can be restricted to their own location. Customers
 and vehicles can be recorded and found, each location's stock is kept separate,
 a car can be sold, and the sale writes its own accounting entry. Whoever runs the
 servers is now structurally shut out of all of it, and can only come in through a
-door you can see them open. Two screens exist — the stock list and the trial
-balance — though nobody has yet watched them draw on a real browser.
+door you can see them open. Three screens exist — the stock list, the trial
+balance, and setting up two-step sign-in — and a machine now checks on every
+change that they really appear and behave, which until this week only a person
+could confirm.
 
 **About 25% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
 
@@ -43,7 +45,7 @@ months of focused work.
 
 ---
 
-## Inside stage 1 — ten of eleven pieces done
+## Inside stage 1 — eleven of twelve pieces done
 
 - [x] Dealership groups cannot see each other's data — each gets its own separate database
 - [x] A group can have several locations, each with its own departments
@@ -55,8 +57,7 @@ months of focused work.
 - [x] **A dealership can insist on that second factor** for the jobs that warrant it
 - [x] **A malicious website cannot make your browser change anything** — see below
 - [x] **Whoever runs the servers is kept out of the dealership's data**
-- [ ] **Screens** — two exist and reach the system correctly, but neither has been
-      seen drawn on a real browser
+- [x] **The screens draw** — proven automatically now, on every change
 - [ ] **A rehearsed backup and restore**
 
 ---
@@ -99,9 +100,22 @@ months of focused work.
   to send a request with your cookies attached. Every change now also demands a
   secret handed out at sign-in that only this application can read, so such a
   request is refused. It stops working the moment you sign out
-- **Two screens** — the stock list and the trial balance — each showing something
-  sensible while loading, when empty, when you lack permission, and when the
-  server fails, with a way to try again
+- **Three screens** — the stock list, the trial balance, and setting up two-step
+  sign-in — each showing something sensible while loading, when empty, when you
+  lack permission, and when the server fails, with a way to try again
+- **The screens are now checked automatically every time anything changes.** Until
+  this week "does it actually appear on screen?" was a question only a person
+  could answer, and everything built on top carried that doubt. Twenty-seven
+  automated checks now open each screen and read it the way you would — by its
+  headings, its labels, its words — so a change that breaks the display is caught
+  in seconds instead of being discovered by whoever opens it next
+- **A page for setting up two-step sign-in.** It shows the square you point your
+  phone at, and the code to type by hand if you are setting it up on the same
+  device. It says plainly that nothing changes until you have entered a working
+  code — so a mis-scan cannot lock you out — and then shows your ten emergency
+  codes once, saying why they can never be shown again. If your dealership
+  requires two-step sign-in and you have not set it up, this is the one page you
+  land on, and signing out still works so you are never stuck at a shared desk
 - **A dealership can insist on the second factor for the jobs that warrant it.**
   Say "salespeople must have one", and from that moment a salesperson who has not
   set one up can sign in, is told exactly what to do, and can do nothing else
@@ -134,8 +148,7 @@ months of focused work.
 - Parts, or reports
 - Screens for customers, leads, or selling a car — the system underneath does all
   three, but there is nothing to click yet
-- A screen for setting up the second factor, or for the people who run the
-  servers. Both work; neither has a page
+- A screen for the people who run the servers. It works; it has no page yet
 - A way to add a second person who runs the servers. There is one, created when
   the system is set up, and no way to add another yet — nor to get back in if
   they lose their phone
@@ -146,18 +159,10 @@ months of focused work.
 
 ## Next
 
-**Screens for the security work of the last three rounds.** All of it works, and
-none of it can be reached without a developer's tools. The first and cheapest is
-a page for setting up the second factor — showing the square barcode you point
-your phone at, and the ten printed codes for the day you lose it. Then a small
-console for whoever runs the servers: sign in, see which dealerships exist, open
-a support visit with a reason, and close it again.
-
-There is a caution attached, and it is not a small one: **nobody has yet watched
-a single screen of this system draw on a real browser.** Building three more on
-top of an unproven one multiplies whatever is wrong with it. Ten minutes with the
-existing stock list would be worth more than a week of new pages — which is the
-first item on your list below.
+**A screen for whoever runs the servers.** Sign in, see which dealerships exist
+and which are switched off, open a support visit with a written reason, and close
+it again. All of it works today and none of it can be reached without a
+developer's tools.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one
@@ -169,7 +174,7 @@ would prove nothing.
 
 | Item | Why it matters |
 |---|---|
-| **Opening the two screens in a browser and telling me what you see** | They serve correctly and talk to the system, but no one has confirmed they actually draw — and the next round of work is three more screens on top of them |
+| **Telling me how the screens *look*** | They now provably draw, and behave correctly — that is checked automatically. What no machine here can judge is whether they look right: spacing, readability, dark mode, and whether a phone camera can actually read the square on the setup page |
 | Pilot dealerships and access to their current systems | Stage 2 cannot be finished or proven without real data and a real provider connection |
 | A rehearsed backup and restore | Stage 1 cannot close without proving a real restore produces a working system |
 | Confirming the month-end rule with a real dealer's accountant | Calendar month end with a grace period to the 10th is assumed, not confirmed |

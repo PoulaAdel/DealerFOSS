@@ -12,6 +12,20 @@ export type SignInResponse =
 
 export interface CurrentUser {
   userId: string;
+
+  /**
+   * True when a role this person holds obliges them to have a second factor and
+   * they do not yet. The server allows such a session to reach enrolment and
+   * nothing else, so the browser must send them there rather than showing a
+   * shell whose every link answers 403.
+   */
+  mustEnrolSecondFactor: boolean;
+}
+
+/** What an authenticator app needs, returned once and never again. */
+export interface MfaEnrolment {
+  secret: string;
+  enrolmentUri: string;
 }
 
 export interface RooftopSummary {

@@ -5,11 +5,15 @@
 //       API that enforces the same rules server-side, and it is the server's
 //       answer that matters. Hiding a link protects nothing.
 
-import { NavLink, Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+// Imported from react-router rather than react-router-dom: in v8 the DOM
+// bindings moved into the main package and react-router-dom is a shim. The
+// version matters — 7.12 to 8.2 carry a CSRF advisory (GHSA-qwww-vcr4-c8h2).
+import { NavLink, Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router';
 import { SessionProvider, useSession } from './session';
 import { SignIn } from '../features/auth/SignIn';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { TrialBalancePage } from '../features/accounting/TrialBalancePage';
+import { SecondFactorSetup } from '../features/auth/SecondFactorSetup';
 
 export function App() {
   return (
@@ -43,18 +47,39 @@ function AppRoutes() {
     );
   }
 
+  // Somebody who owes a second factor holds a real session, but the server will
+  // answer 403 to everything except enrolment. Showing them a shell whose every
+  // link fails would be technically honest and practically useless, so the
+  // routing table shrinks to the one screen that can actually help them.
+  if (user.mustEnrolSecondFactor) {
+    return (
+      <Routes>
+        <Route element={<Shell restricted />}>
+          <Route path="/security/second-factor" element={<SecondFactorSetup />} />
+          <Route path="*" element={<Navigate to="/security/second-factor" replace />} />
+        </Route>
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
       <Route element={<Shell />}>
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/accounting" element={<TrialBalancePage />} />
+        <Route path="/security/second-factor" element={<SecondFactorSetup />} />
         <Route path="*" element={<Navigate to="/inventory" replace />} />
       </Route>
     </Routes>
   );
 }
 
-function Shell() {
+/**
+ * `restricted` hides the navigation for somebody who owes a second factor.
+ * Sign-out stays: locking a person into a screen with no way out would turn a
+ * security measure into a trap, and they must be able to leave a shared machine.
+ */
+function Shell({ restricted = false }: { restricted?: boolean }) {
   const { tenant, signOut } = useSession();
 
   return (
@@ -68,10 +93,13 @@ function Shell() {
       <header className="shell__bar">
         <span className="shell__brand">OpenDealer360</span>
 
-        <nav aria-label="Main">
-          <NavLink to="/inventory">Stock</NavLink>
-          <NavLink to="/accounting">Trial balance</NavLink>
-        </nav>
+        {restricted ? null : (
+          <nav aria-label="Main">
+            <NavLink to="/inventory">Stock</NavLink>
+            <NavLink to="/accounting">Trial balance</NavLink>
+            <NavLink to="/security/second-factor">Two-step sign-in</NavLink>
+          </nav>
+        )}
 
         <div className="shell__right">
           <span className="shell__tenant">{tenant}</span>

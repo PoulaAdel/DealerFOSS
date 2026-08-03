@@ -187,8 +187,11 @@ Calibrate your confidence — these are current, honest limitations:
 - **Provisioning a new dealership is not an administrator action.** The control
   plane lists dealerships and can suspend or resume one; creating the database
   still happens through the development seeder.
-- **The frontend has never been seen rendering.** It serves, typechecks, and
-  reaches the API; nobody has watched it paint.
+- **The frontend renders, but nobody has looked at it.** Component tests mount
+  the real screens into a DOM and assert on what a person would read, so
+  "does it draw?" is now answered by `npm test`. What that cannot answer is
+  whether it *looks* right — fonts, spacing, dark-mode contrast, or whether a
+  phone camera can read the QR code on the enrolment screen.
 - **Backup and restore have never been rehearsed.**
 
 `STATUS.md` is the live version of this list. If it disagrees with this section,

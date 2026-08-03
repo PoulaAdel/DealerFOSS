@@ -378,3 +378,75 @@ tfoot td {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* --- two-step sign-in --- */
+
+.panel {
+  max-width: 34rem;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.panel h2 {
+  margin: 24px 0 8px;
+  font-size: 1rem;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.steps > li {
+  margin-bottom: 24px;
+}
+
+.steps > li:last-child {
+  margin-bottom: 0;
+}
+
+/* A white quiet zone regardless of theme: a QR code inverted by a dark
+   background is one many phone cameras will not read. */
+.panel svg {
+  padding: 8px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.secret {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ground);
+  /* Long enough to wrap, and it must wrap somewhere harmless — a secret broken
+     mid-character is one somebody will mistype. */
+  word-break: break-all;
+  user-select: all;
+}
+
+.note {
+  margin: 16px 0 0;
+  color: var(--ink-3);
+  font-size: 0.88rem;
+}
+
+.codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  list-style: none;
+}
+
+.codes li {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--ground);
+  text-align: center;
+  user-select: all;
+}

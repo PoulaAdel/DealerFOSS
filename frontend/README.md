@@ -62,6 +62,30 @@ From inside a container, `localhost` is the container — the host is reachable 
 `host.docker.internal`, which is the proxy default. Running the toolchain
 directly on a host instead? Set `ODMS_API=http://localhost:5080`.
 
+## Testing
+
+```bash
+docker exec odms-node sh -c "cd /workspace/frontend && npm test"
+```
+
+The tests mount the real components into a real DOM (jsdom) and read what a
+person would read — headings, labels, roles, visible text. That is deliberate:
+until they existed, *"the frontend has never been seen rendering"* was an honest
+limitation nobody could close without opening a browser, and every screen built
+on top of it inherited the doubt.
+
+Two habits keep them worth having:
+
+- **Assert on what a person perceives**, not on class names or component
+  internals. A restyle must not read as a regression, and a test that would
+  still pass with the text removed is testing nothing.
+- **Break it before you trust it.** Every test here has been watched failing
+  against a deliberate defect. The procedure is the same one
+  [`tests/Architecture/README.md`](../tests/Architecture/README.md) describes.
+
+`src/test/setup.ts` answers `fetch` from a table of replies. A test that wants a
+real server is an integration test and belongs in `tests/Integration`.
+
 ## Layout
 
 | Path | Role |
@@ -88,7 +112,8 @@ remember it.
 **Every screen renders every state.** Loading, empty, permission-denied, failure,
 and retry. A screen that only handles the happy path is not finished
 ([doc 10 §5](../docs/10-Claude-Code-Execution-Prompt.md)). `InventoryPage` is the
-reference for what that looks like.
+reference for what that looks like, and `InventoryPage.test.tsx` is what stops
+that claim being taken on trust.
 
 ## Accessibility
 
@@ -108,6 +133,15 @@ appears, and status shown as a word rather than only a colour.
 ## Not built yet
 
 Customers, vehicles, leads, deals, and the ledger all have working APIs and no
-screens. `InventoryPage` is the pattern to copy. Also missing: an OpenAPI-generated
-client (`src/shared/contracts.ts` is hand-written and must be changed alongside
-the server), tests, and print layouts.
+screens. `InventoryPage` is the pattern to copy. So does the control plane —
+signing in as an administrator, listing dealerships, and opening or closing a
+support visit are API-only.
+
+Also missing: an OpenAPI-generated client (`src/shared/contracts.ts` is
+hand-written and must be changed alongside the server — it had already drifted
+once, missing `mustEnrolSecondFactor`), and print layouts.
+
+**Still unconfirmed by a person:** the tests prove the components render and
+behave in jsdom, which is not the same as looking right in a browser. Fonts,
+layout, colour contrast in dark mode, and whether a phone camera can actually
+read the QR code are all things only somebody with a screen can tell you.

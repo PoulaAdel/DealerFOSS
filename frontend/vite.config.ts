@@ -14,6 +14,7 @@
 // reachable as host.docker.internal on Docker Desktop. Override with ODMS_API
 // when running the toolchain directly on the host instead.
 
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -31,5 +32,15 @@ export default defineConfig({
         changeOrigin: false,
       },
     },
+  },
+  // The tests mount real components into a real DOM. jsdom is what makes
+  // "does it render?" a question a machine can answer rather than one that
+  // waits on somebody opening a browser.
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.test.tsx', 'src/**/*.test.ts'],
+    restoreMocks: true,
   },
 });

@@ -1,9 +1,10 @@
 # Implementation Status
 
 Current phase: **I0 complete (except container path) → I1 in progress**
-Current milestone: global-administration separation and time-limited support access (complete); the remaining unmet identity item is OIDC, which is blocked
+Current milestone: the frontend is proven to render, and second-factor enrolment has a screen (complete); the remaining unmet identity item is OIDC, which is blocked
 Last verified: 2026-08-03 · `dotnet build` 0 warnings/0 errors, `dotnet test` 321/321,
-`verify-e2e.ps1` PASS against LocalDB (run twice, to prove it is repeatable)
+`verify-e2e.ps1` PASS against LocalDB (run repeatedly), frontend `npm audit` clean,
+`npm run typecheck`, `npm test` 27/27, and `npm run build` all pass
 
 > **Layout note (2026-07-30).** The repository moved from seven backend projects to
 > three — `src/Core`, `src/Identity`, `src/App` — with one flat folder per
@@ -59,11 +60,13 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 
   **Deliberately not included, and named rather than hidden:** creating a second administrator through an endpoint (seeding only), administrator recovery codes, dual approval for support access, provisioning a dealership database from the control plane (listing and suspend/resume only), and a screen for any of it.
 - [ ] Tenant-aware background job context — not started
-- [ ] React/TypeScript/Vite shell with accessible layout — **serves and talks to the API; not yet seen rendered.** `frontend/` holds the project, an API client, a sign-in screen covering the second factor, a stock list, and a trial balance, each rendering loading, empty, permission-denied, failure, and retry states.
+- [x] React/TypeScript/Vite shell with accessible layout — **it renders, and that is now asserted rather than assumed.** `frontend/` holds the project, an API client, a sign-in screen covering the second factor, a stock list, a trial balance, and a second-factor enrolment screen, each rendering loading, empty, permission-denied, failure, and retry states.
 
   Proven 2026-08-01 with the dev server running in the `odms-node` container and the API on the host: `npm run typecheck` clean; Vite serves `index.html` with the React Fast Refresh preamble; every module transforms and returns 200; and the **whole request chain works through the dev-server proxy** — `X-Tenant` passes through, `POST /auth/login` returns 200 and sets the session cookie, and that cookie authenticates `GET /inventory` and `GET /accounting/balances`, the latter returning `totalDebits == totalCredits == 96000.00`. CI runs typecheck plus a production build on every push.
 
-  **Still unverified:** whether it actually paints. React executing, React Router resolving routes, and the components rendering have not been observed — that needs a human with a browser, since the agent's browser pane cannot reach the host's localhost *(blocked: awaiting visual confirmation)*
+  Proven 2026-08-03 by 27 component tests that mount the real tree into a DOM (jsdom) and query it the way a person reads a page — by heading, label, role, and visible text. React executes, React Router resolves and navigates, the shell paints, and every state renders its own words. `npm test` runs in CI alongside `npm audit --audit-level=high`, typecheck, and a production build *(agent-verifiable)*
+
+  **Still unverified, and not verifiable this way:** how it *looks*. jsdom has no layout engine and no fonts. Spacing, dark-mode contrast, and whether a phone camera can read the QR code on the enrolment screen need a person with a browser *(blocked: awaiting visual confirmation)*
 - [ ] Tenant creation, migration, backup, and restore rehearsed — migration rehearsed; **backup and restore not** *(partly human-verifiable)*
 
 ## Completed milestones
@@ -116,6 +119,10 @@ them is written.
 
 - **2026-08-03 — Whoever runs the servers is kept out of the dealership's data.** Operating the installation and reading a customer record are now different jobs, held by different records, in different databases. An administrator signs in at a separate door with a separate cookie, and there is no code path by which they become a dealership caller — not a permission they lack, but a type they never become. The most privileged dealership account is refused at the control plane just as firmly, which is the half people forget. When a dealership does ask for help, support goes in through a door that has to be opened on purpose: a written reason, an hour at most, read-only, and an entry in the **dealership's own** log naming who came in and why — because visibility that exists only in the vendor's console is not visibility. Closing it stops the session on the very next request. An administrator must hold a second factor before any of this is reachable; the account that can step into any dealership is the one worth stealing. Evidence: `dotnet test` 321/321 and `verify-e2e.ps1` PASS twice, which now shows both refusals, an administrator enrolling and only then being let in, a day-long request granted an hour, support reading the stock list but refused a customer, the dealership's log naming the visitor, and the session dying the moment the grant is closed. Three rehearsals: making support writable failed exactly one test, removing the second-factor gate exactly two, and turning an administrator into a tenant caller exactly the architecture rule. **Not included:** creating a second administrator through an endpoint, recovery codes for one, dual approval, provisioning a dealership database from the control plane, and a screen for any of it.
 
+- **2026-08-03 — The frontend is proven to render, and setting up a second factor has a screen.** "The frontend has never been seen rendering" was an honest limitation that nobody could close without opening a browser — and every screen built on top of it inherited the doubt. It is now closed by machine: 27 component tests mount the real React tree, the real router, and the real screens into a DOM and read what a person would read. Routing runs, the shell paints, the stock list draws a car, and each of loading, empty, refused, failed-with-retry, and unreachable renders the words it should. On that base, the enrolment screen: a scannable QR code, a typeable secret for people with no camera to point, a plain statement that nothing about signing in has changed until a code is accepted, and the recovery codes shown once with the reason they cannot be shown twice. Somebody whose role obliges them to hold a second factor is routed there and nowhere else — with sign-out still reachable, because locking a person into a screen with no way off a shared machine turns a safeguard into a trap. Confirming lifts the restriction without a second sign-in. **Also fixed in passing:** react-router carried a CSRF advisory (GHSA-qwww-vcr4-c8h2, affecting 7.12–8.2) that nothing was watching for — upgraded to 8.3, and `npm audit --audit-level=high` now runs in CI so the next one fails a build instead of waiting to be noticed. `contracts.ts` had also drifted from the API, missing `mustEnrolSecondFactor`. Evidence: `npm audit` clean, `npm run typecheck`, `npm test` 27/27, `npm run build`. Four rehearsals, each failing exactly the tests that guard it: breaking a route, dropping the tenant on sign-out, not applying the restricted routing, and discarding the recovery codes *(agent-verifiable)*
+
+  **Deliberately not included:** screens for customers, leads, deals, or the control plane; turning a second factor *off* from a screen; and any claim about how it looks. jsdom proves the components render and behave — it says nothing about fonts, spacing, dark-mode contrast, or whether a phone camera can read that QR code. Those need a person.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -125,12 +132,14 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** the security work of the last three milestones stops being API-only. A person can set up their second factor, and an administrator can open and close support access, from a screen.
+**Outcome:** a control-plane console, so operating the installation stops being API-only in the same way enrolment just did.
 
-Every unmet I1 criterion now needs either a person (a rehearsed restore; a browser to confirm the frontend paints) or hardware we do not have (an identity provider for OIDC). The honest next step is therefore to close the gap between what the system can do and what anyone can reach without `curl`.
+Sign in as an administrator, enrol a second factor, see which dealerships exist and which are suspended, open a support visit with a written reason, and see and close the open ones. The component-test habit established this round applies from the first line rather than being retrofitted.
 
-- **Included:** an enrolment screen drawing the QR code from the `otpauth://` URI the endpoint already returns, showing the recovery codes once; the restricted-session state, so a user who owes a second factor lands on that screen instead of a wall of 403s; and a small control-plane console — sign in, enrol, list dealerships, open support access with a reason, see and close open grants.
-- **Explicitly excluded:** OIDC, administrator account creation, dual approval, and provisioning a dealership from the console.
-- **Caution:** the frontend has still never been observed rendering. Building three more screens on top of an unproven one multiplies whatever is wrong. Getting one screen confirmed on a real browser comes first — which is a request to the maintainer, not a task.
+- **Included:** the console above, reusing the enrolment screen's three-step shape for the administrator's own second factor.
+- **Explicitly excluded:** OIDC, administrator account creation, recovery codes for an administrator, dual approval, and provisioning a dealership.
+- **Caution:** the control plane's cookies and anti-forgery header are deliberately different names from the dealership's, because a browser holds both at once during a support visit. `shared/api.ts` hard-codes the dealership pair; the console needs its own client rather than a flag on that one, or the two will eventually be sent to the wrong door.
 
-**Also outstanding:** a `Salesperson` and `Advisor` role now sit alongside a new `OpenDealer360 Support` role in every tenant that has ever been visited. Nothing lists roles to a dealership yet, so they cannot see it in the product — only in `verify-e2e.ps1` and the audit trail.
+**Also outstanding, and cheap:** the API refuses a write whose anti-forgery token is missing, but no screen has yet had to recover from it. `ApiError.needsSignIn` covers the case and nothing acts on it — a write that fails this way should send the person to sign in again rather than showing them a raw refusal.
+
+**Also outstanding:** an `OpenDealer360 Support` role now sits alongside `Salesperson` and `Advisor` in every tenant a support visit has ever touched. Nothing lists roles to a dealership yet, so they cannot see it in the product — only in `verify-e2e.ps1` and the audit trail.
