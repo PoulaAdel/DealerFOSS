@@ -14,14 +14,28 @@ import { SignIn } from '../features/auth/SignIn';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { TrialBalancePage } from '../features/accounting/TrialBalancePage';
 import { SecondFactorSetup } from '../features/auth/SecondFactorSetup';
+import { AdminApp } from './AdminApp';
 
 export function App() {
   return (
-    <SessionProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </SessionProvider>
+    <Router>
+      <Routes>
+        {/* The split is above SessionProvider on purpose. An administrator has
+            no dealership, so asking /auth/me on their behalf would be a
+            meaningless question — and mounting both session contexts at once
+            would make it possible to write a screen that does not know which
+            of the two identities it is holding. */}
+        <Route path="/admin/*" element={<AdminApp />} />
+        <Route
+          path="*"
+          element={
+            <SessionProvider>
+              <AppRoutes />
+            </SessionProvider>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 

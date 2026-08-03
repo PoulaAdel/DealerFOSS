@@ -18,6 +18,18 @@ beforeEach(() => {
   globalThis.__apiCalls = [];
   localStorage.clear();
 
+  // jsdom keeps cookies and history between tests in a file. Both are shared
+  // state, and a test that inherits the previous one's administrator cookie or
+  // its URL would pass or fail for reasons nothing in it explains.
+  for (const cookie of document.cookie.split(';')) {
+    const name = cookie.split('=')[0]?.trim();
+    if (name) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    }
+  }
+
+  window.history.pushState({}, '', '/');
+
   // A cookie the server would have set at sign-in. Present by default so a
   // component under test behaves as it does for a signed-in person; the
   // anti-forgery tests clear it deliberately.

@@ -80,6 +80,46 @@ export interface TrialBalance {
   accounts: AccountBalance[];
 }
 
+// --- the control plane ---
+//
+// Note what a tenant row does not carry: no connection string, no counts, and
+// nothing an administrator could learn about a dealership's business from
+// reading it. Routing and lifecycle only.
+
+export interface CurrentAdministrator {
+  administratorId: string;
+  email: string;
+  mustEnrolSecondFactor: boolean;
+}
+
+export type TenantStatus = 'Active' | 'Suspended' | 'Provisioning' | 'Archived';
+
+export interface TenantRow {
+  slug: string;
+  name: string;
+  status: TenantStatus;
+  databaseVersion: string;
+  createdAt: string;
+}
+
+export interface SupportAccessRecord {
+  id: string;
+  administratorId: string;
+  administratorEmail: string;
+  tenantSlug: string;
+  reason: string;
+  grantedAt: string;
+  expiresAt: string;
+  endedAt: string | null;
+  isActive: boolean;
+}
+
+export interface GrantedSupportAccess {
+  grantId: string;
+  tenant: string;
+  expiresAt: string;
+}
+
 export const inventoryStatuses: InventoryStatus[] = [
   'Incoming',
   'Reconditioning',

@@ -90,10 +90,34 @@ real server is an integration test and belongs in `tests/Integration`.
 
 | Path | Role |
 |---|---|
-| `src/app/` | routing, the authenticated shell, and who is signed in |
+| `src/app/` | routing, the two shells, and who is signed in to each |
 | `src/features/` | one folder per screen area, mirroring the backend capabilities |
-| `src/shared/` | the API client and the response shapes |
+| `src/shared/` | the two API clients and the response shapes |
+| `src/test/` | the fetch stub every component test shares |
 | `src/theme/` | the whole visual language, in one file until it stops scanning |
+
+## Two applications in one bundle
+
+`/admin/*` is the control-plane console; everything else is the dealership
+product. The split happens in `App.tsx` **above** `SessionProvider`, so the two
+session contexts are never mounted at once — an administrator belongs to no
+dealership, and asking `/auth/me` on their behalf is a meaningless question.
+
+They also have **separate API clients**, and that is not duplication to be tidied
+away:
+
+| | Dealership | Control plane |
+|---|---|---|
+| Client | `shared/api.ts` | `shared/adminApi.ts` |
+| Session cookie | `odms_session` | `odms_admin` |
+| Anti-forgery cookie | `odms_csrf` | `odms_admin_csrf` |
+| Anti-forgery header | `X-CSRF-Token` | `X-Admin-CSRF-Token` |
+| Tenant header | always | only when opening support access |
+
+During a support visit one browser holds **both** sets at once. A single client
+deciding between them from a flag would eventually send a dealership's token to
+the control plane, or the reverse; two functions cannot make that mistake.
+`adminApi.test.ts` asserts it in both directions.
 
 ## Three rules worth knowing
 
@@ -133,9 +157,11 @@ appears, and status shown as a word rather than only a colour.
 ## Not built yet
 
 Customers, vehicles, leads, deals, and the ledger all have working APIs and no
-screens. `InventoryPage` is the pattern to copy. So does the control plane —
-signing in as an administrator, listing dealerships, and opening or closing a
-support visit are API-only.
+screens. `InventoryPage` is the pattern to copy.
+
+A refused anti-forgery check is detected (`ApiError.needsSignIn`) and acted on
+nowhere: such a write shows the raw refusal instead of sending the person to sign
+in again.
 
 Also missing: an OpenAPI-generated client (`src/shared/contracts.ts` is
 hand-written and must be changed alongside the server — it had already drifted

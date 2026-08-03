@@ -185,8 +185,9 @@ Calibrate your confidence — these are current, honest limitations:
   second administrator, and no recovery codes if one loses their phone. Clearing
   the row is a database operation today.
 - **Provisioning a new dealership is not an administrator action.** The control
-  plane lists dealerships and can suspend or resume one; creating the database
-  still happens through the development seeder.
+  plane lists dealerships and can suspend or resume one — from `/admin` in the
+  browser, or the API — but creating the database still happens through the
+  development seeder.
 - **The frontend renders, but nobody has looked at it.** Component tests mount
   the real screens into a DOM and assert on what a person would read, so
   "does it draw?" is now answered by `npm test`. What that cannot answer is

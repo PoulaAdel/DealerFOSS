@@ -1,10 +1,10 @@
 # Implementation Status
 
 Current phase: **I0 complete (except container path) → I1 in progress**
-Current milestone: the frontend is proven to render, and second-factor enrolment has a screen (complete); the remaining unmet identity item is OIDC, which is blocked
+Current milestone: a console for whoever runs the installation (complete); the remaining unmet identity item is OIDC, which is blocked
 Last verified: 2026-08-03 · `dotnet build` 0 warnings/0 errors, `dotnet test` 321/321,
 `verify-e2e.ps1` PASS against LocalDB (run repeatedly), frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 27/27, and `npm run build` all pass
+`npm run typecheck`, `npm test` 44/44, and `npm run build` all pass
 
 > **Layout note (2026-07-30).** The repository moved from seven backend projects to
 > three — `src/Core`, `src/Identity`, `src/App` — with one flat folder per
@@ -123,6 +123,10 @@ them is written.
 
   **Deliberately not included:** screens for customers, leads, deals, or the control plane; turning a second factor *off* from a screen; and any claim about how it looks. jsdom proves the components render and behave — it says nothing about fonts, spacing, dark-mode contrast, or whether a phone camera can read that QR code. Those need a person.
 
+- **2026-08-03 — A console for whoever runs the installation.** The control plane stops being reachable only by `curl`. `/admin` is a second application in the same bundle: sign in with administrator credentials and a code, enrol a second factor if the account has none, see every dealership with its state and schema version, suspend or resume one, and open a support visit with a written reason — then see the whole record, closed visits included, and close an open one. The **routing split sits above `SessionProvider`**, so the dealership and control-plane session contexts are never mounted together and no screen can hold an identity without knowing which kind it is. There is a **second API client** (`shared/adminApi.ts`) rather than a flag on the first: the two worlds use different cookies and different anti-forgery headers precisely because one browser holds both sets during a support visit, and a client choosing between them from a boolean would eventually choose wrong. Tests assert it in both directions. Suspension asks for confirmation in the browser — it is a real outage for real people, and the server is right to do exactly what a properly authorized request tells it to, so the check belongs here. The console is visually marked so nobody mistakes it for the product. Evidence: `npm audit` clean, `npm run typecheck`, `npm test` 44/44, `npm run build`. Three rehearsals, each failing exactly the tests that guard it: leaking a tenant header from the control plane (2), giving both clients the same cookie and header names (2), and suspending without asking (1) *(agent-verifiable)*
+
+  **Deliberately not included:** creating an administrator, recovery codes for one, dual approval, provisioning a dealership, and any screen for customers, leads, or deals. Also unchanged: **no claim about how it looks.** jsdom has no layout engine.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -132,13 +136,13 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** a control-plane console, so operating the installation stops being API-only in the same way enrolment just did.
+**Outcome:** stage 1 closes. What remains inside it is a rehearsed backup and restore — the last exit criterion that is not OIDC.
 
-Sign in as an administrator, enrol a second factor, see which dealerships exist and which are suspended, open a support visit with a written reason, and see and close the open ones. The component-test habit established this round applies from the first line rather than being retrofitted.
+This one genuinely needs the maintainer at the keyboard for the restore itself, but most of it is not blocked: a documented, scripted procedure that takes a host catalog and every tenant database, backs them up, restores them into differently-named databases, and then **proves the restored copy works** rather than merely that the files came back. The proof is the interesting part, and `verify-e2e.ps1` already knows how to do it — pointed at the restored catalog, a PASS is exactly the evidence this criterion asks for.
 
-- **Included:** the console above, reusing the enrolment screen's three-step shape for the administrator's own second factor.
-- **Explicitly excluded:** OIDC, administrator account creation, recovery codes for an administrator, dual approval, and provisioning a dealership.
-- **Caution:** the control plane's cookies and anti-forgery header are deliberately different names from the dealership's, because a browser holds both at once during a support visit. `shared/api.ts` hard-codes the dealership pair; the console needs its own client rather than a flag on that one, or the two will eventually be sent to the wrong door.
+- **Included:** `deploy/backup.ps1` and `deploy/restore.ps1` with the host catalog and every tenant enumerated from it, a documented drill in `deploy/README.md`, and a restore verified by running the end-to-end check against the restored databases.
+- **Explicitly excluded:** off-host or encrypted backup targets, scheduling, retention policy, and point-in-time recovery. Those are deployment decisions, and doc 08 owns them.
+- **Caution:** a backup script that has never been restored from is not a backup. The deliverable is the *drill*, not the script — and the restored copy must be verified by something that exercises the application, not by counting rows.
 
 **Also outstanding, and cheap:** the API refuses a write whose anti-forgery token is missing, but no screen has yet had to recover from it. `ApiError.needsSignIn` covers the case and nothing acts on it — a write that fails this way should send the person to sign in again rather than showing them a raw refusal.
 

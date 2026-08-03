@@ -9,18 +9,18 @@ the command that proves it — see [implementation/STATUS.md](implementation/STA
 
 ## The short answer
 
-**The foundation is done bar one item, the first dealership records work, and
-there are three screens that provably draw.**
+**The foundation is done bar one item — a rehearsed backup — the first dealership
+records work, and there are six screens that provably draw.**
 
 Several dealership groups can already share one installation without ever seeing
 each other's data, and staff can be restricted to their own location. Customers
 and vehicles can be recorded and found, each location's stock is kept separate,
 a car can be sold, and the sale writes its own accounting entry. Whoever runs the
 servers is now structurally shut out of all of it, and can only come in through a
-door you can see them open. Three screens exist — the stock list, the trial
-balance, and setting up two-step sign-in — and a machine now checks on every
-change that they really appear and behave, which until this week only a person
-could confirm.
+door you can see them open. Six screens exist — the stock list, the trial
+balance, setting up two-step sign-in, and a console for whoever runs the
+installation — and a machine now checks on every change that they really appear
+and behave, which until this week only a person could confirm.
 
 **About 25% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
 
@@ -100,9 +100,17 @@ months of focused work.
   to send a request with your cookies attached. Every change now also demands a
   secret handed out at sign-in that only this application can read, so such a
   request is refused. It stops working the moment you sign out
-- **Three screens** — the stock list, the trial balance, and setting up two-step
-  sign-in — each showing something sensible while loading, when empty, when you
-  lack permission, and when the server fails, with a way to try again
+- **Six screens** — the stock list, the trial balance, setting up two-step
+  sign-in, and three for whoever runs the installation — each showing something
+  sensible while loading, when empty, when you lack permission, and when the
+  server fails, with a way to try again
+- **A console for whoever runs the servers.** A separate sign-in at its own
+  address, marked so nobody confuses it with the dealership screens. It shows
+  every dealership on the installation and whether each is in service, can take
+  one out of service and put it back (asking first, since that stops everyone
+  there working), and is where a support visit is opened with a written reason
+  and closed again. The whole record of who went where and why is on that page —
+  including visits already closed, because a log you can empty is not a log
 - **The screens are now checked automatically every time anything changes.** Until
   this week "does it actually appear on screen?" was a question only a person
   could answer, and everything built on top carried that doubt. Twenty-seven
@@ -148,7 +156,7 @@ months of focused work.
 - Parts, or reports
 - Screens for customers, leads, or selling a car — the system underneath does all
   three, but there is nothing to click yet
-- A screen for the people who run the servers. It works; it has no page yet
+- A way to add a second person who runs the servers, from a screen or otherwise
 - A way to add a second person who runs the servers. There is one, created when
   the system is set up, and no way to add another yet — nor to get back in if
   they lose their phone
@@ -159,10 +167,14 @@ months of focused work.
 
 ## Next
 
-**A screen for whoever runs the servers.** Sign in, see which dealerships exist
-and which are switched off, open a support visit with a written reason, and close
-it again. All of it works today and none of it can be reached without a
-developer's tools.
+**A rehearsed backup and restore** — the last thing standing between here and the
+end of the foundation. A backup nobody has restored from is not a backup, so the
+deliverable is the drill: back everything up, put it back under different names,
+and then *prove the restored copy actually works* by running the full end-to-end
+check against it. Counting rows would not be proof.
+
+The restore itself needs you at the keyboard; writing and documenting the
+procedure does not.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one

@@ -108,7 +108,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   font: inherit;
   width: 100%;
   margin-top: 4px;
@@ -117,6 +118,10 @@ select {
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
+}
+
+textarea {
+  resize: vertical;
 }
 
 /* --- sign in --- */
@@ -326,9 +331,21 @@ tbody tr:last-child td {
   color: var(--accent);
 }
 
-.chip--sold {
+.chip--sold,
+.chip--suspended,
+.chip--archived {
   background: var(--fail-soft);
   color: var(--fail);
+}
+
+.chip--active {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.chip--provisioning {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .num {
@@ -449,4 +466,32 @@ tfoot td {
   background: var(--ground);
   text-align: center;
   user-select: all;
+}
+
+/* --- the administration console --- */
+
+/* A different colour along the top, because during a support visit one browser
+   holds both a dealership session and an administrator one. The most useful
+   thing this bar can do is leave nobody in doubt which they are looking at. */
+.shell--admin .shell__bar {
+  border-bottom: 3px solid var(--accent);
+}
+
+.shell__badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: 2px;
+}
+
+/* The record is prose, not figures: a reason needs room to be read. */
+.shell--admin td:nth-child(3) {
+  max-width: 28rem;
+  white-space: normal;
 }
