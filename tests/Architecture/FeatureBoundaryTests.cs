@@ -115,6 +115,53 @@ public sealed class FeatureBoundaryTests
     }
 
     [Fact]
+    public void The_control_plane_must_not_be_able_to_become_a_tenant_caller()
+    {
+        // ICurrentUser is what every capability hands to IAccessDirectory when it
+        // asks "may this person see this dealership's data?". An administrator
+        // has no answer to that question, so nothing in the control plane may
+        // touch the type — which is what makes the refusal structural rather than
+        // a permission check the next capability has to remember (doc 06 §3).
+        //
+        // Support access is not an exception to this rule. It mints a session for
+        // the tenant's own support principal and hands it back as cookies; the
+        // ordinary tenant middleware resolves it, in the ordinary way, as that
+        // user. No administrator ever becomes an ICurrentUser.
+        var result = Types.InAssembly(App)
+            .That().ResideInNamespace("OpenDealer360.Administration")
+            .Should().NotHaveDependencyOn("OpenDealer360.Core.ICurrentUser")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "an administrator must never resolve as a dealership caller; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void The_control_plane_must_not_reach_a_business_capability()
+    {
+        // Running the installation and reading a dealership's records are
+        // different jobs. If this rule ever needs relaxing, the honest change is
+        // a new support-access capability — not a reference from here.
+        var result = Types.InAssembly(App)
+            .That().ResideInNamespace("OpenDealer360.Administration")
+            .Should()
+            .NotHaveDependencyOnAny(
+                "OpenDealer360.Organization",
+                "OpenDealer360.Customers",
+                "OpenDealer360.Vehicles",
+                "OpenDealer360.Inventory",
+                "OpenDealer360.Leads",
+                "OpenDealer360.Deals",
+                "OpenDealer360.Accounting")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "the control plane operates the deployment and reads none of it; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
     public void A_feature_must_not_build_its_own_database_connection()
     {
         // Services query through TenantDb, which is bound to the tenant resolved

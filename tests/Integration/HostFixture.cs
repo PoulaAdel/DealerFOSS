@@ -10,11 +10,13 @@
 //       not evidence of isolation.
 
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Hosting;
 using OpenDealer360.App;
+using OpenDealer360.Identity;
 
 namespace OpenDealer360.IntegrationTests;
 
@@ -216,6 +218,65 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
 
     private readonly Dictionary<string, SignedInSession> _sessions = [];
 
+    /// <summary>
+    /// Signs the development administrator in and enrols the second factor the
+    /// control plane insists on, once for the whole run.
+    /// </summary>
+    /// <remarks>
+    /// Enrolment happens through the API rather than by writing the row, so the
+    /// helper exercises the same path an operator would — including the fact that
+    /// the restricted session becomes unrestricted without signing in again.
+    /// </remarks>
+    public async Task<SignedInAdministrator> AdministratorAsync()
+    {
+        if (_administrator is not null)
+        {
+            return _administrator;
+        }
+
+        using var client = CreateClient();
+
+        using var login = await client.PostAsJsonAsync(
+            new Uri("/api/v1/admin/login", UriKind.Relative),
+            new
+            {
+                email = DevelopmentSeeder.DevAdministrator.Email,
+                password = DevelopmentSeeder.DevUsers.Password,
+            });
+
+        login.EnsureSuccessStatusCode();
+
+        var session = CookieFrom(login, "odms_admin");
+        var antiForgery = CookieFrom(login, "odms_admin_csrf");
+
+        using var enrol = new HttpRequestMessage(
+            HttpMethod.Post, new Uri("/api/v1/admin/mfa/enrol", UriKind.Relative));
+        enrol.Headers.Add("Cookie", $"odms_admin={session}");
+        enrol.Headers.Add("X-Admin-CSRF-Token", antiForgery);
+
+        using var enrolled = await client.SendAsync(enrol);
+        enrolled.EnsureSuccessStatusCode();
+
+        var secret = (await enrolled.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("secret").GetString()!;
+
+        using var confirm = new HttpRequestMessage(
+            HttpMethod.Post, new Uri("/api/v1/admin/mfa/confirm", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new { code = Totp.Generate(secret, DateTimeOffset.UtcNow) }),
+        };
+        confirm.Headers.Add("Cookie", $"odms_admin={session}");
+        confirm.Headers.Add("X-Admin-CSRF-Token", antiForgery);
+
+        using var confirmed = await client.SendAsync(confirm);
+        confirmed.EnsureSuccessStatusCode();
+
+        _administrator = new SignedInAdministrator(session, antiForgery, secret);
+        return _administrator;
+    }
+
+    private SignedInAdministrator? _administrator;
+
     private static async Task EnsureSqlReachableAsync()
     {
         var probe = new SqlConnectionStringBuilder(ConnectionString)
@@ -256,6 +317,15 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
 /// the anti-forgery token it must echo on every write.
 /// </summary>
 public sealed record SignedInSession(string SessionToken, string AntiForgeryToken);
+
+/// <summary>
+/// A signed-in administrator: cookies that mean nothing to a tenant endpoint, and
+/// the shared secret so a test can sign in again with a fresh code.
+/// </summary>
+public sealed record SignedInAdministrator(
+    string SessionToken,
+    string AntiForgeryToken,
+    string TotpSecret);
 
 [CollectionDefinition(nameof(HostCollection))]
 public sealed class HostCollection : ICollectionFixture<HostFixture>;

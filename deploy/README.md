@@ -90,6 +90,14 @@ On first run with `Seed:Enabled` set, the application creates the host catalog a
 two sample dealer organizations, applies every migration, and seeds sample data.
 Nothing else needs doing.
 
+The host catalog holds two schemas: `dbo` for tenant routing, and `control` for
+the people who operate the deployment — administrators, their sessions, the
+support grants they have been given, and the installation's own append-only log.
+Development seeds two administrator accounts there. **Neither belongs in a real
+installation**: `Seed:Enabled` is the switch, and outside Development an
+administrator has to be created deliberately by whoever owns the deployment.
+There is no endpoint for that yet — see `docs/implementation/STATUS.md`.
+
 ### `dotnet run --project src/App`
 
 Runs on the host, not in a container. That is deliberate: the .NET SDK is already

@@ -40,4 +40,30 @@ public static class IdentityRegistration
 
         return services;
     }
+
+    /// <summary>
+    /// Registers control-plane identity — the people who operate the deployment.
+    /// Its context binds to the host catalog, not to any tenant, so an
+    /// administrator row and a dealership's business tables are never open in the
+    /// same unit of work (doc 06 §2).
+    /// </summary>
+    /// <remarks>
+    /// This lives in the Identity project rather than in an application folder
+    /// because password verification, TOTP, and session issuance must exist in
+    /// exactly one place — the one the rest of the application cannot reach. A
+    /// second implementation in <c>src/App</c> would be visible to every feature.
+    /// </remarks>
+    public static IServiceCollection AddControlPlane(
+        this IServiceCollection services,
+        string hostConnectionString)
+    {
+        services.AddDbContext<ControlPlaneDb>(options =>
+            options.UseSqlServer(hostConnectionString, sql =>
+                sql.MigrationsAssembly(typeof(ControlPlaneDb).Assembly.FullName)));
+
+        services.AddSingleton<IPasswordHasher<Administrator>, PasswordHasher<Administrator>>();
+        services.AddScoped<IGlobalAdministration, GlobalAdministrationService>();
+
+        return services;
+    }
 }

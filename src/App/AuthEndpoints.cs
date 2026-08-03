@@ -215,7 +215,12 @@ internal static class AuthEndpoints
             mustEnrolSecondFactor = currentUser.MustEnrolSecondFactor,
         });
 
-    private static CookieOptions BuildCookieOptions(
+    /// <summary>
+    /// Internal rather than private so the control plane sets its own cookies
+    /// with exactly these attributes. Two copies of this would eventually differ,
+    /// and the difference would be a security bug nobody was looking for.
+    /// </summary>
+    internal static CookieOptions BuildCookieOptions(
         HttpContext context,
         DateTimeOffset expiresAt,
         bool readableByScript = false) =>

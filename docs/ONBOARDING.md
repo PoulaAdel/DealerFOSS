@@ -88,6 +88,19 @@ Development seeds two dealer organizations — `northgroup` (two rooftops) and
 | `advisor@dev.local` | one rooftop, read-only | look at `NAG-01`; change nothing |
 | `nobody@dev.local` | no assignment | nothing — `403` |
 
+Two more accounts exist that are **not** dealership users at all — they live in
+the host catalog and sign in at `/api/v1/admin/login`:
+
+| Sign in as | Can |
+|---|---|
+| `root@control.local` | run the installation: list dealerships, suspend one, open support access — and read no dealership's records |
+| `newop@control.local` | the same, once it has enrolled a second factor. Reserved for the tests that observe what a new operator may do before then |
+
+Try it: sign in as `root@control.local`, then call `/api/v1/inventory` with that
+cookie. The `401` is the point — an administrator is not a caller there at all.
+Then sign in as `gm@dev.local` and call `/api/v1/admin/tenants`. That `401` is the
+other half, and it is the half people forget.
+
 Sign in, keep the session cookie, then call an endpoint:
 
 ```powershell
@@ -166,8 +179,14 @@ Calibrate your confidence — these are current, honest limitations:
 - **Federation (OIDC) does not exist**, and cannot be honestly built until there
   is a real identity provider to test against. Local passwords and TOTP —
   optional or required by role — are the whole of sign-in today.
-- **Global administration is not separated yet.** There is no control-plane
-  identity, and no time-limited support-access flow.
+- **Administrator accounts can only be seeded, not created.** The separation
+  between operating the deployment and reading a dealership's records exists, and
+  so does time-limited support access — but there is no endpoint that creates a
+  second administrator, and no recovery codes if one loses their phone. Clearing
+  the row is a database operation today.
+- **Provisioning a new dealership is not an administrator action.** The control
+  plane lists dealerships and can suspend or resume one; creating the database
+  still happens through the development seeder.
 - **The frontend has never been seen rendering.** It serves, typechecks, and
   reaches the API; nobody has watched it paint.
 - **Backup and restore have never been rehearsed.**

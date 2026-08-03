@@ -104,7 +104,18 @@ public sealed class BoundaryTests
             // a second factor. It exposes the rule and the role names — not the
             // Role entity, not assignments, and no way to grant anything.
             "ISecurityPolicy", "RoleSecondFactorPolicy",
+            // Added deliberately: control-plane identity. Password verification,
+            // TOTP, and session issuance must exist in exactly one project — the
+            // one nothing else can reach — so the administrator store lives here
+            // too, and this is the only door to it. Note what is absent: no type
+            // that turns an administrator into a tenant caller, and no way to
+            // widen an administrator session. Support access mints a separate
+            // session for a separate principal, and says so in the dealership's
+            // own audit trail.
+            "IGlobalAdministration", "IssuedAdminSession", "AdministratorPrincipal",
+            "GrantedSupportAccess", "SupportAccessRecord", "AdminErrors",
             "IdentityRegistration", "IdentitySeeder", "DevelopmentAccount",
+            "ControlPlaneSeeder",
             "Permissions",
         };
 

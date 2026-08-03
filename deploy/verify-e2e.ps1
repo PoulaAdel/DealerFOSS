@@ -34,6 +34,89 @@ $emailScoped   = "advisor@dev.local"  # first rooftop only
 $emailNoAccess = "nobody@dev.local"   # no assignment
 $devPassword   = "Dev@Pass1!"
 
+# The control plane. Deliberately not a @dev.local address: it is a different
+# kind of record, in a different database, and belongs to nobody's dealership.
+# The reserved second operator is used rather than root@control.local, because
+# enrolling a second factor is one-way and this script resets it below to stay
+# re-runnable.
+$adminEmail = "newop@control.local"
+
+# --- helpers that need no running host ---
+
+# One value from a database, for the checks that must look at what was actually
+# written rather than at what an endpoint said.
+function Invoke-Sql-Scalar([string]$sql, [string]$connectionString) {
+    $connection = New-Object System.Data.SqlClient.SqlConnection $connectionString
+    try {
+        $connection.Open()
+        $command = $connection.CreateCommand()
+        $command.CommandText = $sql
+        $value = $command.ExecuteScalar()
+        if ($value -is [DBNull]) { return $null }
+        return $value
+    } finally { $connection.Close() }
+}
+
+function Invoke-Sql([string]$sql, [string]$connectionString) {
+    $connection = New-Object System.Data.SqlClient.SqlConnection $connectionString
+    try {
+        $connection.Open()
+        $command = $connection.CreateCommand()
+        $command.CommandText = $sql
+        $null = $command.ExecuteNonQuery()
+    } finally { $connection.Close() }
+}
+
+# Mirrors DevelopmentSeeder.TenantDatabaseName: a tenant database is named from
+# the host catalog's own name, so an installation called something else keeps its
+# databases together.
+function Get-TenantConnection([string]$slug) {
+    # Indexed rather than by property name: PowerShell routes a property set on a
+    # DbConnectionStringBuilder through its IDictionary indexer, which only knows
+    # the spaced keyword form and throws on "InitialCatalog".
+    $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder $hostConn
+    $catalog = $builder["Initial Catalog"]
+    if ($catalog.EndsWith("_Host")) { $catalog = $catalog.Substring(0, $catalog.Length - 5) }
+    $builder["Initial Catalog"] = "${catalog}_Tenant_$slug"
+    return $builder.ConnectionString
+}
+
+# RFC 6238, the same six digits an authenticator app produces. Written out here
+# rather than called from the application, so the check proves the server agrees
+# with an independent implementation instead of with itself.
+function ConvertFrom-Base32([string]$value) {
+    $alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+    $bits = New-Object System.Text.StringBuilder
+    foreach ($character in $value.ToUpper().ToCharArray()) {
+        $index = $alphabet.IndexOf($character)
+        if ($index -ge 0) { $null = $bits.Append([Convert]::ToString($index, 2).PadLeft(5, '0')) }
+    }
+    $text = $bits.ToString()
+    $bytes = New-Object System.Collections.Generic.List[byte]
+    for ($i = 0; ($i + 8) -le $text.Length; $i += 8) {
+        $bytes.Add([Convert]::ToByte($text.Substring($i, 8), 2))
+    }
+    return $bytes.ToArray()
+}
+
+function Get-TotpCode([string]$secret) {
+    $counter = [long][Math]::Floor([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() / 30)
+    $counterBytes = [BitConverter]::GetBytes($counter)
+    if ([BitConverter]::IsLittleEndian) { [Array]::Reverse($counterBytes) }
+
+    $hmac = New-Object System.Security.Cryptography.HMACSHA1
+    $hmac.Key = (ConvertFrom-Base32 $secret)
+    $hash = $hmac.ComputeHash($counterBytes)
+
+    $offset = $hash[$hash.Length - 1] -band 0x0F
+    $binary = ((($hash[$offset] -band 0x7F) -shl 24) -bor `
+               (($hash[$offset + 1] -band 0xFF) -shl 16) -bor `
+               (($hash[$offset + 2] -band 0xFF) -shl 8) -bor `
+                ($hash[$offset + 3] -band 0xFF))
+
+    return ($binary % 1000000).ToString("D6")
+}
+
 # Refuse to run against somebody else's process. Without this the script's own
 # host fails to bind, the readiness probe succeeds against whatever was already
 # listening, and the whole run silently verifies a stale build.
@@ -103,6 +186,57 @@ try {
         # decoded, so the header form has to be unescaped here.
         $ws | Add-Member -NotePropertyName Csrf `
             -NotePropertyValue ([System.Uri]::UnescapeDataString($csrf)) -Force
+        $ws | Add-Member -NotePropertyName CsrfHeader -NotePropertyValue "X-CSRF-Token" -Force
+        return $ws
+    }
+
+    # Signs an administrator in. Separate cookies from a dealership session on
+    # purpose: after support access is granted a browser holds both, and a shared
+    # name would mean one silently overwriting the other.
+    function New-AdminSession([string]$email) {
+        $body = @{ email = $email; password = $devPassword } | ConvertTo-Json
+        $login = Invoke-WebRequest "$baseUrl/api/v1/admin/login" -Method Post `
+            -Body $body -ContentType "application/json" -UseBasicParsing
+
+        $cookies = $login.Headers['Set-Cookie']
+        if ($cookies -is [array]) { $cookies = $cookies -join ', ' }
+        function Read-AdminCookie([string]$name) {
+            $match = [regex]::Match($cookies, "(?:^|[,;]\s*)$name=([^;,]*)")
+            if ($match.Success) { return $match.Groups[1].Value }
+            throw "The $name cookie was not set at administrator sign-in."
+        }
+
+        $ws = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_admin", (Read-AdminCookie "odms_admin"), "/", "localhost")))
+        $csrf = Read-AdminCookie "odms_admin_csrf"
+        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_admin_csrf", $csrf, "/", "localhost")))
+        $ws | Add-Member -NotePropertyName Csrf `
+            -NotePropertyValue ([System.Uri]::UnescapeDataString($csrf)) -Force
+        $ws | Add-Member -NotePropertyName CsrfHeader `
+            -NotePropertyValue "X-Admin-CSRF-Token" -Force
+        return $ws
+    }
+
+    # Builds a dealership session from the cookies a response set — used for
+    # support access, where the tenant session arrives from a control-plane call
+    # rather than from signing in.
+    function New-TenantSession($response) {
+        $cookies = $response.Headers['Set-Cookie']
+        if ($cookies -is [array]) { $cookies = $cookies -join ', ' }
+
+        function Read-TenantCookie([string]$name) {
+            $match = [regex]::Match($cookies, "(?:^|[,;]\s*)$name=([^;,]*)")
+            if ($match.Success) { return $match.Groups[1].Value }
+            throw "The $name cookie was not set by the support-access grant."
+        }
+
+        $ws = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_session", (Read-TenantCookie "odms_session"), "/", "localhost")))
+        $csrf = Read-TenantCookie "odms_csrf"
+        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_csrf", $csrf, "/", "localhost")))
+        $ws | Add-Member -NotePropertyName Csrf `
+            -NotePropertyValue ([System.Uri]::UnescapeDataString($csrf)) -Force
+        $ws | Add-Member -NotePropertyName CsrfHeader -NotePropertyValue "X-CSRF-Token" -Force
         return $ws
     }
 
@@ -131,7 +265,10 @@ try {
                 $call.WebSession = $session
                 if ($method -ne "Get" -and $session.Csrf) {
                     if (-not $call.Headers) { $call.Headers = @{} }
-                    $call.Headers["X-CSRF-Token"] = $session.Csrf
+                    # Which header depends on which world the session belongs to.
+                    # A dealership token must not satisfy a control-plane write.
+                    $header = if ($session.CsrfHeader) { $session.CsrfHeader } else { "X-CSRF-Token" }
+                    $call.Headers[$header] = $session.Csrf
                 }
             }
             if ($body) {
@@ -368,6 +505,78 @@ try {
         }
     }
 
+    Write-Host "`n--- whoever runs the servers is kept out of the data ---" -ForegroundColor Cyan
+    # Two crossings, and neither is allowed. An administrator cookie is not a
+    # caller at a business endpoint, and the most privileged dealership account
+    # is still a dealership account at the control plane.
+    # Enrolling is one-way, and this script runs more than once against the same
+    # development database. Clearing the second factor first is what makes the
+    # section below repeatable; nothing else here writes to the control plane.
+    Invoke-Sql `
+        "UPDATE [control].[Administrators] SET MfaSecretProtected = NULL, MfaConfirmedAt = NULL WHERE Email = '$adminEmail'" `
+        $hostConn
+
+    $adminSession = New-AdminSession $adminEmail
+
+    $adminReadsData = Get-Status "/api/v1/inventory?limit=1" "northgroup" $adminSession
+    "administrator reads dealership stock  -> HTTP $adminReadsData (expect 401)"
+
+    $dealerReachesAdmin = Get-Status "/api/v1/admin/tenants" $null $scoped
+    "dealership manager at the control plane -> HTTP $dealerReachesAdmin (expect 401)"
+
+    # A second factor is not optional here: the account that can step into any
+    # dealership is the one worth stealing.
+    $adminBeforeMfa = Get-Status "/api/v1/admin/tenants" $null $adminSession
+    "administrator without a second factor -> HTTP $adminBeforeMfa (expect 403)"
+
+    $enrolment = Invoke-RestMethod "$baseUrl/api/v1/admin/mfa/enrol" -Method Post `
+        -Headers @{ "X-Admin-CSRF-Token" = $adminSession.Csrf } -WebSession $adminSession
+    $confirmed = Get-Status "/api/v1/admin/mfa/confirm" $null $adminSession "Post" `
+        @{ code = (Get-TotpCode $enrolment.secret) }
+    "...enrols one, in the same session    -> HTTP $confirmed (expect 204)"
+
+    $adminAfterMfa = Get-Status "/api/v1/admin/tenants" $null $adminSession
+    "...and can now run the installation   -> HTTP $adminAfterMfa (expect 200)"
+
+    Write-Host "`n--- support access is deliberate, limited, and visible ---" -ForegroundColor Cyan
+    $noReason = Get-Status "/api/v1/admin/support-access" "northgroup" $adminSession "Post" `
+        @{ reason = "  "; minutes = 30 }
+    "entering a dealership with no reason  -> HTTP $noReason (expect 400)"
+
+    # Invoke-WebRequest rather than Invoke-RestMethod, because the tenant cookies
+    # this hands back are the whole point and only the raw response carries them.
+    $granting = Invoke-WebRequest "$baseUrl/api/v1/admin/support-access" -Method Post `
+        -Body (@{ reason = "End-to-end check of the support path."; minutes = 1440 } | ConvertTo-Json) `
+        -ContentType "application/json" `
+        -Headers @{ "X-Tenant" = "northgroup"; "X-Admin-CSRF-Token" = $adminSession.Csrf } `
+        -WebSession $adminSession -UseBasicParsing
+    $grant = $granting.Content | ConvertFrom-Json
+
+    # Asked for a day, and the ceiling is not negotiable.
+    $grantMinutes = [Math]::Round(([DateTimeOffset]$grant.expiresAt - [DateTimeOffset]::UtcNow).TotalMinutes)
+    "asked for 1440 minutes, granted {0}    (expect about 60)" -f $grantMinutes
+
+    $support = New-TenantSession $granting
+    $supportReads = Get-Status "/api/v1/inventory?limit=1" "northgroup" $support
+    "support session reads the stock list  -> HTTP $supportReads (expect 200)"
+
+    $supportWrites = Get-Status "/api/v1/customers" "northgroup" $support "Post" `
+        @{ kind = "Person"; firstName = "Support"; lastName = "NoWrite$suffix" }
+    "support session adds a customer       -> HTTP $supportWrites (expect 403: read-only)"
+
+    # Visible where it matters: the dealership's own audit trail, not only ours.
+    $seenByDealer = Invoke-Sql-Scalar `
+        "SELECT TOP 1 Reason FROM [identity].[AuditEvents] WHERE Action = 'Support.AccessOpened' ORDER BY OccurredAt DESC" `
+        (Get-TenantConnection "northgroup")
+    $dealerCanSee = ($seenByDealer -ne $null -and $seenByDealer.Contains($adminEmail))
+    "the dealership's own log names them: {0} (expect True)" -f $dealerCanSee
+
+    $ended = Get-Status "/api/v1/admin/support-access/$($grant.grantId)/end" "northgroup" $adminSession "Post"
+    "closing the grant                     -> HTTP $ended (expect 204)"
+
+    $afterEnd = Get-Status "/api/v1/inventory?limit=1" "northgroup" $support
+    "...the session stops on the next call -> HTTP $afterEnd (expect 401)"
+
     Write-Host "`n--- sessions ---" -ForegroundColor Cyan
     $noSession = Get-Status "/api/v1/organization" "northgroup" $null
     "no session                            -> HTTP $noSession (expect 401)"
@@ -404,11 +613,16 @@ try {
         -and ($forged -eq 403) -and ($honest -eq 201) `
         -and ($advisorSetsPolicy -eq 403) -and ($blocked -eq 403) -and ($stillIn -eq 200) `
         -and ($canEnrol -eq 200) -and ($managerUnaffected -eq 200) `
+        -and ($adminReadsData -eq 401) -and ($dealerReachesAdmin -eq 401) `
+        -and ($adminBeforeMfa -eq 403) -and ($confirmed -eq 204) -and ($adminAfterMfa -eq 200) `
+        -and ($noReason -eq 400) -and ($grantMinutes -ge 55 -and $grantMinutes -le 61) `
+        -and ($supportReads -eq 200) -and ($supportWrites -eq 403) -and $dealerCanSee `
+        -and ($ended -eq 204) -and ($afterEnd -eq 401) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
         -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, a forged write is refused, a second factor can be demanded, and the ledger balances." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

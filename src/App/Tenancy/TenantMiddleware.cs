@@ -29,6 +29,15 @@ public sealed class TenantMiddleware(RequestDelegate next)
 
     private const string ApiPrefix = "/api/v1";
 
+    /// <summary>
+    /// Control-plane paths. A dealer organization is optional there rather than
+    /// required: listing the installation's tenants belongs to no single one of
+    /// them, while opening support access names the one being entered. The header
+    /// is still honoured and still validated when it is supplied — "optional" is
+    /// not "unchecked".
+    /// </summary>
+    private const string AdminPrefix = "/api/v1/admin";
+
     public async Task InvokeAsync(
         HttpContext context,
         ITenantResolver resolver,
@@ -40,9 +49,17 @@ public sealed class TenantMiddleware(RequestDelegate next)
             return;
         }
 
+        var isControlPlane = context.Request.Path.StartsWithSegments(AdminPrefix);
         var tenantKey = context.Request.Headers[TenantHeader].ToString();
+
         if (string.IsNullOrWhiteSpace(tenantKey))
         {
+            if (isControlPlane)
+            {
+                await next(context);
+                return;
+            }
+
             await WriteProblemAsync(
                 context,
                 StatusCodes.Status400BadRequest,

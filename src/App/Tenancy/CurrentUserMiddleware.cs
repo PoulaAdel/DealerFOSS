@@ -13,6 +13,7 @@
 //       path and nothing else. Enforcing it here rather than in each endpoint is
 //       the point: a capability added next year is covered without being told.
 
+using OpenDealer360.Administration;
 using OpenDealer360.Core;
 using OpenDealer360.App;
 using OpenDealer360.Identity;
@@ -64,7 +65,14 @@ public sealed class CurrentUserMiddleware(RequestDelegate next)
     // like /health where no tenant was ever resolved.
     public async Task InvokeAsync(HttpContext context, ICurrentUser currentUser)
     {
+        // The control plane is not a tenant caller and never becomes one. It has
+        // its own middleware, its own cookie, and its own store; an administrator
+        // never reaches ICurrentUser.Set below. That is why an administrator
+        // session presented to a business endpoint resolves to nobody and is
+        // refused — the separation is structural rather than a check each
+        // capability has to remember (doc 06 §3).
         if (!context.Request.Path.StartsWithSegments(ApiPrefix)
+            || context.Request.Path.StartsWithSegments(AdministratorMiddleware.AdminPrefix)
             || AnonymousPaths.Contains(context.Request.Path.Value, StringComparer.OrdinalIgnoreCase))
         {
             await _next(context);

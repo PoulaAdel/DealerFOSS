@@ -28,12 +28,15 @@ exported type list, so widening it is a decision someone has to make on purpose.
 | `IAccessDirectory`, `AuthorizedScope` | "what may this user reach?" |
 | `IAuthenticator`, `IssuedSession`, `AuthenticatedCaller`, `AuthErrors` | sign in, validate a session, sign out |
 | `ISecurityPolicy`, `RoleSecondFactorPolicy` | read and set which roles must hold a second factor |
-| `IdentityRegistration` | `services.AddIdentity()` |
-| `IdentitySeeder`, `DevelopmentAccount` | Development-only account seeding |
+| `IGlobalAdministration` + its records, `AdminErrors` | control-plane sign-in, and the one door to support access |
+| `IdentityRegistration` | `services.AddIdentity()`, `services.AddControlPlane()` |
+| `IdentitySeeder`, `DevelopmentAccount`, `ControlPlaneSeeder` | Development-only account seeding |
 | `Permissions` | the catalogue of action names — a shared vocabulary, not an internal |
 
-Everything else — `IdentityDb`, `AccessService`, `Authenticator`, `SqlAuditSink`,
-`User`, `Role`, `UserAssignment`, `Session`, `AuditEvent` — is `internal`.
+Everything else — `IdentityDb`, `ControlPlaneDb`, `AccessService`,
+`Authenticator`, `GlobalAdministrationService`, `SqlAuditSink`, `User`, `Role`,
+`UserAssignment`, `Session`, `AuditEvent`, `Administrator`, `AdminSession`,
+`SupportGrant` — is `internal`.
 
 ## Layout
 
@@ -144,10 +147,46 @@ thing it asks for.
 > implements only that. The analyser suppression at the call site explains why
 > that is not the weakness it appears to be.
 
+## The control plane
+
+Whoever runs the deployment is a different kind of record in a different
+database. `Administrator`, `AdminSession`, and `SupportGrant` live in the
+`control` schema of the **host catalog** — never in a tenant's — and hold no
+permission from the catalogue above. There is no method anywhere that turns an
+administrator into an `ICurrentUser`, and an architecture test says so.
+
+Why it is in this project rather than a folder under `src/App`: password
+verification, TOTP, and session issuance must exist in exactly one place, and
+this is the project the application cannot reach into. A second implementation
+next to the features would be visible to all of them.
+
+A second factor is mandatory here rather than a policy choice. An administrator
+who has not enrolled gets a real session that reaches `me`, `mfa/enrol`,
+`mfa/confirm`, and `logout` — and nothing else, support access included.
+
+### Support access
+
+The one deliberate way from operating the installation into a dealership's data.
+`GrantSupportAccessAsync` mints a **tenant** session for that tenant's own
+support principal: a user row with no password hash, so `CanSignIn` is false and
+no credential opens it, holding a read-only role organization-wide. Four
+properties are what make it a control rather than a back door, and each has a
+test:
+
+- **A written reason is required**, and blank is refused.
+- **It is read-only.** Adding a write permission to `SupportPermissions` is a
+  decision about what a vendor may do inside a customer's business.
+- **The dealership sees it in their own audit trail**, naming the administrator
+  and the stated reason. Visibility that exists only in the vendor's console is
+  not visibility.
+- **Ending the grant revokes the session** in the same act, so the record can
+  never say "closed" while the access keeps working. The window is clamped to an
+  hour; asking for a day gets an hour.
+
 ## Not built yet
 
-Requiring MFA by policy rather than by choice, OIDC federation,
-global-administration separation, and time-limited support access. See
+OIDC federation. Administrator recovery codes, and administrator accounts created
+through anything but the development seeder. See
 [`docs/implementation/STATUS.md`](../../docs/implementation/STATUS.md).
 
 > `identity` is a reserved T-SQL keyword. EF quotes it automatically; hand-written

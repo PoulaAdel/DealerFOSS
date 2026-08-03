@@ -3,21 +3,22 @@
 Plain language, no jargon. For the engineering detail — every claim paired with
 the command that proves it — see [implementation/STATUS.md](implementation/STATUS.md).
 
-**Last updated:** 1 August 2026
+**Last updated:** 3 August 2026
 
 ---
 
 ## The short answer
 
-**The foundation is nearly done, the first dealership records work, and there are
-now two screens.**
+**The foundation is done bar one item, the first dealership records work, and
+there are two screens nobody has watched draw yet.**
 
 Several dealership groups can already share one installation without ever seeing
 each other's data, and staff can be restricted to their own location. Customers
 and vehicles can be recorded and found, each location's stock is kept separate,
-a car can be sold, and the sale writes its own accounting entry. Two screens
-exist — the stock list and the trial balance — though nobody has yet watched them
-draw on a real browser.
+a car can be sold, and the sale writes its own accounting entry. Whoever runs the
+servers is now structurally shut out of all of it, and can only come in through a
+door you can see them open. Two screens exist — the stock list and the trial
+balance — though nobody has yet watched them draw on a real browser.
 
 **About 25% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
 
@@ -42,7 +43,7 @@ months of focused work.
 
 ---
 
-## Inside stage 1 — nine of eleven pieces done
+## Inside stage 1 — ten of eleven pieces done
 
 - [x] Dealership groups cannot see each other's data — each gets its own separate database
 - [x] A group can have several locations, each with its own departments
@@ -53,9 +54,9 @@ months of focused work.
 - [x] **A second factor at sign-in**, with recovery codes for a lost phone
 - [x] **A dealership can insist on that second factor** for the jobs that warrant it
 - [x] **A malicious website cannot make your browser change anything** — see below
+- [x] **Whoever runs the servers is kept out of the dealership's data**
 - [ ] **Screens** — two exist and reach the system correctly, but neither has been
       seen drawn on a real browser
-- [ ] **Keeping whoever runs the servers out of the dealership's data**
 - [ ] **A rehearsed backup and restore**
 
 ---
@@ -107,6 +108,18 @@ months of focused work.
   until they have. Nobody is ever locked out, and it applies to whoever holds the
   job next year without anybody remembering to add them. Only somebody with
   group-wide authority can set it — not a manager at one lot
+- **Whoever runs the servers cannot read the dealership's records.** Somebody has
+  to keep the installation running, and that is now a different kind of login
+  entirely — a different door, a different password list, a different database.
+  It cannot see a customer, a car, or a deal. The reverse holds too: the most
+  senior person at the dealership cannot touch the servers. Neither is a rule
+  somebody has to remember to apply to the next screen we build; it is how the
+  two are wired
+- **When you ask for help, someone can come in — visibly, briefly, and looking
+  only.** They have to write down why, they get an hour at most, they cannot
+  change anything, and the visit appears in *your* log with their name and their
+  stated reason. Closing it stops them on their very next click. Anyone who might
+  do this has to have their own second factor set up before they can even try
 
 ## What does not exist
 
@@ -121,25 +134,34 @@ months of focused work.
 - Parts, or reports
 - Screens for customers, leads, or selling a car — the system underneath does all
   three, but there is nothing to click yet
+- A screen for setting up the second factor, or for the people who run the
+  servers. Both work; neither has a page
+- A way to add a second person who runs the servers. There is one, created when
+  the system is set up, and no way to add another yet — nor to get back in if
+  they lose their phone
+- Creating a new dealership from the administration side. It can list them and
+  take one out of service; setting a new one up is still a developer's job
 
 ---
 
 ## Next
 
-**Keeping whoever runs the servers out of the dealership's data.** Someone has to
-administer the installation — create dealerships, watch it stay healthy — and
-today that person would be an ordinary user with wide permissions. It should be a
-separate kind of login that structurally cannot read a customer record, plus a
-deliberate, time-limited, logged way to step into one dealership when they ask
-for help. This is the last piece of security groundwork that does not wait on
-anyone.
+**Screens for the security work of the last three rounds.** All of it works, and
+none of it can be reached without a developer's tools. The first and cheapest is
+a page for setting up the second factor — showing the square barcode you point
+your phone at, and the ten printed codes for the day you lose it. Then a small
+console for whoever runs the servers: sign in, see which dealerships exist, open
+a support visit with a reason, and close it again.
+
+There is a caution attached, and it is not a small one: **nobody has yet watched
+a single screen of this system draw on a real browser.** Building three more on
+top of an unproven one multiplies whatever is wrong with it. Ten minutes with the
+existing stock list would be worth more than a week of new pages — which is the
+first item on your list below.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one
 would prove nothing.
-
-Cheaper and also outstanding: **a screen for setting up the second factor.** It
-works over the API, but there is no page showing the QR code you would scan.
 
 ---
 
@@ -147,7 +169,7 @@ works over the API, but there is no page showing the QR code you would scan.
 
 | Item | Why it matters |
 |---|---|
+| **Opening the two screens in a browser and telling me what you see** | They serve correctly and talk to the system, but no one has confirmed they actually draw — and the next round of work is three more screens on top of them |
 | Pilot dealerships and access to their current systems | Stage 2 cannot be finished or proven without real data and a real provider connection |
-| Opening the two screens in a browser and telling me what you see | They serve correctly and talk to the system, but no one has confirmed they actually draw |
 | A rehearsed backup and restore | Stage 1 cannot close without proving a real restore produces a working system |
 | Confirming the month-end rule with a real dealer's accountant | Calendar month end with a grace period to the 10th is assumed, not confirmed |

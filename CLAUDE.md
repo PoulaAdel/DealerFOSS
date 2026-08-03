@@ -127,13 +127,25 @@ isolation on top of one that already exists.
   `src/App`. A new capability is a flat folder inside `src/App`, not a project.
   Do not add `Domain/`, `Data/`, or `Contracts/` subfolders inside a capability.
 - **Identity's internals are sealed.** Only `IAccessDirectory`, `IAuthenticator`,
-  `IdentityRegistration`, `IdentitySeeder`, and `Permissions` are public, and
-  `BoundaryTests` asserts that list. Making another type public is a security
-  decision, not a convenience — say so explicitly if you do it.
+  `ISecurityPolicy`, `IGlobalAdministration`, `IdentityRegistration`,
+  `IdentitySeeder`, `ControlPlaneSeeder`, and `Permissions` (plus their result
+  records) are public, and `BoundaryTests` asserts that list. Making another type
+  public is a security decision, not a convenience — say so explicitly if you do
+  it. Credential verification, TOTP, and session issuance live here and nowhere
+  else, including for the control plane: a second copy in `src/App` would be
+  reachable from every feature.
 - EF migrations under any `Migrations/` folder are generated artifacts and are
-  excluded from style analysis; do not hand-edit them. There are three:
-  `src/Identity/Migrations`, `src/App/Tenancy/Migrations` (host catalog), and
-  `src/App/Data/Migrations` (tenant business data).
+  excluded from style analysis; do not hand-edit them. There are four, across
+  three folders: `src/Identity/Migrations` holds two contexts — `IdentityDb`
+  (per-tenant `identity` schema) and `ControlPlaneDb` (the `control` schema in
+  the host catalog) — plus `src/App/Tenancy/Migrations` (host catalog routing)
+  and `src/App/Data/Migrations` (tenant business data). A control-plane migration
+  needs `--context ControlPlaneDb --output-dir Migrations`, and EF will warn that
+  two contexts share one migrations namespace. Accept the warning: the flat
+  folder is what the analyzer exclusion `[**/Migrations/*.cs]` matches, and
+  `--namespace` makes `dotnet ef` write the model snapshot to a namespace-derived
+  path outside it. The warning's failure mode is two migrations with the same
+  class name, which is a compile error, not a silent one.
 - SPDX is applied once at assembly level in `Directory.Build.props`. Do not add
   per-file licence headers.
 - Never commit secrets. `appsettings.Development.json` is git-ignored; the

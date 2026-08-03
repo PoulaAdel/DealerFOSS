@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenDealer360.Accounting;
+using OpenDealer360.Administration;
 using OpenDealer360.App;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
@@ -54,11 +55,17 @@ if (tenancyEnabled)
     builder.Services.AddSecretProtection(builder.Configuration);
 
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+    builder.Services.AddScoped<ICurrentAdministrator, CurrentAdministrator>();
 
     // Identity is a separate project so its tables and services are physically
     // unreachable from here — only IAccessDirectory and IAuthenticator are
     // public (ADR-017).
     builder.Services.AddIdentity();
+
+    // Control-plane identity, bound to the host catalog rather than to any
+    // tenant. Separate context, separate tables, separate cookie: an
+    // administrator cannot become a dealership caller by any route (doc 06 §2).
+    builder.Services.AddControlPlane(hostConnection!);
 
     // One business database for this tenant, bound to the connection resolved
     // for the current request.
@@ -131,8 +138,12 @@ app.UseSerilogRequestLogging();
 if (tenancyEnabled)
 {
     // Order matters: the tenant is resolved first, then the caller within it,
-    // and only then is a write allowed to prove it was not forged.
+    // and only then is a write allowed to prove it was not forged. The
+    // administrator step sits between the first two because opening support
+    // access needs the dealership already resolved — and because a control-plane
+    // request must never reach the tenant caller step at all.
     app.UseMiddleware<TenantMiddleware>();
+    app.UseMiddleware<AdministratorMiddleware>();
     app.UseMiddleware<CurrentUserMiddleware>();
     app.UseMiddleware<AntiForgeryMiddleware>();
 }
@@ -157,6 +168,7 @@ if (tenancyEnabled)
 {
     app.MapAuth();
     app.MapSecurity();
+    app.MapAdministration();
     app.MapOrganization();
     app.MapCustomers();
     app.MapVehicles();

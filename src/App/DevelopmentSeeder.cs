@@ -47,6 +47,26 @@ public static class DevelopmentSeeder
 
         await hostCatalog.Database.MigrateAsync();
 
+        // The control plane lives in the same host catalog database, under its
+        // own schema. Seeded first so the deployment always has an operator, and
+        // never with a second factor already set up — an administrator proves
+        // they hold one before they can do anything, exactly as in production.
+        await ControlPlaneSeeder.SeedDevelopmentAsync(
+            hostConnectionString,
+            clock,
+            DevAdministrator.Id,
+            DevAdministrator.Email,
+            "Development Administrator",
+            DevUsers.Password);
+
+        await ControlPlaneSeeder.SeedDevelopmentAsync(
+            hostConnectionString,
+            clock,
+            DevAdministrator.UnenrolledId,
+            DevAdministrator.UnenrolledEmail,
+            "Newly Created Administrator",
+            DevUsers.Password);
+
         await SeedTenantAsync(hostCatalog, protector, clock, hostConnectionString, "northgroup", BuildNorthGroup);
         await SeedTenantAsync(hostCatalog, protector, clock, hostConnectionString, "citymotors", BuildCityMotors);
 
@@ -74,6 +94,33 @@ public static class DevelopmentSeeder
             : catalog;
 
         return $"{prefix}_Tenant_{slug}";
+    }
+
+    /// <summary>
+    /// The well-known development administrator. Deliberately not one of the
+    /// <see cref="DevUsers"/> — it is a different kind of record, in a different
+    /// database, and belongs to nobody's dealership.
+    /// </summary>
+    public static class DevAdministrator
+    {
+        public static Guid Id { get; } = new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+        /// <summary>
+        /// Not a <c>@dev.local</c> address, so it never reads as one of the
+        /// dealership accounts in a log or a test.
+        /// </summary>
+        public const string Email = "root@control.local";
+
+        /// <summary>
+        /// Reserved for the tests that observe what an administrator may do
+        /// *before* enrolling a second factor. Kept separate because enrolling is
+        /// one-way: sharing one account would make those tests depend on running
+        /// first, which is exactly the order-dependence this suite has already
+        /// been bitten by once.
+        /// </summary>
+        public static Guid UnenrolledId { get; } = new("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
+        public const string UnenrolledEmail = "newop@control.local";
     }
 
     /// <summary>

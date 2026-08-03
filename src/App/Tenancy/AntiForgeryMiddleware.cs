@@ -15,6 +15,7 @@
 //       bound to the session rather than merely echoed: otherwise anything able
 //       to write a cookie for this site could supply both halves of the pair.
 
+using OpenDealer360.Administration;
 using OpenDealer360.App;
 using OpenDealer360.Identity;
 
@@ -38,29 +39,53 @@ public sealed class AntiForgeryMiddleware(RequestDelegate next)
     [
         "/api/v1/auth/login",
         "/api/v1/auth/login/second-factor",
+        // The control-plane equivalent, for the identical reason: no
+        // administrator session exists yet to have issued a token.
+        "/api/v1/admin/login",
     ];
 
     private readonly RequestDelegate _next = next;
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!RequiresAntiForgery(context.Request))
+        // Which pair of secrets applies is decided by the path, not by which
+        // cookies happen to be present. After support access is granted a browser
+        // holds both, and a control-plane write must not be satisfiable with a
+        // token minted for a dealership session — or the two worlds this
+        // middleware sits between would be one world again.
+        var isControlPlane = context.Request.Path.StartsWithSegments(
+            AdministratorMiddleware.AdminPrefix);
+
+        var cookieName = isControlPlane
+            ? AdminEndpoints.AdminSessionCookie
+            : AuthEndpoints.SessionCookie;
+
+        var headerName = isControlPlane
+            ? AdminEndpoints.AdminAntiForgeryHeader
+            : AuthEndpoints.AntiForgeryHeader;
+
+        if (!RequiresAntiForgery(context.Request, cookieName))
         {
             await _next(context);
             return;
         }
 
-        var authenticator = context.RequestServices.GetRequiredService<IAuthenticator>();
-        var sessionToken = context.Request.Cookies[AuthEndpoints.SessionCookie]!;
-        var presented = context.Request.Headers[AuthEndpoints.AntiForgeryHeader].ToString();
+        var sessionToken = context.Request.Cookies[cookieName]!;
+        var presented = context.Request.Headers[headerName].ToString();
 
-        if (await authenticator.VerifyAntiForgeryAsync(sessionToken, presented, context.RequestAborted))
+        var verified = isControlPlane
+            ? await context.RequestServices.GetRequiredService<IGlobalAdministration>()
+                .VerifyAntiForgeryAsync(sessionToken, presented, context.RequestAborted)
+            : await context.RequestServices.GetRequiredService<IAuthenticator>()
+                .VerifyAntiForgeryAsync(sessionToken, presented, context.RequestAborted);
+
+        if (verified)
         {
             await _next(context);
             return;
         }
 
-        var error = AuthErrors.AntiForgeryFailed;
+        var error = isControlPlane ? AdminErrors.AntiForgeryFailed : AuthErrors.AntiForgeryFailed;
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         await context.Response.WriteAsJsonAsync(new
         {
@@ -77,12 +102,12 @@ public sealed class AntiForgeryMiddleware(RequestDelegate next)
     /// API, and arrives with a session cookie. Without a session there is nothing
     /// to ride — such a request is unauthenticated and was already refused.
     /// </summary>
-    private static bool RequiresAntiForgery(HttpRequest request) =>
+    private static bool RequiresAntiForgery(HttpRequest request, string cookieName) =>
         request.Path.StartsWithSegments(ApiPrefix)
         && !HttpMethods.IsGet(request.Method)
         && !HttpMethods.IsHead(request.Method)
         && !HttpMethods.IsOptions(request.Method)
         && !HttpMethods.IsTrace(request.Method)
         && !ExemptPaths.Contains(request.Path.Value, StringComparer.OrdinalIgnoreCase)
-        && !string.IsNullOrWhiteSpace(request.Cookies[AuthEndpoints.SessionCookie]);
+        && !string.IsNullOrWhiteSpace(request.Cookies[cookieName]);
 }

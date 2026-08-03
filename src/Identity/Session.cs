@@ -55,13 +55,20 @@ internal sealed class Session : AuditableEntity
     {
     }
 
+    /// <param name="lifetime">
+    /// How long this session may live at most. Omitted for an ordinary sign-in,
+    /// which gets the full shift. Support access supplies a much shorter window,
+    /// and it is clamped here rather than trusted: a caller asking for nine hours
+    /// of somebody else's data gets eight at the outside, like everyone else.
+    /// </param>
     public Session(
         Guid id,
         Guid userId,
         string tokenHash,
         string antiForgeryHash,
         DateTimeOffset now,
-        string? deviceSummary)
+        string? deviceSummary,
+        TimeSpan? lifetime = null)
     {
         if (string.IsNullOrWhiteSpace(tokenHash))
         {
@@ -81,7 +88,10 @@ internal sealed class Session : AuditableEntity
         AntiForgeryHash = antiForgeryHash;
         IssuedAt = now;
         LastSeenAt = now;
-        AbsoluteExpiresAt = now.Add(AbsoluteTimeout);
+        AbsoluteExpiresAt = now.Add(
+            lifetime is { } requested && requested > TimeSpan.Zero && requested < AbsoluteTimeout
+                ? requested
+                : AbsoluteTimeout);
         DeviceSummary = deviceSummary;
     }
 
