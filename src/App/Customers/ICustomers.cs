@@ -33,6 +33,18 @@ public interface ICustomers
         CancellationToken cancellationToken);
 
     Task<Result<CustomerDetail>> AddAsync(NewCustomer customer, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Finds the customer imported from a given record in another system, or null.
+    /// </summary>
+    /// <remarks>
+    /// This is what makes importing the same file twice safe. It is a lookup and
+    /// not a search: an external reference either identifies exactly one customer
+    /// or identifies none, which is the property the unique index enforces.
+    /// </remarks>
+    Task<Result<CustomerDetail?>> FindByExternalReferenceAsync(
+        string externalReference,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Enough to identify a customer in a list.</summary>
@@ -65,6 +77,10 @@ public sealed record AddressView(
     string Country);
 
 /// <summary>What a caller supplies to create a customer.</summary>
+/// <param name="ExternalReference">
+/// Their identifier in the system this record came from, when it was imported.
+/// Null for a customer typed in by a person, which is most of them.
+/// </param>
 public sealed record NewCustomer(
     string Kind,
     string? FirstName,
@@ -72,4 +88,5 @@ public sealed record NewCustomer(
     RooftopId? HomeRooftopId,
     string? Email,
     string? Phone,
-    AddressView? Address);
+    AddressView? Address,
+    string? ExternalReference = null);

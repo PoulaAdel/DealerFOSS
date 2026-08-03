@@ -32,6 +32,19 @@ public sealed class Customer : AuditableEntity
 
     public bool IsArchived { get; private set; }
 
+    /// <summary>
+    /// This customer's identifier in the system they came from, when they were
+    /// imported rather than typed in. It is what makes re-running an import
+    /// update the same person instead of creating a second one, and it is why a
+    /// dealership can import a corrected file without cleaning up afterwards.
+    /// </summary>
+    /// <remarks>
+    /// Null for a customer created by hand. Unique among those that have one, so
+    /// two source records cannot quietly collapse into one — see the note in
+    /// CustomerTables about why a filtered index is used rather than a plain one.
+    /// </remarks>
+    public string? ExternalReference { get; private set; }
+
     public IReadOnlyCollection<ContactPoint> ContactPoints => _contactPoints;
 
     /// <summary>What a person sees in a list. Built here so every screen agrees.</summary>
@@ -77,6 +90,23 @@ public sealed class Customer : AuditableEntity
     }
 
     public void SetAddress(Address? address) => Address = address;
+
+    /// <summary>
+    /// Records where this customer came from. Set once at import; changing it
+    /// later would break the link an importer relies on to find them again.
+    /// </summary>
+    public void SetExternalReference(string? reference)
+    {
+        if (ExternalReference is not null)
+        {
+            throw new InvalidOperationException(
+                "This customer is already linked to a record in another system. "
+                + "Re-pointing that link would orphan the original.");
+        }
+
+        var trimmed = reference?.Trim();
+        ExternalReference = string.IsNullOrEmpty(trimmed) ? null : trimmed;
+    }
 
     /// <summary>
     /// Adds a way to reach this customer. The same value is not added twice, so

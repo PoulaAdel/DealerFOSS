@@ -1,10 +1,13 @@
 # Implementation Status
 
 Current phase: **I0 complete (except container path) → I1 in progress**
-Current milestone: a console for whoever runs the installation (complete); the remaining unmet identity item is OIDC, which is blocked
-Last verified: 2026-08-03 · `dotnet build` 0 warnings/0 errors, `dotnet test` 321/321,
+Current milestone: **stage 2 opened** — a dealership's existing customers and vehicles can be imported from a file, as a background job (complete)
+Last verified: 2026-08-03 · `dotnet build` 0 warnings/0 errors, `dotnet test` 348/348,
 `verify-e2e.ps1` PASS against LocalDB (run repeatedly), frontend `npm audit` clean,
 `npm run typecheck`, `npm test` 44/44, and `npm run build` all pass
+
+Stage 1 is complete except a rehearsed backup and restore, and OIDC, both of
+which need something we do not have. Stage 2 is now started rather than at zero.
 
 > **Layout note (2026-07-30).** The repository moved from seven backend projects to
 > three — `src/Core`, `src/Identity`, `src/App` — with one flat folder per
@@ -127,6 +130,10 @@ them is written.
 
   **Deliberately not included:** creating an administrator, recovery codes for one, dual approval, provisioning a dealership, and any screen for customers, leads, or deals. Also unchanged: **no claim about how it looks.** jsdom has no layout engine.
 
+- **2026-08-03 — Stage 2 opens: a dealership's existing records can be imported from a file.** The stage that gates onboarding a real dealership was at zero; it now has its spine. `POST /api/v1/migration/imports` validates the columns, stages every row **exactly as it arrived**, and answers 202 with a job — nothing is imported by the request, because a real extract is tens of thousands of rows and a request that tried to finish would time out half way with no record of where it stopped. A background worker does the work and the job is the reconciliation report. Three properties carry the design. **A trial changes nothing and says what the real run will do** — both modes take the same validation and the same natural-key lookup, and only the final write is skipped; `Vin.IsWellFormed` moved into the runner precisely because a check only the write performs makes a trial optimistic, and a test asserts the two agree about an unusual VIN. **Importing the same file twice duplicates nothing** — vehicles match on VIN, customers on `externalid` via a new `Customer.ExternalReference` under a filtered unique index. **The counts add up** — every row is Created, Updated, Skipped, or Failed, and they sum to the total. Failures name the line number as a spreadsheet counts it and quote the row back unaltered, because the workflow forbids resolving an exception by editing what the dealership sent. Also delivered, and the reason this milestone was worth doing now: **tenant-aware background work**, an outstanding I1 item. `ITenantScopeFactory` is the only sanctioned way for non-request work to reach tenant data; it demands the tenant be named, and the worker runs as the user who submitted the job so the import is authorized by their permissions and audited under their name. Evidence: `dotnet test` 348/348 (was 321). Three rehearsals, each failing exactly the tests that guard it: making a trial write (1), removing the natural-key lookup (1), and shifting row numbering by one (loudly — the first data row collides with the staged header) *(agent-verifiable)*
+
+  **Deliberately not included:** updating a matched customer's details from a file — a matched row is reported and left alone, because deciding that a file outranks what staff have since typed is a policy nobody has set. Also excluded: deletions and tombstones, profiling and duplicate detection before a run, export, cancelling a running job, connectors of any kind, and any screen. Named rather than hidden: every imported record writes its own audit entry, so a 20,000-row import writes 20,000 of them.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -136,7 +143,15 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** stage 1 closes. What remains inside it is a rehearsed backup and restore — the last exit criterion that is not OIDC.
+**Outcome:** stage 2's other half — the dealership can see and drive an import without `curl`, and can get their data back out again.
+
+An import is the first thing a real dealership does, and it is currently reachable only by someone who can post JSON. The export half also matters more than it looks: doc 05 §6 requires a round-trip test proving an export is understandable without proprietary knowledge, and that is the promise an AGPL DMS makes about not holding anybody's data hostage.
+
+- **Included:** a screen to submit a file, watch the job, and read the exception list; and `GET /api/v1/migration/exports` producing customers and vehicles in the same column shape the importer accepts, with a test that exports a dealership and re-imports it into an empty one.
+- **Explicitly excluded:** connectors, deletions, and updating a matched record from a file.
+- **Caution:** the export must be the importer's own format or the round trip is a fiction. If the two drift, that is the bug, not the test.
+
+**Also outstanding, and the last stage-1 item:** a rehearsed backup and restore — the exit criterion that is not OIDC.
 
 This one genuinely needs the maintainer at the keyboard for the restore itself, but most of it is not blocked: a documented, scripted procedure that takes a host catalog and every tenant database, backs them up, restores them into differently-named databases, and then **proves the restored copy works** rather than merely that the files came back. The proof is the interesting part, and `verify-e2e.ps1` already knows how to do it — pointed at the restored catalog, a PASS is exactly the evidence this criterion asks for.
 

@@ -156,6 +156,8 @@ public sealed class CustomerService(
                     address.Line1, address.Line2, address.City,
                     address.AdministrativeArea, address.PostalCode, address.Country));
             }
+
+            created.SetExternalReference(customer.ExternalReference);
         }
         catch (ArgumentException ex)
         {
@@ -174,6 +176,28 @@ public sealed class CustomerService(
             cancellationToken);
 
         return Result.Success(Describe(created));
+    }
+
+    public async Task<Result<CustomerDetail?>> FindByExternalReferenceAsync(
+        string externalReference,
+        CancellationToken cancellationToken)
+    {
+        if (!await IsAllowedAsync(ReadPermission, cancellationToken))
+        {
+            return Result.Failure<CustomerDetail?>(CustomerErrors.Forbidden);
+        }
+
+        var reference = (externalReference ?? string.Empty).Trim();
+        if (reference.Length == 0)
+        {
+            return Result.Success<CustomerDetail?>(null);
+        }
+
+        var customer = await _db.Customers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(c => c.ExternalReference == reference, cancellationToken);
+
+        return Result.Success(customer is null ? null : Describe(customer));
     }
 
     /// <summary>

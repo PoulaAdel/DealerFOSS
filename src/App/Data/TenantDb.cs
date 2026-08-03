@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenDealer360.Accounting;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
+using OpenDealer360.DataMigration;
 using OpenDealer360.Deals;
 using OpenDealer360.Inventory;
 using OpenDealer360.Leads;
@@ -65,6 +66,10 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
 
     public DbSet<JournalLine> JournalLines => Set<JournalLine>();
+
+    internal DbSet<ImportJob> ImportJobs => Set<ImportJob>();
+
+    internal DbSet<ImportRow> ImportRows => Set<ImportRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

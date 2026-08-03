@@ -577,6 +577,66 @@ try {
     $afterEnd = Get-Status "/api/v1/inventory?limit=1" "northgroup" $support
     "...the session stops on the next call -> HTTP $afterEnd (expect 401)"
 
+    Write-Host "`n--- a dealership's old records arrive from a file ---" -ForegroundColor Cyan
+    # Run against a live host with the background worker actually running, which
+    # is the half the integration suite shares but a person cannot see.
+    # Exactly seventeen characters: anything else is a legitimate VIN only when
+    # the file says why, which is a separate case the integration suite covers.
+    $vinStem = (New-Guid).ToString("N").Substring(0, 10).ToUpper()
+    $file = "vin,modelyear,make,model,trim`n" +
+            ("{0}A000000,2021,Toyota,RAV4,XLE`n" -f $vinStem) +
+            ("{0}B000000,2019,Ford,F-150," -f $vinStem)
+
+    function Submit-Import([string]$mode, [string]$content) {
+        $body = @{ kind = "Vehicles"; mode = $mode; sourceName = "e2e.csv"; content = $content }
+        $job = Invoke-Api "/api/v1/migration/imports" $orgWide $body
+
+        # Submitting only stages the rows; the worker does the work. Poll until
+        # it is finished rather than assuming a fixed wait is long enough.
+        for ($i = 0; $i -lt 60; $i++) {
+            $job = Invoke-RestMethod "$baseUrl/api/v1/migration/imports/$($job.id)" `
+                -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+            if ($job.status -eq "Completed" -or $job.status -eq "Failed") { return $job }
+            Start-Sleep -Milliseconds 500
+        }
+        throw "The import did not finish. Is the background worker running?"
+    }
+
+    $trial = Submit-Import "Trial" $file
+    "a practice run says {0} would be added   (expect 2)" -f $trial.rowsCreated
+
+    # An empty JSON array comes back as $null, and @($null).Count is 1 — so
+    # counting the naive way would report a car that is not there.
+    $found = Invoke-RestMethod "$baseUrl/api/v1/vehicles?search=$vinStem" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $beforeApply = if ($null -eq $found) { 0 } else { @($found).Count }
+    "...and changed nothing: {0} car(s) here    (expect 0)" -f $beforeApply
+
+    $applied = Submit-Import "Apply" $file
+    "the real run adds {0}                      (expect 2)" -f $applied.rowsCreated
+
+    $again = Submit-Import "Apply" $file
+    "running the same file again adds {0}       (expect 0)" -f $again.rowsCreated
+    "...recognising {0} already here            (expect 2)" -f $again.rowsSkipped
+
+    # A bad row is reported by the line number a person sees, and does not stop
+    # the rest of the file.
+    $mixed = "vin,modelyear,make,model`n" +
+             ("{0}C000000,2020,Honda,Civic`n" -f $vinStem) +
+             ("{0}D000000,not-a-year,Mazda,CX-5" -f $vinStem)
+    $partial = Submit-Import "Apply" $mixed
+    "a file with one bad row: {0} in, {1} refused (expect 1 and 1)" -f $partial.rowsCreated, $partial.rowsFailed
+
+    $problems = Invoke-RestMethod "$baseUrl/api/v1/migration/imports/$($partial.id)/rows?problemsOnly=true" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $badRowNumber = @($problems)[0].rowNumber
+    "...the bad row is line {0}                  (expect 3)" -f $badRowNumber
+
+    $advisorImports = Get-Status "/api/v1/migration/imports" "northgroup" $scoped "Post" @{
+        kind = "Vehicles"; mode = "Trial"; sourceName = "x.csv"; content = $file
+    }
+    "a one-lot user imports the group's data -> HTTP $advisorImports (expect 403)"
+
     Write-Host "`n--- sessions ---" -ForegroundColor Cyan
     $noSession = Get-Status "/api/v1/organization" "northgroup" $null
     "no session                            -> HTTP $noSession (expect 401)"
@@ -618,11 +678,16 @@ try {
         -and ($noReason -eq 400) -and ($grantMinutes -ge 55 -and $grantMinutes -le 61) `
         -and ($supportReads -eq 200) -and ($supportWrites -eq 403) -and $dealerCanSee `
         -and ($ended -eq 204) -and ($afterEnd -eq 401) `
+        -and ($trial.rowsCreated -eq 2) -and ($beforeApply -eq 0) `
+        -and ($applied.rowsCreated -eq 2) `
+        -and ($again.rowsCreated -eq 0) -and ($again.rowsSkipped -eq 2) `
+        -and ($partial.rowsCreated -eq 1) -and ($partial.rowsFailed -eq 1) `
+        -and ($badRowNumber -eq 3) -and ($advisorImports -eq 403) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
         -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, and the ledger balances." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

@@ -17,6 +17,7 @@ using OpenDealer360.App;
 using OpenDealer360.Core;
 using OpenDealer360.Customers;
 using OpenDealer360.Data;
+using OpenDealer360.DataMigration;
 using OpenDealer360.Deals;
 using OpenDealer360.Identity;
 using OpenDealer360.Inventory;
@@ -82,6 +83,13 @@ if (tenancyEnabled)
     builder.Services.AddScoped<ILeads, LeadService>();
     builder.Services.AddScoped<IDeals, DealService>();
     builder.Services.AddScoped<IAccounting, AccountingService>();
+    builder.Services.AddScoped<IMigration, MigrationService>();
+
+    // Work that is not a request. It names the dealership it is working on
+    // rather than inheriting one, because outside a request there is no
+    // "current" tenant and there must never be one (see TenantScope).
+    builder.Services.AddSingleton<ITenantScopeFactory, TenantScopeFactory>();
+    builder.Services.AddHostedService<ImportWorker>();
 }
 
 // --- Health: liveness, readiness, and degraded dependencies are separated
@@ -169,6 +177,7 @@ if (tenancyEnabled)
     app.MapAuth();
     app.MapSecurity();
     app.MapAdministration();
+    app.MapMigration();
     app.MapOrganization();
     app.MapCustomers();
     app.MapVehicles();

@@ -29,6 +29,17 @@ public interface IVehicles
     Task<Result<VehicleDetail>> GetAsync(Guid vehicleId, CancellationToken cancellationToken);
 
     Task<Result<VehicleDetail>> AddAsync(NewVehicle vehicle, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The vehicle with exactly this VIN, or null.
+    /// </summary>
+    /// <remarks>
+    /// A lookup, not a search: the VIN is the car's identity, so it matches one
+    /// vehicle or none. This is what lets an import run twice without creating a
+    /// second copy of every car — no external reference is needed, because the
+    /// industry already agreed on a key seventeen characters long.
+    /// </remarks>
+    Task<Result<VehicleDetail?>> FindByVinAsync(string vin, CancellationToken cancellationToken);
 }
 
 /// <summary>Enough to identify a vehicle in a list.</summary>

@@ -33,8 +33,16 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(x => x.LastName).HasMaxLength(200).IsRequired();
         builder.Property(x => x.HomeRooftopId)
             .HasConversion(id => id!.Value.Value, value => new RooftopId(value));
+        builder.Property(x => x.ExternalReference).HasMaxLength(200);
 
         builder.Ignore(x => x.DisplayName);
+
+        // Filtered, so the uniqueness applies only to imported customers. A plain
+        // unique index would allow exactly one hand-typed customer per database,
+        // because every one of them has a null here.
+        builder.HasIndex(x => x.ExternalReference)
+            .IsUnique()
+            .HasFilter("[ExternalReference] IS NOT NULL");
 
         // Search hits these two constantly; archived customers are filtered
         // out of every list, so it belongs in the index rather than beside it.

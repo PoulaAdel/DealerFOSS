@@ -62,9 +62,19 @@ public static class Permissions
     /// </summary>
     public const string SecurityManagePolicy = "Security.ManagePolicy";
 
+    /// <summary>
+    /// Bringing a dealership's existing records in from a file. Held
+    /// organization-wide by design: an import writes across every rooftop at
+    /// once, so a rooftop-scoped grant cannot express it, and treating a partial
+    /// scope as sufficient would let a one-lot manager rewrite the group's
+    /// customer list.
+    /// </summary>
+    public const string MigrationImport = "Migration.Import";
+
     public static IReadOnlyCollection<string> All { get; } =
     [
         SecurityManagePolicy,
+        MigrationImport,
         OrganizationRead,
         OrganizationManage,
         CustomersRead,

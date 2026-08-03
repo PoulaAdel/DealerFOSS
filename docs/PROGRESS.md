@@ -35,8 +35,8 @@ months of focused work.
 |---|---|---|---|
 | 0 | Find pilot dealers, get provider access | Agreements, real data samples, access to the systems we must connect to. People work, not code. | **Yours to do** |
 | 1 | Foundation | Keeping dealership groups apart, locations, staff permissions, and signing in. | **In progress** |
-| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | Not started |
-| 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Started early** |
+| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Started** |
+| 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Well under way** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | **Well under way** |
 | 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | Not started |
 | 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | Not started |
@@ -143,6 +143,22 @@ months of focused work.
   stated reason. Closing it stops them on their very next click. Anyone who might
   do this has to have their own second factor set up before they can even try
 
+- **A dealership's existing customers and cars can be brought in from a file.**
+  This is the first thing a real dealership needs and the stage that was at zero.
+  Three things make it safe to use on a business's own history. You can do a
+  **practice run** that changes nothing and tells you exactly what the real one
+  will do — how many would be added, how many are already here, and which rows
+  have a problem. **Running the same file twice does not create everything
+  twice**; cars are matched by their VIN and customers by their number in your
+  old system. And a bad row is reported **by its line number as you see it in a
+  spreadsheet**, quoted back to you word for word, with the rest of the file
+  still imported. Fix the file, run it again
+- **Work that takes minutes now happens in the background.** A file with
+  thousands of rows would time out if the website waited for it. Submitting
+  returns straight away with something you can watch, and the work carries on
+  behind the scenes — which is also the groundwork for everything else that will
+  need to run on a schedule
+
 ## What does not exist
 
 - **A full set of books.** Sales are recorded and accounts total up; there are no
@@ -167,14 +183,19 @@ months of focused work.
 
 ## Next
 
-**A rehearsed backup and restore** — the last thing standing between here and the
-end of the foundation. A backup nobody has restored from is not a backup, so the
-deliverable is the drill: back everything up, put it back under different names,
-and then *prove the restored copy actually works* by running the full end-to-end
-check against it. Counting rows would not be proof.
+**Getting data back out, and a screen for getting it in.** Importing works but is
+only reachable by a developer, and a dealership doing this for the first time
+should be able to watch it happen and read the problem rows. The other half is
+export: an open system has to be able to hand a dealership their own data in a
+form they can read and re-load — that is the promise this project makes about
+not holding anybody's business hostage, and it is proved by exporting one
+dealership and importing it into an empty one.
 
-The restore itself needs you at the keyboard; writing and documenting the
-procedure does not.
+**Still outstanding from the foundation:** a rehearsed backup and restore. A
+backup nobody has restored from is not a backup, so the deliverable is the drill:
+back everything up, put it back under different names, and prove the restored
+copy actually works by running the full end-to-end check against it. Counting
+rows would not be proof. The restore itself needs you at the keyboard.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one

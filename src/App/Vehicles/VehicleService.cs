@@ -132,6 +132,30 @@ public sealed class VehicleService(
         return Result.Success(Describe(recorded));
     }
 
+    public async Task<Result<VehicleDetail?>> FindByVinAsync(
+        string vin,
+        CancellationToken cancellationToken)
+    {
+        if (!await IsAllowedAnywhereAsync(ReadPermission, cancellationToken))
+        {
+            return Result.Failure<VehicleDetail?>(VehicleErrors.Forbidden);
+        }
+
+        // Normalized the same way it was stored, or a VIN typed with an O
+        // instead of a zero would look like a different car.
+        var normalized = Vin.Normalize(vin ?? string.Empty);
+        if (normalized.Length == 0)
+        {
+            return Result.Success<VehicleDetail?>(null);
+        }
+
+        var vehicle = await _db.Vehicles
+            .AsNoTracking()
+            .SingleOrDefaultAsync(v => v.Vin == normalized, cancellationToken);
+
+        return Result.Success(vehicle is null ? null : Describe(vehicle));
+    }
+
     /// <summary>
     /// A vehicle is organization-wide, so holding the permission anywhere is
     /// enough. Denials are audited by the access directory.

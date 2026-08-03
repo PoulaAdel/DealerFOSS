@@ -171,8 +171,11 @@ comment explaining why it is legitimate — that is the standard for adding anot
 
 Calibrate your confidence — these are current, honest limitations:
 
-- **Eight capabilities exist** (Organization, Identity, Customers, Vehicles,
-  Inventory, Leads, Deals, Accounting) out of roughly thirteen planned.
+- **Ten capabilities exist** (Organization, Identity, Customers, Vehicles,
+  Inventory, Leads, Deals, Accounting, Administration, DataMigration) out of
+  roughly thirteen planned.
+- **Importing is one file at a time, in one direction.** There is no export, no
+  connector, and no way to update a matched record from a file.
 - **The features inside `App` are held apart by tests, not by the compiler.** That
   is deliberate, and it means a cross-feature `using` compiles and fails later.
 - **CI has never executed** (no remote configured). The workflow is a claim.

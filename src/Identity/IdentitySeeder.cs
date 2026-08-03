@@ -80,6 +80,9 @@ public static class IdentitySeeder
             // manager role is where it sits. No role is seeded as requiring one
             // — that is the dealership's call, not ours.
             Permissions.SecurityManagePolicy,
+            // Bringing the dealership's old records in is a management job, and
+            // one that happens a handful of times in the life of an installation.
+            Permissions.MigrationImport,
         ]);
 
         // An advisor can look a customer up but not create one, and can see stock,
