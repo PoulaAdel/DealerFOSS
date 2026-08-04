@@ -140,6 +140,12 @@ copies it into the `X-CSRF-Token` header on every write, and the server refuses
 writes that arrive without it. That happens in one place so no screen has to
 remember it.
 
+**A safeguard belongs in the component, not in a comment.** `RecordsPage` will
+not enable the real import until a practice run has finished on that exact file,
+and re-locks when the file or kind changes. That is the kind of rule that gets
+"simplified" away by somebody who reads it as friction — `RecordsPage.test.tsx`
+is what makes removing it fail loudly.
+
 **Every screen renders every state.** Loading, empty, permission-denied, failure,
 and retry. A screen that only handles the happy path is not finished
 ([doc 10 §5](../docs/10-Claude-Code-Execution-Prompt.md)). `InventoryPage` is the

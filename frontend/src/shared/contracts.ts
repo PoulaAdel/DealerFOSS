@@ -80,6 +80,39 @@ export interface TrialBalance {
   accounts: AccountBalance[];
 }
 
+// --- bringing records in, and taking them out ---
+
+export type ImportKind = 'Customers' | 'Vehicles';
+
+/** A trial changes nothing and reports what an Apply would do. */
+export type ImportMode = 'Trial' | 'Apply';
+
+export interface ImportJobView {
+  id: string;
+  kind: ImportKind;
+  mode: ImportMode;
+  status: 'Queued' | 'Running' | 'Completed' | 'Failed';
+  sourceName: string;
+  sourceHash: string;
+  rowsTotal: number;
+  rowsCreated: number;
+  rowsUpdated: number;
+  rowsSkipped: number;
+  rowsFailed: number;
+  queuedAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  failureReason: string | null;
+}
+
+/** One staged row, exactly as it arrived, and what happened to it. */
+export interface ImportRowView {
+  rowNumber: number;
+  raw: string;
+  outcome: 'Pending' | 'Created' | 'Updated' | 'Skipped' | 'Failed';
+  message: string | null;
+}
+
 // --- the control plane ---
 //
 // Note what a tenant row does not carry: no connection string, no counts, and

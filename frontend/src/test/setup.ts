@@ -82,18 +82,27 @@ export function mockApi(replies: Record<string, Reply | Reply[]>): void {
 
       if (reply.ok) {
         const status = 'status' in reply ? reply.status : 200;
+        const body = 'body' in reply ? reply.body : undefined;
+
+        // blob() and headers exist because a file download reads them rather
+        // than json(). A mock that only speaks JSON silently fails any code
+        // path that fetches a file.
         return Promise.resolve({
           ok: true,
           status,
-          json: () => Promise.resolve('body' in reply ? reply.body : undefined),
-        } as Response);
+          json: () => Promise.resolve(body),
+          blob: () => Promise.resolve(new Blob([String(body ?? '')], { type: 'text/csv' })),
+          text: () => Promise.resolve(String(body ?? '')),
+          headers: new Headers({ 'Content-Disposition': 'attachment; filename="export.csv"' }),
+        } as unknown as Response);
       }
 
       return Promise.resolve({
         ok: false,
         status: reply.status,
         json: () => Promise.resolve({ code: reply.code, detail: reply.detail }),
-      } as Response);
+        headers: new Headers(),
+      } as unknown as Response);
     }),
   );
 }

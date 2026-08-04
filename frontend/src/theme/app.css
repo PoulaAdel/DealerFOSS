@@ -516,3 +516,57 @@ tfoot td {
   padding: 10px 14px;
   border-top: 1px solid var(--line);
 }
+
+/* --- records in and out --- */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.actions button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* A disabled primary must not still read as "the thing to press". */
+.actions button.primary:disabled {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.panel h3 {
+  margin: 22px 0 4px;
+  font-size: 0.95rem;
+}
+
+/* The refused row, quoted back exactly. It may be long and it must stay
+   readable, so it wraps rather than stretching the table off the screen. */
+.raw {
+  max-width: 30rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink-3);
+}
+
+.chip--failed {
+  background: var(--fail-soft);
+  color: var(--fail);
+}
+
+.chip--skipped {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--created,
+.chip--updated {
+  background: var(--done-soft);
+  color: var(--done);
+}

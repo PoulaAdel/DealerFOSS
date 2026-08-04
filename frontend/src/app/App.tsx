@@ -14,6 +14,7 @@ import { SignIn } from '../features/auth/SignIn';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { TrialBalancePage } from '../features/accounting/TrialBalancePage';
 import { SecondFactorSetup } from '../features/auth/SecondFactorSetup';
+import { RecordsPage } from '../features/migration/RecordsPage';
 import { AdminApp } from './AdminApp';
 
 export function App() {
@@ -81,6 +82,7 @@ function AppRoutes() {
       <Route element={<Shell />}>
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/accounting" element={<TrialBalancePage />} />
+        <Route path="/records" element={<RecordsPage />} />
         <Route path="/security/second-factor" element={<SecondFactorSetup />} />
         <Route path="*" element={<Navigate to="/inventory" replace />} />
       </Route>
@@ -111,6 +113,7 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
           <nav aria-label="Main">
             <NavLink to="/inventory">Stock</NavLink>
             <NavLink to="/accounting">Trial balance</NavLink>
+            <NavLink to="/records">Records</NavLink>
             <NavLink to="/security/second-factor">Two-step sign-in</NavLink>
           </nav>
         )}

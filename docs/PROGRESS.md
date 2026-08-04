@@ -100,10 +100,10 @@ months of focused work.
   to send a request with your cookies attached. Every change now also demands a
   secret handed out at sign-in that only this application can read, so such a
   request is refused. It stops working the moment you sign out
-- **Six screens** — the stock list, the trial balance, setting up two-step
-  sign-in, and three for whoever runs the installation — each showing something
-  sensible while loading, when empty, when you lack permission, and when the
-  server fails, with a way to try again
+- **Seven screens** — the stock list, the trial balance, setting up two-step
+  sign-in, moving records in and out, and three for whoever runs the
+  installation — each showing something sensible while loading, when empty, when
+  you lack permission, and when the server fails, with a way to try again
 - **A console for whoever runs the servers.** A separate sign-in at its own
   address, marked so nobody confuses it with the dealership screens. It shows
   every dealership on the installation and whether each is in service, can take
@@ -162,6 +162,13 @@ months of focused work.
   returns straight away with something you can watch, and the work carries on
   behind the scenes — which is also the groundwork for everything else that will
   need to run on a schedule
+- **A page for moving records in and out.** Choose a spreadsheet from your old
+  system and it insists you run a **practice first** — which changes nothing and
+  tells you exactly what the real one would do. Only then does the real button
+  become available, and it locks again if you pick a different file. Rows that
+  could not be read are listed by **the line number you see in your own
+  spreadsheet**, quoted back word for word, so you fix the file rather than
+  guess. Taking records out is two buttons
 - **And you can take your records back out again.** This is the part that makes
   the licence mean something: a dealership can download their customers and
   their cars as an ordinary spreadsheet file, and that file is one this system
@@ -191,8 +198,8 @@ months of focused work.
   they lose their phone
 - Creating a new dealership from the administration side. It can list them and
   take one out of service; setting a new one up is still a developer's job
-- A screen for bringing records in or taking them out. Both work; neither has a
-  page yet
+- Cancelling an import once it has started, or watching its progress while it
+  runs — it reports when it finishes
 - Moving anything beyond customers and cars. Enquiries, deals and the books have
   no way in or out, so "take your data with you" is true of the two record types
   a dealership migrates first and not yet of the whole business
@@ -201,12 +208,14 @@ months of focused work.
 
 ## Next
 
-**A screen for bringing records in.** Both directions now work, and neither can
-be reached by anybody who is not a developer. Importing is one of the first
-things a real dealership does, and it is where a screen earns its keep: after
-nine thousand rows, what somebody needs is the twelve that did not work, by the
-line number they can see in their own spreadsheet — with a practice run first,
-so nothing touches their history until they have looked at what it would do.
+**A rehearsed backup and restore** — the last thing standing between here and a
+finished foundation. A backup nobody has restored from is not a backup, so the
+deliverable is the drill: back everything up, put it back under different names,
+and then prove the restored copy *actually works* by running the full end-to-end
+check against it. Counting rows would not be proof.
+
+Writing and documenting the procedure is mine. The restore itself needs you at
+the keyboard, because it touches databases outside the project folder.
 
 **Still outstanding from the foundation:** a rehearsed backup and restore. A
 backup nobody has restored from is not a backup, so the deliverable is the drill:

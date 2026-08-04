@@ -114,3 +114,51 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 export function post<T>(path: string, body: unknown): Promise<T> {
   return api<T>(path, { method: 'POST', body: JSON.stringify(body) });
 }
+
+/**
+ * Fetches a file and hands the browser a download.
+ *
+ * A plain `<a href>` cannot do this: every call needs the tenant header, and an
+ * anchor sends none — the request would arrive without a dealership and be
+ * refused. So the file is fetched like any other call and turned into a
+ * download here.
+ */
+export async function download(path: string, fallbackName: string): Promise<void> {
+  const response = await fetch(`/api/v1${path}`, {
+    credentials: 'include',
+    headers: { 'X-Tenant': currentTenant() },
+  });
+
+  if (!response.ok) {
+    let problem: Problem = {};
+    try {
+      problem = (await response.json()) as Problem;
+    } catch {
+      // No JSON body; the status is all we have.
+    }
+
+    throw new ApiError(
+      response.status,
+      problem.code ?? 'unknown',
+      problem.detail ?? `The server answered ${response.status}.`,
+    );
+  }
+
+  // The server names the file; only fall back if it did not.
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const named = /filename="?([^"';]+)"?/.exec(disposition)?.[1];
+
+  const url = URL.createObjectURL(await response.blob());
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = named ?? fallbackName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    // Revoking immediately would cancel the download in some browsers; a tick
+    // is enough for the click to have been handled.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+}

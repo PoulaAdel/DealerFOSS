@@ -140,6 +140,10 @@ them is written.
 
   **Deliberately not included:** leads, deals, and the ledger have no path either way, so "take your data" covers the two record types a dealership migrates first and not yet the whole business. Streaming past 50,000 rows, documents, relationships between records, and any screen.
 
+- **2026-08-04 — Bringing records in and taking them out has a screen.** `/records` is the last API-only half of stage 2 made reachable. One rule on it is a safeguard rather than a preference: **the real import is unreachable until a practice run has finished on this exact file**, and the lock re-arms whenever the file or the kind changes, because a rehearsal of one file says nothing about another. Somebody is about to write thousands of rows into their own business's history; one click of friction prevents the mistake nobody can undo. The report then reads in the tense that matches — *"2 would be added"* for a practice, *"2 added"* for the real thing — and says plainly that a practice wrote nothing. Refused rows are listed by **the line number they see in their own spreadsheet**, with the row quoted back exactly, because the workflow is to fix the source rather than edit what was sent. Export is two download buttons that go through `fetch` rather than a plain link: a link cannot carry the tenant header, so the request would arrive belonging to no dealership and be refused. **Verified in a real browser** against the renamed containers — signed in, walked the screen, and downloaded an export whose checksum header, row count, and column line were all correct. `FileReader` is used rather than the tidier `Blob.text()` because jsdom does not implement `text()`; polyfilling it would have meant the tests exercised the polyfill instead of this code. Evidence: `npm test` 55/55 (was 46). Two rehearsals: removing the practice-first lock failed exactly three tests, and treating a queued job as finished failed exactly the one that waits for the worker *(agent-verifiable)*
+
+  **Deliberately not included:** drag-and-drop, cancelling a running import, a progress bar for a job in flight (it polls and reports at the end), and choosing which columns to export. The file is read in the browser and posted as JSON, which suits the tens of thousands of rows the API caps at and not a real multi-megabyte extract — swapping in a multipart upload later changes the transport and not the flow.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -149,13 +153,13 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** a dealership can see and drive an import without `curl`.
+**Outcome:** stage 1 closes — a rehearsed backup and restore, the last exit criterion that is not OIDC.
 
-Both halves of stage 2's file path now work, and neither is reachable by anybody who cannot post JSON. An import is among the first things a real dealership does, and it is the screen where the exception list matters most — nine thousand rows in, what somebody needs is the twelve that did not work, by the line number they see in their spreadsheet.
+Every other stage-1 item is done, and stage 2's file path now works in both directions with a screen. What remains is the piece that decides whether any of it survives an incident.
 
-- **Included:** choose a file and a kind, run it as a trial, read the reconciliation counts, page the exception list with each row's raw text, then run it for real; and a download button for the export.
-- **Explicitly excluded:** connectors, deletions, updating a matched record from a file, and drag-and-drop.
-- **Caution:** the file is read in the browser and posted as JSON today, which is fine for the tens of thousands of rows the API caps at and not for a real multi-megabyte extract. The screen should be built so that swapping in a multipart upload later changes the transport and not the flow.
+- **Included:** `deploy/backup.ps1` and `deploy/restore.ps1`, enumerating the host catalog and every tenant from it; a documented drill in `deploy/README.md`; and a restore **verified by running `verify-e2e.ps1` against the restored databases**, which is exactly the evidence this criterion asks for.
+- **Explicitly excluded:** off-host or encrypted backup targets, scheduling, retention, and point-in-time recovery. Those are deployment decisions and doc 08 owns them.
+- **Caution:** a backup script that has never been restored from is not a backup. The deliverable is the *drill*, not the script — and the restored copy must be proven by something that exercises the application, never by counting rows. The restore itself needs the maintainer at the keyboard; writing and documenting the procedure does not.
 
 **Also outstanding, and the last stage-1 item:** a rehearsed backup and restore — the exit criterion that is not OIDC.
 
