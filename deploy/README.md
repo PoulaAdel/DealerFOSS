@@ -108,6 +108,68 @@ uninstall.
 
 ---
 
+## Backup and restore
+
+A backup nobody has restored from is not a backup. So the deliverable here is the
+**drill**, not the script — and the drill ends by running the application against
+the restored copy, because that is the only thing that proves the backup was any
+good.
+
+```bash
+& .\deploy\backup.ps1
+```
+
+```bash
+& .\deploy\restore.ps1 -From .\local\backups\<timestamp> -Verify
+```
+
+The restore lands **alongside** the original under a `Restored_` prefix, so the
+drill can be run on a machine that is already serving the real thing. That is
+also the only way to prove anything: a restore that overwrote the original would
+tell you nothing about whether the backup worked.
+
+### The step that is easy to miss
+
+Each tenant's connection string lives in the host catalog **encrypted**. Restore
+the catalog under a new name and every row still points at the *original*
+databases — so a "restored" installation would quietly read and write the live
+ones. That is worse than a restore that plainly failed.
+
+Only something holding the deployment's keys can rewrite those rows, so
+`restore.ps1` calls the application rather than being handed the keys:
+
+```bash
+dotnet run --project src/App -- --repoint-tenants --prefix Restored_ --dry-run
+```
+
+Add `--server <name>` when restoring onto a different machine. It is idempotent —
+running it twice does not produce `Restored_Restored_…`.
+
+### What the drill actually checks
+
+1. **Every file against its checksum, before anything is restored.** A backup
+   truncated in transit looks like data until the day you need it. Damaging a
+   manifest checksum was rehearsed: the restore refuses and touches nothing.
+2. **That the restored databases contain data.** The end-to-end check seeds what
+   it does not find, so without this guard an empty restore would be seeded from
+   scratch and pass — proving the application works and the backup does not.
+   Counting rows is not sufficient proof, but it is necessary.
+3. **That the application runs on it.** `verify-e2e.ps1` against the restored
+   catalog, on port 5099 so it cannot collide with a development host.
+
+### What this deliberately does not do
+
+Copy anything off this host, encrypt the files, schedule itself, or expire old
+backups. **A `.bak` holds every customer record in plain form**, so where these
+files end up is a decision somebody has to make deliberately — doc 08 owns it.
+
+Tenant databases are found by the naming convention
+(`<catalog>_Tenant_<slug>`), not by decrypting the catalog. A tenant whose stored
+connection points somewhere off-convention would be missed. Nothing creates such
+a tenant today; if something ever does, this is the script that has to change.
+
+---
+
 ## LocalDB instead of the container
 
 SQL Server LocalDB also works and needs no Docker at all:

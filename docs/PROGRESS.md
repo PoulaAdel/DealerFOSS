@@ -9,18 +9,25 @@ the command that proves it — see [implementation/STATUS.md](implementation/STA
 
 ## The short answer
 
-**The foundation is done bar one item — a rehearsed backup — the first dealership
-records work, and there are six screens that provably draw.**
+**The foundation is finished. The first dealership records work, records move in
+and out as ordinary files, and there are seven screens that provably draw.**
 
 Several dealership groups can already share one installation without ever seeing
 each other's data, and staff can be restricted to their own location. Customers
 and vehicles can be recorded and found, each location's stock is kept separate,
 a car can be sold, and the sale writes its own accounting entry. Whoever runs the
-servers is now structurally shut out of all of it, and can only come in through a
-door you can see them open. Six screens exist — the stock list, the trial
-balance, setting up two-step sign-in, and a console for whoever runs the
-installation — and a machine now checks on every change that they really appear
-and behave, which until this week only a person could confirm.
+servers is structurally shut out of all of it, and can only come in through a
+door you can see them open. A dealership can bring its old records in from a
+spreadsheet and take them all out again. And the backup has actually been
+restored from — proven by running the whole system against the restored copy,
+not by assuming.
+
+Seven screens exist — the stock list, the trial balance, setting up two-step
+sign-in, moving records in and out, and a console for whoever runs the
+installation — and a machine checks on every change that they really appear and
+behave, which until recently only a person could confirm.
+
+**The next stage is the everyday product**, starting with the customer screen.
 
 **About 25% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
 
@@ -34,7 +41,7 @@ months of focused work.
 | | Stage | What it means | Status |
 |---|---|---|---|
 | 0 | Find pilot dealers, get provider access | Agreements, real data samples, access to the systems we must connect to. People work, not code. | **Yours to do** |
-| 1 | Foundation | Keeping dealership groups apart, locations, staff permissions, and signing in. | **In progress** |
+| 1 | Foundation | Keeping dealership groups apart, locations, staff permissions, and signing in. | **Done** |
 | 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Well under way** |
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Well under way** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | **Well under way** |
@@ -45,7 +52,7 @@ months of focused work.
 
 ---
 
-## Inside stage 1 — eleven of twelve pieces done
+## Inside stage 1 — done
 
 - [x] Dealership groups cannot see each other's data — each gets its own separate database
 - [x] A group can have several locations, each with its own departments
@@ -58,7 +65,7 @@ months of focused work.
 - [x] **A malicious website cannot make your browser change anything** — see below
 - [x] **Whoever runs the servers is kept out of the dealership's data**
 - [x] **The screens draw** — proven automatically now, on every change
-- [ ] **A rehearsed backup and restore**
+- [x] **A rehearsed backup and restore** — done and proven, not just written
 
 ---
 
@@ -169,6 +176,13 @@ months of focused work.
   could not be read are listed by **the line number you see in your own
   spreadsheet**, quoted back word for word, so you fix the file rather than
   guess. Taking records out is two buttons
+- **A backup that has actually been restored from.** The scripts back up
+  everything, put it back under different names *next to* the originals, and then
+  prove the restored copy works by running the full end-to-end check against it —
+  because a backup nobody has restored from is not a backup. Doing the drill
+  found a real trap: the restored system would have quietly gone on reading and
+  writing the *live* databases, which is worse than a restore that plainly
+  failed. That is fixed and the drill now catches it
 - **And you can take your records back out again.** This is the part that makes
   the licence mean something: a dealership can download their customers and
   their cars as an ordinary spreadsheet file, and that file is one this system
@@ -208,20 +222,15 @@ months of focused work.
 
 ## Next
 
-**A rehearsed backup and restore** — the last thing standing between here and a
-finished foundation. A backup nobody has restored from is not a backup, so the
-deliverable is the drill: back everything up, put it back under different names,
-and then prove the restored copy *actually works* by running the full end-to-end
-check against it. Counting rows would not be proof.
+**The customer screen** — the first one a dealership would use every day rather
+than another piece of foundation. A customer is the record everything else points
+at, and it is the page a receptionist opens fifty times a day: search by name,
+phone, or email; see who somebody is; add them if they are new.
 
-Writing and documenting the procedure is mine. The restore itself needs you at
-the keyboard, because it touches databases outside the project folder.
-
-**Still outstanding from the foundation:** a rehearsed backup and restore. A
-backup nobody has restored from is not a backup, so the deliverable is the drill:
-back everything up, put it back under different names, and prove the restored
-copy actually works by running the full end-to-end check against it. Counting
-rows would not be proof. The restore itself needs you at the keyboard.
+The part worth doing carefully is the duplicate check. Two records for the same
+person is the failure that quietly makes a dealer management system untrustworthy
+— so before adding anybody, the screen shows near-matches and makes somebody
+decide.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one
@@ -235,5 +244,5 @@ would prove nothing.
 |---|---|
 | **Pointing a phone at the setup page** | Everything else about the screens has now been checked on a real browser. The one thing left is physical: does a phone camera actually read that square? |
 | Pilot dealerships and access to their current systems | Stage 2 cannot be finished or proven without real data and a real provider connection |
-| A rehearsed backup and restore | Stage 1 cannot close without proving a real restore produces a working system |
 | Confirming the month-end rule with a real dealer's accountant | Calendar month end with a grace period to the 10th is assumed, not confirmed |
+| Deciding where backups are kept | The scripts write `.bak` files onto this machine and stop there. **Each one holds every customer record in plain form** — copying them somewhere safe, and encrypting them, is a decision about your customers' data that I should not make for you |

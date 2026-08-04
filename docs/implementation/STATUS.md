@@ -1,13 +1,16 @@
 # Implementation Status
 
-Current phase: **I0 complete (except container path) → I1 in progress**
+Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
 Current milestone: **stage 2 — records move both ways.** Customers and vehicles import from a file as a background job, and export as a file this same API accepts back (complete)
 Last verified: 2026-08-03 · `dotnet build` 0 warnings/0 errors, `dotnet test` 355/355,
 `verify-e2e.ps1` PASS against LocalDB (run repeatedly), frontend `npm audit` clean,
 `npm run typecheck`, `npm test` 46/46, and `npm run build` all pass
 
-Stage 1 is complete except a rehearsed backup and restore, and OIDC, both of
-which need something we do not have. Stage 2 is now started rather than at zero.
+**Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
+closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
+cannot be honestly built or tested without a real identity provider; a fixture
+pretending to be one would prove nothing. Stage 2 has both directions of the file
+path working, with a screen.
 
 > **Layout note (2026-07-30).** The repository moved from seven backend projects to
 > three — `src/Core`, `src/Identity`, `src/App` — with one flat folder per
@@ -70,7 +73,7 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
   Proven 2026-08-03 by 27 component tests that mount the real tree into a DOM (jsdom) and query it the way a person reads a page — by heading, label, role, and visible text. React executes, React Router resolves and navigates, the shell paints, and every state renders its own words. `npm test` runs in CI alongside `npm audit --audit-level=high`, typecheck, and a production build *(agent-verifiable)*
 
   **Seen, on a real browser, 2026-08-03.** The earlier claim that this needed the maintainer was wrong: the agent's browser does reach this machine's localhost. Every screen was signed into and walked at 1280 and at 375 — the shell, stock list, trial balance, enrolment (QR drawn on its white quiet zone), the console, and the restricted administrator state. The page does not scroll horizontally at either width; the wide table scrolls inside its own container as intended. Two real defects were found and fixed, neither of which a DOM test could have caught. Still needing a person: whether a phone camera physically reads that QR code *(agent-verifiable)*
-- [ ] Tenant creation, migration, backup, and restore rehearsed — migration rehearsed; **backup and restore not** *(partly human-verifiable)*
+- [x] Tenant creation, migration, backup, and restore rehearsed — `deploy/backup.ps1` backs up the host catalog and every tenant with a manifest and per-file SHA-256; `deploy/restore.ps1 -Verify` restores alongside the original under a prefix, re-points the catalog, checks the restored databases are not empty, and then **runs the full end-to-end check against the restored copy**. Rehearsed 2026-08-04 on LocalDB: 3 databases out and back, `verify-e2e.ps1` PASS against `Restored_DealerFOSS_Host`. Damaging a manifest checksum was rehearsed too — the restore refuses before touching anything *(agent-verifiable)*
 
 ## Completed milestones
 
@@ -144,6 +147,10 @@ them is written.
 
   **Deliberately not included:** drag-and-drop, cancelling a running import, a progress bar for a job in flight (it polls and reports at the end), and choosing which columns to export. The file is read in the browser and posted as JSON, which suits the tens of thousands of rows the API caps at and not a real multi-megabyte extract — swapping in a multipart upload later changes the transport and not the flow.
 
+- **2026-08-04 — A rehearsed backup and restore, which closes stage 1.** The deliverable is the drill, not the script: `backup.ps1` writes one `.bak` per database plus a manifest with a SHA-256 of each, and `restore.ps1 -Verify` puts them back **alongside** the original under a `Restored_` prefix — the only arrangement that proves anything, since a restore that overwrote the original would tell you nothing. **The drill immediately exposed a design hazard nobody had noticed:** each tenant's connection string lives in the host catalog *encrypted*, so a restored catalog still names the original databases — a "restored" installation would quietly read and write the live ones, which is worse than a restore that plainly failed. Only something holding the deployment's keys can rewrite those rows, so a maintenance verb was added to the application (`--repoint-tenants --prefix … [--server …] [--dry-run]`, idempotent) and the script calls it rather than being handed the keys. A second hole was closed on the way: `verify-e2e.ps1` seeds what it does not find, so an *empty* restore would have been seeded from scratch and passed — proving the application works and the backup does not. The drill now asserts the restored databases already hold rooftops and users before running it. Counting rows is not sufficient proof, but it is necessary. Evidence: 3 databases out and back on LocalDB, `verify-e2e.ps1` **PASS** against `Restored_DealerFOSS_Host`. Rehearsed: a tampered manifest checksum makes the restore refuse before touching anything *(agent-verifiable)*
+
+  **Deliberately not included:** copying backups off the host, encrypting them, scheduling, and retention — doc 08 owns those, and a `.bak` holds every customer record in plain form, so where the files go is a decision somebody must make on purpose. Tenant databases are found by naming convention rather than by decrypting the catalog; nothing creates an off-convention tenant today, and this is the script that changes if anything ever does.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -153,13 +160,13 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** stage 1 closes — a rehearsed backup and restore, the last exit criterion that is not OIDC.
+**Outcome:** stage 1 is closed, so the next milestone is stage 3 or 4 work with a screen — the first business capability a dealership would use every day, rather than a foundation piece.
 
-Every other stage-1 item is done, and stage 2's file path now works in both directions with a screen. What remains is the piece that decides whether any of it survives an incident.
+Customers is the right one. It is the record every other capability references, it already has a working API with search across name, email, and phone, and it is the screen a receptionist opens fifty times a day. It also exercises the one interaction pattern nothing else has needed yet: find-or-create, where somebody types a name, sees near-matches, and has to decide whether this is the same person.
 
-- **Included:** `deploy/backup.ps1` and `deploy/restore.ps1`, enumerating the host catalog and every tenant from it; a documented drill in `deploy/README.md`; and a restore **verified by running `verify-e2e.ps1` against the restored databases**, which is exactly the evidence this criterion asks for.
-- **Explicitly excluded:** off-host or encrypted backup targets, scheduling, retention, and point-in-time recovery. Those are deployment decisions and doc 08 owns them.
-- **Caution:** a backup script that has never been restored from is not a backup. The deliverable is the *drill*, not the script — and the restored copy must be proven by something that exercises the application, never by counting rows. The restore itself needs the maintainer at the keyboard; writing and documenting the procedure does not.
+- **Included:** search with the server doing the matching, a customer detail view, and adding one — with the duplicate check in front of the create, because two records for the same person is the failure mode that makes a DMS untrustworthy.
+- **Explicitly excluded:** merging duplicates, editing contact details from the screen, and anything about deals or vehicles on the customer page.
+- **Caution:** `CustomerService.SearchAsync` caps at 100 and the screen must not imply that is everything — the same defect the stock list had and now names honestly.
 
 **Also outstanding, and the last stage-1 item:** a rehearsed backup and restore — the exit criterion that is not OIDC.
 

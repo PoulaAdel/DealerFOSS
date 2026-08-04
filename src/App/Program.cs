@@ -141,6 +141,32 @@ if (!app.Environment.IsDevelopment()
         + "deployment target.");
 }
 
+// A maintenance verb, not a server. Restoring the host catalog under new
+// database names leaves every tenant row still naming the originals, and only
+// something holding the deployment's keys can rewrite them — so the restore
+// script calls this rather than being handed the keys itself.
+if (args.Contains(RepointTenants.Verb, StringComparer.OrdinalIgnoreCase))
+{
+    if (!tenancyEnabled)
+    {
+        Console.Error.WriteLine(
+            "No HostCatalog connection string, so there is no catalog to re-point.");
+        return 1;
+    }
+
+    var (prefix, server, dryRun) = RepointTenants.Parse(args);
+
+    using var maintenance = app.Services.CreateScope();
+    return await RepointTenants.RunAsync(
+        maintenance.ServiceProvider.GetRequiredService<HostDb>(),
+        maintenance.ServiceProvider.GetRequiredService<ISecretProtector>(),
+        maintenance.ServiceProvider.GetRequiredService<IClock>(),
+        prefix,
+        server,
+        dryRun,
+        Console.Out);
+}
+
 app.UseSerilogRequestLogging();
 
 if (tenancyEnabled)
@@ -196,6 +222,10 @@ if (tenancyEnabled
 }
 
 app.Run();
+
+// Serving is the ordinary path, and it only returns when the host stops. The
+// maintenance verb above returns its own code before reaching here.
+return 0;
 
 /// <summary>Assembly version constant surfaced to telemetry.</summary>
 internal static class ThisAssembly
