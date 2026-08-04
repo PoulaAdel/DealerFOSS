@@ -159,6 +159,14 @@ them is written.
 
   **Deliberately not included:** starting a deal, editing the charges, entering a trade-in, F&I products, finance applications, tax and title, and printed paperwork. The desk shows and moves deals; building one is still an API call.
 
+- **2026-08-04 — A deal can be built from the screen, and a session race that returned 500s is fixed.** Start a deal against a customer and an available car, enter and edit the charges, record a trade-in. Only cars that are genuinely available are offered — one on another deal is held — and the rooftop comes from the chosen car rather than being asked for again, since a car is on exactly one lot. The editor is mounted on `TermsAreOpen` and **disappears** once a deal is submitted rather than being disabled: a disabled form still looks like somewhere to type, and somebody would fill it in and lose the work. It is seeded from the deal's existing charges because saving replaces the whole set, so an empty form would mean editing one line deleted the rest.
+
+  **The real find was a server bug this screen exposed.** `Authenticator.ValidateAsync` loaded the session row, stamped its last-seen time, and saved it through the change tracker. Two requests in flight on the same session — which is what a browser does constantly, and what this screen does on open — raced: the second found the concurrency stamp already moved and threw `DbUpdateConcurrencyException`, surfacing as **a 500 on whichever endpoint lost**. Latent since sessions landed, and invisible until a screen made two calls at once. Optimistic concurrency was the wrong tool: it exists to stop one edit silently overwriting another, and two requests a millisecond apart writing "last used" is not a conflict. Now a direct `ExecuteUpdateAsync` outside concurrency control; sliding expiry is unaffected. `AuthenticationTests.Several_requests_at_once_on_one_session_all_succeed` fires eight concurrent calls, and reverting the fix reproduces the failure exactly.
+
+  **Verified in a real browser** against live data: created a deal from nothing, priced it at $41,500, and watched the panel and the list agree. Also fixed there: the charge-kind dropdown was clipping "VehiclePrice" to "VehiclePri". Evidence: `dotnet test` 356/356, `npm test` 97/97 (was 84). Three rehearsals: seeding the form empty failed four tests, leaving the editor mounted after submission failed two, and restoring the load-modify-save race failed the new concurrency test *(agent-verifiable)*
+
+  **Deliberately not included:** F&I products, finance applications, tax and title, printed paperwork, and editing anything after submission. Currency is fixed at USD until a dealership needs a second one, at which point it comes from the rooftop's legal entity rather than a box somebody types into.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -168,13 +176,13 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** a deal can be built from the screen, not only moved along it.
+**Outcome:** the enquiry that comes before the deal — leads have a screen.
 
-The desk shows and advances deals; starting one and pricing it is still an API call, which makes the screen a viewer rather than a tool. Closing that is what turns the last four milestones into something a dealership could actually sell a car with.
+Selling a car works end to end on the screen now. The gap in front of it is where the customer actually comes from: somebody rings up or walks in, and that enquiry is chased until it becomes a deal or a dead end. `ILeads` already does all of it — statuses, handover between salespeople, notes, and a lost lead who returns months later — with nothing to drive it.
 
-- **Included:** starting a deal against a customer and an available stock unit, entering and editing the charges while it is still a draft, and recording a trade-in with its allowance and payoff.
-- **Explicitly excluded:** F&I products, finance applications, tax and title, printed paperwork, and editing anything once submitted.
-- **Caution:** the numbers freeze on submission — the form must disappear at that point rather than be disabled, or somebody will type into it and lose the work. `DealDetail.TermsAreOpen` already says which state it is in; use it rather than inferring from the status string.
+- **Included:** the enquiries at a rooftop, taking a new one, working it through its statuses with a note on each move, handing it to another salesperson, and starting a deal from it.
+- **Explicitly excluded:** automatic follow-up reminders, appointments as diary entries, and anything that sends a message to a customer.
+- **Caution:** a lead is rooftop-scoped, and `LeadService` filters by the caller's authorized rooftops. The screen must not offer a rooftop picker that implies otherwise — a one-lot user seeing an empty picker would read as a bug rather than as the scope working.
 
 **Also outstanding, and the last stage-1 item:** a rehearsed backup and restore — the exit criterion that is not OIDC.
 

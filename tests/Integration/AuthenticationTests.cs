@@ -106,6 +106,39 @@ public sealed class AuthenticationTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task Several_requests_at_once_on_one_session_all_succeed()
+    {
+        using var client = _fixture.CreateClient();
+        var token = await SignInAsync(client, DevelopmentSeeder.DevUsers.OrganizationWideEmail);
+
+        // A browser does this constantly — one screen loading stock and customers
+        // together is two calls in flight on the same session. Each validates it
+        // and each slides the idle window forward.
+        //
+        // This used to fail. The session row was loaded, stamped, and saved
+        // through the change tracker, so the second request found the row's
+        // concurrency stamp already moved and threw — surfacing as a 500 on
+        // whichever endpoint happened to lose the race. Optimistic concurrency is
+        // the wrong tool for "when was this last used": two writes a millisecond
+        // apart are not a conflict, and either value is correct.
+        var responses = await Task.WhenAll(
+            Enumerable.Range(0, 8).Select(_ => GetOrganizationAsync(client, token)));
+
+        try
+        {
+            responses.Should().OnlyContain(r => r.StatusCode == HttpStatusCode.OK,
+                because: "concurrent calls on one session are ordinary, not a conflict");
+        }
+        finally
+        {
+            foreach (var response in responses)
+            {
+                response.Dispose();
+            }
+        }
+    }
+
+    [Fact]
     public async Task Signing_out_stops_the_session_immediately()
     {
         using var client = _fixture.CreateClient();

@@ -170,6 +170,12 @@ months of focused work.
   returns straight away with something you can watch, and the work carries on
   behind the scenes — which is also the groundwork for everything else that will
   need to run on a schedule
+- **A car can be sold from start to finish on the screen.** Pick the buyer, pick
+  a car that is actually available, put the price and the fees in, take a
+  trade-in, send it to a manager, approve it, hand it over. The car's location is
+  taken from the car rather than asked for again, and once a deal goes to a
+  manager the form disappears entirely rather than sitting there greyed out —
+  because a greyed-out form still looks like somewhere to type
 - **A deal desk.** What is being sold right now, and what stage each one is at.
   Open one and you see the price, the fees, the discount, the trade-in, and what
   the customer actually owes — then send it to a manager, approve it, or hand the
@@ -237,11 +243,12 @@ months of focused work.
 
 ## Next
 
-**Building a deal from the screen, not just watching one.** The desk can show a
-deal and move it along, but starting one and putting the numbers in is still a
-developer's job. Closing that gap is what turns the last few rounds into
-something a dealership could genuinely sell a car with: pick the customer, pick
-the car, enter the price and the fees, take the trade-in.
+**The enquiry that comes before the sale.** Selling a car works on the screen
+now; what is missing is where the customer came from. Somebody rings up or walks
+onto the lot, and that enquiry gets chased until it turns into a deal or goes
+cold. All of it already works underneath — chasing, handing it to another
+salesperson, keeping every note, and picking it up again months later — with
+nothing to click.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one

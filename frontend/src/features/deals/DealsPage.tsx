@@ -14,6 +14,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
+import { DealTerms } from './DealTerms';
+import { StartDeal } from './StartDeal';
 import type { DealDetail, DealStatus, DealSummary } from '../../shared/contracts';
 
 const PageSize = 50;
@@ -28,6 +30,7 @@ export function DealsPage() {
   const [openOnly, setOpenOnly] = useState(true);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [selected, setSelected] = useState<DealDetail | null>(null);
+  const [starting, setStarting] = useState(false);
 
   const find = useCallback(async (open: boolean) => {
     setLoad({ kind: 'loading' });
@@ -82,6 +85,23 @@ export function DealsPage() {
           </select>
         </div>
       </header>
+
+      {starting ? (
+        <StartDeal
+          onStarted={async (deal) => {
+            setStarting(false);
+            setSelected(deal);
+            await find(openOnly);
+          }}
+          onCancel={() => setStarting(false)}
+        />
+      ) : (
+        <div className="actions actions--lead">
+          <button type="button" className="primary" onClick={() => setStarting(true)}>
+            Start a deal
+          </button>
+        </div>
+      )}
 
       {selected === null ? null : (
         <DealPanel
@@ -189,7 +209,12 @@ function DealPanel({
         </table>
       </div>
 
-      {deal.termsAreOpen ? null : (
+      {deal.termsAreOpen ? (
+        // Mounted, not merely enabled. Once submitted this disappears entirely —
+        // a disabled form still looks like somewhere to type, and somebody would
+        // fill it in and lose the work.
+        <DealTerms deal={deal} onSaved={onChanged} />
+      ) : (
         <p className="note">
           The numbers are frozen. They stopped being editable when this deal was
           submitted, so what a manager approves is what was put in front of them.

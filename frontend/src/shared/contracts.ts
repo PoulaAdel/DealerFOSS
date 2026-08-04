@@ -102,6 +102,11 @@ export interface TrialBalance {
 
 export type DealStatus = 'Draft' | 'Submitted' | 'Approved' | 'Delivered' | 'Lost';
 
+/** Exactly one VehiclePrice per deal; Discount is always negative. */
+export type ChargeKind = 'VehiclePrice' | 'Fee' | 'Discount' | 'Accessory';
+
+export const chargeKinds: ChargeKind[] = ['VehiclePrice', 'Fee', 'Discount', 'Accessory'];
+
 export interface DealSummary {
   id: string;
   rooftopId: string;

@@ -309,7 +309,12 @@ internal sealed class Authenticator(
         }
 
         var hash = Hash(token);
+
+        // Untracked: the only write below is the last-seen stamp, and that is
+        // done with a direct update rather than through the change tracker. See
+        // the note where it happens.
         var session = await _db.Sessions
+            .AsNoTracking()
             .SingleOrDefaultAsync(s => s.TokenHash == hash, cancellationToken);
 
         var now = _clock.UtcNow;
@@ -339,8 +344,26 @@ internal sealed class Authenticator(
             return Result.Failure<AuthenticatedCaller>(AuthErrors.SessionInvalid);
         }
 
-        session.Touch(now);
-        await _db.SaveChangesAsync(cancellationToken);
+        // A direct update, deliberately outside optimistic concurrency.
+        //
+        // A browser makes several calls at once as a matter of course — one
+        // screen here loads stock and customers together — and every one of them
+        // validates the same session. Loading the row, stamping it, and saving
+        // meant two simultaneous requests raced: the second found the row's
+        // concurrency stamp already moved and threw, which surfaced as a **500 on
+        // whatever endpoint happened to lose**. Sessions had been like that since
+        // they landed; it took two concurrent calls from one screen to show it.
+        //
+        // Optimistic concurrency is the wrong tool here anyway. It exists to stop
+        // one person's edit silently overwriting another's, and "when was this
+        // session last used" has no such conflict — two requests a millisecond
+        // apart both write essentially the same instant, and either is correct.
+        //
+        // Sliding expiry still works: the idle window is measured from this
+        // column, and it is still written on every request.
+        await _db.Sessions
+            .Where(s => s.Id == session.Id)
+            .ExecuteUpdateAsync(set => set.SetProperty(s => s.LastSeenAt, now), cancellationToken);
 
         return Result.Success(new AuthenticatedCaller(
             session.UserId,

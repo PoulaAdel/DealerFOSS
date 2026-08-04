@@ -661,3 +661,38 @@ table button.link {
   text-align: left;
   color: var(--ink);
 }
+
+/* --- entering the numbers on a deal --- */
+
+.terms {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* Inside the charges table the controls are the content, so they lose the
+   top margin a labelled field carries elsewhere. */
+.terms td input,
+.terms td select {
+  margin-top: 0;
+}
+
+.terms td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.terms table {
+  margin-bottom: 4px;
+}
+
+/* The kind dropdown was clipping "VehiclePrice" to "VehiclePri". A select that
+   cannot show its own longest option makes somebody open it to find out what
+   they picked. */
+.terms td:first-child {
+  width: 1%;
+}
+
+.terms td:first-child select {
+  min-width: 10.5rem;
+}
