@@ -1,4 +1,4 @@
-# Running OpenDealer360 locally
+# Running DealerFOSS locally
 
 From a clean machine to a running application. Nothing here installs a database
 or a JavaScript runtime onto your computer — those live in containers, so the
@@ -15,7 +15,7 @@ docker compose -f deploy/docker-compose.yml up -d sql
 ```
 
 ```bash
-dotnet tool restore && dotnet build OpenDealer360.slnx -c Release
+dotnet tool restore && dotnet build DealerFOSS.slnx -c Release
 ```
 
 ```bash
@@ -31,11 +31,11 @@ The application comes up on `http://localhost:5080`. Sign in with
 
 ### `docker compose ... up -d sql`
 
-Starts **one container**, `odms-sql`, running SQL Server 2022, and publishes it on
+Starts **one container**, `dealerfoss-sql`, running SQL Server 2022, and publishes it on
 `localhost:1433`.
 
 The data lives in a **named Docker volume** called
-`opendealer360-dev_odms-sql-data`, managed by Docker — not in a folder on your
+`dealerfoss-dev_dealerfoss-sql-data`, managed by Docker — not in a folder on your
 drive. That matters for two reasons: your working folder stays clean, and SQL
 Server refuses to run properly on a Windows bind mount (see the note in
 `docker-compose.yml` — it fails inside SQLPAL with a message that looks like a
@@ -79,7 +79,7 @@ cp src/App/appsettings.Development.json.example src/App/appsettings.Development.
 and set the host catalog connection to the container:
 
 ```text
-Server=localhost,1433;Database=OpenDealer360_Host;User Id=sa;Password=OpenDealer360_dev!;TrustServerCertificate=True;Encrypt=False
+Server=localhost,1433;Database=DealerFOSS_Host;User Id=sa;Password=DealerFOSS_dev!;TrustServerCertificate=True;Encrypt=False
 ```
 
 `appsettings.Development.json` is git-ignored. The password above is a
@@ -117,7 +117,7 @@ sqllocaldb start MSSQLLocalDB
 ```
 
 ```text
-Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False
+Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False
 ```
 
 It is Windows-only and it lives on your machine rather than in a container, so it
@@ -137,7 +137,7 @@ docker compose -f deploy/docker-compose.yml --profile node up -d
 Then work inside it:
 
 ```bash
-docker exec -it odms-node sh
+docker exec -it dealerfoss-node sh
 ```
 
 You are now in `/workspace`, which is this repository. Run `npm`, `pnpm`, `vite`
@@ -253,7 +253,7 @@ deal, and that the ledger balances. It prints `PASS` or explains what failed.
 Pass `-HostConnection` to point it at the container instead of LocalDB:
 
 ```bash
-& .\deploy\verify-e2e.ps1 -HostConnection "Server=localhost,1433;Database=OpenDealer360_Host;User Id=sa;Password=OpenDealer360_dev!;TrustServerCertificate=True;Encrypt=False"
+& .\deploy\verify-e2e.ps1 -HostConnection "Server=localhost,1433;Database=DealerFOSS_Host;User Id=sa;Password=DealerFOSS_dev!;TrustServerCertificate=True;Encrypt=False"
 ```
 
 ---
@@ -263,6 +263,6 @@ Pass `-HostConnection` to point it at the container instead of LocalDB:
 | Symptom | Cause |
 |---|---|
 | SQL container exits, log mentions `sqlpal.dll` or `Failed to load LSA` | The data volume is a bind mount to a Windows path. It must be a named volume. |
-| `dotnet ef` cannot reach a database | It uses its own design-time connection. Override with `OPENDEALER360_TENANT_CONNECTION` or `OPENDEALER360_HOST_CONNECTION`. |
-| A stray `OpenDealer360_Test_*` database | A test run crashed before tidying up. The next run sweeps anything over six hours old; dropping it by hand is safe. |
+| `dotnet ef` cannot reach a database | It uses its own design-time connection. Override with `DEALERFOSS_TENANT_CONNECTION` or `DEALERFOSS_HOST_CONNECTION`. |
+| A stray `DealerFOSS_Test_*` database | A test run crashed before tidying up. The next run sweeps anything over six hours old; dropping it by hand is safe. |
 | Port 1433 already in use | A local SQL Server instance is running. Stop it, or change the published port in the compose file. |

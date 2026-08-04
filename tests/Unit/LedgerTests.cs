@@ -7,10 +7,10 @@
 //       record of anything.
 
 using FluentAssertions;
-using OpenDealer360.Accounting;
-using OpenDealer360.Core;
+using DealerFOSS.Accounting;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class LedgerTests
 {

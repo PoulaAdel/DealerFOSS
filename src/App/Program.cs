@@ -11,20 +11,20 @@ using System.Globalization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using OpenDealer360.Accounting;
-using OpenDealer360.Administration;
-using OpenDealer360.App;
-using OpenDealer360.Core;
-using OpenDealer360.Customers;
-using OpenDealer360.Data;
-using OpenDealer360.DataMigration;
-using OpenDealer360.Deals;
-using OpenDealer360.Identity;
-using OpenDealer360.Inventory;
-using OpenDealer360.Leads;
-using OpenDealer360.Organization;
-using OpenDealer360.Tenancy;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Accounting;
+using DealerFOSS.Administration;
+using DealerFOSS.App;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
+using DealerFOSS.Data;
+using DealerFOSS.DataMigration;
+using DealerFOSS.Deals;
+using DealerFOSS.Identity;
+using DealerFOSS.Inventory;
+using DealerFOSS.Leads;
+using DealerFOSS.Organization;
+using DealerFOSS.Tenancy;
+using DealerFOSS.Vehicles;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -105,7 +105,7 @@ var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];
 builder.Services
     .AddOpenTelemetry()
     .ConfigureResource(resource => resource.AddService(
-        serviceName: "OpenDealer360.App",
+        serviceName: "DealerFOSS.App",
         serviceVersion: ThisAssembly.Version))
     .WithTracing(tracing =>
     {
@@ -167,7 +167,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 
 app.MapGet("/", () => Results.Ok(new
 {
-    name = "OpenDealer360",
+    name = "DealerFOSS",
     description = "Open-source Dealer Management System",
     status = "ok",
 }));

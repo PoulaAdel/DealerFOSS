@@ -7,9 +7,9 @@
 //       of local testing would have told us.
 
 using FluentAssertions;
-using OpenDealer360.Identity;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class TotpTests
 {
@@ -104,11 +104,11 @@ public sealed class TotpTests
     {
         var secret = Totp.NewSecret();
 
-        var uri = Totp.EnrolmentUri(secret, "OpenDealer360", "gm@dev.local");
+        var uri = Totp.EnrolmentUri(secret, "DealerFOSS", "gm@dev.local");
 
         uri.Should().StartWith("otpauth://totp/");
         uri.Should().Contain($"secret={secret}");
-        uri.Should().Contain("issuer=OpenDealer360");
+        uri.Should().Contain("issuer=DealerFOSS");
         uri.Should().Contain("digits=6");
         uri.Should().Contain("period=30");
     }

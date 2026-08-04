@@ -10,7 +10,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class RecoveryCode
 {

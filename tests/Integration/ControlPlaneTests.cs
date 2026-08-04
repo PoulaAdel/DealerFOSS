@@ -11,9 +11,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using OpenDealer360.App;
+using DealerFOSS.App;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 [Collection(nameof(HostCollection))]
 public sealed class ControlPlaneTests(HostFixture fixture)
@@ -233,7 +233,7 @@ public sealed class ControlPlaneTests(HostFixture fixture)
             new { email = DevelopmentSeeder.DevAdministrator.UnenrolledEmail, password = Password });
 
         response.EnsureSuccessStatusCode();
-        return (CookieValue(response, "odms_admin"), CookieValue(response, "odms_admin_csrf"));
+        return (CookieValue(response, "dfoss_admin"), CookieValue(response, "dfoss_admin_csrf"));
     }
 
     private async Task<HttpResponseMessage> SendAsync(
@@ -256,12 +256,12 @@ public sealed class ControlPlaneTests(HostFixture fixture)
         var cookies = new List<string>();
         if (adminCookie is not null)
         {
-            cookies.Add($"odms_admin={adminCookie}");
+            cookies.Add($"dfoss_admin={adminCookie}");
         }
 
         if (sessionCookie is not null)
         {
-            cookies.Add($"odms_session={sessionCookie}");
+            cookies.Add($"dfoss_session={sessionCookie}");
         }
 
         if (cookies.Count > 0)

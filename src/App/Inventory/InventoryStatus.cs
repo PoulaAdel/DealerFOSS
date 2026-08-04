@@ -7,7 +7,7 @@
 //       it. Leaving either out silently strands units in a state nobody can get
 //       them out of.
 
-namespace OpenDealer360.Inventory;
+namespace DealerFOSS.Inventory;
 
 public enum InventoryStatus
 {

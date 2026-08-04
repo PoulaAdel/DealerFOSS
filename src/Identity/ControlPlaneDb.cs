@@ -16,7 +16,7 @@
 
 using Microsoft.EntityFrameworkCore;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// Persistence for control-plane identity: administrators, their sessions, the

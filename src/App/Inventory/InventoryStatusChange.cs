@@ -6,9 +6,9 @@
 //       move with a reason, not by editing the record (doc 04 §4, ADR-016).
 //       TenantDb refuses to update or delete these rows.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Inventory;
+namespace DealerFOSS.Inventory;
 
 public sealed class InventoryStatusChange : IAppendOnly
 {

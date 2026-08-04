@@ -8,10 +8,10 @@
 //       either without changing the security documentation first.
 
 using FluentAssertions;
-using OpenDealer360.Core;
-using OpenDealer360.Identity;
+using DealerFOSS.Core;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class AuthorizationScopeTests
 {

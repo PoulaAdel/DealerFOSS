@@ -5,9 +5,9 @@
 // Edit: keep the returned shapes small. A capability that needs a field not here
 //       should say why — widening the contract couples every caller to it.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Customers;
+namespace DealerFOSS.Customers;
 
 public interface ICustomers
 {
@@ -45,6 +45,21 @@ public interface ICustomers
     Task<Result<CustomerDetail?>> FindByExternalReferenceAsync(
         string externalReference,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// One page of customers in id order, for walking the whole set. Pass the
+    /// last id seen to get the next page; null starts at the beginning.
+    /// </summary>
+    /// <remarks>
+    /// Keyset rather than offset paging (doc 06 §6): an offset shifts under a
+    /// concurrent insert, so a long export would silently skip or repeat
+    /// somebody. Archived customers are included — an export is the dealership's
+    /// own record and leaving people out of it would make it wrong.
+    /// </remarks>
+    Task<Result<IReadOnlyList<CustomerDetail>>> PageForExportAsync(
+        Guid? after,
+        int take,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Enough to identify a customer in a list.</summary>
@@ -64,7 +79,8 @@ public sealed record CustomerDetail(
     string LastName,
     RooftopId? HomeRooftopId,
     AddressView? Address,
-    IReadOnlyList<ContactPointView> ContactPoints);
+    IReadOnlyList<ContactPointView> ContactPoints,
+    string? ExternalReference = null);
 
 public sealed record ContactPointView(Guid Id, string Kind, string Value, bool IsPrimary);
 

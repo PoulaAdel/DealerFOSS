@@ -5,10 +5,10 @@
 // Edit: routing and lifecycle fields only. Dealership business data never goes
 //       in the host catalog (ADR-003) — it belongs in the tenant database.
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
-/// A routing row in the control-plane catalog (`OpenDealer360_Host`). It records
+/// A routing row in the control-plane catalog (`DealerFOSS_Host`). It records
 /// how to reach a dealer organization's database and its lifecycle state — never
 /// any dealership business data (doc 04 §2).
 /// </summary>

@@ -12,9 +12,9 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
-using OpenDealer360.App;
+using DealerFOSS.App;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 [Collection(nameof(HostCollection))]
 public sealed class SupportAccessTests(HostFixture fixture)
@@ -49,7 +49,7 @@ public sealed class SupportAccessTests(HostFixture fixture)
         {
             Content = JsonContent.Create(new { reason = "Investigating a posting error.", minutes = 30 }),
         };
-        request.Headers.Add("Cookie", $"odms_admin={administrator.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_admin={administrator.SessionToken}");
         request.Headers.Add("X-Admin-CSRF-Token", administrator.AntiForgeryToken);
 
         using var response = await client.SendAsync(request);
@@ -131,7 +131,7 @@ public sealed class SupportAccessTests(HostFixture fixture)
         {
             Content = JsonContent.Create(new
             {
-                email = "support@opendealer360.invalid",
+                email = "support@dealerfoss.invalid",
                 password = DevelopmentSeeder.DevUsers.Password,
             }),
         };
@@ -221,15 +221,15 @@ public sealed class SupportAccessTests(HostFixture fixture)
             });
 
         login.EnsureSuccessStatusCode();
-        var session = CookieValue(login, "odms_admin");
-        var antiForgery = CookieValue(login, "odms_admin_csrf");
+        var session = CookieValue(login, "dfoss_admin");
+        var antiForgery = CookieValue(login, "dfoss_admin_csrf");
 
         using var request = new HttpRequestMessage(
             HttpMethod.Post, new Uri("/api/v1/admin/support-access", UriKind.Relative))
         {
             Content = JsonContent.Create(new { reason = "Trying it on.", minutes = 30 }),
         };
-        request.Headers.Add("Cookie", $"odms_admin={session}");
+        request.Headers.Add("Cookie", $"dfoss_admin={session}");
         request.Headers.Add("X-Admin-CSRF-Token", antiForgery);
         request.Headers.Add("X-Tenant", Tenant);
 
@@ -255,8 +255,8 @@ public sealed class SupportAccessTests(HostFixture fixture)
 
         return new Granted(
             body.GetProperty("grantId").GetGuid(),
-            CookieValue(response, "odms_session"),
-            CookieValue(response, "odms_csrf"),
+            CookieValue(response, "dfoss_session"),
+            CookieValue(response, "dfoss_csrf"),
             body.GetProperty("expiresAt").GetDateTimeOffset());
     }
 
@@ -269,7 +269,7 @@ public sealed class SupportAccessTests(HostFixture fixture)
         {
             Content = JsonContent.Create(new { reason, minutes }),
         };
-        request.Headers.Add("Cookie", $"odms_admin={administrator.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_admin={administrator.SessionToken}");
         request.Headers.Add("X-Admin-CSRF-Token", administrator.AntiForgeryToken);
         request.Headers.Add("X-Tenant", Tenant);
 
@@ -297,7 +297,7 @@ public sealed class SupportAccessTests(HostFixture fixture)
     {
         var client = _fixture.CreateClient();
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
-        request.Headers.Add("Cookie", $"odms_admin={administrator.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_admin={administrator.SessionToken}");
         request.Headers.Add("X-Admin-CSRF-Token", administrator.AntiForgeryToken);
 
         if (tenant is not null)
@@ -326,7 +326,7 @@ public sealed class SupportAccessTests(HostFixture fixture)
             request.Content = JsonContent.Create(body);
         }
 
-        request.Headers.Add("Cookie", $"odms_session={granted.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_session={granted.SessionToken}");
         request.Headers.Add("X-Tenant", Tenant);
 
         if (method != HttpMethod.Get)

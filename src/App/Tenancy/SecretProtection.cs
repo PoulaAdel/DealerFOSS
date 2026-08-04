@@ -11,9 +11,9 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 public static class SecretProtection
 {

@@ -2,7 +2,7 @@
 // outside the running application.
 //
 // Use:  tooling only; never referenced by application code.
-// Edit: override the target with OPENDEALER360_HOST_CONNECTION. The connection is
+// Edit: override the target with DEALERFOSS_HOST_CONNECTION. The connection is
 //       used by "database update"; "migrations add" needs only the model. The
 //       default is trusted LocalDB on purpose — a credential in source, even a
 //       development one, is a habit worth not having.
@@ -10,14 +10,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 public sealed class HostDbDesignTimeFactory : IDesignTimeDbContextFactory<HostDb>
 {
     public HostDb CreateDbContext(string[] args)
     {
-        var connection = Environment.GetEnvironmentVariable("OPENDEALER360_HOST_CONNECTION")
-            ?? @"Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False";
+        var connection = Environment.GetEnvironmentVariable("DEALERFOSS_HOST_CONNECTION")
+            ?? @"Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False";
 
         var options = new DbContextOptionsBuilder<HostDb>()
             .UseSqlServer(connection)

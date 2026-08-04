@@ -5,9 +5,9 @@
 //       architecture test enforces it. Invariants belong in the constructor so
 //       an invalid organization cannot be created at all.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Organization;
+namespace DealerFOSS.Organization;
 
 /// <summary>
 /// The dealer organization — the tenant itself (doc 04 §1). Exactly one row

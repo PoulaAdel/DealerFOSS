@@ -13,10 +13,10 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using OpenDealer360.App;
-using OpenDealer360.Core;
+using DealerFOSS.App;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Deals;
+namespace DealerFOSS.Deals;
 
 internal static class DealEndpoints
 {

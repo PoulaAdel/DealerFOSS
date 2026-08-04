@@ -1,8 +1,10 @@
-# OpenDealer360
+# DealerFOSS
 
-OpenDealer360 is an open-source Dealer Management System for independent dealers and dealer groups, licensed under AGPLv3 with optional commercial terms.
+**FOSS — Free and Open-Source Software.** DealerFOSS is a Dealer Management System for independent dealers and dealer groups, licensed under AGPLv3 with optional commercial terms.
 
-A **tenant is a dealer organization** and may contain one or many rooftops. OpenDealer360 is designed as a readable modular monolith that a dealership IT administrator can operate on premises, while leaving a disciplined path to a hosted offering.
+The name is a commitment rather than a label. A dealership's records are its own: they can be exported at any time as ordinary files that this same system reads straight back in, so leaving costs nothing but the decision. That is asserted by a round-trip test, not promised in a paragraph.
+
+A **tenant is a dealer organization** and may contain one or many rooftops. DealerFOSS is designed as a readable modular monolith that a dealership IT administrator can operate on premises, while leaving a disciplined path to a hosted offering.
 
 ## Product path
 
@@ -16,6 +18,11 @@ The project does not call a customer/vehicle/deal UI a complete DMS. Accounting,
 **[Where we are](docs/PROGRESS.md)** — plain language: how far along the project is, what works today, and what does not exist yet.
 
 **[Implementation status](docs/implementation/STATUS.md)** — the engineering detail, where every completed item names the command that proves it.
+
+> **Renamed from an earlier working title.** The code, tests, and databases are
+> already `DealerFOSS`; what remains is the GitHub repository name and the local
+> containers. [`docs/RENAME-TO-DEALERFOSS.md`](docs/RENAME-TO-DEALERFOSS.md) has
+> the commands and what each one costs. Delete it once done.
 
 ## New here?
 

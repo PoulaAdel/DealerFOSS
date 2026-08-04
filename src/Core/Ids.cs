@@ -8,7 +8,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// Strongly-typed identifiers for the tenancy hierarchy (doc 04 §1). Distinct

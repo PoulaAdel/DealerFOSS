@@ -9,9 +9,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using OpenDealer360.App;
+using DealerFOSS.App;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 [Collection(nameof(HostCollection))]
 public sealed class AuthenticationTests(HostFixture fixture)
@@ -39,7 +39,7 @@ public sealed class AuthenticationTests(HostFixture fixture)
         using var response = await LogInAsync(client, DevelopmentSeeder.DevUsers.OrganizationWideEmail);
 
         var header = response.Headers.GetValues("Set-Cookie")
-            .Single(v => v.StartsWith("odms_session", StringComparison.Ordinal))
+            .Single(v => v.StartsWith("dfoss_session", StringComparison.Ordinal))
             .ToLowerInvariant();
 
         header.Should().Contain("httponly", because: "script must not be able to read the session");
@@ -120,7 +120,7 @@ public sealed class AuthenticationTests(HostFixture fixture)
         }
 
         using (var logout = await PostAsync(
-            client, "/api/v1/auth/logout", token, CookieFrom(login, "odms_csrf")))
+            client, "/api/v1/auth/logout", token, CookieFrom(login, "dfoss_csrf")))
         {
             logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
@@ -152,7 +152,7 @@ public sealed class AuthenticationTests(HostFixture fixture)
         using var request = new HttpRequestMessage(
             HttpMethod.Get, new Uri("/api/v1/organization", UriKind.Relative));
         request.Headers.Add("X-Tenant", "citymotors");
-        request.Headers.Add("Cookie", $"odms_session={token}");
+        request.Headers.Add("Cookie", $"dfoss_session={token}");
 
         using var response = await client.SendAsync(request);
 
@@ -167,7 +167,7 @@ public sealed class AuthenticationTests(HostFixture fixture)
 
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("/api/v1/auth/me", UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={token}");
+        request.Headers.Add("Cookie", $"dfoss_session={token}");
         using var response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -208,7 +208,7 @@ public sealed class AuthenticationTests(HostFixture fixture)
         request.Headers.Add("X-Tenant", Tenant);
         if (token is not null)
         {
-            request.Headers.Add("Cookie", $"odms_session={token}");
+            request.Headers.Add("Cookie", $"dfoss_session={token}");
         }
 
         return client.SendAsync(request);
@@ -219,13 +219,13 @@ public sealed class AuthenticationTests(HostFixture fixture)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, new Uri(path, UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={token}");
+        request.Headers.Add("Cookie", $"dfoss_session={token}");
         request.Headers.Add("X-CSRF-Token", antiForgeryToken);
         return client.SendAsync(request);
     }
 
     private static string SessionCookieFrom(HttpResponseMessage response) =>
-        CookieFrom(response, "odms_session");
+        CookieFrom(response, "dfoss_session");
 
     internal static string CookieFrom(HttpResponseMessage response, string name)
     {

@@ -7,7 +7,7 @@ Three backend projects. Dependencies flow one way only.
 
 ```mermaid
 flowchart TB
-    Root["OpenDealer360/"] --> Src["src/"]
+    Root["DealerFOSS/"] --> Src["src/"]
     Root --> Front["frontend/"]
     Root --> Tests["tests/"]
     Root --> Deploy["deploy/"]

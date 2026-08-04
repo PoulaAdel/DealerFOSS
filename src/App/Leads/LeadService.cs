@@ -12,13 +12,13 @@
 //       capability boundary real inside a single project (ADR-017).
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Customers;
-using OpenDealer360.Data;
-using OpenDealer360.Identity;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
+using DealerFOSS.Data;
+using DealerFOSS.Identity;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.Leads;
+namespace DealerFOSS.Leads;
 
 public sealed class LeadService(
     TenantDb db,

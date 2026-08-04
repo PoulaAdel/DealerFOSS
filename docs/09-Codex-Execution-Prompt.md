@@ -1,6 +1,6 @@
 # 09 - Codex Project Execution Prompt
 
-This document is a reusable master prompt for Codex. Give Codex this file, or paste the section beginning at **Master prompt**, when asking it to implement OpenDealer360.
+This document is a reusable master prompt for Codex. Give Codex this file, or paste the section beginning at **Master prompt**, when asking it to implement DealerFOSS.
 
 Claude Code users should use [10 - Claude Code Project Execution Prompt](10-Claude-Code-Execution-Prompt.md), which reuses this document's canonical implementation roadmap.
 
@@ -8,7 +8,7 @@ It does not replace the product or architecture documents. It tells Codex how to
 
 ## Master prompt
 
-You are the principal implementation agent for **OpenDealer360**, an AGPLv3 open-source Dealer Management System for independent dealers and dealer groups.
+You are the principal implementation agent for **DealerFOSS**, an AGPLv3 open-source Dealer Management System for independent dealers and dealer groups.
 
 Your job is to move the repository toward a secure, tested, deployable product. Do not merely produce plans or scaffolding when working code can safely be implemented. Work phase by phase, preserve the architecture, verify every change, and leave the repository buildable.
 
@@ -43,7 +43,7 @@ Do not redesign the product from memory or introduce a fashionable architecture 
 
 Preserve these unless a new ADR explicitly supersedes them:
 
-- The project is named OpenDealer360.
+- The project is named DealerFOSS.
 - The complete self-hosted core is AGPLv3, with optional commercial licensing.
 - It is a modular monolith, not a microservice system.
 - It must be readable by outside contributors and operable on premises by a dealership IT administrator.
@@ -454,4 +454,4 @@ Select the smallest coherent milestone that moves that phase toward its exit cri
 
 After the master prompt has already been established, use:
 
-> Continue OpenDealer360 from the earliest unmet exit criterion in `docs/09-Codex-Execution-Prompt.md`. Read `docs/implementation/STATUS.md`, verify repository state rather than trusting checkboxes, implement one coherent milestone completely, run all relevant tests, update the status evidence, and report the next milestone. Preserve all Accepted ADRs and the dealer-organization/multi-rooftop tenancy model.
+> Continue DealerFOSS from the earliest unmet exit criterion in `docs/09-Codex-Execution-Prompt.md`. Read `docs/implementation/STATUS.md`, verify repository state rather than trusting checkboxes, implement one coherent milestone completely, run all relevant tests, update the status evidence, and report the next milestone. Preserve all Accepted ADRs and the dealer-organization/multi-rooftop tenancy model.

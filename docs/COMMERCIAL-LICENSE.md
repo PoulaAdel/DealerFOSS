@@ -1,13 +1,13 @@
 # Commercial Licensing
 
-OpenDealer360's complete, self-hosted core is free and open source under
+DealerFOSS's complete, self-hosted core is free and open source under
 **GNU AGPLv3** (see [`LICENSE`](../LICENSE)). You can run, study, modify, and
 self-host the full DMS under those terms at no cost, including commercial use,
 provided you honor AGPLv3 — most importantly, that users who interact with a
 modified version over a network are offered the corresponding source.
 
 An **optional commercial license** is available for organizations that cannot
-operate under AGPLv3 — for example, embedding OpenDealer360 in a closed-source
+operate under AGPLv3 — for example, embedding DealerFOSS in a closed-source
 product, or distributing a modified version without the AGPL source-offer
 obligation. The commercial license is an alternative set of terms; it is **not**
 required to obtain a fully functional self-hosted DMS, and no core feature is

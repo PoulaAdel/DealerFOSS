@@ -12,9 +12,9 @@
 //       "current" tenant outside a request, and there must never be one.
 
 using Microsoft.Extensions.DependencyInjection;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>Opens a service scope bound to one named dealer organization.</summary>
 public interface ITenantScopeFactory

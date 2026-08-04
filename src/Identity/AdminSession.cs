@@ -9,7 +9,7 @@
 //       same rules Session follows, kept separate rather than shared because the
 //       two must never be interchangeable.
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class AdminSession
 {

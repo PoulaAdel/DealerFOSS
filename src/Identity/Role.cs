@@ -9,9 +9,9 @@
 //       because "who must have one" is a statement about responsibility, not a
 //       list somebody has to remember to update when staff change.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// A named set of permissions. Users are granted a role at a scope; permissions
@@ -61,7 +61,7 @@ internal sealed class Role : AuditableEntity
     {
         // Fully qualified: this type has a Permissions property of its own, and
         // the catalogue is the static class, not that collection.
-        if (!OpenDealer360.Identity.Permissions.All.Contains(permission))
+        if (!DealerFOSS.Identity.Permissions.All.Contains(permission))
         {
             throw new ArgumentException(
                 $"'{permission}' is not in the permission catalogue.", nameof(permission));

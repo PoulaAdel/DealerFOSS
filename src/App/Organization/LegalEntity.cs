@@ -6,9 +6,9 @@
 //       belong here; anything jurisdiction-specific belongs in a rule pack, not
 //       in this entity.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Organization;
+namespace DealerFOSS.Organization;
 
 /// <summary>
 /// A legal entity within the dealer organization. Deals, accounting entries, and

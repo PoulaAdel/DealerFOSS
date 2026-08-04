@@ -4,7 +4,7 @@
 
 ## 1. Product vision
 
-OpenDealer360 is an open-source Dealer Management System for independent dealers and dealer groups. A deployment supports a dealer organization with one or many rooftops, shared customers and vehicles, rooftop-specific operations, and organization-wide reporting.
+DealerFOSS is an open-source Dealer Management System for independent dealers and dealer groups. A deployment supports a dealer organization with one or many rooftops, shared customers and vehicles, rooftop-specific operations, and organization-wide reporting.
 
 The product advances in two explicit stages:
 
@@ -15,7 +15,7 @@ This sequencing protects the ten-year vision. It avoids pretending that a modern
 
 ## 2. Problem and strategic wedge
 
-Dealers lack control over their data and operate across a DMS, CRM, spreadsheets, portals, and paper. OpenDealer360’s initial wedge is:
+Dealers lack control over their data and operate across a DMS, CRM, spreadsheets, portals, and paper. DealerFOSS’s initial wedge is:
 
 1. repeatable migration and full data export;
 2. a normalized organization-wide customer, vehicle, inventory, deal, and service view;
@@ -49,7 +49,7 @@ These capabilities may read or exchange data with the incumbent. The owning syst
 
 ### Standalone capabilities
 
-The following are required before OpenDealer360 can replace an incumbent DMS:
+The following are required before DealerFOSS can replace an incumbent DMS:
 
 - **Accounting:** chart of accounts, balanced journals, subledgers, AP/AR, cash and bank reconciliation, posting rules, fiscal periods, close/reopen, and source traceability.
 - **Deal accounting:** front/back gross, packs, commissions, incentives, trade payoff, CIT, funding variance, chargebacks, unwind, and product cancellation.

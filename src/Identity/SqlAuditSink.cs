@@ -5,10 +5,10 @@
 // Edit: audit rows are append-only (ADR-016) — write new rows, never update.
 //       Nothing sensitive may be placed in an entry; see IAuditSink.
 
-using OpenDealer360.Identity;
-using OpenDealer360.Core;
+using DealerFOSS.Identity;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// Writes audit entries to the tenant's <c>identity.AuditEvents</c> table.

@@ -8,9 +8,9 @@
 //       auditor can tell the difference between "this was always right" and
 //       "somebody changed it afterwards".
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Accounting;
+namespace DealerFOSS.Accounting;
 
 public sealed class JournalEntry : IAppendOnly
 {

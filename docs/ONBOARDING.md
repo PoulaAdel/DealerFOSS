@@ -64,11 +64,11 @@ sqllocaldb start MSSQLLocalDB
 ```
 
 ```bash
-dotnet tool restore && dotnet build OpenDealer360.slnx -c Release
+dotnet tool restore && dotnet build DealerFOSS.slnx -c Release
 ```
 
 ```bash
-dotnet test OpenDealer360.slnx -c Release
+dotnet test DealerFOSS.slnx -c Release
 ```
 
 ```bash
@@ -191,11 +191,12 @@ Calibrate your confidence — these are current, honest limitations:
   plane lists dealerships and can suspend or resume one — from `/admin` in the
   browser, or the API — but creating the database still happens through the
   development seeder.
-- **The frontend renders, but nobody has looked at it.** Component tests mount
-  the real screens into a DOM and assert on what a person would read, so
-  "does it draw?" is now answered by `npm test`. What that cannot answer is
-  whether it *looks* right — fonts, spacing, dark-mode contrast, or whether a
-  phone camera can read the QR code on the enrolment screen.
+- **The frontend renders and has been looked at.** Component tests answer "does
+  it draw?" on every change; every screen has also been signed into and walked
+  on a real browser at desktop and phone width. Do both after a visual change —
+  jsdom has no layout engine, and opening the real thing has already caught
+  defects the tests could not. The only remaining physical unknown is whether a
+  phone camera reads the QR code.
 - **Backup and restore have never been rehearsed.**
 
 `STATUS.md` is the live version of this list. If it disagrees with this section,

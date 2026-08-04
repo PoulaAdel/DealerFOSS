@@ -6,10 +6,10 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using OpenDealer360.Tenancy;
-using OpenDealer360.Core;
+using DealerFOSS.Tenancy;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>Registers the control-plane catalog and tenant resolution services.</summary>
 public static class TenancyRegistration

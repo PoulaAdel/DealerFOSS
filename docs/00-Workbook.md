@@ -1,6 +1,6 @@
-# OpenDealer360 — Engineering Workbook
+# DealerFOSS — Engineering Workbook
 
-**Project:** OpenDealer360 — Open-Source Dealer Management System  
+**Project:** DealerFOSS — Open-Source Dealer Management System  
 **License:** AGPLv3, with an optional commercial license  
 **Status:** Accepted baseline; changes require an ADR
 
@@ -26,7 +26,7 @@ This workbook is the single source of truth for product scope, architecture, str
 
 ## System summary
 
-OpenDealer360 is a modular monolith: one ASP.NET Core application whose business modules have explicit boundaries, backed by one database per **dealer organization**. A dealer organization may operate one or many rooftops. Shared records and group reporting remain inside the organization boundary; rooftop and department scope control operational access. External systems connect through an Integration edge that maps versioned provider data into OpenDealer360 contracts and applies it through owning modules. The first release is a coexistence product; standalone system-of-record capability is earned subsystem by subsystem through migration, reconciliation, and operational proof.
+DealerFOSS is a modular monolith: one ASP.NET Core application whose business modules have explicit boundaries, backed by one database per **dealer organization**. A dealer organization may operate one or many rooftops. Shared records and group reporting remain inside the organization boundary; rooftop and department scope control operational access. External systems connect through an Integration edge that maps versioned provider data into DealerFOSS contracts and applies it through owning modules. The first release is a coexistence product; standalone system-of-record capability is earned subsystem by subsystem through migration, reconciliation, and operational proof.
 
 ## Vocabulary
 

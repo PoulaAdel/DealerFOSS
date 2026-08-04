@@ -8,9 +8,9 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OpenDealer360.Data;
+using DealerFOSS.Data;
 
-namespace OpenDealer360.DataMigration;
+namespace DealerFOSS.DataMigration;
 
 /// <summary>The schema this feature owns.</summary>
 internal static class MigrationSchema

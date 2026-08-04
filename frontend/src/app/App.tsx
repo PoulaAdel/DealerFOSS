@@ -105,7 +105,7 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
       </a>
 
       <header className="shell__bar">
-        <span className="shell__brand">OpenDealer360</span>
+        <span className="shell__brand">DealerFOSS</span>
 
         {restricted ? null : (
           <nav aria-label="Main">

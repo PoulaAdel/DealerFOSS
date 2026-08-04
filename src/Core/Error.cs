@@ -5,7 +5,7 @@
 // Edit: adding an ErrorType means every endpoint's status-code mapping must
 //       handle it — check OrganizationEndpoints.Problem before you do.
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// A stable, code-identified business error. The <see cref="Code"/> is part of

@@ -5,9 +5,9 @@
 // Edit: pure domain — no EF or ASP.NET types. TimeZone is an IANA id and is how
 //       a dealership-local date is derived; instants stay UTC everywhere else.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Organization;
+namespace DealerFOSS.Organization;
 
 /// <summary>
 /// A rooftop — one physical dealership location. Inventory, deals, and repair

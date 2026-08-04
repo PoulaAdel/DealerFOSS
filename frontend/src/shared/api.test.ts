@@ -37,7 +37,7 @@ describe('talking to the API', () => {
 
   it('sends an empty token rather than inventing one when signed out', async () => {
     // Clearing the cookie the setup file plants.
-    document.cookie = 'odms_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'dfoss_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     mockApi({ '/customers': { ok: true, body: {} } });
 
     await post('/customers', {});

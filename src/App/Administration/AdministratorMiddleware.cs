@@ -14,10 +14,10 @@
 //       That is the separation, and it is structural rather than a permission
 //       check each capability has to remember (doc 06 §3).
 
-using OpenDealer360.Core;
-using OpenDealer360.Identity;
+using DealerFOSS.Core;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.Administration;
+namespace DealerFOSS.Administration;
 
 /// <summary>
 /// Resolves the calling administrator for a control-plane request. Refuses here

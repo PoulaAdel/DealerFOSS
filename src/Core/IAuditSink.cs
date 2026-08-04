@@ -5,7 +5,7 @@
 // Edit: never put credentials, tokens, credit data, government ids, or document
 //       content into an AuditEntry. Audit rows are append-only (ADR-016).
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// Records security-sensitive events. Audit is append-only (ADR-016) and is

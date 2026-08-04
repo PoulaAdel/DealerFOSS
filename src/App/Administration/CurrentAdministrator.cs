@@ -8,7 +8,7 @@
 //       data?" — an administrator has no answer to that question, and giving
 //       them one is the whole thing this milestone exists to prevent.
 
-namespace OpenDealer360.Administration;
+namespace DealerFOSS.Administration;
 
 /// <summary>
 /// The authenticated administrator for the current request, if any. Carries no

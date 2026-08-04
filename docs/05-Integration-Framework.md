@@ -86,7 +86,7 @@ The coexistence release commits to one production- or sandbox-certified connecto
 - Webhooks may be duplicated, delayed, or reordered.
 - Provider timestamps are not trusted as the only ordering signal; source version/sequence is preferred.
 - Deletes use explicit tombstones and the owning module decides whether deletion, inactivation, or conflict is legal.
-- Field ownership defines whether OpenDealer360, the provider, or a user wins. Two-way writes carry an origin/correlation ID to prevent loops.
+- Field ownership defines whether DealerFOSS, the provider, or a user wins. Two-way writes carry an origin/correlation ID to prevent loops.
 - Partial failures never advance beyond uncommitted data.
 - A periodic reconciliation compares record counts, key totals, missing/deleted IDs, and stale records.
 - Operators can inspect, replay, retry from a checkpoint, or resolve a conflict with a recorded reason.

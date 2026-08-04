@@ -9,12 +9,12 @@
 //       InventoryScopeTests.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
-using OpenDealer360.Identity;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
+using DealerFOSS.Identity;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.Inventory;
+namespace DealerFOSS.Inventory;
 
 public sealed class InventoryService(
     TenantDb db,

@@ -8,11 +8,11 @@
 //       meant to prevent.
 
 using FluentAssertions;
-using OpenDealer360.Core;
-using OpenDealer360.Inventory;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Core;
+using DealerFOSS.Inventory;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class VehicleTests
 {

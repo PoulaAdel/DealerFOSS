@@ -1,4 +1,4 @@
-# Contributing to OpenDealer360
+# Contributing to DealerFOSS
 
 Thank you for helping build an open-source Dealer Management System. This file is
 the short version; the authoritative rules live in the workbook under
@@ -31,8 +31,8 @@ sqllocaldb start MSSQLLocalDB
 
 # 2. Build and test
 dotnet tool restore
-dotnet build OpenDealer360.slnx -c Release
-dotnet test  OpenDealer360.slnx -c Release
+dotnet build DealerFOSS.slnx -c Release
+dotnet test  DealerFOSS.slnx -c Release
 
 # 3. Run the API host (http://localhost:5080)
 dotnet run --project src/App
@@ -41,13 +41,13 @@ dotnet run --project src/App
 #    GET /health/ready   → readiness (dependencies)
 ```
 
-Integration tests pick up `OPENDEALER360_TEST_SQL` when set and fall back to
+Integration tests pick up `DEALERFOSS_TEST_SQL` when set and fall back to
 LocalDB otherwise.
 
 ### Proving tenant isolation end to end
 
 ```bash
-& .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
+& .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
 ```
 
 This seeds one multi-rooftop and one single-rooftop dealer organization in

@@ -5,9 +5,9 @@
 //       must land in exactly one of created/updated/skipped/failed. If they stop
 //       summing to RowsTotal, the report is lying and somebody will trust it.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.DataMigration;
+namespace DealerFOSS.DataMigration;
 
 /// <summary>What kind of record a file holds. One file, one kind.</summary>
 public enum ImportKind

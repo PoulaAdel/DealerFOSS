@@ -15,10 +15,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Hosting;
-using OpenDealer360.App;
-using OpenDealer360.Identity;
+using DealerFOSS.App;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 /// <summary>
 /// Boots the real Host against a real SQL database and seeds the two sample
@@ -26,7 +26,7 @@ namespace OpenDealer360.IntegrationTests;
 /// <c>deploy/verify-e2e.ps1</c> — but in CI.
 /// </summary>
 /// <remarks>
-/// The connection comes from <c>OPENDEALER360_TEST_SQL</c> when set (CI supplies
+/// The connection comes from <c>DEALERFOSS_TEST_SQL</c> when set (CI supplies
 /// a SQL Server service container) and falls back to LocalDB for local runs. If
 /// no engine is reachable the fixture fails loudly rather than skipping: a test
 /// that never reaches the database is not evidence of isolation.
@@ -34,13 +34,13 @@ namespace OpenDealer360.IntegrationTests;
 public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private const string LocalDbFallback =
-        @"Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False";
+        @"Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False";
 
     /// <summary>Databases created by a test run all start with this.</summary>
-    private const string TestDatabasePrefix = "OpenDealer360_Test_";
+    private const string TestDatabasePrefix = "DealerFOSS_Test_";
 
     private static string EngineConnection =>
-        Environment.GetEnvironmentVariable("OPENDEALER360_TEST_SQL") ?? LocalDbFallback;
+        Environment.GetEnvironmentVariable("DEALERFOSS_TEST_SQL") ?? LocalDbFallback;
 
     /// <summary>
     /// Unique to this run. Declared before the connection string below, because
@@ -201,8 +201,8 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
         response.EnsureSuccessStatusCode();
 
         var session = new SignedInSession(
-            CookieFrom(response, "odms_session"),
-            CookieFrom(response, "odms_csrf"));
+            CookieFrom(response, "dfoss_session"),
+            CookieFrom(response, "dfoss_csrf"));
 
         _sessions[key] = session;
         return session;
@@ -246,12 +246,12 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
 
         login.EnsureSuccessStatusCode();
 
-        var session = CookieFrom(login, "odms_admin");
-        var antiForgery = CookieFrom(login, "odms_admin_csrf");
+        var session = CookieFrom(login, "dfoss_admin");
+        var antiForgery = CookieFrom(login, "dfoss_admin_csrf");
 
         using var enrol = new HttpRequestMessage(
             HttpMethod.Post, new Uri("/api/v1/admin/mfa/enrol", UriKind.Relative));
-        enrol.Headers.Add("Cookie", $"odms_admin={session}");
+        enrol.Headers.Add("Cookie", $"dfoss_admin={session}");
         enrol.Headers.Add("X-Admin-CSRF-Token", antiForgery);
 
         using var enrolled = await client.SendAsync(enrol);
@@ -265,7 +265,7 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
         {
             Content = JsonContent.Create(new { code = Totp.Generate(secret, DateTimeOffset.UtcNow) }),
         };
-        confirm.Headers.Add("Cookie", $"odms_admin={session}");
+        confirm.Headers.Add("Cookie", $"dfoss_admin={session}");
         confirm.Headers.Add("X-Admin-CSRF-Token", antiForgery);
 
         using var confirmed = await client.SendAsync(confirm);
@@ -294,7 +294,7 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
         {
             throw new InvalidOperationException(
                 "Integration tests need a reachable SQL Server. Start LocalDB with "
-                + "'sqllocaldb start MSSQLLocalDB', or set OPENDEALER360_TEST_SQL to another "
+                + "'sqllocaldb start MSSQLLocalDB', or set DEALERFOSS_TEST_SQL to another "
                 + $"instance. See CLAUDE.md. Attempted: {MaskCredentials(probe)}",
                 ex);
         }

@@ -7,11 +7,11 @@
 //       you add an invariant.
 
 using FluentAssertions;
-using OpenDealer360.Core;
-using OpenDealer360.Identity;
-using OpenDealer360.Organization;
+using DealerFOSS.Core;
+using DealerFOSS.Identity;
+using DealerFOSS.Organization;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class OrganizationDomainTests
 {

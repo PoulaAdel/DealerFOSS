@@ -8,12 +8,12 @@
 //       create duplicates.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
-using OpenDealer360.Customers;
-using OpenDealer360.Identity;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
+using DealerFOSS.Customers;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.Customers;
+namespace DealerFOSS.Customers;
 
 public sealed class CustomerService(
     TenantDb db,
@@ -200,6 +200,31 @@ public sealed class CustomerService(
         return Result.Success(customer is null ? null : Describe(customer));
     }
 
+    public async Task<Result<IReadOnlyList<CustomerDetail>>> PageForExportAsync(
+        Guid? after,
+        int take,
+        CancellationToken cancellationToken)
+    {
+        if (!await IsAllowedAsync(ReadPermission, cancellationToken))
+        {
+            return Result.Failure<IReadOnlyList<CustomerDetail>>(CustomerErrors.Forbidden);
+        }
+
+        var query = _db.Customers.AsNoTracking();
+        if (after is { } cursor)
+        {
+            query = query.Where(c => c.Id.CompareTo(cursor) > 0);
+        }
+
+        var customers = await query
+            .OrderBy(c => c.Id)
+            .Take(Math.Clamp(take <= 0 ? 500 : take, 1, 1000))
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IReadOnlyList<CustomerDetail>>(
+            customers.Select(Describe).ToList());
+    }
+
     /// <summary>
     /// A customer is organization-wide, so holding the permission anywhere is
     /// enough. Denials are audited by the access directory.
@@ -233,7 +258,8 @@ public sealed class CustomerService(
                 .OrderByDescending(p => p.IsPrimary)
                 .ThenBy(p => p.Kind)
                 .Select(p => new ContactPointView(p.Id, p.Kind.ToString(), p.Value, p.IsPrimary))
-                .ToList());
+                .ToList(),
+            c.ExternalReference);
 
     private static string? Primary(Customer c, ContactKind kind) =>
         c.ContactPoints.FirstOrDefault(p => p.Kind == kind && p.IsPrimary)?.Value;

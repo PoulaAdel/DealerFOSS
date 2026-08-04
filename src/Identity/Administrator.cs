@@ -12,7 +12,7 @@
 //       a dealership or step into one is worth more to an attacker than any
 //       single user account.
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// A control-plane identity (doc 06 §2). Lives in the host catalog, not in any

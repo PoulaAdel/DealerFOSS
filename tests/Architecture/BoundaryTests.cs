@@ -15,11 +15,11 @@
 using System.Reflection;
 using FluentAssertions;
 using NetArchTest.Rules;
-using OpenDealer360.Core;
-using OpenDealer360.Identity;
+using DealerFOSS.Core;
+using DealerFOSS.Identity;
 using Xunit;
 
-namespace OpenDealer360.ArchitectureTests;
+namespace DealerFOSS.ArchitectureTests;
 
 public sealed class BoundaryTests
 {
@@ -49,14 +49,14 @@ public sealed class BoundaryTests
         var result = Types.InAssembly(Core)
             .Should()
             .NotHaveDependencyOnAny(
-                "OpenDealer360.Identity",
-                "OpenDealer360.App",
-                "OpenDealer360.Data",
-                "OpenDealer360.Tenancy",
-                "OpenDealer360.Organization",
-                "OpenDealer360.Customers",
-                "OpenDealer360.Vehicles",
-                "OpenDealer360.Inventory")
+                "DealerFOSS.Identity",
+                "DealerFOSS.App",
+                "DealerFOSS.Data",
+                "DealerFOSS.Tenancy",
+                "DealerFOSS.Organization",
+                "DealerFOSS.Customers",
+                "DealerFOSS.Vehicles",
+                "DealerFOSS.Inventory")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
@@ -73,13 +73,13 @@ public sealed class BoundaryTests
         var result = Types.InAssembly(Identity)
             .Should()
             .NotHaveDependencyOnAny(
-                "OpenDealer360.App",
-                "OpenDealer360.Data",
-                "OpenDealer360.Tenancy",
-                "OpenDealer360.Organization",
-                "OpenDealer360.Customers",
-                "OpenDealer360.Vehicles",
-                "OpenDealer360.Inventory")
+                "DealerFOSS.App",
+                "DealerFOSS.Data",
+                "DealerFOSS.Tenancy",
+                "DealerFOSS.Organization",
+                "DealerFOSS.Customers",
+                "DealerFOSS.Vehicles",
+                "DealerFOSS.Inventory")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(

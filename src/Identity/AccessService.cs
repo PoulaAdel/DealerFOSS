@@ -6,10 +6,10 @@
 //       If you add a fast path, make sure it cannot turn "no rows" into access.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Identity;
-using OpenDealer360.Core;
+using DealerFOSS.Identity;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// Resolves what a user may reach, and records denials. Deny is the default:

@@ -31,7 +31,7 @@ jobs:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
           ACCEPT_EULA: "Y"
-          MSSQL_SA_PASSWORD: ${{ secrets.CI_SQL_PASSWORD || 'OpenDealer360_ci!' }}
+          MSSQL_SA_PASSWORD: ${{ secrets.CI_SQL_PASSWORD || 'DealerFOSS_ci!' }}
         ports:
           - 1433:1433
         options: >-
@@ -42,7 +42,7 @@ jobs:
           --health-start-period 30s
 
     env:
-      OPENDEALER360_TEST_SQL: "Server=localhost,1433;Database=OpenDealer360_Host;User Id=sa;Password=${{ secrets.CI_SQL_PASSWORD || 'OpenDealer360_ci!' }};TrustServerCertificate=True;Encrypt=True"
+      DEALERFOSS_TEST_SQL: "Server=localhost,1433;Database=DealerFOSS_Host;User Id=sa;Password=${{ secrets.CI_SQL_PASSWORD || 'DealerFOSS_ci!' }};TrustServerCertificate=True;Encrypt=True"
 
     steps:
       - uses: actions/checkout@v4
@@ -55,13 +55,13 @@ jobs:
       # Restore runs NuGetAudit; TreatWarningsAsErrors fails the build on any
       # vulnerable or disallowed-license dependency (doc 06 §7, doc 08 §2).
       - name: Restore
-        run: dotnet restore OpenDealer360.slnx
+        run: dotnet restore DealerFOSS.slnx
 
       - name: Build (warnings as errors)
-        run: dotnet build OpenDealer360.slnx -c Release --no-restore
+        run: dotnet build DealerFOSS.slnx -c Release --no-restore
 
       - name: Test (unit, architecture, integration)
-        run: dotnet test OpenDealer360.slnx -c Release --no-build --verbosity normal
+        run: dotnet test DealerFOSS.slnx -c Release --no-build --verbosity normal
 
   frontend:
     name: Frontend typecheck, tests, and build

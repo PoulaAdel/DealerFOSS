@@ -9,9 +9,9 @@
 //       "no such user" from "wrong password" — or "wrong code" from "no second
 //       factor enrolled" — tells an attacker which accounts are worth attacking.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 public interface IAuthenticator
 {

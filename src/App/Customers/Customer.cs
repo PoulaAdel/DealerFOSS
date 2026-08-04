@@ -7,9 +7,9 @@
 //       another. HomeRooftopId records where they were first met; it is not a
 //       permission boundary and must never be used as one.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Customers;
+namespace DealerFOSS.Customers;
 
 public sealed class Customer : AuditableEntity
 {

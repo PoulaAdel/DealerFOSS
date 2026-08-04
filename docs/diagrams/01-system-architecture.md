@@ -5,7 +5,7 @@ Specified in [02 — Architecture & Decisions](../02-Architecture-and-Decisions.
 ```mermaid
 flowchart TB
     Browser["React browser"]
-    subgraph App["OpenDealer360 modular monolith"]
+    subgraph App["DealerFOSS modular monolith"]
         Host["Host / BFF<br/>auth · API · jobs · composition"]
         Modules["Business modules<br/>Organization · Customers · Inventory · CRM<br/>Sales · Finance · Service · Documents · Reporting"]
         Edge["Integration edge<br/>contracts · connectors · inbox/outbox · reconciliation"]

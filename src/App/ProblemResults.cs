@@ -8,9 +8,9 @@
 //       Lives at the HTTP edge because Core must stay free of ASP.NET.
 
 using Microsoft.AspNetCore.Http;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.App;
+namespace DealerFOSS.App;
 
 /// <summary>
 /// Maps a business <see cref="Error"/> to RFC 7807 Problem Details. Every feature

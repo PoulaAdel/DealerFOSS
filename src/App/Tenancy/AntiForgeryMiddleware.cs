@@ -15,11 +15,11 @@
 //       bound to the session rather than merely echoed: otherwise anything able
 //       to write a cookie for this site could supply both halves of the pair.
 
-using OpenDealer360.Administration;
-using OpenDealer360.App;
-using OpenDealer360.Identity;
+using DealerFOSS.Administration;
+using DealerFOSS.App;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
 /// Enforces ADR-009's CSRF protection on every write. The session cookie is

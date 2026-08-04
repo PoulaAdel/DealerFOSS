@@ -10,10 +10,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using OpenDealer360.App;
-using OpenDealer360.Identity;
+using DealerFOSS.App;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 [Collection(nameof(HostCollection))]
 public sealed class SecondFactorTests(HostFixture fixture)
@@ -286,15 +286,15 @@ public sealed class SecondFactorTests(HostFixture fixture)
     }
 
     private static string? SessionCookie(HttpResponseMessage response) =>
-        CookieValue(response, "odms_session");
+        CookieValue(response, "dfoss_session");
 
     /// <summary>Both cookies a completed sign-in sets, or null when it set none.</summary>
     private static SignedInSession? SignedInSessionFrom(HttpResponseMessage response)
     {
-        var session = CookieValue(response, "odms_session");
+        var session = CookieValue(response, "dfoss_session");
         return session is null
             ? null
-            : new SignedInSession(session, CookieValue(response, "odms_csrf")!);
+            : new SignedInSession(session, CookieValue(response, "dfoss_csrf")!);
     }
 
     private static string? CookieValue(HttpResponseMessage response, string name)
@@ -333,7 +333,7 @@ public sealed class SecondFactorTests(HostFixture fixture)
 
         if (session is not null)
         {
-            request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+            request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
             request.Headers.Add("X-CSRF-Token", session.AntiForgeryToken);
         }
 

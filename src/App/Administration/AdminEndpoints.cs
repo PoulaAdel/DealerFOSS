@@ -18,20 +18,20 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.App;
-using OpenDealer360.Core;
-using OpenDealer360.Identity;
-using OpenDealer360.Tenancy;
+using DealerFOSS.App;
+using DealerFOSS.Core;
+using DealerFOSS.Identity;
+using DealerFOSS.Tenancy;
 
-namespace OpenDealer360.Administration;
+namespace DealerFOSS.Administration;
 
 internal static class AdminEndpoints
 {
     /// <summary>The administrator session cookie. Means nothing to a tenant endpoint.</summary>
-    public const string AdminSessionCookie = "odms_admin";
+    public const string AdminSessionCookie = "dfoss_admin";
 
     /// <summary>Script-readable, so the client can copy it into the header below.</summary>
-    public const string AdminAntiForgeryCookie = "odms_admin_csrf";
+    public const string AdminAntiForgeryCookie = "dfoss_admin_csrf";
 
     /// <summary>Separate from the tenant header, because a browser may hold both.</summary>
     public const string AdminAntiForgeryHeader = "X-Admin-CSRF-Token";

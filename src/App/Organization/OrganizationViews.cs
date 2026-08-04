@@ -5,9 +5,9 @@
 //       map into these instead. Removing or renaming a field breaks callers, so
 //       treat additions as the safe change and removals as versioned ones.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Organization;
+namespace DealerFOSS.Organization;
 
 /// <summary>
 /// Read models the Organization module exposes across module and API boundaries.

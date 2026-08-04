@@ -29,7 +29,7 @@ prompts assume by default.
   named Docker volume fixes it, and the compose file now uses one.
 
   ```
-  Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False
+  Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False
   ```
 
   LocalDB starts with `sqllocaldb start MSSQLLocalDB` and is what the verification
@@ -64,17 +64,27 @@ prompts assume by default.
   happens inside this folder:
 
   ```
-  docker exec odms-node sh -c "cd /workspace/frontend && npm test"
+  docker exec dealerfoss-node sh -c "cd /workspace/frontend && npm test"
   ```
+
+  The container's own command is `sleep infinity`, so the Vite dev server is a
+  process inside it and can be restarted without touching the container.
+
+- **The agent's browser can reach this machine's localhost.** Verified
+  2026-08-03: `preview_start` at `http://localhost:5173` loads the application,
+  signs in, and drives every screen. Visual verification is therefore *not*
+  blocked on the maintainer, and screens must be checked rather than assumed.
+  It needs the `dealerfoss-node` container up and the backend on 5080. What still
+  needs a person: whether a phone camera physically reads a QR code.
 
 ## Canonical commands
 
 ```bash
-dotnet build OpenDealer360.slnx -c Release
+dotnet build DealerFOSS.slnx -c Release
 ```
 
 ```bash
-dotnet test OpenDealer360.slnx -c Release
+dotnet test DealerFOSS.slnx -c Release
 ```
 
 ```bash
@@ -84,17 +94,17 @@ dotnet run --project src/App
 Tenant-isolation proof (the end-to-end check; expects `PASS`):
 
 ```bash
-& .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
+& .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
 ```
 
 Frontend, when the change touches `frontend/` (all four, and `npm audit` is the
 counterpart of `NuGetAudit` — a high advisory fails CI):
 
 ```bash
-docker exec odms-node sh -c "cd /workspace/frontend && npm audit --audit-level=high && npm run typecheck && npm test && npm run build"
+docker exec dealerfoss-node sh -c "cd /workspace/frontend && npm audit --audit-level=high && npm run typecheck && npm test && npm run build"
 ```
 
-Notes: the solution is `.slnx` (the .NET 10 format) — `OpenDealer360.sln` does
+Notes: the solution is `.slnx` (the .NET 10 format) — `DealerFOSS.sln` does
 not exist. `dotnet-ef` is pinned in `dotnet-tools.json`; run `dotnet tool restore`
 once per clone.
 

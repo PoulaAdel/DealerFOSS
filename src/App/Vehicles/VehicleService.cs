@@ -8,12 +8,12 @@
 //       times. Rooftop scope lives on InventoryUnit, in InventoryService.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
-using OpenDealer360.Identity;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
+using DealerFOSS.Identity;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.Vehicles;
+namespace DealerFOSS.Vehicles;
 
 public sealed class VehicleService(
     TenantDb db,
@@ -154,6 +154,31 @@ public sealed class VehicleService(
             .SingleOrDefaultAsync(v => v.Vin == normalized, cancellationToken);
 
         return Result.Success(vehicle is null ? null : Describe(vehicle));
+    }
+
+    public async Task<Result<IReadOnlyList<VehicleDetail>>> PageForExportAsync(
+        Guid? after,
+        int take,
+        CancellationToken cancellationToken)
+    {
+        if (!await IsAllowedAnywhereAsync(ReadPermission, cancellationToken))
+        {
+            return Result.Failure<IReadOnlyList<VehicleDetail>>(VehicleErrors.Forbidden);
+        }
+
+        var query = _db.Vehicles.AsNoTracking();
+        if (after is { } cursor)
+        {
+            query = query.Where(v => v.Id.CompareTo(cursor) > 0);
+        }
+
+        var vehicles = await query
+            .OrderBy(v => v.Id)
+            .Take(Math.Clamp(take <= 0 ? 500 : take, 1, 1000))
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IReadOnlyList<VehicleDetail>>(
+            vehicles.Select(Describe).ToList());
     }
 
     /// <summary>

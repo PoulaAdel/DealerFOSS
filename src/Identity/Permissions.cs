@@ -5,7 +5,7 @@
 // Edit: adding a permission means granting it to a role somewhere, or it can
 //       never be held. Role.Grant rejects anything not listed here.
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// The permission catalogue. Permissions are named centrally and granted to
@@ -71,10 +71,20 @@ public static class Permissions
     /// </summary>
     public const string MigrationImport = "Migration.Import";
 
+    /// <summary>
+    /// Taking the dealership's records out as a file. Separate from importing
+    /// because it is a different act — this is bulk personal data leaving the
+    /// building (doc 06 §3), and somebody trusted to load a supplier's stock
+    /// list is not automatically trusted to walk out with every customer the
+    /// group has. Organization-wide, for the same reason importing is.
+    /// </summary>
+    public const string MigrationExport = "Migration.Export";
+
     public static IReadOnlyCollection<string> All { get; } =
     [
         SecurityManagePolicy,
         MigrationImport,
+        MigrationExport,
         OrganizationRead,
         OrganizationManage,
         CustomersRead,

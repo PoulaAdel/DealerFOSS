@@ -8,10 +8,10 @@
 //       deleted. Refusing early is deliberate — a missing tenant must never
 //       reach a data call.
 
-using OpenDealer360.Tenancy;
-using OpenDealer360.Core;
+using DealerFOSS.Tenancy;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
 /// Resolves the request's dealer organization once, before any endpoint runs

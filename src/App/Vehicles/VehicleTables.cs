@@ -11,9 +11,9 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OpenDealer360.Data;
+using DealerFOSS.Data;
 
-namespace OpenDealer360.Vehicles;
+namespace DealerFOSS.Vehicles;
 
 /// <summary>The schema this feature owns, shared with Inventory.</summary>
 internal static class VehicleSchema

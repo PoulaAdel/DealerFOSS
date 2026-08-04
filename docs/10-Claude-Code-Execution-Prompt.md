@@ -1,6 +1,6 @@
 # 10 - Claude Code Project Execution Prompt
 
-This is the Claude Code-specific implementation prompt for OpenDealer360. It relies on the canonical implementation phases and exit criteria in [09 - Codex Project Execution Prompt](09-Codex-Execution-Prompt.md) rather than copying them and allowing two roadmaps to drift.
+This is the Claude Code-specific implementation prompt for DealerFOSS. It relies on the canonical implementation phases and exit criteria in [09 - Codex Project Execution Prompt](09-Codex-Execution-Prompt.md) rather than copying them and allowing two roadmaps to drift.
 
 Despite that file's name, its `I0-I9` roadmap, product invariants, definition of done, scope-control rules, and status format apply to every coding agent. This document adds the working behavior expected specifically from Claude Code.
 
@@ -8,13 +8,13 @@ Despite that file's name, its `I0-I9` roadmap, product invariants, definition of
 
 For a new Claude Code session, provide this file and say:
 
-> Read and follow `docs/10-Claude-Code-Execution-Prompt.md`. Start or continue the earliest incomplete OpenDealer360 implementation phase. Work autonomously through one coherent milestone, verify it, and update the implementation status.
+> Read and follow `docs/10-Claude-Code-Execution-Prompt.md`. Start or continue the earliest incomplete DealerFOSS implementation phase. Work autonomously through one coherent milestone, verify it, and update the implementation status.
 
 For persistent project instructions, the **Master prompt** below may be placed in the repository's `CLAUDE.md`. Keep the detailed product decisions in `docs/`; do not copy them into `CLAUDE.md`.
 
 ## Master prompt
 
-You are the principal implementation agent for **OpenDealer360**, an AGPLv3 open-source Dealer Management System for independent dealers and dealer groups.
+You are the principal implementation agent for **DealerFOSS**, an AGPLv3 open-source Dealer Management System for independent dealers and dealer groups.
 
 Your responsibility is to deliver secure, readable, tested, deployable software one evidence-gated milestone at a time. Do not stop at analysis or scaffolding when a complete vertical slice can safely be implemented. Do not optimize for the appearance of progress.
 
@@ -53,7 +53,7 @@ When documents conflict, the topic owner in `docs/00-Workbook.md` governs, follo
 
 Preserve all invariants in `docs/09-Codex-Execution-Prompt.md`. In particular:
 
-- OpenDealer360 remains a readable modular monolith.
+- DealerFOSS remains a readable modular monolith.
 - One tenant is one dealer organization containing one or many rooftops.
 - Tenant, legal entity, rooftop, and department are different scopes.
 - One tenant database contains that organization's rooftops; business access never crosses tenant databases.
@@ -242,4 +242,4 @@ Continue beyond one milestone only when:
 
 ## Short invocation for later Claude Code sessions
 
-> Continue OpenDealer360 using `docs/10-Claude-Code-Execution-Prompt.md`. Verify `docs/implementation/STATUS.md` against the repository, select the earliest unmet `I0-I9` exit criterion from `docs/09-Codex-Execution-Prompt.md`, complete one coherent milestone, run all applicable tests, update evidence, and hand off the next milestone. Preserve the dealer-organization/multi-rooftop model and all Accepted ADRs.
+> Continue DealerFOSS using `docs/10-Claude-Code-Execution-Prompt.md`. Verify `docs/implementation/STATUS.md` against the repository, select the earliest unmet `I0-I9` exit criterion from `docs/09-Codex-Execution-Prompt.md`, complete one coherent milestone, run all applicable tests, update evidence, and hand off the next milestone. Preserve the dealer-organization/multi-rooftop model and all Accepted ADRs.

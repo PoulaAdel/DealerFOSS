@@ -7,10 +7,10 @@
 //       failure rather than a bug.
 
 using FluentAssertions;
-using OpenDealer360.Core;
-using OpenDealer360.Deals;
+using DealerFOSS.Core;
+using DealerFOSS.Deals;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class DealTests
 {

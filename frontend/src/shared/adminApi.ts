@@ -12,7 +12,7 @@
 //       no dealership, and adding one here would be the first step towards the
 //       separation this whole area exists to keep.
 
-const ANTI_FORGERY_COOKIE = 'odms_admin_csrf';
+const ANTI_FORGERY_COOKIE = 'dfoss_admin_csrf';
 const ANTI_FORGERY_HEADER = 'X-Admin-CSRF-Token';
 
 /** Methods that change nothing. Everything else carries an anti-forgery token. */

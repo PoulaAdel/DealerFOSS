@@ -21,14 +21,14 @@
 using System.Buffers.Text;
 using System.Security.Cryptography;
 using System.Text;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 public sealed class EnvelopeSecretProtector : ISecretProtector
 {
     /// <summary>Marks the format so a later scheme can be told apart from this one.</summary>
-    private const string Version = "odms.v1";
+    private const string Version = "dfoss.v1";
 
     private const int KeyBytes = 32;   // AES-256
     private const int NonceBytes = 12; // GCM standard

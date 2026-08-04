@@ -4,9 +4,9 @@
 
 ## 1. License and product promise
 
-OpenDealer360’s complete self-hosted core is licensed under GNU AGPLv3. An optional commercial license provides alternative terms for closed embedding or commercial arrangements; it is not required to obtain a functional self-hosted DMS. “Dual-licensed open source” is clearer than implying that required core features are withheld.
+DealerFOSS’s complete self-hosted core is licensed under GNU AGPLv3. An optional commercial license provides alternative terms for closed embedding or commercial arrangements; it is not required to obtain a functional self-hosted DMS. “Dual-licensed open source” is clearer than implying that required core features are withheld.
 
-The project publishes a trademark policy separately. “OpenDealer360 Certified” may identify tested releases/connectors without restricting lawful forks.
+The project publishes a trademark policy separately. “DealerFOSS Certified” may identify tested releases/connectors without restricting lawful forks.
 
 ## 2. Contributor provenance and dependencies
 

@@ -8,7 +8,7 @@
 //       "well-formed, or say why not" — never a hard refusal, and never a
 //       universal unique index (doc 04 §4).
 
-namespace OpenDealer360.Vehicles;
+namespace DealerFOSS.Vehicles;
 
 /// <summary>
 /// VIN rules. A modern VIN is 17 characters drawn from an alphabet that excludes

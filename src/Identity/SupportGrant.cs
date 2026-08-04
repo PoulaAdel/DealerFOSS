@@ -10,7 +10,7 @@
 //       A reason is required and cannot be blank. An entry nobody had to justify
 //       is not deliberate access; it is a back door with a timestamp.
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class SupportGrant
 {

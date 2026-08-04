@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>OpenDealer360.Core</RootNamespace>
-    <AssemblyName>OpenDealer360.Core</AssemblyName>
+    <RootNamespace>DealerFOSS.Core</RootNamespace>
+    <AssemblyName>DealerFOSS.Core</AssemblyName>
   </PropertyGroup>
 
   <!--

@@ -1,16 +1,24 @@
-// IMigration — bringing a dealership's existing records in from a file.
+// IMigration — a dealership's records arriving from a file, and leaving in one.
 //
 // Use:  the Migration endpoints call this. Nothing else does yet; when a
 //       connector lands it will queue jobs through the same contract.
-// Edit: the shape to protect is that submitting a file and running it are
-//       separate. The request stages rows and returns; a worker does the work.
-//       A dealership's export is tens of thousands of rows and an HTTP request
-//       that tried to finish the job would time out somewhere in the middle,
-//       having half-imported their customers with no record of where it stopped.
+// Edit: the shape to protect on the way in is that submitting a file and running
+//       it are separate. The request stages rows and returns; a worker does the
+//       work. A dealership's export is tens of thousands of rows and an HTTP
+//       request that tried to finish the job would time out somewhere in the
+//       middle, having half-imported their customers with no record of where it
+//       stopped.
+//
+//       The shape to protect on the way out is that **an export is a valid
+//       import**. Identical column names, in an order the importer accepts, so a
+//       dealership can take their data to a competitor — or back — without
+//       anybody here writing a converter for them. That is what an open DMS
+//       owes its users, and a round-trip test asserts it rather than a promise
+//       in a README.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.DataMigration;
+namespace DealerFOSS.DataMigration;
 
 public interface IMigration
 {
@@ -36,7 +44,32 @@ public interface IMigration
         bool problemsOnly,
         int limit,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Everything of one kind, as a file this same API would accept back.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately synchronous where importing is not. An export reads and
+    /// writes nothing, so there is no half-finished state to recover from and
+    /// nothing to be gained by making somebody poll for it.
+    /// </remarks>
+    Task<Result<ExportedFile>> ExportAsync(string kind, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// A dealership's records on their way out.
+/// </summary>
+/// <param name="Checksum">
+/// SHA-256 of <paramref name="Content"/>. Published so the receiving end can
+/// prove the file arrived whole — an export truncated in transit is worse than
+/// one that failed, because it looks like data.
+/// </param>
+public sealed record ExportedFile(
+    string Kind,
+    string FileName,
+    string Content,
+    string Checksum,
+    int RowCount);
 
 /// <summary>A file to import, as submitted.</summary>
 public sealed record NewImport(string Kind, string Mode, string SourceName, string Content);
@@ -72,6 +105,10 @@ internal static class MigrationErrors
     public static Error Forbidden { get; } = Error.Forbidden(
         "migration.forbidden",
         "You do not have permission to import records.");
+
+    public static Error ForbiddenExport { get; } = Error.Forbidden(
+        "migration.forbidden_export",
+        "You do not have permission to export this dealership's records.");
 
     public static Error NotFound { get; } = Error.NotFound(
         "migration.not_found",

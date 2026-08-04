@@ -7,9 +7,9 @@
 //       could silently act as the wrong tenant or the wrong user.
 
 using FluentAssertions;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class RequestContextTests
 {

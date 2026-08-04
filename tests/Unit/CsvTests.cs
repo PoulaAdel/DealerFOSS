@@ -8,9 +8,9 @@
 //       wrong column, which is worse than refusing the file.
 
 using FluentAssertions;
-using OpenDealer360.DataMigration;
+using DealerFOSS.DataMigration;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class CsvTests
 {

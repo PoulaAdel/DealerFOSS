@@ -38,7 +38,7 @@ docker compose -f deploy/docker-compose.yml --profile node up -d
 Then work inside it:
 
 ```bash
-docker exec -it odms-node sh
+docker exec -it dealerfoss-node sh
 ```
 
 ```bash
@@ -51,6 +51,13 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+> **If an edit seems to do nothing**, the watcher is the first suspect, not your
+> code. The repository is bind-mounted from Windows into a Linux container and
+> inotify events do not cross that boundary, so Vite's default watcher never
+> fires — and a hard refresh serves the previous bundle, which reads as "my
+> change had no effect". `vite.config.ts` enables polling to fix it; if you
+> change that file, restart the dev server, because config is read once.
+
 ### Why the dev server proxies `/api`
 
 The session cookie is `SameSite=Strict`, so the browser only sends it on
@@ -60,12 +67,12 @@ unauthenticated. Vite proxies `/api` instead, so the browser sees one origin.
 
 From inside a container, `localhost` is the container — the host is reachable as
 `host.docker.internal`, which is the proxy default. Running the toolchain
-directly on a host instead? Set `ODMS_API=http://localhost:5080`.
+directly on a host instead? Set `DEALERFOSS_API=http://localhost:5080`.
 
 ## Testing
 
 ```bash
-docker exec odms-node sh -c "cd /workspace/frontend && npm test"
+docker exec dealerfoss-node sh -c "cd /workspace/frontend && npm test"
 ```
 
 The tests mount the real components into a real DOM (jsdom) and read what a
@@ -109,8 +116,8 @@ away:
 | | Dealership | Control plane |
 |---|---|---|
 | Client | `shared/api.ts` | `shared/adminApi.ts` |
-| Session cookie | `odms_session` | `odms_admin` |
-| Anti-forgery cookie | `odms_csrf` | `odms_admin_csrf` |
+| Session cookie | `dfoss_session` | `dfoss_admin` |
+| Anti-forgery cookie | `dfoss_csrf` | `dfoss_admin_csrf` |
 | Anti-forgery header | `X-CSRF-Token` | `X-Admin-CSRF-Token` |
 | Tenant header | always | only when opening support access |
 
@@ -128,7 +135,7 @@ counts. Hiding a link protects nothing.
 **The session cookie is HttpOnly, so this code cannot read it.** "Am I signed
 in?" is answered by asking the server — which is also the only answer worth
 having, because a session revoked on another device has to stop working here on
-the next request. The *other* cookie, `odms_csrf`, is readable on purpose: `api`
+the next request. The *other* cookie, `dfoss_csrf`, is readable on purpose: `api`
 copies it into the `X-CSRF-Token` header on every write, and the server refuses
 writes that arrive without it. That happens in one place so no screen has to
 remember it.
@@ -167,7 +174,9 @@ Also missing: an OpenAPI-generated client (`src/shared/contracts.ts` is
 hand-written and must be changed alongside the server — it had already drifted
 once, missing `mustEnrolSecondFactor`), and print layouts.
 
-**Still unconfirmed by a person:** the tests prove the components render and
-behave in jsdom, which is not the same as looking right in a browser. Fonts,
-layout, colour contrast in dark mode, and whether a phone camera can actually
-read the QR code are all things only somebody with a screen can tell you.
+**Confirmed on a real browser, 2026-08-03.** Every screen signed into and walked
+at 1280 and 375. jsdom has no layout engine, and opening the real thing found
+three defects it could not have: a list overstating a total, two sign-in screens
+that looked alike, and a dead file watcher. Do that after any visual change —
+it is not blocked on anybody. The one thing still needing a person is physical:
+whether a phone camera reads the QR code.

@@ -10,11 +10,11 @@
 using System.Reflection;
 using FluentAssertions;
 using NetArchTest.Rules;
-using OpenDealer360.Core;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Core;
+using DealerFOSS.Vehicles;
 using Xunit;
 
-namespace OpenDealer360.ArchitectureTests;
+namespace DealerFOSS.ArchitectureTests;
 
 public sealed class FeatureBoundaryTests
 {
@@ -27,12 +27,12 @@ public sealed class FeatureBoundaryTests
     /// </summary>
     public static TheoryData<string, string[]> ForbiddenFeatureDependencies() => new()
     {
-        { "OpenDealer360.Organization", ["OpenDealer360.Customers", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
-        { "OpenDealer360.Customers", ["OpenDealer360.Organization", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
-        { "OpenDealer360.Vehicles", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
-        { "OpenDealer360.Inventory", ["OpenDealer360.Organization", "OpenDealer360.Customers", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
-        { "OpenDealer360.Leads", ["OpenDealer360.Organization", "OpenDealer360.Deals", "OpenDealer360.Accounting"] },
-        { "OpenDealer360.Accounting", ["OpenDealer360.Customers", "OpenDealer360.Vehicles", "OpenDealer360.Inventory", "OpenDealer360.Leads", "OpenDealer360.Deals"] },
+        { "DealerFOSS.Organization", ["DealerFOSS.Customers", "DealerFOSS.Vehicles", "DealerFOSS.Inventory", "DealerFOSS.Leads", "DealerFOSS.Deals"] },
+        { "DealerFOSS.Customers", ["DealerFOSS.Organization", "DealerFOSS.Vehicles", "DealerFOSS.Inventory", "DealerFOSS.Leads", "DealerFOSS.Deals"] },
+        { "DealerFOSS.Vehicles", ["DealerFOSS.Organization", "DealerFOSS.Customers", "DealerFOSS.Inventory", "DealerFOSS.Leads", "DealerFOSS.Deals"] },
+        { "DealerFOSS.Inventory", ["DealerFOSS.Organization", "DealerFOSS.Customers", "DealerFOSS.Leads", "DealerFOSS.Deals"] },
+        { "DealerFOSS.Leads", ["DealerFOSS.Organization", "DealerFOSS.Deals", "DealerFOSS.Accounting"] },
+        { "DealerFOSS.Accounting", ["DealerFOSS.Customers", "DealerFOSS.Vehicles", "DealerFOSS.Inventory", "DealerFOSS.Leads", "DealerFOSS.Deals"] },
     };
 
     /// <summary>
@@ -41,9 +41,9 @@ public sealed class FeatureBoundaryTests
     /// </summary>
     public static TheoryData<string, string[]> ForbiddenEntityDependencies() => new()
     {
-        { "OpenDealer360.Leads", ["OpenDealer360.Customers.Customer", "OpenDealer360.Customers.ContactPoint", "OpenDealer360.Vehicles.Vehicle", "OpenDealer360.Inventory.InventoryUnit"] },
-        { "OpenDealer360.Deals", ["OpenDealer360.Customers.Customer", "OpenDealer360.Customers.ContactPoint", "OpenDealer360.Vehicles.Vehicle", "OpenDealer360.Inventory.InventoryUnit", "OpenDealer360.Inventory.InventoryStatusChange", "OpenDealer360.Accounting.JournalEntry", "OpenDealer360.Accounting.Account"] },
-        { "OpenDealer360.Accounting", ["OpenDealer360.Organization.Rooftop", "OpenDealer360.Organization.LegalEntity", "OpenDealer360.Organization.DealerOrganization"] },
+        { "DealerFOSS.Leads", ["DealerFOSS.Customers.Customer", "DealerFOSS.Customers.ContactPoint", "DealerFOSS.Vehicles.Vehicle", "DealerFOSS.Inventory.InventoryUnit"] },
+        { "DealerFOSS.Deals", ["DealerFOSS.Customers.Customer", "DealerFOSS.Customers.ContactPoint", "DealerFOSS.Vehicles.Vehicle", "DealerFOSS.Inventory.InventoryUnit", "DealerFOSS.Inventory.InventoryStatusChange", "DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.Account"] },
+        { "DealerFOSS.Accounting", ["DealerFOSS.Organization.Rooftop", "DealerFOSS.Organization.LegalEntity", "DealerFOSS.Organization.DealerOrganization"] },
     };
 
     [Theory]
@@ -100,13 +100,13 @@ public sealed class FeatureBoundaryTests
         // Tenant routing decides which database a request uses. It must not know
         // what is stored in it.
         var result = Types.InAssembly(App)
-            .That().ResideInNamespace("OpenDealer360.Tenancy")
+            .That().ResideInNamespace("DealerFOSS.Tenancy")
             .Should()
             .NotHaveDependencyOnAny(
-                "OpenDealer360.Organization",
-                "OpenDealer360.Customers",
-                "OpenDealer360.Vehicles",
-                "OpenDealer360.Inventory")
+                "DealerFOSS.Organization",
+                "DealerFOSS.Customers",
+                "DealerFOSS.Vehicles",
+                "DealerFOSS.Inventory")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
@@ -128,8 +128,8 @@ public sealed class FeatureBoundaryTests
         // ordinary tenant middleware resolves it, in the ordinary way, as that
         // user. No administrator ever becomes an ICurrentUser.
         var result = Types.InAssembly(App)
-            .That().ResideInNamespace("OpenDealer360.Administration")
-            .Should().NotHaveDependencyOn("OpenDealer360.Core.ICurrentUser")
+            .That().ResideInNamespace("DealerFOSS.Administration")
+            .Should().NotHaveDependencyOn("DealerFOSS.Core.ICurrentUser")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
@@ -144,16 +144,16 @@ public sealed class FeatureBoundaryTests
         // different jobs. If this rule ever needs relaxing, the honest change is
         // a new support-access capability — not a reference from here.
         var result = Types.InAssembly(App)
-            .That().ResideInNamespace("OpenDealer360.Administration")
+            .That().ResideInNamespace("DealerFOSS.Administration")
             .Should()
             .NotHaveDependencyOnAny(
-                "OpenDealer360.Organization",
-                "OpenDealer360.Customers",
-                "OpenDealer360.Vehicles",
-                "OpenDealer360.Inventory",
-                "OpenDealer360.Leads",
-                "OpenDealer360.Deals",
-                "OpenDealer360.Accounting")
+                "DealerFOSS.Organization",
+                "DealerFOSS.Customers",
+                "DealerFOSS.Vehicles",
+                "DealerFOSS.Inventory",
+                "DealerFOSS.Leads",
+                "DealerFOSS.Deals",
+                "DealerFOSS.Accounting")
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
@@ -170,10 +170,10 @@ public sealed class FeatureBoundaryTests
         // database (doc 04 §5). Only the data layer, tenancy, and the
         // development seeder may do that.
         var result = Types.InAssembly(App)
-            .That().ResideInNamespaceStartingWith("OpenDealer360.")
-            .And().DoNotResideInNamespace("OpenDealer360.Data")
-            .And().DoNotResideInNamespace("OpenDealer360.Tenancy")
-            .And().DoNotResideInNamespace("OpenDealer360.App")
+            .That().ResideInNamespaceStartingWith("DealerFOSS.")
+            .And().DoNotResideInNamespace("DealerFOSS.Data")
+            .And().DoNotResideInNamespace("DealerFOSS.Tenancy")
+            .And().DoNotResideInNamespace("DealerFOSS.App")
             .Should().NotHaveDependencyOn("Microsoft.EntityFrameworkCore.DbContextOptionsBuilder`1")
             .GetResult();
 

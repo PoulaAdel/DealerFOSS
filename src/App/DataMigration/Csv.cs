@@ -16,7 +16,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace OpenDealer360.DataMigration;
+namespace DealerFOSS.DataMigration;
 
 /// <summary>One parsed line, with the text it came from.</summary>
 internal sealed record CsvRow(int Number, string Raw, IReadOnlyList<string> Fields);

@@ -6,9 +6,9 @@
 //       "whose lot is it on". The rooftop-scoped half lives in IInventory. Do not
 //       merge the two: the scope is the reason they are separate.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Vehicles;
+namespace DealerFOSS.Vehicles;
 
 /// <summary>
 /// Vehicles as identities — VIN, year, make, model. Organization-shared: the same
@@ -40,6 +40,19 @@ public interface IVehicles
     /// industry already agreed on a key seventeen characters long.
     /// </remarks>
     Task<Result<VehicleDetail?>> FindByVinAsync(string vin, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// One page of vehicles in id order, for walking the whole set. Pass the
+    /// last id seen to get the next page; null starts at the beginning.
+    /// </summary>
+    /// <remarks>
+    /// Keyset rather than offset paging (doc 06 §6): an offset shifts under a
+    /// concurrent insert, so a long export would silently skip or repeat a car.
+    /// </remarks>
+    Task<Result<IReadOnlyList<VehicleDetail>>> PageForExportAsync(
+        Guid? after,
+        int take,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Enough to identify a vehicle in a list.</summary>

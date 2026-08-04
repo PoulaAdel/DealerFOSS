@@ -9,9 +9,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using OpenDealer360.App;
+using DealerFOSS.App;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 [Collection(nameof(HostCollection))]
 public sealed class AntiForgeryTests(HostFixture fixture)
@@ -39,7 +39,7 @@ public sealed class AntiForgeryTests(HostFixture fixture)
         using var response = await client.SendAsync(request);
 
         var header = response.Headers.GetValues("Set-Cookie")
-            .Single(v => v.StartsWith("odms_csrf=", StringComparison.Ordinal))
+            .Single(v => v.StartsWith("dfoss_csrf=", StringComparison.Ordinal))
             .ToLowerInvariant();
 
         header.Should().NotContain("httponly",
@@ -112,7 +112,7 @@ public sealed class AntiForgeryTests(HostFixture fixture)
         using var request = new HttpRequestMessage(
             HttpMethod.Get, new Uri(Endpoint, UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
 
         using var response = await client.SendAsync(request);
 
@@ -139,8 +139,8 @@ public sealed class AntiForgeryTests(HostFixture fixture)
         // A session of its own, so signing out does not disturb the cached ones
         // the rest of the suite shares.
         using var login = await client.SendAsync(LoginRequest());
-        var sessionToken = CookieFrom(login, "odms_session");
-        var antiForgeryToken = CookieFrom(login, "odms_csrf");
+        var sessionToken = CookieFrom(login, "dfoss_session");
+        var antiForgeryToken = CookieFrom(login, "dfoss_csrf");
 
         using (var logout = await client.SendAsync(
             Authenticated(HttpMethod.Post, "/api/v1/auth/logout", sessionToken, antiForgeryToken)))
@@ -176,7 +176,7 @@ public sealed class AntiForgeryTests(HostFixture fixture)
     {
         var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={sessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_session={sessionToken}");
 
         if (antiForgeryToken is not null)
         {

@@ -9,9 +9,9 @@
 //       scope check lives in InventoryService; removing it fails
 //       InventoryScopeTests.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Inventory;
+namespace DealerFOSS.Inventory;
 
 public sealed class InventoryUnit : AuditableEntity
 {

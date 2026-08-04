@@ -7,7 +7,7 @@
 
 using Microsoft.EntityFrameworkCore;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
 /// The control-plane catalog context. Holds tenant routing only (doc 04 §2).

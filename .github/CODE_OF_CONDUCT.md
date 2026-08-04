@@ -34,7 +34,7 @@ Examples of unacceptable behavior:
 - Other conduct which could reasonably be considered inappropriate in a
   professional setting
 
-Because OpenDealer360 handles dealership customer data, one additional standard
+Because DealerFOSS handles dealership customer data, one additional standard
 applies: **never post real customer, financial, or personally identifying data**
 in issues, pull requests, discussions, logs, or test fixtures. Use synthetic or
 sanitized data. Reports of accidental disclosure are handled through the process

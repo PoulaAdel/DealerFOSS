@@ -15,8 +15,8 @@
 //       the server's message rather than inventing one: it was written to be
 //       read by the person who hit it.
 
-const TENANT_KEY = 'odms.tenant';
-const ANTI_FORGERY_COOKIE = 'odms_csrf';
+const TENANT_KEY = 'dfoss.tenant';
+const ANTI_FORGERY_COOKIE = 'dfoss_csrf';
 const ANTI_FORGERY_HEADER = 'X-CSRF-Token';
 
 /** Methods that change nothing. Everything else carries an anti-forgery token. */

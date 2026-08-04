@@ -5,7 +5,7 @@
 //       government id, or document content. Rows are never updated or deleted
 //       (ADR-016); a correction is a new row.
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// An append-only audit record (ADR-016). Never updated or deleted: a

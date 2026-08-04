@@ -6,7 +6,7 @@
 // Edit: implementations live outside Core. src/App/Tenancy has a development
 //       no-op; a real one (DPAPI, certificate, or KMS) is required for production.
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// Protects sensitive configuration at rest — most importantly tenant connection

@@ -1,11 +1,11 @@
 # Data migration
 
-Bringing a dealership's existing records in from a file. The first half of
-[doc 05 §6](../../../docs/05-Integration-Framework.md) — the migration workflow —
-without the connector half, which cannot be built honestly until there is a
-provider to test against.
+Bringing a dealership's existing records in from a file, and letting them take
+them away again. [Doc 05 §6](../../../docs/05-Integration-Framework.md) — the
+migration workflow — without the connector half, which cannot be built honestly
+until there is a provider to test against.
 
-> **Why the folder is `DataMigration` and not `Migration`.** `OpenDealer360.Migration`
+> **Why the folder is `DataMigration` and not `Migration`.** `DealerFOSS.Migration`
 > shadows `Microsoft.EntityFrameworkCore.Migrations.Migration`, which every
 > generated EF migration inherits from. Those files are generated artifacts and
 > must not be hand-edited, so the namespace moved instead. The HTTP route is
@@ -78,6 +78,45 @@ A missing column is refused at submission, and the response names which ones —
 the difference between fixing the file in a minute and guessing at it for an
 afternoon.
 
+## An export is a valid import
+
+`GET /api/v1/migration/exports/{kind}` returns a CSV whose columns are **exactly
+what the importer reads**, in an order it accepts. That is not a formatting
+preference — it is the promise an open DMS makes. A dealership can take their
+records to a competitor, or bring them back, without anybody here writing them a
+converter.
+
+`ExportTests.Records_survive_a_round_trip_into_another_dealership` exports one
+tenant and feeds that exact file to a *different* one through the ordinary import
+endpoint, then checks nothing was refused. It earned its place immediately: it
+caught the exporter dropping `vinexceptionreason`, which made every trailer and
+pre-1981 vehicle un-importable — the written reason that permitted the unusual
+VIN was gone, so the row was correctly refused on the way back in. A round trip
+is the only test that would have found that.
+
+Three smaller decisions:
+
+- **Every field is quoted**, unconditionally. It costs a few bytes and removes
+  the whole class of bug where `Bob "Big Bob" Special, Ltd` becomes two columns
+  in whatever receives the file.
+- **A hand-typed customer exports under its own id.** It has no external
+  reference, and a row without one is refused on import — so an export of
+  hand-typed customers would not be an export at all. Their id here *is* their
+  reference to the outside.
+- **`X-Content-SHA256` and `X-Row-Count`** ride on the response. A file truncated
+  in transit is worse than one that failed, because it looks like data.
+
+Exporting is a separate permission from importing (`Migration.Export`), because
+it is a different act: bulk personal data leaving the building
+([doc 06 §3](../../../docs/06-Security-and-API.md)). Somebody trusted to load a
+supplier's stock list is not automatically trusted to walk out with every
+customer the group has. Both are organization-wide or nothing.
+
+Reads walk the set with **keyset paging** (`PageForExportAsync`), not offsets: an
+offset shifts under a concurrent insert, so a long export would silently skip or
+repeat somebody. One export is capped at 50,000 rows — beyond that the response
+needs streaming, which changes how it is written and none of the logic.
+
 ## The worker is the pattern for background work
 
 `ImportWorker` is the first thing in the system that is not a request, and three
@@ -99,8 +138,13 @@ follows.
 Updating an existing customer's details from a file — a matched row is reported
 and left alone, because deciding that a file outranks what staff have since
 typed is a policy nobody has set. Deletions and tombstones. Profiling and
-duplicate detection before a run (doc 05 §6 step 3). Export. Cancellation of a
-running job. Any screen: this is API-only.
+duplicate detection before a run (doc 05 §6 step 3). Cancellation of a running
+job. Any screen: this is API-only.
+
+**Only customers and vehicles.** Leads, deals, and the ledger have no import or
+export path, so "take your data" is not yet the whole truth — it is the two
+record types a dealership would migrate first. Streaming for an export past
+50,000 rows. Documents, and the relationships between records.
 
 Every imported record writes its own audit entry, so a 20,000-row import writes
 20,000 of them. That is the correct answer to "who created this customer" and a

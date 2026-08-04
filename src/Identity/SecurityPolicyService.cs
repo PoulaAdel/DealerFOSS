@@ -7,9 +7,9 @@
 //       policy lands as a support queue rather than as a control.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class SecurityPolicyService(IdentityDb db, IAuditSink audit) : ISecurityPolicy
 {

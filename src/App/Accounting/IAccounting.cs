@@ -7,9 +7,9 @@
 //       happened in the business, so the contract names the events — a delivery,
 //       a reversal — rather than offering a general-purpose posting hole.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Accounting;
+namespace DealerFOSS.Accounting;
 
 public interface IAccounting
 {

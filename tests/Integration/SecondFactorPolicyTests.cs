@@ -12,10 +12,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
-using OpenDealer360.App;
-using OpenDealer360.Identity;
+using DealerFOSS.App;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 [Collection(nameof(HostCollection))]
 public sealed class SecondFactorPolicyTests(HostFixture fixture)
@@ -256,7 +256,7 @@ public sealed class SecondFactorPolicyTests(HostFixture fixture)
         using var client = _fixture.CreateClient();
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
 
         if (method != HttpMethod.Get)
         {

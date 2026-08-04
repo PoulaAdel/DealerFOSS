@@ -1,6 +1,6 @@
 # Security Policy
 
-OpenDealer360 stores PII, financial data, identity documents, and regulated
+DealerFOSS stores PII, financial data, identity documents, and regulated
 evidence. Security is treated as product work, not a hardening afterthought
 (see [docs/06-Security-and-API.md](../docs/06-Security-and-API.md)).
 

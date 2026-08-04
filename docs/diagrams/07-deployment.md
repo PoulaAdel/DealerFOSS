@@ -8,7 +8,7 @@ Specified in [07 — Delivery Roadmap](../07-Delivery-Roadmap.md).
 flowchart TB
     Users["Dealer users"]
     subgraph Host["Windows or Linux host"]
-        App["OpenDealer360<br/>IIS / Windows service / Kestrel container"]
+        App["DealerFOSS<br/>IIS / Windows service / Kestrel container"]
         Jobs["Durable Quartz jobs"]
         Docs[("Filesystem documents")]
     end

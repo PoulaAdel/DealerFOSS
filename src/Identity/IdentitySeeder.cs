@@ -11,9 +11,9 @@
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>One development account to create, described by the caller.</summary>
 public sealed record DevelopmentAccount(Guid Id, string Email, string DisplayName);
@@ -83,6 +83,10 @@ public static class IdentitySeeder
             // Bringing the dealership's old records in is a management job, and
             // one that happens a handful of times in the life of an installation.
             Permissions.MigrationImport,
+            // A dealership must be able to take its own data with it. Withholding
+            // this from the person who runs the group would make the promise
+            // hollow (doc 05 §6).
+            Permissions.MigrationExport,
         ]);
 
         // An advisor can look a customer up but not create one, and can see stock,

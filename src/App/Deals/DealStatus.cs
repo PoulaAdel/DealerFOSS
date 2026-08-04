@@ -8,7 +8,7 @@
 //       a change means going back to Draft, which is a recorded move. That is
 //       what stops a price quietly changing after a manager approved it.
 
-namespace OpenDealer360.Deals;
+namespace DealerFOSS.Deals;
 
 public enum DealStatus
 {

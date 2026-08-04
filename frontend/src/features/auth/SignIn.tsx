@@ -86,7 +86,7 @@ export function SignIn() {
 
   return (
     <main className="signin">
-      <h1>OpenDealer360</h1>
+      <h1>DealerFOSS</h1>
 
       {stage.kind === 'credentials' ? (
         <form onSubmit={submitCredentials} noValidate>

@@ -7,7 +7,7 @@
 //       it. Leaving either out silently strands leads in a state nobody can get
 //       them out of.
 
-namespace OpenDealer360.Leads;
+namespace DealerFOSS.Leads;
 
 public enum LeadStatus
 {

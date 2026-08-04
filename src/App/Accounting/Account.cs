@@ -6,9 +6,9 @@
 //       written depends on that being right. Do not add a kind without deciding
 //       its normal balance.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Accounting;
+namespace DealerFOSS.Accounting;
 
 public sealed class Account : AuditableEntity
 {

@@ -8,14 +8,14 @@
 
 using System.Security.Cryptography;
 using FluentAssertions;
-using OpenDealer360.Tenancy;
+using DealerFOSS.Tenancy;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class SecretProtectorTests
 {
     private const string Connection =
-        "Server=sql;Database=OpenDealer360_Tenant_northgroup;User Id=sa;Password=hunter2;Encrypt=True";
+        "Server=sql;Database=DealerFOSS_Tenant_northgroup;User Id=sa;Password=hunter2;Encrypt=True";
 
     [Fact]
     public void What_goes_in_comes_back_out()
@@ -91,7 +91,7 @@ public sealed class SecretProtectorTests
             because: "old values must stay readable while they are re-encrypted");
 
         // And new values use the new key.
-        after.Protect(Connection).Should().StartWith("odms.v1:2026-07:");
+        after.Protect(Connection).Should().StartWith("dfoss.v1:2026-07:");
     }
 
     [Fact]

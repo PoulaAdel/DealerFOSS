@@ -11,14 +11,14 @@
 //                         and would be dropped on a cross-origin request.
 //
 // From inside a container, "localhost" is the container. The host machine is
-// reachable as host.docker.internal on Docker Desktop. Override with ODMS_API
+// reachable as host.docker.internal on Docker Desktop. Override with DEALERFOSS_API
 // when running the toolchain directly on the host instead.
 
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const api = process.env.ODMS_API ?? 'http://host.docker.internal:5080';
+const api = process.env.DEALERFOSS_API ?? 'http://host.docker.internal:5080';
 
 export default defineConfig({
   plugins: [react()],
@@ -26,6 +26,17 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
+    // The repository is bind-mounted from Windows into a Linux container, and
+    // inotify events do not cross that boundary — so Vite's default watcher
+    // never fires. Without polling, editing a file changes nothing in the
+    // browser and even a hard reload serves the previous bundle, which reads
+    // as "my change did nothing" rather than as a broken watcher.
+    //
+    // Polling costs a little CPU. A dead edit-refresh loop costs an afternoon.
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
     proxy: {
       '/api': {
         target: api,

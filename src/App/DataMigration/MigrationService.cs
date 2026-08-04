@@ -14,18 +14,22 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
-using OpenDealer360.Identity;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
+using DealerFOSS.Data;
+using DealerFOSS.Identity;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.DataMigration;
+namespace DealerFOSS.DataMigration;
 
 public sealed class MigrationService(
     TenantDb db,
     IAccessDirectory access,
     ICurrentUser currentUser,
     IClock clock,
-    IAuditSink audit)
+    IAuditSink audit,
+    ICustomers customers,
+    IVehicles vehicles)
     : IMigration
 {
     /// <summary>
@@ -43,11 +47,23 @@ public sealed class MigrationService(
 
     private const int MaxJobs = 100;
 
+    /// <summary>Rows per page while walking the whole set for an export.</summary>
+    private const int ExportPageSize = 500;
+
+    /// <summary>
+    /// A ceiling on one export, so a request cannot build an unbounded string in
+    /// memory. A dealership larger than this needs streaming, which is a change
+    /// to how the response is written rather than to any of the logic here.
+    /// </summary>
+    private const int MaxExportRows = 50_000;
+
     private readonly TenantDb _db = db;
     private readonly IAccessDirectory _access = access;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IClock _clock = clock;
     private readonly IAuditSink _audit = audit;
+    private readonly ICustomers _customers = customers;
+    private readonly IVehicles _vehicles = vehicles;
 
     public async Task<Result<ImportJobView>> SubmitAsync(
         NewImport import,
@@ -198,6 +214,119 @@ public sealed class MigrationService(
         return Result.Success<IReadOnlyList<ImportRowView>>(
             rows.Select(r => new ImportRowView(
                 r.RowNumber, r.Raw, r.Outcome.ToString(), r.Message)).ToList());
+    }
+
+    public async Task<Result<ExportedFile>> ExportAsync(
+        string kind,
+        CancellationToken cancellationToken)
+    {
+        // A separate permission from importing, because it is a different act:
+        // this is bulk PII leaving the building (doc 06 §3). Somebody trusted to
+        // load a supplier's stock list is not automatically trusted to walk out
+        // with every customer the group has.
+        var scope = await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, Permissions.MigrationExport, cancellationToken);
+
+        if (!scope.IsOrganizationWide)
+        {
+            return Result.Failure<ExportedFile>(MigrationErrors.ForbiddenExport);
+        }
+
+        if (!Enum.TryParse<ImportKind>(kind, ignoreCase: true, out var parsed))
+        {
+            return Result.Failure<ExportedFile>(MigrationErrors.UnknownKind);
+        }
+
+        var file = new StringBuilder();
+        file.Append(Exporter.HeaderFor(parsed)).Append('\n');
+
+        var rows = parsed == ImportKind.Customers
+            ? await WriteCustomersAsync(file, cancellationToken)
+            : await WriteVehiclesAsync(file, cancellationToken);
+
+        if (rows.IsFailure)
+        {
+            return Result.Failure<ExportedFile>(rows.Error);
+        }
+
+        var content = file.ToString();
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, "Migration.Export", AuditOutcome.Allowed,
+                "Export", parsed.ToString(), null,
+                $"Exported {rows.Value} {parsed} record(s).", null, null),
+            cancellationToken);
+
+        return Result.Success(new ExportedFile(
+            parsed.ToString(),
+            $"{parsed.ToString().ToLower(CultureInfo.InvariantCulture)}.csv",
+            content,
+            HashOf(content),
+            rows.Value));
+    }
+
+    private async Task<Result<int>> WriteCustomersAsync(
+        StringBuilder file,
+        CancellationToken cancellationToken)
+    {
+        Guid? after = null;
+        var written = 0;
+
+        while (written < MaxExportRows)
+        {
+            var page = await _customers.PageForExportAsync(after, ExportPageSize, cancellationToken);
+            if (page.IsFailure)
+            {
+                return Result.Failure<int>(page.Error);
+            }
+
+            if (page.Value.Count == 0)
+            {
+                break;
+            }
+
+            foreach (var customer in page.Value)
+            {
+                file.Append(Exporter.Row(customer)).Append('\n');
+                written++;
+            }
+
+            after = page.Value[^1].Id;
+        }
+
+        return Result.Success(written);
+    }
+
+    private async Task<Result<int>> WriteVehiclesAsync(
+        StringBuilder file,
+        CancellationToken cancellationToken)
+    {
+        Guid? after = null;
+        var written = 0;
+
+        while (written < MaxExportRows)
+        {
+            var page = await _vehicles.PageForExportAsync(after, ExportPageSize, cancellationToken);
+            if (page.IsFailure)
+            {
+                return Result.Failure<int>(page.Error);
+            }
+
+            if (page.Value.Count == 0)
+            {
+                break;
+            }
+
+            foreach (var vehicle in page.Value)
+            {
+                file.Append(Exporter.Row(vehicle)).Append('\n');
+                written++;
+            }
+
+            after = page.Value[^1].Id;
+        }
+
+        return Result.Success(written);
     }
 
     /// <summary>

@@ -5,7 +5,7 @@ Visuals: [Auth flow](diagrams/06-auth-flow.md) · [Deal lifecycle](diagrams/05-d
 
 ## 1. Security model
 
-OpenDealer360 stores PII, financial information, identity documents, and regulated evidence. Security is based on explicit tenant/rooftop scope, least privilege, strong sessions, immutable audit, protected files/secrets, and verifiable operations—not only JWT validation.
+DealerFOSS stores PII, financial information, identity documents, and regulated evidence. Security is based on explicit tenant/rooftop scope, least privilege, strong sessions, immutable audit, protected files/secrets, and verifiable operations—not only JWT validation.
 
 Threat models are maintained for authentication/session handling, tenant and rooftop resolution, connector webhooks/credentials, bulk import/export, documents/uploads, financial posting, support access, and software updates.
 
@@ -63,7 +63,7 @@ Audit events are append-only and include actor, session, tenant, rooftop, action
 
 Every record has a data classification and retention policy. Legal hold overrides purge. Privacy workflows support discovery, export, correction, restriction, and deletion where law permits without destroying required accounting/compliance evidence.
 
-F&I and communications store the exact version of a menu, disclosure, notice, consent, message template, calculation inputs, delivery result, signer evidence, and resulting document hash. Provider integration does not outsource OpenDealer360’s evidence trail. Jurisdiction rule packs require compliance review before being marked supported.
+F&I and communications store the exact version of a menu, disclosure, notice, consent, message template, calculation inputs, delivery result, signer evidence, and resulting document hash. Provider integration does not outsource DealerFOSS’s evidence trail. Jurisdiction rule packs require compliance review before being marked supported.
 
 ## 6. API conventions
 

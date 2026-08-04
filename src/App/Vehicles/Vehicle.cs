@@ -8,9 +8,9 @@
 //       rooftop to this class, and do not add a unique index on VIN — see
 //       VehicleTables.cs for why.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Vehicles;
+namespace DealerFOSS.Vehicles;
 
 public sealed class Vehicle : AuditableEntity
 {
@@ -70,7 +70,7 @@ public sealed class Vehicle : AuditableEntity
         string? bodyStyle = null,
         string? exteriorColor = null)
     {
-        var normalizedVin = OpenDealer360.Vehicles.Vin.Normalize(vin);
+        var normalizedVin = DealerFOSS.Vehicles.Vin.Normalize(vin);
         var reason = string.IsNullOrWhiteSpace(vinExceptionReason) ? null : vinExceptionReason.Trim();
 
         if (normalizedVin.Length == 0 && reason is null)
@@ -79,10 +79,10 @@ public sealed class Vehicle : AuditableEntity
                 "A vehicle needs a VIN, or a written reason it has none.", nameof(vin));
         }
 
-        if (normalizedVin.Length > 0 && !OpenDealer360.Vehicles.Vin.IsWellFormed(normalizedVin) && reason is null)
+        if (normalizedVin.Length > 0 && !DealerFOSS.Vehicles.Vin.IsWellFormed(normalizedVin) && reason is null)
         {
             throw new ArgumentException(
-                $"'{normalizedVin}' is not a standard {OpenDealer360.Vehicles.Vin.StandardLength}-character VIN. "
+                $"'{normalizedVin}' is not a standard {DealerFOSS.Vehicles.Vin.StandardLength}-character VIN. "
                 + "Record it anyway by giving a reason — an import, a pre-1981 vehicle, or a "
                 + "number confirmed against the door plate.",
                 nameof(vin));
@@ -110,7 +110,7 @@ public sealed class Vehicle : AuditableEntity
             Id = id,
             Vin = normalizedVin,
             // A well-formed VIN carries no exception, whatever the caller sent.
-            VinExceptionReason = OpenDealer360.Vehicles.Vin.IsWellFormed(normalizedVin) ? null : reason,
+            VinExceptionReason = DealerFOSS.Vehicles.Vin.IsWellFormed(normalizedVin) ? null : reason,
             ModelYear = modelYear,
             Make = make.Trim(),
             Model = model.Trim(),

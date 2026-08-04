@@ -20,7 +20,7 @@ describe('the application shell', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'OpenDealer360' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'DealerFOSS' })).toBeVisible();
     expect(screen.getByLabelText('Email')).toBeVisible();
     expect(screen.getByLabelText('Password')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled();
@@ -90,6 +90,6 @@ describe('the application shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Sign in' })).toBeVisible());
-    expect(localStorage.getItem('odms.tenant')).toBeNull();
+    expect(localStorage.getItem('dfoss.tenant')).toBeNull();
   });
 });

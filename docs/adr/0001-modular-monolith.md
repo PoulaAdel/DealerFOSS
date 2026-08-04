@@ -6,7 +6,7 @@ Supersedes: —
 
 ## Context
 
-OpenDealer360 must be installed and operated on premises by a dealership IT administrator, often on a single server, and must stay readable for outside contributors. Dealership scale is typically well under a hundred concurrent staff per store.
+DealerFOSS must be installed and operated on premises by a dealership IT administrator, often on a single server, and must stay readable for outside contributors. Dealership scale is typically well under a hundred concurrent staff per store.
 
 ## Decision
 

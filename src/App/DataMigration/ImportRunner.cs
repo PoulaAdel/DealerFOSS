@@ -21,11 +21,11 @@
 //       If these stop summing to the row count, the reconciliation report is
 //       lying, and a reconciliation report nobody can trust is worse than none.
 
-using OpenDealer360.Core;
-using OpenDealer360.Customers;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.DataMigration;
+namespace DealerFOSS.DataMigration;
 
 /// <summary>What one row turned into, before it is written down.</summary>
 internal readonly record struct RowDecision(RowOutcome Outcome, string? Message);

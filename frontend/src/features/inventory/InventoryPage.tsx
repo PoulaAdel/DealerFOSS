@@ -10,6 +10,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../../shared/api';
 import { inventoryStatuses, type InventoryStatus, type InventoryUnitSummary } from '../../shared/contracts';
 
+/**
+ * What the server will return at most, however many are asked for — it clamps
+ * to this in `InventoryService`. The screen has to know, because a full page is
+ * indistinguishable from "that is all of them" and saying the wrong one puts a
+ * false number in front of somebody counting their own stock.
+ */
+const PageSize = 200;
+
 type Load =
   | { kind: 'loading' }
   | { kind: 'ready'; units: InventoryUnitSummary[] }
@@ -24,7 +32,9 @@ export function InventoryPage() {
     setLoad({ kind: 'loading' });
 
     try {
-      const query = status ? `?status=${encodeURIComponent(status)}&limit=200` : '?limit=200';
+      const query = status
+        ? `?status=${encodeURIComponent(status)}&limit=${PageSize}`
+        : `?limit=${PageSize}`;
       setLoad({ kind: 'ready', units: await api<InventoryUnitSummary[]>(`/inventory${query}`) });
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 403) {
@@ -109,11 +119,18 @@ function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
 }
 
 function UnitTable({ units }: { units: InventoryUnitSummary[] }) {
+  // A full page means there are probably more, and we cannot know how many.
+  // Saying "200 vehicles in stock" to somebody with 400 cars is a false
+  // statement on a screen they are using to count their own stock.
+  const capped = units.length >= PageSize;
+
   return (
     <div className="scroll">
       <table>
         <caption className="visually-hidden">
-          {units.length} vehicles in stock
+          {capped
+            ? `The first ${units.length} vehicles in stock. There may be more.`
+            : `${units.length} vehicles in stock`}
         </caption>
         <thead>
           <tr>
@@ -136,6 +153,13 @@ function UnitTable({ units }: { units: InventoryUnitSummary[] }) {
           ))}
         </tbody>
       </table>
+
+      {capped ? (
+        <p className="note note--footer">
+          Showing the first {units.length}. There may be more — narrow it with the
+          status filter until paging exists.
+        </p>
+      ) : null}
     </div>
   );
 }

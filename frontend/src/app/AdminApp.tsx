@@ -72,7 +72,7 @@ function AdminShell({ restricted = false }: { restricted?: boolean }) {
 
       <header className="shell__bar">
         <span className="shell__brand">
-          OpenDealer360 <span className="shell__badge">Administration</span>
+          DealerFOSS <span className="shell__badge">Administration</span>
         </span>
 
         {restricted ? null : (

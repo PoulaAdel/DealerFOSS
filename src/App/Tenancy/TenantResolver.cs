@@ -6,10 +6,10 @@
 //       status, decide explicitly whether it may serve traffic.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Tenancy;
+using DealerFOSS.Core;
+using DealerFOSS.Tenancy;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
 /// Reads the host catalog to resolve a tenant, caching active results. Suspended,

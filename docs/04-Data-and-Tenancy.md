@@ -18,8 +18,8 @@ Customers and vehicles can be organization-shared. Inventory units, deals, repai
 
 ## 2. Databases
 
-- **`OpenDealer360_Host`:** tenant ID, name/slug, deployment status, encrypted connection reference, database version, feature flags, allowed domains, and global administrator identities. It contains no dealership business data.
-- **`OpenDealer360_Tenant_{id}`:** organization, rooftops, departments, users, business data, integration state, audit records, and `[rpt]` projections for that dealer organization.
+- **`DealerFOSS_Host`:** tenant ID, name/slug, deployment status, encrypted connection reference, database version, feature flags, allowed domains, and global administrator identities. It contains no dealership business data.
+- **`DealerFOSS_Tenant_{id}`:** organization, rooftops, departments, users, business data, integration state, audit records, and `[rpt]` projections for that dealer organization.
 
 No request may select an arbitrary tenant connection. Tenant middleware resolves the authenticated tenant once, validates it is active, and creates the scoped tenant data context. A request may legitimately access multiple authorized rooftops inside that tenant database.
 

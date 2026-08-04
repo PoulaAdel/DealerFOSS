@@ -6,9 +6,9 @@
 //       actually stops being served — call Invalidate on status changes.
 
 using System.Collections.Concurrent;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
 /// In-process routing cache shared across requests (registered as a singleton).

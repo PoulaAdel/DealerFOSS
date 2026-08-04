@@ -12,9 +12,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using OpenDealer360.App;
+using DealerFOSS.App;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 [Collection(nameof(HostCollection))]
 public sealed class ImportTests(HostFixture fixture)
@@ -305,7 +305,7 @@ public sealed class ImportTests(HostFixture fixture)
             request.Content = JsonContent.Create(body);
         }
 
-        request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
         request.Headers.Add("X-Tenant", Tenant);
 
         if (method != HttpMethod.Get)

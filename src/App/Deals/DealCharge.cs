@@ -7,7 +7,7 @@
 //       remembering to subtract it, is how a total ends up wrong on one screen
 //       and right on another.
 
-namespace OpenDealer360.Deals;
+namespace DealerFOSS.Deals;
 
 public sealed class DealCharge
 {

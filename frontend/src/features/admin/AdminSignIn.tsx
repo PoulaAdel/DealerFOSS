@@ -44,13 +44,17 @@ export function AdminSignIn() {
   }
 
   return (
-    <main className="signin">
-      <h1>OpenDealer360</h1>
+    // Marked as firmly as the console itself. Without this the two sign-in
+    // screens are near-identical, which is worst at exactly the moment somebody
+    // is typing a password: they cannot tell which door they are at.
+    <main className="signin signin--admin">
+      <h1>
+        DealerFOSS <span className="shell__badge">Administration</span>
+      </h1>
 
       <form onSubmit={(e) => void submit(e)} noValidate>
         <p className="signin__lede">
-          Administration. This signs you in to the installation, not to a
-          dealership.
+          This signs you in to the installation, not to a dealership.
         </p>
 
         <label htmlFor="admin-email">Email</label>

@@ -18,7 +18,7 @@ import { setCurrentTenant } from '../../shared/api';
 
 const enrolment = {
   secret: 'JBSWY3DPEHPK3PXP',
-  enrolmentUri: 'otpauth://totp/OpenDealer360:sales@dev.local?secret=JBSWY3DPEHPK3PXP&issuer=OpenDealer360&digits=6&period=30',
+  enrolmentUri: 'otpauth://totp/DealerFOSS:sales@dev.local?secret=JBSWY3DPEHPK3PXP&issuer=DealerFOSS&digits=6&period=30',
 };
 
 const recoveryCodes = [

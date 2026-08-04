@@ -19,9 +19,9 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class GlobalAdministrationService(
     ControlPlaneDb control,
@@ -33,7 +33,7 @@ internal sealed class GlobalAdministrationService(
     : IGlobalAdministration
 {
     /// <summary>Shown as the account issuer in an authenticator app.</summary>
-    private const string Issuer = "OpenDealer360 Administration";
+    private const string Issuer = "DealerFOSS Administration";
 
     /// <summary>
     /// The support principal, the same id in every tenant so the dealership sees
@@ -42,9 +42,9 @@ internal sealed class GlobalAdministrationService(
     /// </summary>
     internal static Guid SupportUserId { get; } = new("00000000-0000-0000-0000-00000000f001");
 
-    internal const string SupportUserEmail = "support@opendealer360.invalid";
+    internal const string SupportUserEmail = "support@dealerfoss.invalid";
 
-    internal const string SupportRoleName = "OpenDealer360 Support";
+    internal const string SupportRoleName = "DealerFOSS Support";
 
     /// <summary>
     /// What support may do: look, and nothing else. Every permission here ends in
@@ -452,7 +452,7 @@ internal sealed class GlobalAdministrationService(
 
         if (user is null)
         {
-            identity.Users.Add(new User(SupportUserId, SupportUserEmail, "OpenDealer360 Support"));
+            identity.Users.Add(new User(SupportUserId, SupportUserEmail, "DealerFOSS Support"));
         }
 
         var hasAssignment = await identity.UserAssignments

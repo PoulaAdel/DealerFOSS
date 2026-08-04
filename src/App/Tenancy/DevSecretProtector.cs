@@ -5,9 +5,9 @@
 // Edit: do not "improve" this into a real implementation. Add a separate
 //       DPAPI/certificate/KMS class and register that instead.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
 /// DEVELOPMENT ONLY. A no-op protector so the resolution seam works end to end

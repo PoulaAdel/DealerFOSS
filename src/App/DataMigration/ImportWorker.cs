@@ -23,13 +23,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenDealer360.Core;
-using OpenDealer360.Customers;
-using OpenDealer360.Data;
-using OpenDealer360.Tenancy;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
+using DealerFOSS.Data;
+using DealerFOSS.Tenancy;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.DataMigration;
+namespace DealerFOSS.DataMigration;
 
 internal sealed partial class ImportWorker(
     IServiceScopeFactory scopeFactory,

@@ -7,13 +7,15 @@
 //       multipart or pre-signed upload, and the contract below does not change:
 //       submitting still returns a job, and the job is still watched by polling.
 
+using System.Globalization;
+using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using OpenDealer360.App;
-using OpenDealer360.Core;
+using DealerFOSS.App;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.DataMigration;
+namespace DealerFOSS.DataMigration;
 
 internal static class MigrationEndpoints
 {
@@ -25,6 +27,36 @@ internal static class MigrationEndpoints
         group.MapGet("/imports", ListAsync);
         group.MapGet("/imports/{id:guid}", GetAsync);
         group.MapGet("/imports/{id:guid}/rows", GetRowsAsync);
+
+        group.MapGet("/exports/{kind}", ExportAsync);
+    }
+
+    /// <summary>
+    /// Returns the file itself rather than a JSON envelope around it, so a
+    /// browser downloads it and `curl -O` works. The checksum rides in a header
+    /// because putting it in the body would make the body not-a-CSV.
+    /// </summary>
+    private static async Task<IResult> ExportAsync(
+        string kind,
+        HttpContext context,
+        IMigration migration,
+        CancellationToken cancellationToken)
+    {
+        var result = await migration.ExportAsync(kind, cancellationToken);
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblem();
+        }
+
+        var file = result.Value;
+        context.Response.Headers["X-Content-SHA256"] = file.Checksum;
+        context.Response.Headers["X-Row-Count"] =
+            file.RowCount.ToString(CultureInfo.InvariantCulture);
+
+        return Results.File(
+            Encoding.UTF8.GetBytes(file.Content),
+            "text/csv; charset=utf-8",
+            file.FileName);
     }
 
     private static async Task<IResult> SubmitAsync(

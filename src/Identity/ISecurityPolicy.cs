@@ -9,9 +9,9 @@
 //       creating users, granting roles, and reading assignments stay internal
 //       (ADR-017), and adding them here would be a different decision entirely.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// The security policy a dealer organization applies to its own staff. Today

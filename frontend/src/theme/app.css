@@ -495,3 +495,24 @@ tfoot td {
   max-width: 28rem;
   white-space: normal;
 }
+
+/* The administrator's door, marked as firmly as the console behind it. Two
+   near-identical sign-in screens are worst at exactly the moment somebody is
+   typing a password. */
+.signin--admin {
+  border-top: 3px solid var(--accent);
+}
+
+.signin--admin h1 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* Sits under a table rather than beside a field, so it needs its own spacing. */
+.note--footer {
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}

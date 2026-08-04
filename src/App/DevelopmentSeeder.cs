@@ -12,20 +12,20 @@
 
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Accounting;
-using OpenDealer360.Customers;
-using OpenDealer360.Data;
-using OpenDealer360.Deals;
-using OpenDealer360.Identity;
-using OpenDealer360.Inventory;
-using OpenDealer360.Leads;
-using OpenDealer360.Organization;
-using OpenDealer360.Tenancy;
-using OpenDealer360.Vehicles;
-using CustomerAddress = OpenDealer360.Customers.Address;
+using DealerFOSS.Core;
+using DealerFOSS.Accounting;
+using DealerFOSS.Customers;
+using DealerFOSS.Data;
+using DealerFOSS.Deals;
+using DealerFOSS.Identity;
+using DealerFOSS.Inventory;
+using DealerFOSS.Leads;
+using DealerFOSS.Organization;
+using DealerFOSS.Tenancy;
+using DealerFOSS.Vehicles;
+using CustomerAddress = DealerFOSS.Customers.Address;
 
-namespace OpenDealer360.App;
+namespace DealerFOSS.App;
 
 /// <summary>
 /// DEVELOPMENT ONLY. Provisions the host catalog and two sample dealer
@@ -75,7 +75,7 @@ public static class DevelopmentSeeder
 
     /// <summary>
     /// Names a tenant database from the host catalog's own name, so an
-    /// installation called something other than <c>OpenDealer360_Host</c> keeps
+    /// installation called something other than <c>DealerFOSS_Host</c> keeps
     /// its databases together instead of scattering them under a fixed prefix.
     /// </summary>
     /// <remarks>

@@ -7,7 +7,7 @@ would be a security incident — `Core` may not touch a database, and `Identity`
 tables are unreachable. **Every other boundary is held by these tests alone.**
 
 That includes the one contributors trip over most: the capabilities inside
-`src/App` share a project, so a `using OpenDealer360.Vehicles;` inside
+`src/App` share a project, so a `using DealerFOSS.Vehicles;` inside
 `Customers/` compiles perfectly and fails here instead.
 
 | File | Holds |
@@ -18,7 +18,7 @@ That includes the one contributors trip over most: the capabilities inside
 Run them with the rest of the suite:
 
 ```bash
-dotnet test OpenDealer360.slnx -c Release
+dotnet test DealerFOSS.slnx -c Release
 ```
 
 ## Forbidden-reference rehearsal
@@ -31,7 +31,7 @@ new boundary rule is added.
 dependency the rules forbid:
 
 ```csharp
-using OpenDealer360.Vehicles; // a sibling capability's internals
+using DealerFOSS.Vehicles; // a sibling capability's internals
 ```
 
 and reference it so the compiler keeps it, for example by adding this member to
@@ -45,8 +45,8 @@ public static Vehicle? Offender => null;
 
 ```
 FeatureBoundaryTests.A_feature_must_not_reach_into_another_feature
-  Expected ... to be true because OpenDealer360.Customers must reach a sibling
-  only through its published contract; offenders: OpenDealer360.Customers.Customer
+  Expected ... to be true because DealerFOSS.Customers must reach a sibling
+  only through its published contract; offenders: DealerFOSS.Customers.Customer
 ```
 
 **3. Revert the edit** and confirm the suite is green again.

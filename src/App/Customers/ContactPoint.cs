@@ -7,7 +7,7 @@
 //       family business — so never add a unique constraint on the value and
 //       never match customers on it alone.
 
-namespace OpenDealer360.Customers;
+namespace DealerFOSS.Customers;
 
 public sealed class ContactPoint
 {

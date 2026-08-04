@@ -5,7 +5,7 @@ Visual: [System architecture](diagrams/01-system-architecture.md)
 
 ## 1. System shape
 
-OpenDealer360 is a modular monolith: one deployable ASP.NET Core application containing bounded business modules and an Integration edge. It is simple to operate on one server, while module-owned contracts, schemas, and background jobs prevent the codebase from becoming an undifferentiated monolith.
+DealerFOSS is a modular monolith: one deployable ASP.NET Core application containing bounded business modules and an Integration edge. It is simple to operate on one server, while module-owned contracts, schemas, and background jobs prevent the codebase from becoming an undifferentiated monolith.
 
 The tenant boundary is a dealer organization, not a building. One tenant database contains all rooftops belonging to that organization. Rooftop-scoped authorization and data ownership operate inside that database.
 

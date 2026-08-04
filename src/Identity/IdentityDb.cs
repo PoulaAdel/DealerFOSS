@@ -9,10 +9,10 @@
 //       must bracket it as [identity].
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Identity;
-using OpenDealer360.Core;
+using DealerFOSS.Identity;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// Persistence for the Identity module. Owns the <c>identity</c> schema and no

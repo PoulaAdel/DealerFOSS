@@ -10,10 +10,10 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
 
-namespace OpenDealer360.Customers;
+namespace DealerFOSS.Customers;
 
 /// <summary>The schema this feature owns.</summary>
 internal static class CustomerSchema

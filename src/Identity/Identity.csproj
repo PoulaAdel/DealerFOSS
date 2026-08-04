@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>OpenDealer360.Identity</RootNamespace>
-    <AssemblyName>OpenDealer360.Identity</AssemblyName>
+    <RootNamespace>DealerFOSS.Identity</RootNamespace>
+    <AssemblyName>DealerFOSS.Identity</AssemblyName>
     <!--
       Users, roles, permissions, sessions, and the audit trail. A separate
       project so its tables and services are physically unreachable from the

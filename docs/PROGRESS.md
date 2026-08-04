@@ -35,7 +35,7 @@ months of focused work.
 |---|---|---|---|
 | 0 | Find pilot dealers, get provider access | Agreements, real data samples, access to the systems we must connect to. People work, not code. | **Yours to do** |
 | 1 | Foundation | Keeping dealership groups apart, locations, staff permissions, and signing in. | **In progress** |
-| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Started** |
+| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Well under way** |
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Well under way** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | **Well under way** |
 | 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | Not started |
@@ -111,12 +111,16 @@ months of focused work.
   there working), and is where a support visit is opened with a written reason
   and closed again. The whole record of who went where and why is on that page —
   including visits already closed, because a log you can empty is not a log
-- **The screens are now checked automatically every time anything changes.** Until
-  this week "does it actually appear on screen?" was a question only a person
-  could answer, and everything built on top carried that doubt. Twenty-seven
-  automated checks now open each screen and read it the way you would — by its
-  headings, its labels, its words — so a change that breaks the display is caught
-  in seconds instead of being discovered by whoever opens it next
+- **The screens are now checked automatically every time anything changes**, and
+  have been opened and used on a real browser. Until this week "does it actually
+  appear on screen?" was a question only a person could answer, and everything
+  built on top carried that doubt. Forty-six automated checks now open each
+  screen and read it the way you would — by its headings, its labels, its words.
+  On top of that, every screen has been signed into and walked at both desktop
+  and phone width, which found three problems no automated check could have:
+  the stock list was quietly overstating how many cars a dealership has, the
+  administrator sign-in looked identical to the ordinary one, and edits to the
+  code were not reaching the browser at all
 - **A page for setting up two-step sign-in.** It shows the square you point your
   phone at, and the code to type by hand if you are setting it up on the same
   device. It says plainly that nothing changes until you have entered a working
@@ -158,6 +162,16 @@ months of focused work.
   returns straight away with something you can watch, and the work carries on
   behind the scenes — which is also the groundwork for everything else that will
   need to run on a schedule
+- **And you can take your records back out again.** This is the part that makes
+  the licence mean something: a dealership can download their customers and
+  their cars as an ordinary spreadsheet file, and that file is one this system
+  will read straight back in. No converter, no export format only we understand,
+  nothing to ask us for. It is proved rather than promised — nearly nine hundred
+  cars were exported from one dealership and loaded into another, and every
+  single row was understood. The file comes with a fingerprint so the other end
+  can tell it arrived whole. Taking data out is a separate permission from
+  putting it in, because walking out with every customer the group has is a
+  different act from loading a supplier's stock list
 
 ## What does not exist
 
@@ -172,24 +186,27 @@ months of focused work.
 - Parts, or reports
 - Screens for customers, leads, or selling a car — the system underneath does all
   three, but there is nothing to click yet
-- A way to add a second person who runs the servers, from a screen or otherwise
 - A way to add a second person who runs the servers. There is one, created when
   the system is set up, and no way to add another yet — nor to get back in if
   they lose their phone
 - Creating a new dealership from the administration side. It can list them and
   take one out of service; setting a new one up is still a developer's job
+- A screen for bringing records in or taking them out. Both work; neither has a
+  page yet
+- Moving anything beyond customers and cars. Enquiries, deals and the books have
+  no way in or out, so "take your data with you" is true of the two record types
+  a dealership migrates first and not yet of the whole business
 
 ---
 
 ## Next
 
-**Getting data back out, and a screen for getting it in.** Importing works but is
-only reachable by a developer, and a dealership doing this for the first time
-should be able to watch it happen and read the problem rows. The other half is
-export: an open system has to be able to hand a dealership their own data in a
-form they can read and re-load — that is the promise this project makes about
-not holding anybody's business hostage, and it is proved by exporting one
-dealership and importing it into an empty one.
+**A screen for bringing records in.** Both directions now work, and neither can
+be reached by anybody who is not a developer. Importing is one of the first
+things a real dealership does, and it is where a screen earns its keep: after
+nine thousand rows, what somebody needs is the twelve that did not work, by the
+line number they can see in their own spreadsheet — with a practice run first,
+so nothing touches their history until they have looked at what it would do.
 
 **Still outstanding from the foundation:** a rehearsed backup and restore. A
 backup nobody has restored from is not a backup, so the deliverable is the drill:
@@ -207,7 +224,7 @@ would prove nothing.
 
 | Item | Why it matters |
 |---|---|
-| **Telling me how the screens *look*** | They now provably draw, and behave correctly — that is checked automatically. What no machine here can judge is whether they look right: spacing, readability, dark mode, and whether a phone camera can actually read the square on the setup page |
+| **Pointing a phone at the setup page** | Everything else about the screens has now been checked on a real browser. The one thing left is physical: does a phone camera actually read that square? |
 | Pilot dealerships and access to their current systems | Stage 2 cannot be finished or proven without real data and a real provider connection |
 | A rehearsed backup and restore | Stage 1 cannot close without proving a real restore produces a working system |
 | Confirming the month-end rule with a real dealer's accountant | Calendar month end with a grace period to the 10th is assumed, not confirmed |

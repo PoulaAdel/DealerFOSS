@@ -5,9 +5,9 @@
 // Edit: keep the "null means refuse" contract. Returning a default tenant here
 //       would silently route a request into the wrong dealer's data.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
 /// Resolves a routing key (tenant slug) to a <see cref="ResolvedTenant"/> by

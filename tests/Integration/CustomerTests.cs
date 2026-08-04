@@ -10,9 +10,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using OpenDealer360.App;
+using DealerFOSS.App;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 [Collection(nameof(HostCollection))]
 public sealed class CustomerTests(HostFixture fixture)
@@ -169,7 +169,7 @@ public sealed class CustomerTests(HostFixture fixture)
         using var request = new HttpRequestMessage(
             HttpMethod.Get, new Uri($"{Endpoint}?search={surname}", UriKind.Relative));
         request.Headers.Add("X-Tenant", "citymotors");
-        request.Headers.Add("Cookie", $"odms_session={token}");
+        request.Headers.Add("Cookie", $"dfoss_session={token}");
 
         using var response = await client.SendAsync(request);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -250,7 +250,7 @@ public sealed class CustomerTests(HostFixture fixture)
             Content = JsonContent.Create(body),
         };
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
         request.Headers.Add("X-CSRF-Token", session.AntiForgeryToken);
 
         return await client.SendAsync(request);
@@ -263,7 +263,7 @@ public sealed class CustomerTests(HostFixture fixture)
 
         using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
         request.Headers.Add("X-Tenant", Tenant);
-        request.Headers.Add("Cookie", $"odms_session={session.SessionToken}");
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
 
         if (method != HttpMethod.Get)
         {

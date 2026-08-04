@@ -28,7 +28,7 @@ same reason Identity has one.
 ## 2. Top-level layout
 
 ```text
-OpenDealer360/
+DealerFOSS/
 ├── src/
 │   ├── Core/         Result, Money, Ids, Clock, AuditableEntity, and the
 │   │                 interfaces everything depends on. No EF, no ASP.NET. Flat.
@@ -186,16 +186,16 @@ usability but never replace server authorization.
 ## 8. Naming
 
 **Never repeat the path in the name.** A file called `Core.csproj` inside
-`src/Core/` is obvious; `OpenDealer360.Core.csproj` only makes the tree harder to
+`src/Core/` is obvious; `DealerFOSS.Core.csproj` only makes the tree harder to
 scan. Project files, folders, and types are named for the one thing they are.
 
 - Project files carry the bare name: `Core.csproj`, `Identity.csproj`,
   `App.csproj`.
-- Assemblies and namespaces keep the `OpenDealer360.` root — those are *global*
+- Assemblies and namespaces keep the `DealerFOSS.` root — those are *global*
   identifiers, and a bare `Core` namespace or `Core.dll` would collide with other
   libraries and read as anonymous in a stack trace. Nothing beyond that root is
-  repeated: the namespace is `OpenDealer360.Customers`, not
-  `OpenDealer360.App.Customers`, because "App" describes the project, not the code.
+  repeated: the namespace is `DealerFOSS.Customers`, not
+  `DealerFOSS.App.Customers`, because "App" describes the project, not the code.
 - Folders use dealership capability names.
 - Files are named for their role, not their layer: `CustomerService.cs`, not
   `Application/Services/CustomerService.cs`.

@@ -6,10 +6,10 @@
 //       couple share a phone number without staff inventing fake data.
 
 using FluentAssertions;
-using OpenDealer360.Core;
-using OpenDealer360.Customers;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class CustomerTests
 {

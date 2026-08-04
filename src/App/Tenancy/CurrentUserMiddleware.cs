@@ -13,12 +13,12 @@
 //       path and nothing else. Enforcing it here rather than in each endpoint is
 //       the point: a capability added next year is covered without being told.
 
-using OpenDealer360.Administration;
-using OpenDealer360.Core;
-using OpenDealer360.App;
-using OpenDealer360.Identity;
+using DealerFOSS.Administration;
+using DealerFOSS.Core;
+using DealerFOSS.App;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.Tenancy;
+namespace DealerFOSS.Tenancy;
 
 /// <summary>
 /// Resolves the calling user for the request. Tenant-scoped API calls without a

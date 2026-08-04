@@ -55,6 +55,11 @@ describe('the administration console', () => {
     // The dealership sign-in asks which dealer group. This one must not: an
     // administrator belongs to none.
     expect(screen.queryByLabelText('Dealer group')).not.toBeInTheDocument();
+
+    // And it says so on the heading, not only in the body text. The two sign-in
+    // screens are otherwise near-identical, which is worst at exactly the
+    // moment somebody is typing a password.
+    expect(screen.getByRole('heading', { name: /Administration/ })).toBeVisible();
   });
 
   it('never sends a dealership header when asking who is signed in', async () => {

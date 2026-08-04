@@ -12,17 +12,17 @@
 //       append-only.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Accounting;
-using OpenDealer360.Core;
-using OpenDealer360.Customers;
-using OpenDealer360.DataMigration;
-using OpenDealer360.Deals;
-using OpenDealer360.Inventory;
-using OpenDealer360.Leads;
-using OpenDealer360.Organization;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Accounting;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
+using DealerFOSS.DataMigration;
+using DealerFOSS.Deals;
+using DealerFOSS.Inventory;
+using DealerFOSS.Leads;
+using DealerFOSS.Organization;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.Data;
+namespace DealerFOSS.Data;
 
 /// <summary>
 /// The tenant business database. Identity keeps its own context in its own

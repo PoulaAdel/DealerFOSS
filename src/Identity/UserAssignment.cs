@@ -7,9 +7,9 @@
 //       rooftop". A rooftop opened next year must be covered automatically by
 //       the first and deliberately not by the second.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// Grants a user a role at a scope: either organization-wide, or at one named

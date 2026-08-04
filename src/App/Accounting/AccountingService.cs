@@ -13,12 +13,12 @@
 //       rather than scattered.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
-using OpenDealer360.Identity;
-using OpenDealer360.Organization;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
+using DealerFOSS.Identity;
+using DealerFOSS.Organization;
 
-namespace OpenDealer360.Accounting;
+namespace DealerFOSS.Accounting;
 
 public sealed class AccountingService(
     TenantDb db,

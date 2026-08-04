@@ -10,9 +10,9 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using OpenDealer360.App;
+using DealerFOSS.App;
 
-namespace OpenDealer360.Customers;
+namespace DealerFOSS.Customers;
 
 internal static class CustomerEndpoints
 {

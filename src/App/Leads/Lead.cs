@@ -8,9 +8,9 @@
 //       The customer themselves is organization-shared; only the enquiry is
 //       local. Do not "helpfully" widen the rooftop filter.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Leads;
+namespace DealerFOSS.Leads;
 
 public sealed class Lead : AuditableEntity
 {

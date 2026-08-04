@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace OpenDealer360.Identity.Migrations
+namespace DealerFOSS.Identity.Migrations
 {
     /// <inheritdoc />
     public partial class RequireSecondFactorByRole : Migration

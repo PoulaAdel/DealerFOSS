@@ -5,9 +5,9 @@
 //       every table that inherits AuditableEntity and needs a migration.
 
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Data;
+namespace DealerFOSS.Data;
 
 /// <summary>
 /// Maps the columns declared by <see cref="AuditableEntity"/>. Written once

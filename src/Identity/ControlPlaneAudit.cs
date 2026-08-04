@@ -10,7 +10,7 @@
 //
 //       Never record a credential, a token, or any dealership business data here.
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class ControlPlaneAudit
 {

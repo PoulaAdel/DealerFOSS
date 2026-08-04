@@ -6,9 +6,9 @@
 //       re-running a seeder cannot produce duplicate rows.
 
 using FluentAssertions;
-using OpenDealer360.Identity;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class RoleTests
 {

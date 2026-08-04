@@ -6,9 +6,9 @@
 //       move with a reason, not by editing the record. TenantDb refuses to update
 //       or delete these rows.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Leads;
+namespace DealerFOSS.Leads;
 
 public sealed class LeadStatusChange : IAppendOnly
 {

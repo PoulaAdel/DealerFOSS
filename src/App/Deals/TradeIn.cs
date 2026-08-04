@@ -7,7 +7,7 @@
 //       figure loses the fact that a trade can be in negative equity, which is
 //       the single most common source of an argument at the desk.
 
-namespace OpenDealer360.Deals;
+namespace DealerFOSS.Deals;
 
 public sealed record TradeIn(string Description, decimal Allowance, decimal Payoff)
 {

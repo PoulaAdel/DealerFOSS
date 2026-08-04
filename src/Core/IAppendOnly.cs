@@ -8,7 +8,7 @@
 //       is exactly why the guard keys off an interface rather than a list of
 //       types someone has to maintain.
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// A record that is appended and never rewritten (ADR-016). Corrections are made

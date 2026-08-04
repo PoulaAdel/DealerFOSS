@@ -16,14 +16,14 @@
 //       both services within a request, so a single transaction covers both.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Accounting;
-using OpenDealer360.Core;
-using OpenDealer360.Customers;
-using OpenDealer360.Data;
-using OpenDealer360.Identity;
-using OpenDealer360.Inventory;
+using DealerFOSS.Accounting;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
+using DealerFOSS.Data;
+using DealerFOSS.Identity;
+using DealerFOSS.Inventory;
 
-namespace OpenDealer360.Deals;
+namespace DealerFOSS.Deals;
 
 public sealed class DealService(
     TenantDb db,

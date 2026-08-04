@@ -12,14 +12,14 @@
 #
 # Usage (from repo root, Windows PowerShell 5.1):
 #   & .\deploy\verify-e2e.ps1
-#   & .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
+#   & .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
 #
 # Pass -Port when something is already on 5080 — typically a development host
 # left running for the frontend. Without it the script's own host cannot bind,
 # and it silently measures whatever is already there instead.
 
 param(
-    [string]$HostConnection = "Server=(localdb)\MSSQLLocalDB;Database=OpenDealer360_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False",
+    [string]$HostConnection = "Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False",
     [int]$Port = 5080
 )
 
@@ -132,7 +132,7 @@ $env:Seed__Enabled = "true"
 # Quiet the application log: this script is meant to be read by a person, and
 # EF command logging buries the result. The host log still goes to a file.
 $env:Serilog__MinimumLevel__Default = "Warning"
-$hostLog = Join-Path $env:TEMP "opendealer360-verify-host.log"
+$hostLog = Join-Path $env:TEMP "dealerfoss-verify-host.log"
 
 # --urls is passed on the command line rather than left to ASPNETCORE_URLS,
 # because launchSettings.json pins 5080 and its applicationUrl would otherwise
@@ -174,12 +174,12 @@ try {
             throw "The $name cookie was not set at sign-in."
         }
 
-        $token = Read-Cookie "odms_session"
-        $csrf  = Read-Cookie "odms_csrf"
+        $token = Read-Cookie "dfoss_session"
+        $csrf  = Read-Cookie "dfoss_csrf"
 
         $ws = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_session", $token, "/", "localhost")))
-        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_csrf", $csrf, "/", "localhost")))
+        $ws.Cookies.Add((New-Object System.Net.Cookie("dfoss_session", $token, "/", "localhost")))
+        $ws.Cookies.Add((New-Object System.Net.Cookie("dfoss_csrf", $csrf, "/", "localhost")))
 
         # A Set-Cookie value arrives percent-encoded. The cookie container sends
         # it back as it came and the server decodes it; a plain header is not
@@ -207,9 +207,9 @@ try {
         }
 
         $ws = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_admin", (Read-AdminCookie "odms_admin"), "/", "localhost")))
-        $csrf = Read-AdminCookie "odms_admin_csrf"
-        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_admin_csrf", $csrf, "/", "localhost")))
+        $ws.Cookies.Add((New-Object System.Net.Cookie("dfoss_admin", (Read-AdminCookie "dfoss_admin"), "/", "localhost")))
+        $csrf = Read-AdminCookie "dfoss_admin_csrf"
+        $ws.Cookies.Add((New-Object System.Net.Cookie("dfoss_admin_csrf", $csrf, "/", "localhost")))
         $ws | Add-Member -NotePropertyName Csrf `
             -NotePropertyValue ([System.Uri]::UnescapeDataString($csrf)) -Force
         $ws | Add-Member -NotePropertyName CsrfHeader `
@@ -231,9 +231,9 @@ try {
         }
 
         $ws = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_session", (Read-TenantCookie "odms_session"), "/", "localhost")))
-        $csrf = Read-TenantCookie "odms_csrf"
-        $ws.Cookies.Add((New-Object System.Net.Cookie("odms_csrf", $csrf, "/", "localhost")))
+        $ws.Cookies.Add((New-Object System.Net.Cookie("dfoss_session", (Read-TenantCookie "dfoss_session"), "/", "localhost")))
+        $csrf = Read-TenantCookie "dfoss_csrf"
+        $ws.Cookies.Add((New-Object System.Net.Cookie("dfoss_csrf", $csrf, "/", "localhost")))
         $ws | Add-Member -NotePropertyName Csrf `
             -NotePropertyValue ([System.Uri]::UnescapeDataString($csrf)) -Force
         $ws | Add-Member -NotePropertyName CsrfHeader -NotePropertyValue "X-CSRF-Token" -Force
@@ -637,6 +637,60 @@ try {
     }
     "a one-lot user imports the group's data -> HTTP $advisorImports (expect 403)"
 
+    Write-Host "`n--- and the dealership can take them away again ---" -ForegroundColor Cyan
+    # The promise an open DMS makes: you can leave, and take your data. Proven by
+    # exporting one dealership and feeding that exact file to a different one
+    # through the ordinary import endpoint — no converter, no special handling.
+    $exportUrl = "$baseUrl/api/v1/migration/exports/Vehicles"
+    $export = Invoke-WebRequest $exportUrl -Headers @{ "X-Tenant" = "northgroup" } `
+        -WebSession $orgWide -UseBasicParsing
+
+    # Invoke-WebRequest hands back .Content as a string for a text media type and
+    # as bytes for a binary one. Handle both rather than assuming, because the
+    # wrong guess fails with a type error a long way from the cause.
+    $exportText = if ($export.Content -is [byte[]]) {
+        [Text.Encoding]::UTF8.GetString($export.Content)
+    } else {
+        [string]$export.Content
+    }
+
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $computed = ([BitConverter]::ToString(
+        $sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($exportText))) -replace '-', '').ToLower()
+    $publishedHash = $export.Headers['X-Content-SHA256']
+    if ($publishedHash -is [array]) { $publishedHash = $publishedHash[0] }
+    $checksumMatches = ($computed -eq $publishedHash)
+    "the export's checksum matches: {0}      (expect True)" -f $checksumMatches
+
+    $exportRows = [int]($export.Headers['X-Row-Count'] | Select-Object -First 1)
+    "northgroup exports {0} vehicle(s)        (expect 1 or more)" -f $exportRows
+
+    # Straight into the other dealership, unmodified.
+    $cityBody = @{
+        kind = "Vehicles"; mode = "Apply"
+        sourceName = "from-northgroup.csv"; content = $exportText
+    } | ConvertTo-Json -Depth 5
+
+    $handedOver = Invoke-RestMethod "$baseUrl/api/v1/migration/imports" -Method Post `
+        -Body $cityBody -ContentType "application/json" `
+        -Headers @{ "X-Tenant" = "citymotors"; "X-CSRF-Token" = $cityWide.Csrf } `
+        -WebSession $cityWide
+
+    $roundTrip = $null
+    for ($i = 0; $i -lt 60; $i++) {
+        $roundTrip = Invoke-RestMethod "$baseUrl/api/v1/migration/imports/$($handedOver.id)" `
+            -Headers @{ "X-Tenant" = "citymotors" } -WebSession $cityWide
+        if ($roundTrip.status -eq "Completed" -or $roundTrip.status -eq "Failed") { break }
+        Start-Sleep -Milliseconds 500
+    }
+
+    "citymotors reads it back: {0} refused    (expect 0)" -f $roundTrip.rowsFailed
+    $roundTripRead = ($roundTrip.rowsCreated + $roundTrip.rowsUpdated + $roundTrip.rowsSkipped)
+    "...understanding {0} of {1} row(s)" -f $roundTripRead, $roundTrip.rowsTotal
+
+    $advisorExports = Get-Status "/api/v1/migration/exports/Vehicles" "northgroup" $scoped
+    "a one-lot user exports the group's data -> HTTP $advisorExports (expect 403)"
+
     Write-Host "`n--- sessions ---" -ForegroundColor Cyan
     $noSession = Get-Status "/api/v1/organization" "northgroup" $null
     "no session                            -> HTTP $noSession (expect 401)"
@@ -678,6 +732,9 @@ try {
         -and ($noReason -eq 400) -and ($grantMinutes -ge 55 -and $grantMinutes -le 61) `
         -and ($supportReads -eq 200) -and ($supportWrites -eq 403) -and $dealerCanSee `
         -and ($ended -eq 204) -and ($afterEnd -eq 401) `
+        -and $checksumMatches -and ($exportRows -ge 1) `
+        -and ($roundTrip.rowsFailed -eq 0) -and ($roundTripRead -eq $roundTrip.rowsTotal) `
+        -and ($advisorExports -eq 403) `
         -and ($trial.rowsCreated -eq 2) -and ($beforeApply -eq 0) `
         -and ($applied.rowsCreated -eq 2) `
         -and ($again.rowsCreated -eq 0) -and ($again.rowsSkipped -eq 2) `
@@ -687,7 +744,7 @@ try {
         -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, and the ledger balances." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1
@@ -697,6 +754,6 @@ finally {
     Write-Host "Stopping Host..." -ForegroundColor DarkGray
     if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
     Get-CimInstance Win32_Process -Filter "Name='dotnet.exe'" |
-        Where-Object { $_.CommandLine -like "*OpenDealer360.Host*" } |
+        Where-Object { $_.CommandLine -like "*DealerFOSS.Host*" } |
         ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 }

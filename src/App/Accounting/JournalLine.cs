@@ -7,9 +7,9 @@
 //       a printed journal from three years ago must still be readable if the
 //       chart is later renumbered.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Accounting;
+namespace DealerFOSS.Accounting;
 
 public sealed class JournalLine : IAppendOnly
 {

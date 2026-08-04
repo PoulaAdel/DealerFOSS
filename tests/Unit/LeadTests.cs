@@ -7,10 +7,10 @@
 //       the history of the first attempt.
 
 using FluentAssertions;
-using OpenDealer360.Core;
-using OpenDealer360.Leads;
+using DealerFOSS.Core;
+using DealerFOSS.Leads;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class LeadTests
 {

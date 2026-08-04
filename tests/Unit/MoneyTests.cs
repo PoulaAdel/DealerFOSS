@@ -6,9 +6,9 @@
 //       convenience — these tests exist to stop it.
 
 using FluentAssertions;
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.UnitTests;
+namespace DealerFOSS.UnitTests;
 
 public sealed class MoneyTests
 {

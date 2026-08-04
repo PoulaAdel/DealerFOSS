@@ -1,4 +1,4 @@
-# Local development dependencies for OpenDealer360.
+# Local development dependencies for DealerFOSS.
 #
 # Nothing here installs onto the host. SQL Server, Node, and the optional extras
 # live in containers so a development machine stays clean and every contributor
@@ -11,17 +11,17 @@
 #
 # See deploy/README.md for what each of these does and how to undo it.
 
-name: opendealer360-dev
+name: dealerfoss-dev
 
 services:
   sql:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: odms-sql
+    container_name: dealerfoss-sql
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Developer"
       # Dev-only password. Never reuse in any shared or production environment.
-      MSSQL_SA_PASSWORD: "OpenDealer360_dev!"
+      MSSQL_SA_PASSWORD: "DealerFOSS_dev!"
     ports:
       - "1433:1433"
     volumes:
@@ -33,7 +33,7 @@ services:
       # ever starts — "Failed to load LSA", with a stack full of sqlpal.dll and
       # no useful message. It looks exactly like a host incompatibility and is
       # not one. Verified on this repository's development machine 2026-07-31.
-      - odms-sql-data:/var/opt/mssql
+      - dealerfoss-sql-data:/var/opt/mssql
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
       interval: 10s
@@ -45,31 +45,31 @@ services:
   # It idles until you exec into it; it is a workspace, not a service.
   node:
     image: node:22-alpine
-    container_name: odms-node
+    container_name: dealerfoss-node
     profiles: ["node"]
     working_dir: /workspace
     volumes:
       - ../:/workspace
       # node_modules stays in a named volume: it holds platform-specific
       # binaries, and sharing it with the Windows host is both slow and wrong.
-      - odms-node-modules:/workspace/frontend/node_modules
+      - dealerfoss-node-modules:/workspace/frontend/node_modules
     ports:
       - "5173:5173"   # Vite dev server
     command: ["sleep", "infinity"]
 
   redis:
     image: redis:7-alpine
-    container_name: odms-redis
+    container_name: dealerfoss-redis
     profiles: ["redis"]
     ports:
       - "6379:6379"
     command: ["redis-server", "--save", "60", "1"]
     volumes:
-      - odms-redis-data:/data
+      - dealerfoss-redis-data:/data
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
-    container_name: odms-otel
+    container_name: dealerfoss-otel
     profiles: ["otel"]
     ports:
       - "4317:4317"   # OTLP gRPC
@@ -79,6 +79,6 @@ services:
       - ./otel-collector.yaml:/etc/otel/config.yaml:ro
 
 volumes:
-  odms-sql-data:
-  odms-node-modules:
-  odms-redis-data:
+  dealerfoss-sql-data:
+  dealerfoss-node-modules:
+  dealerfoss-redis-data:

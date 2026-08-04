@@ -10,9 +10,9 @@
 //       audit trail. Keep it that way: a flag on an existing session is a
 //       privilege escalation with better manners.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// Control-plane identity (doc 06 §2): the people who operate the installation.

@@ -7,9 +7,9 @@
 //       updated in the same change. An empty AuthorizedScope means DENY; keep
 //       that contract, or callers will read it as "no filter".
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 /// <summary>
 /// The Identity module's public contract — the only surface other modules may

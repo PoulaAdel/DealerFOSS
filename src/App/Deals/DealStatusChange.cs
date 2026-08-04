@@ -7,9 +7,9 @@
 //       approval means nothing (ADR-016). TenantDb refuses to update or delete
 //       anything marked IAppendOnly.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Deals;
+namespace DealerFOSS.Deals;
 
 public sealed class DealStatusChange : IAppendOnly
 {

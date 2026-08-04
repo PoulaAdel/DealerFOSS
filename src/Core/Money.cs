@@ -7,7 +7,7 @@
 
 using System.Globalization;
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// A monetary amount with an explicit ISO 4217 currency. Money never collapses

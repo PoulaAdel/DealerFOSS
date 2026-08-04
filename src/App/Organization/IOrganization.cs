@@ -6,9 +6,9 @@
 // Edit: changing a signature here is a cross-module break. Do not add an
 //       "unscoped" overload — that is how a leak gets introduced politely.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Organization;
+namespace DealerFOSS.Organization;
 
 /// <summary>
 /// The Organization module's public contract — the only surface other modules

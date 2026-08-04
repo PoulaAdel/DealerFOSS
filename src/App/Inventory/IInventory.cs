@@ -5,9 +5,9 @@
 //       authorized rooftops. An empty scope is a denial, never "unfiltered" —
 //       keep that contract, or a caller will read it as "no filter".
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Inventory;
+namespace DealerFOSS.Inventory;
 
 /// <summary>
 /// Inventory units — a vehicle standing on one rooftop's lot. Rooftop-owned and

@@ -5,7 +5,7 @@
 // Edit: add combinators (Map, Bind) here if they earn their keep. Never add a
 //       domain-specific helper — Core must stay free of dealership concepts.
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// The outcome of an operation that is expected to fail for ordinary business

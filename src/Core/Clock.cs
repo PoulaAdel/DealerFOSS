@@ -5,7 +5,7 @@
 // Edit: instants are UTC. A dealership-local date is derived from the rooftop
 //       time zone at the point of display, not stored as local time.
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// Abstracts "now" so time is injectable and testable. Domain and application

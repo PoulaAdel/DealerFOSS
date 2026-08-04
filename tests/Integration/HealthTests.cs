@@ -9,7 +9,7 @@
 using System.Net;
 using FluentAssertions;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 /// <summary>
 /// Liveness and readiness are separate signals (doc 07 §6): liveness answers

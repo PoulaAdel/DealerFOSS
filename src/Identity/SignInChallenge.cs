@@ -8,7 +8,7 @@
 //       without a valid code does nothing — but a long-lived one would turn a
 //       stolen password into a stolen account eventually.
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class SignInChallenge
 {

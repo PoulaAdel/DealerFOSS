@@ -10,11 +10,11 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
-using OpenDealer360.Vehicles;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
+using DealerFOSS.Vehicles;
 
-namespace OpenDealer360.Inventory;
+namespace DealerFOSS.Inventory;
 
 internal sealed class InventoryUnitConfiguration : IEntityTypeConfiguration<InventoryUnit>
 {

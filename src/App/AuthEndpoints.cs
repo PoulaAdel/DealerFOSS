@@ -16,21 +16,21 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using OpenDealer360.Core;
-using OpenDealer360.Identity;
+using DealerFOSS.Core;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.App;
+namespace DealerFOSS.App;
 
 internal static class AuthEndpoints
 {
     /// <summary>Name of the cookie carrying the session token.</summary>
-    public const string SessionCookie = "odms_session";
+    public const string SessionCookie = "dfoss_session";
 
     /// <summary>
     /// Name of the cookie carrying this session's anti-forgery token. Readable by
     /// script on purpose, so the client can copy it into <see cref="AntiForgeryHeader"/>.
     /// </summary>
-    public const string AntiForgeryCookie = "odms_csrf";
+    public const string AntiForgeryCookie = "dfoss_csrf";
 
     /// <summary>
     /// The header a write must carry. "CSRF" rather than "anti-forgery" because

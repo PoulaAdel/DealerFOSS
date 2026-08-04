@@ -86,6 +86,32 @@ describe('the stock list', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not reach the server/);
   });
 
+  it('does not claim a full page is the whole lot', async () => {
+    // The server clamps to 200. A dealership with 400 cars would otherwise be
+    // told, on a screen they use to count their own stock, that they have 200.
+    const full = Array.from({ length: 200 }, (_, i) => ({
+      ...unit,
+      id: `${i}`.padStart(8, '0') + '-1111-1111-1111-111111111111',
+      stockNumber: `NAG-${1000 + i}`,
+    }));
+
+    mockApi({ '/inventory': { ok: true, body: full } });
+    render(<InventoryPage />);
+
+    // Said twice on purpose, to two different audiences: the table's caption is
+    // what a screen reader announces, the note is what a sighted user reads.
+    expect(await screen.findByText(/Showing the first 200/)).toBeVisible();
+    expect(screen.getAllByText(/There may be more/)).toHaveLength(2);
+  });
+
+  it('says the count plainly when it is the whole lot', async () => {
+    mockApi({ '/inventory': { ok: true, body: [unit] } });
+    render(<InventoryPage />);
+
+    await screen.findByText('NAG-1042');
+    expect(screen.queryByText(/There may be more/)).not.toBeInTheDocument();
+  });
+
   it('asks the server again when the status filter changes', async () => {
     mockApi({ '/inventory': { ok: true, body: [unit] } });
     render(<InventoryPage />);

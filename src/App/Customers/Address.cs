@@ -7,7 +7,7 @@
 //       and leading zeros matter (doc 04 §4). Country is an ISO 3166-1 alpha-2
 //       code so a jurisdiction rule pack can key off it later.
 
-namespace OpenDealer360.Customers;
+namespace DealerFOSS.Customers;
 
 public sealed record Address(
     string Line1,

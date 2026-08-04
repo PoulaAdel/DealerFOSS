@@ -14,10 +14,10 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
 
-namespace OpenDealer360.Leads;
+namespace DealerFOSS.Leads;
 
 /// <summary>The schema this capability owns.</summary>
 internal static class LeadSchema

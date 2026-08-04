@@ -12,10 +12,10 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Core;
-using OpenDealer360.Identity;
+using DealerFOSS.Core;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class Authenticator(
     IdentityDb db,
@@ -26,7 +26,7 @@ internal sealed class Authenticator(
     : IAuthenticator
 {
     /// <summary>Shown as the account issuer in an authenticator app.</summary>
-    private const string Issuer = "OpenDealer360";
+    private const string Issuer = "DealerFOSS";
 
     /// <summary>
     /// A valid hash of a throwaway password. Verified against when no user

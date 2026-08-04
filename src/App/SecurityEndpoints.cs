@@ -11,10 +11,10 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using OpenDealer360.Core;
-using OpenDealer360.Identity;
+using DealerFOSS.Core;
+using DealerFOSS.Identity;
 
-namespace OpenDealer360.App;
+namespace DealerFOSS.App;
 
 internal static class SecurityEndpoints
 {

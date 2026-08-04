@@ -4,9 +4,9 @@
 // Edit: every read behind this interface is filtered to the caller's authorized
 //       rooftops. An empty scope is a denial, never "unfiltered".
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Deals;
+namespace DealerFOSS.Deals;
 
 /// <summary>
 /// Deals being worked at a rooftop: one customer, one car, a price, and an

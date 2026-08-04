@@ -12,9 +12,9 @@
 //       read and echo back on every write. Both are stored hashed, and both die
 //       together when the session is revoked.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Identity;
+namespace DealerFOSS.Identity;
 
 internal sealed class Session : AuditableEntity
 {

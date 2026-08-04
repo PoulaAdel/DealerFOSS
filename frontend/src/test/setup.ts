@@ -33,7 +33,7 @@ beforeEach(() => {
   // A cookie the server would have set at sign-in. Present by default so a
   // component under test behaves as it does for a signed-in person; the
   // anti-forgery tests clear it deliberately.
-  document.cookie = 'odms_csrf=test-token';
+  document.cookie = 'dfoss_csrf=test-token';
 });
 
 afterEach(() => {

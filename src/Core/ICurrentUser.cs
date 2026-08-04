@@ -5,7 +5,7 @@
 // Edit: this is only the holder. Resolution lives in
 //       Host/Tenancy/CurrentUserMiddleware.
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// The authenticated caller for the current request. Resolved once, before any

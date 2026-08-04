@@ -10,9 +10,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using OpenDealer360.App;
+using DealerFOSS.App;
 
-namespace OpenDealer360.IntegrationTests;
+namespace DealerFOSS.IntegrationTests;
 
 /// <summary>
 /// The tenant-isolation proof, running in CI. Two dealer organizations live in
@@ -100,7 +100,7 @@ public sealed class TenantIsolationTests(HostFixture fixture)
         // than a rooftop-scope filter; rooftop scope is covered separately by
         // RooftopAuthorizationTests.
         var token = await _fixture.TokenForAsync(DevelopmentSeeder.DevUsers.OrganizationWideEmail, tenantKey);
-        request.Headers.Add("Cookie", $"odms_session={token}");
+        request.Headers.Add("Cookie", $"dfoss_session={token}");
         return await client.SendAsync(request);
     }
 

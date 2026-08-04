@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace OpenDealer360.Data.Migrations
+namespace DealerFOSS.Data.Migrations
 {
     /// <inheritdoc />
     public partial class AddImportsAndCustomerExternalReference : Migration

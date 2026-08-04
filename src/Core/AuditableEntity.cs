@@ -6,7 +6,7 @@
 // Edit: rarely. Adding a field here changes every table that inherits it, so it
 //       needs a migration in every module.
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// Base for business records that carry audit columns and an optimistic

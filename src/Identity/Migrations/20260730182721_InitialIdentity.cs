@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace OpenDealer360.Identity.Migrations
+namespace DealerFOSS.Identity.Migrations
 {
     /// <inheritdoc />
     public partial class InitialIdentity : Migration

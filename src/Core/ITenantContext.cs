@@ -5,9 +5,9 @@
 // Edit: this is only the holder. Resolution lives in src/App/Tenancy — the
 //       middleware and the resolver; change those instead.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Core;
+namespace DealerFOSS.Core;
 
 /// <summary>
 /// The single dealer organization a request is bound to. Resolved once, in

@@ -14,9 +14,9 @@
 //       (doc 04 §1). The customer is shared across the organization; the deal is
 //       not.
 
-using OpenDealer360.Core;
+using DealerFOSS.Core;
 
-namespace OpenDealer360.Deals;
+namespace DealerFOSS.Deals;
 
 public sealed class Deal : AuditableEntity
 {

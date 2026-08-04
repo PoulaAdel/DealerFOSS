@@ -14,7 +14,7 @@ import { apiCalls, headerOn, mockApi } from '../test/setup';
 
 describe('talking to the control plane', () => {
   it('carries the administrator’s own anti-forgery header on a write', async () => {
-    document.cookie = 'odms_admin_csrf=admin-token';
+    document.cookie = 'dfoss_admin_csrf=admin-token';
     mockApi({ '/admin/tenants/x/status': { ok: true, body: {} } });
 
     await adminPost('/tenants/x/status', { status: 'Active' });
@@ -24,8 +24,8 @@ describe('talking to the control plane', () => {
 
   it('does not send the dealership’s token, even though the browser holds one', async () => {
     // Both cookies present, which is exactly the state during a support visit.
-    document.cookie = 'odms_csrf=tenant-token';
-    document.cookie = 'odms_admin_csrf=admin-token';
+    document.cookie = 'dfoss_csrf=tenant-token';
+    document.cookie = 'dfoss_admin_csrf=admin-token';
     mockApi({ '/admin/tenants/x/status': { ok: true, body: {} } });
 
     await adminPost('/tenants/x/status', { status: 'Active' });
@@ -34,8 +34,8 @@ describe('talking to the control plane', () => {
   });
 
   it('and the dealership client does not send the administrator’s', async () => {
-    document.cookie = 'odms_csrf=tenant-token';
-    document.cookie = 'odms_admin_csrf=admin-token';
+    document.cookie = 'dfoss_csrf=tenant-token';
+    document.cookie = 'dfoss_admin_csrf=admin-token';
     mockApi({ '/customers': { ok: true, body: {} } });
 
     await post('/customers', {});
@@ -53,7 +53,7 @@ describe('talking to the control plane', () => {
   });
 
   it('names the dealership only where the endpoint needs it', async () => {
-    document.cookie = 'odms_admin_csrf=admin-token';
+    document.cookie = 'dfoss_admin_csrf=admin-token';
     mockApi({ '/admin/support-access': { ok: true, body: {} } });
 
     await adminPost('/support-access', { reason: 'Ticket 1.', minutes: 60 }, 'northgroup');

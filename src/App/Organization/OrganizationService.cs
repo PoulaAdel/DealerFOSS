@@ -8,12 +8,12 @@
 //       to enumerate rooftops. Removing either check fails RooftopAuthorizationTests.
 
 using Microsoft.EntityFrameworkCore;
-using OpenDealer360.Identity;
-using OpenDealer360.Organization;
-using OpenDealer360.Core;
-using OpenDealer360.Data;
+using DealerFOSS.Identity;
+using DealerFOSS.Organization;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
 
-namespace OpenDealer360.Organization;
+namespace DealerFOSS.Organization;
 
 /// <summary>
 /// Read workflows for the Organization capability, scoped to what the caller is
