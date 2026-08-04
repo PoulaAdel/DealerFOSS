@@ -155,6 +155,10 @@ them is written.
 
   **Deliberately not included:** merging two records that are already duplicates, editing a customer, a customer detail page, and anything about their deals or vehicles. Search is capped and unpaged.
 
+- **2026-08-04 — The deal desk has a screen.** The capability with the most logic already built and nothing to drive it. Lists what is being worked, opens one to show its charges, its trade-in, and what the customer owes, and moves it on: send to a manager, approve, hand the car over, mark lost. **The screen explains the rules rather than re-implementing them.** Only the transitions the deal's own stage allows are offered; whether *this caller* may make one is the server's answer, so a refusal is shown after asking rather than predicted. A salesperson cannot approve their own deal and the numbers freeze on submission — both stay in `DealService`, and the screen says what the rule is instead of becoming a second place for it to live, where the two copies would drift and the browser's would be the wrong one. **Verified in a real browser** against a seeded deal: opened it, approved it, watched the stage, the available action, and the history all follow. **A defect only looking could find:** the amount column is signed — a discount shows as −$500 — but the trade-in showed as +$3,300 while actually *reducing* what was due, so reading down the column gave $30,194 against a printed total of $23,594. The figures disagreed with each other on screen. Now negated, which also makes negative equity correctly *increase* the bill. Evidence: `npm test` 84/84 (was 70). Two rehearsals: swallowing the server's refusal failed exactly the test that demands it be shown, and offering moves on a finished deal failed exactly the one that forbids it *(agent-verifiable)*
+
+  **Deliberately not included:** starting a deal, editing the charges, entering a trade-in, F&I products, finance applications, tax and title, and printed paperwork. The desk shows and moves deals; building one is still an API call.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -164,13 +168,13 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** the screen for selling a car — the deal desk.
+**Outcome:** a deal can be built from the screen, not only moved along it.
 
-Customers, stock, and records all have screens now. Deals are the capability with the most business logic already built and nothing to drive it: pricing, a trade-in, submitting for approval, a manager approving, and delivery posting the accounting entry. It is also where the segregation-of-duty rules become visible to a person rather than only to a test.
+The desk shows and advances deals; starting one and pricing it is still an API call, which makes the screen a viewer rather than a tool. Closing that is what turns the last four milestones into something a dealership could actually sell a car with.
 
-- **Included:** listing deals for a rooftop, building one against a customer and a stock unit, entering the charges, submitting it, and approving or refusing it — with the buttons a caller may not use absent rather than present-and-refused.
-- **Explicitly excluded:** F&I products, finance applications, tax and title, printed paperwork, and editing an approved deal.
-- **Caution:** a salesperson cannot approve their own deal, and the price cannot change after approval. Both are enforced server-side and must not be re-implemented in the browser — the screen's job is to show *why* something is unavailable, not to become the second place the rule lives.
+- **Included:** starting a deal against a customer and an available stock unit, entering and editing the charges while it is still a draft, and recording a trade-in with its allowance and payoff.
+- **Explicitly excluded:** F&I products, finance applications, tax and title, printed paperwork, and editing anything once submitted.
+- **Caution:** the numbers freeze on submission — the form must disappear at that point rather than be disabled, or somebody will type into it and lose the work. `DealDetail.TermsAreOpen` already says which state it is in; use it rather than inferring from the status string.
 
 **Also outstanding, and the last stage-1 item:** a rehearsed backup and restore — the exit criterion that is not OIDC.
 

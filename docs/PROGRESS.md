@@ -1,7 +1,7 @@
-﻿# Where we are
+# Where we are
 
-Plain language, no jargon. For the engineering detail â€” every claim paired with
-the command that proves it â€” see [implementation/STATUS.md](implementation/STATUS.md).
+Plain language, no jargon. For the engineering detail — every claim paired with
+the command that proves it — see [implementation/STATUS.md](implementation/STATUS.md).
 
 **Last updated:** 4 August 2026
 
@@ -10,7 +10,7 @@ the command that proves it â€” see [implementation/STATUS.md](implementatio
 ## The short answer
 
 **The foundation is finished. The first dealership records work, records move in
-and out as ordinary files, and there are eight screens that provably draw.**
+and out as ordinary files, and there are nine screens that provably draw.**
 
 Several dealership groups can already share one installation without ever seeing
 each other's data, and staff can be restricted to their own location. Customers
@@ -19,13 +19,13 @@ a car can be sold, and the sale writes its own accounting entry. Whoever runs th
 servers is structurally shut out of all of it, and can only come in through a
 door you can see them open. A dealership can bring its old records in from a
 spreadsheet and take them all out again. And the backup has actually been
-restored from â€” proven by running the whole system against the restored copy,
+restored from — proven by running the whole system against the restored copy,
 not by assuming.
 
-Eight screens exist â€” the stock list, the trial balance, setting up two-step
-sign-in, moving records in and out, and a console for whoever runs the
-installation â€” and a machine checks on every change that they really appear and
-behave, which until recently only a person could confirm.
+Nine screens exist — customers, the deal desk, the stock list, the trial balance,
+setting up two-step sign-in, moving records in and out, and a console for whoever
+runs the installation — and a machine checks on every change that they really
+appear and behave, which until recently only a person could confirm.
 
 **The next stage is the everyday product**, starting with the customer screen.
 
@@ -35,7 +35,7 @@ behave, which until recently only a person could confirm.
 
 ## The journey
 
-Eight stages to a working pilot with real dealerships. The plan estimates 7â€“8
+Eight stages to a working pilot with real dealerships. The plan estimates 7–8
 months of focused work.
 
 | | Stage | What it means | Status |
@@ -52,20 +52,20 @@ months of focused work.
 
 ---
 
-## Inside stage 1 â€” done
+## Inside stage 1 — done
 
-- [x] Dealership groups cannot see each other's data â€” each gets its own separate database
+- [x] Dealership groups cannot see each other's data — each gets its own separate database
 - [x] A group can have several locations, each with its own departments
 - [x] Staff can be restricted to one location and cannot reach another
 - [x] Refused access attempts are recorded permanently and cannot be erased
 - [x] Automated checks guard all of the above, and were tested by deliberately breaking things
-- [x] **Signing in** â€” real accounts and passwords, with sign-out taking effect immediately
+- [x] **Signing in** — real accounts and passwords, with sign-out taking effect immediately
 - [x] **A second factor at sign-in**, with recovery codes for a lost phone
 - [x] **A dealership can insist on that second factor** for the jobs that warrant it
-- [x] **A malicious website cannot make your browser change anything** â€” see below
+- [x] **A malicious website cannot make your browser change anything** — see below
 - [x] **Whoever runs the servers is kept out of the dealership's data**
-- [x] **The screens draw** â€” proven automatically now, on every change
-- [x] **A rehearsed backup and restore** â€” done and proven, not just written
+- [x] **The screens draw** — proven automatically now, on every change
+- [x] **A rehearsed backup and restore** — done and proven, not just written
 
 ---
 
@@ -77,16 +77,16 @@ months of focused work.
 - A permanent record of refused access
 - Signing in with an email and password, and signing out immediately
 - Adding a customer, and finding one by name, phone, or email
-- **Recording a vehicle and finding it by VIN â€” even just the last few characters**
+- **Recording a vehicle and finding it by VIN — even just the last few characters**
 - **Putting a car into a location's stock under a stock number, and moving it
-  through incoming â†’ reconditioning â†’ available â†’ sold, with every move kept**
+  through incoming → reconditioning → available → sold, with every move kept**
 - **One location cannot see or move another location's stock, while the vehicle
   records themselves stay shared across the group**
 - **Taking an enquiry from someone who might buy, chasing it through to a sale or
   a dead end, handing it between salespeople, and keeping every note along the way
-  â€” including a lost lead who comes back months later**
+  — including a lost lead who comes back months later**
 - **Selling a car: putting a price on it, taking a trade-in, sending it to a
-  manager for approval, and handing it over â€” with the car held on the lot the
+  manager for approval, and handing it over — with the car held on the lot the
   whole time so nobody else can sell it**
 - **A salesperson cannot approve their own deal, and the price cannot change after
   a manager has agreed to it**
@@ -95,11 +95,11 @@ months of focused work.
   are ten printable one-time codes for the day the phone is lost
 - **Each dealership's database password is encrypted**, so a stolen copy of the
   system does not hand over their data
-- **Every sale writes its own accounting entry â€” what came in, what went out, what
-  the car cost â€” and it must balance or the sale does not go through. Nothing in
+- **Every sale writes its own accounting entry — what came in, what went out, what
+  the car cost — and it must balance or the sale does not go through. Nothing in
   that record can ever be edited; a mistake is corrected by an opposite entry that
   leaves both visible**
-- **A running total per account, and whether the two columns agree** â€” the
+- **A running total per account, and whether the two columns agree** — the
   headline of a trial balance is whether it balances, and a difference means
   something was lost on the way in
 - **A malicious website cannot make your browser change anything.** If you are
@@ -107,22 +107,23 @@ months of focused work.
   to send a request with your cookies attached. Every change now also demands a
   secret handed out at sign-in that only this application can read, so such a
   request is refused. It stops working the moment you sign out
-- **Eight screens** â€” the stock list, the trial balance, setting up two-step
-  sign-in, moving records in and out, and three for whoever runs the
-  installation â€” each showing something sensible while loading, when empty, when
-  you lack permission, and when the server fails, with a way to try again
+- **Nine screens** — customers, the deal desk, the stock list, the trial balance,
+  setting up two-step sign-in, moving records in and out, and three for whoever
+  runs the installation — each showing something sensible while loading, when
+  empty, when you lack permission, and when the server fails, with a way to try
+  again
 - **A console for whoever runs the servers.** A separate sign-in at its own
   address, marked so nobody confuses it with the dealership screens. It shows
   every dealership on the installation and whether each is in service, can take
   one out of service and put it back (asking first, since that stops everyone
   there working), and is where a support visit is opened with a written reason
-  and closed again. The whole record of who went where and why is on that page â€”
+  and closed again. The whole record of who went where and why is on that page —
   including visits already closed, because a log you can empty is not a log
 - **The screens are now checked automatically every time anything changes**, and
   have been opened and used on a real browser. Until this week "does it actually
   appear on screen?" was a question only a person could answer, and everything
   built on top carried that doubt. Forty-six automated checks now open each
-  screen and read it the way you would â€” by its headings, its labels, its words.
+  screen and read it the way you would — by its headings, its labels, its words.
   On top of that, every screen has been signed into and walked at both desktop
   and phone width, which found three problems no automated check could have:
   the stock list was quietly overstating how many cars a dealership has, the
@@ -131,7 +132,7 @@ months of focused work.
 - **A page for setting up two-step sign-in.** It shows the square you point your
   phone at, and the code to type by hand if you are setting it up on the same
   device. It says plainly that nothing changes until you have entered a working
-  code â€” so a mis-scan cannot lock you out â€” and then shows your ten emergency
+  code — so a mis-scan cannot lock you out — and then shows your ten emergency
   codes once, saying why they can never be shown again. If your dealership
   requires two-step sign-in and you have not set it up, this is the one page you
   land on, and signing out still works so you are never stuck at a shared desk
@@ -140,15 +141,15 @@ months of focused work.
   set one up can sign in, is told exactly what to do, and can do nothing else
   until they have. Nobody is ever locked out, and it applies to whoever holds the
   job next year without anybody remembering to add them. Only somebody with
-  group-wide authority can set it â€” not a manager at one lot
+  group-wide authority can set it — not a manager at one lot
 - **Whoever runs the servers cannot read the dealership's records.** Somebody has
   to keep the installation running, and that is now a different kind of login
-  entirely â€” a different door, a different password list, a different database.
+  entirely — a different door, a different password list, a different database.
   It cannot see a customer, a car, or a deal. The reverse holds too: the most
   senior person at the dealership cannot touch the servers. Neither is a rule
   somebody has to remember to apply to the next screen we build; it is how the
   two are wired
-- **When you ask for help, someone can come in â€” visibly, briefly, and looking
+- **When you ask for help, someone can come in — visibly, briefly, and looking
   only.** They have to write down why, they get an hour at most, they cannot
   change anything, and the visit appears in *your* log with their name and their
   stated reason. Closing it stops them on their very next click. Anyone who might
@@ -158,7 +159,7 @@ months of focused work.
   This is the first thing a real dealership needs and the stage that was at zero.
   Three things make it safe to use on a business's own history. You can do a
   **practice run** that changes nothing and tells you exactly what the real one
-  will do â€” how many would be added, how many are already here, and which rows
+  will do — how many would be added, how many are already here, and which rows
   have a problem. **Running the same file twice does not create everything
   twice**; cars are matched by their VIN and customers by their number in your
   old system. And a bad row is reported **by its line number as you see it in a
@@ -167,18 +168,24 @@ months of focused work.
 - **Work that takes minutes now happens in the background.** A file with
   thousands of rows would time out if the website waited for it. Submitting
   returns straight away with something you can watch, and the work carries on
-  behind the scenes â€” which is also the groundwork for everything else that will
+  behind the scenes — which is also the groundwork for everything else that will
   need to run on a schedule
-- **A customer page â€” the first screen staff would actually use all day.** Search
+- **A deal desk.** What is being sold right now, and what stage each one is at.
+  Open one and you see the price, the fees, the discount, the trade-in, and what
+  the customer actually owes — then send it to a manager, approve it, or hand the
+  car over. The rules that already existed are now visible: the numbers freeze
+  the moment a deal goes to a manager, and it says so; and if you are the person
+  who built it, it tells you a manager has to be the one who signs it off
+- **A customer page — the first screen staff would actually use all day.** Search
   by name, phone, or email. Adding somebody **looks for them first**, and if
   anyone similar is already on file it shows who, with enough detail to recognise
-  them, and asks whether that is the same person. It does not refuse â€” two people
+  them, and asks whether that is the same person. It does not refuse — two people
   really do share a name, and a system that blocks the second one just gets a
   fake name typed in instead. But two records for the same customer is the
   failure that quietly ruins a system like this: their service history splits,
   their deals end up under the wrong name, and nobody notices until it matters
 - **A page for moving records in and out.** Choose a spreadsheet from your old
-  system and it insists you run a **practice first** â€” which changes nothing and
+  system and it insists you run a **practice first** — which changes nothing and
   tells you exactly what the real one would do. Only then does the real button
   become available, and it locks again if you pick a different file. Rows that
   could not be read are listed by **the line number you see in your own
@@ -186,7 +193,7 @@ months of focused work.
   guess. Taking records out is two buttons
 - **A backup that has actually been restored from.** The scripts back up
   everything, put it back under different names *next to* the originals, and then
-  prove the restored copy works by running the full end-to-end check against it â€”
+  prove the restored copy works by running the full end-to-end check against it —
   because a backup nobody has restored from is not a backup. Doing the drill
   found a real trap: the restored system would have quietly gone on reading and
   writing the *live* databases, which is worse than a restore that plainly
@@ -195,7 +202,7 @@ months of focused work.
   the licence mean something: a dealership can download their customers and
   their cars as an ordinary spreadsheet file, and that file is one this system
   will read straight back in. No converter, no export format only we understand,
-  nothing to ask us for. It is proved rather than promised â€” nearly nine hundred
+  nothing to ask us for. It is proved rather than promised — nearly nine hundred
   cars were exported from one dealership and loaded into another, and every
   single row was understood. The file comes with a fingerprint so the other end
   can tell it arrived whole. Taking data out is a separate permission from
@@ -213,15 +220,15 @@ months of focused work.
 - Photos of a vehicle, or aging reports
 - Service appointments or repair orders
 - Parts, or reports
-- Screens for customers, leads, or selling a car â€” the system underneath does all
+- Screens for customers, leads, or selling a car — the system underneath does all
   three, but there is nothing to click yet
 - A way to add a second person who runs the servers. There is one, created when
-  the system is set up, and no way to add another yet â€” nor to get back in if
+  the system is set up, and no way to add another yet — nor to get back in if
   they lose their phone
 - Creating a new dealership from the administration side. It can list them and
   take one out of service; setting a new one up is still a developer's job
 - Cancelling an import once it has started, or watching its progress while it
-  runs â€” it reports when it finishes
+  runs — it reports when it finishes
 - Moving anything beyond customers and cars. Enquiries, deals and the books have
   no way in or out, so "take your data with you" is true of the two record types
   a dealership migrates first and not yet of the whole business
@@ -230,12 +237,11 @@ months of focused work.
 
 ## Next
 
-**The screen for selling a car.** Customers, stock and records now have pages;
-the deal desk is the biggest thing that works underneath with nothing to drive
-it. Put a price on a car, take a trade-in, send it to a manager, and hand it
-over â€” with the rules that already hold made visible: a salesperson cannot
-approve their own deal, and the price cannot change once a manager has agreed
-to it.
+**Building a deal from the screen, not just watching one.** The desk can show a
+deal and move it along, but starting one and putting the numbers in is still a
+developer's job. Closing that gap is what turns the last few rounds into
+something a dealership could genuinely sell a car with: pick the customer, pick
+the car, enter the price and the fees, take the trade-in.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one
@@ -250,4 +256,4 @@ would prove nothing.
 | **Pointing a phone at the setup page** | Everything else about the screens has now been checked on a real browser. The one thing left is physical: does a phone camera actually read that square? |
 | Pilot dealerships and access to their current systems | Stage 2 cannot be finished or proven without real data and a real provider connection |
 | Confirming the month-end rule with a real dealer's accountant | Calendar month end with a grace period to the 10th is assumed, not confirmed |
-| Deciding where backups are kept | The scripts write `.bak` files onto this machine and stop there. **Each one holds every customer record in plain form** â€” copying them somewhere safe, and encrypting them, is a decision about your customers' data that I should not make for you |
+| Deciding where backups are kept | The scripts write `.bak` files onto this machine and stop there. **Each one holds every customer record in plain form** — copying them somewhere safe, and encrypting them, is a decision about your customers' data that I should not make for you |

@@ -98,6 +98,60 @@ export interface TrialBalance {
   accounts: AccountBalance[];
 }
 
+// --- selling a car ---
+
+export type DealStatus = 'Draft' | 'Submitted' | 'Approved' | 'Delivered' | 'Lost';
+
+export interface DealSummary {
+  id: string;
+  rooftopId: string;
+  status: DealStatus;
+  customerId: string;
+  customerName: string;
+  inventoryUnitId: string;
+  stockNumber: string;
+  vehicle: string;
+  amountDue: number;
+  currency: string;
+  salespersonUserId: string | null;
+  isApproved: boolean;
+}
+
+export interface ChargeView {
+  kind: string;
+  description: string;
+  amount: number;
+}
+
+export interface TradeInView {
+  description: string;
+  allowance: number;
+  payoff: number;
+  equity: number;
+  isNegativeEquity: boolean;
+}
+
+export interface DealHistoryEntry {
+  fromStatus: string | null;
+  toStatus: string;
+  occurredAt: string;
+  changedByUserId: string | null;
+  note: string | null;
+  amountAtChange: number;
+}
+
+export interface DealDetail extends DealSummary {
+  leadId: string | null;
+  subtotal: number;
+  tradeIn: TradeInView | null;
+  charges: ChargeView[];
+  approvedByUserId: string | null;
+  approvedAt: string | null;
+  /** False once submitted: the numbers are frozen from that point. */
+  termsAreOpen: boolean;
+  history: DealHistoryEntry[];
+}
+
 // --- bringing records in, and taking them out ---
 
 export type ImportKind = 'Customers' | 'Vehicles';

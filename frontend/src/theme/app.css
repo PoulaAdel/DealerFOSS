@@ -604,3 +604,60 @@ tfoot td {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+/* --- the deal desk --- */
+
+.panel--deal {
+  max-width: none;
+  margin-bottom: 18px;
+}
+
+.panel--deal .page__head {
+  margin-bottom: 4px;
+}
+
+.panel--deal h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+/* What happened to this deal, newest first. Plain list rather than a table:
+   it is a story, not figures to compare down a column. */
+.history {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.88rem;
+}
+
+.history li {
+  margin-bottom: 4px;
+}
+
+.chip--draft {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--submitted {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip--approved,
+.chip--delivered {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.chip--lost {
+  background: var(--fail-soft);
+  color: var(--fail);
+}
+
+/* A customer name in the list opens the deal. It reads as a link and behaves as
+   a button, because it changes this page rather than navigating. */
+table button.link {
+  padding: 0;
+  text-align: left;
+  color: var(--ink);
+}
