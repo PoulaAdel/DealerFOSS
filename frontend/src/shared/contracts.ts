@@ -28,6 +28,24 @@ export interface MfaEnrolment {
   enrolmentUri: string;
 }
 
+/** Enough to identify a customer in a list. */
+export interface CustomerSummary {
+  id: string;
+  displayName: string;
+  kind: 'Person' | 'Business';
+  primaryEmail: string | null;
+  primaryPhone: string | null;
+}
+
+/** What a caller supplies to create a customer. Mirrors NewCustomer. */
+export interface NewCustomer {
+  kind: 'Person' | 'Business';
+  firstName?: string | null;
+  lastName: string;
+  email?: string | null;
+  phone?: string | null;
+}
+
 export interface RooftopSummary {
   id: string;
   name: string;

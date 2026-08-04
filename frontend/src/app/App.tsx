@@ -15,6 +15,7 @@ import { InventoryPage } from '../features/inventory/InventoryPage';
 import { TrialBalancePage } from '../features/accounting/TrialBalancePage';
 import { SecondFactorSetup } from '../features/auth/SecondFactorSetup';
 import { RecordsPage } from '../features/migration/RecordsPage';
+import { CustomersPage } from '../features/customers/CustomersPage';
 import { AdminApp } from './AdminApp';
 
 export function App() {
@@ -80,6 +81,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<Shell />}>
+        <Route path="/customers" element={<CustomersPage />} />
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/accounting" element={<TrialBalancePage />} />
         <Route path="/records" element={<RecordsPage />} />
@@ -111,6 +113,7 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
 
         {restricted ? null : (
           <nav aria-label="Main">
+            <NavLink to="/customers">Customers</NavLink>
             <NavLink to="/inventory">Stock</NavLink>
             <NavLink to="/accounting">Trial balance</NavLink>
             <NavLink to="/records">Records</NavLink>

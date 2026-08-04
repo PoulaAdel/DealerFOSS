@@ -570,3 +570,37 @@ tfoot td {
   background: var(--done-soft);
   color: var(--done);
 }
+
+/* --- customers --- */
+
+.actions--lead {
+  margin: 0 0 18px;
+}
+
+/* The near-matches shown before a customer is created. Deliberately plain and
+   readable rather than a dense table — somebody is being asked to recognise a
+   person, not to scan a report. */
+.matches {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--ground);
+  list-style: none;
+}
+
+.matches li + li {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.chip--person {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--business {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

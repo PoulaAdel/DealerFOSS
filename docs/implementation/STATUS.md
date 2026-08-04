@@ -151,6 +151,10 @@ them is written.
 
   **Deliberately not included:** copying backups off the host, encrypting them, scheduling, and retention — doc 08 owns those, and a `.bak` holds every customer record in plain form, so where the files go is a decision somebody must make on purpose. Tenant databases are found by naming convention rather than by decrypting the catalog; nothing creates an off-convention tenant today, and this is the script that changes if anything ever does.
 
+- **2026-08-04 — The customer screen, with a duplicate check in front of every new record.** The first screen that is the everyday product rather than foundation. Search asks the server to do the matching — it is the only party that knows what this caller may see — across name, email, and phone. The part worth the effort is adding somebody: **the screen looks for them before it creates them**, searching each identifying field separately, because a duplicate usually differs in exactly one (the phone matches but the name is spelled differently; the surname matches but they used a work address). If anything is found it shows who, with enough to recognise them, and makes a person choose. It is deliberately **not** a refusal: two people genuinely do share a name, and a shop that cannot record the second one will get a fake name typed in instead. Two records for the same person is the failure that quietly makes a DMS untrustworthy — their service history splits and their deals sit under the wrong name — and nobody notices until it matters. The 100-row cap is stated honestly rather than presented as a total, the same defect the stock list had. **Verified in a real browser** against seeded data: typing an existing surname surfaced that customer and created nobody, confirmed by the absence of any POST. Evidence: `npm test` 70/70 (was 55). Two rehearsals: making the check never find anything failed exactly four tests, and checking only the name failed exactly the one that covers phone and email *(agent-verifiable)*
+
+  **Deliberately not included:** merging two records that are already duplicates, editing a customer, a customer detail page, and anything about their deals or vehicles. Search is capped and unpaged.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -160,13 +164,13 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** stage 1 is closed, so the next milestone is stage 3 or 4 work with a screen — the first business capability a dealership would use every day, rather than a foundation piece.
+**Outcome:** the screen for selling a car — the deal desk.
 
-Customers is the right one. It is the record every other capability references, it already has a working API with search across name, email, and phone, and it is the screen a receptionist opens fifty times a day. It also exercises the one interaction pattern nothing else has needed yet: find-or-create, where somebody types a name, sees near-matches, and has to decide whether this is the same person.
+Customers, stock, and records all have screens now. Deals are the capability with the most business logic already built and nothing to drive it: pricing, a trade-in, submitting for approval, a manager approving, and delivery posting the accounting entry. It is also where the segregation-of-duty rules become visible to a person rather than only to a test.
 
-- **Included:** search with the server doing the matching, a customer detail view, and adding one — with the duplicate check in front of the create, because two records for the same person is the failure mode that makes a DMS untrustworthy.
-- **Explicitly excluded:** merging duplicates, editing contact details from the screen, and anything about deals or vehicles on the customer page.
-- **Caution:** `CustomerService.SearchAsync` caps at 100 and the screen must not imply that is everything — the same defect the stock list had and now names honestly.
+- **Included:** listing deals for a rooftop, building one against a customer and a stock unit, entering the charges, submitting it, and approving or refusing it — with the buttons a caller may not use absent rather than present-and-refused.
+- **Explicitly excluded:** F&I products, finance applications, tax and title, printed paperwork, and editing an approved deal.
+- **Caution:** a salesperson cannot approve their own deal, and the price cannot change after approval. Both are enforced server-side and must not be re-implemented in the browser — the screen's job is to show *why* something is unavailable, not to become the second place the rule lives.
 
 **Also outstanding, and the last stage-1 item:** a rehearsed backup and restore — the exit criterion that is not OIDC.
 
