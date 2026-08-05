@@ -295,7 +295,8 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
             throw new InvalidOperationException(
                 "Integration tests need a reachable SQL Server. Start LocalDB with "
                 + "'sqllocaldb start MSSQLLocalDB', or set DEALERFOSS_TEST_SQL to another "
-                + $"instance. See CLAUDE.md. Attempted: {MaskCredentials(probe)}",
+                + "instance. See docs/LOCAL-DEVELOPMENT.md. Attempted: "
+                + MaskCredentials(probe),
                 ex);
         }
     }

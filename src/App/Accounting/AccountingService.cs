@@ -32,6 +32,14 @@ public sealed class AccountingService(
     private const string ReadPermission = Permissions.AccountingRead;
     private const string PostPermission = Permissions.AccountingPost;
 
+    /// <summary>
+    /// Reversing is its own right. Posting is the consequence of finishing a sale
+    /// or a job and belongs to whoever finishes them; reversing is the one ledger
+    /// operation that can make a mistake disappear, so it belongs to whoever
+    /// answers for the numbers.
+    /// </summary>
+    private const string ReversePermission = Permissions.AccountingReverse;
+
     private const int MaxResults = 200;
 
     private readonly TenantDb _db = db;
@@ -318,6 +326,76 @@ public sealed class AccountingService(
         return Result.Success(await DescribeAsync(entry, cancellationToken));
     }
 
+    public async Task<Result<JournalEntryDetail>> PostServiceInvoiceAsync(
+        ServiceInvoicePosting invoice,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(invoice);
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, PostPermission, invoice.RooftopId, cancellationToken))
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
+        }
+
+        var rooftop = await _organization.GetRooftopAsync(invoice.RooftopId, cancellationToken);
+        if (rooftop.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(rooftop.Error);
+        }
+
+        // One non-reversal entry per repair order, for the same reason as a
+        // delivery: invoicing twice would double the revenue.
+        var alreadyPosted = await _db.JournalEntries
+            .AsNoTracking()
+            .AnyAsync(
+                e => e.Reference == invoice.Reference && e.Source == JournalSource.ServiceInvoice,
+                cancellationToken);
+
+        if (alreadyPosted)
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.AlreadyPosted);
+        }
+
+        var accounts = await AccountMapAsync(cancellationToken);
+        if (accounts.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(accounts.Error);
+        }
+
+        JournalEntry entry;
+        try
+        {
+            entry = JournalEntry.Post(
+                Guid.NewGuid(),
+                rooftop.Value.LegalEntityId,
+                invoice.RooftopId,
+                DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime),
+                JournalSource.ServiceInvoice,
+                invoice.Reference,
+                invoice.Memo,
+                invoice.Currency,
+                BuildServiceInvoiceLines(invoice, accounts.Value),
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.will_not_balance", ex.Message));
+        }
+
+        _db.JournalEntries.Add(entry);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, PostPermission, AuditOutcome.Allowed,
+                "JournalEntry", entry.Id.ToString(), invoice.RooftopId.Value,
+                $"Service invoice {invoice.Reference}", null, null),
+            cancellationToken);
+
+        return Result.Success(await DescribeAsync(entry, cancellationToken));
+    }
+
     public async Task<Result<JournalEntryDetail>> ReverseAsync(
         Guid entryId,
         string reason,
@@ -333,7 +411,7 @@ public sealed class AccountingService(
             return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, PostPermission, original.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReversePermission, original.RooftopId, cancellationToken))
         {
             return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
         }
@@ -371,7 +449,7 @@ public sealed class AccountingService(
         await _db.SaveChangesAsync(cancellationToken);
 
         await _audit.RecordAsync(
-            new AuditEntry(_currentUser.Id, PostPermission, AuditOutcome.Allowed,
+            new AuditEntry(_currentUser.Id, ReversePermission, AuditOutcome.Allowed,
                 "JournalEntry", reversal.Id.ToString(), original.RooftopId.Value,
                 $"Reversed {entryId}", null, null),
             cancellationToken);
@@ -422,6 +500,42 @@ public sealed class AccountingService(
         return lines;
     }
 
+    /// <summary>
+    /// The one place that decides which accounts a service invoice moves.
+    ///
+    /// Debit the cash taken; credit labour, parts, and sublet separately, because
+    /// "we sold £900 of service" is useless to a workshop manager and "£600 labour,
+    /// £300 parts" is the number they run the department on.
+    ///
+    /// There is no cost side. Relieving parts at cost needs a parts inventory and
+    /// there is not one yet — so this posts revenue honestly and leaves gross
+    /// profit on service plainly unavailable rather than quietly wrong.
+    /// </summary>
+    private static List<(string, Guid, decimal, decimal, string?)> BuildServiceInvoiceLines(
+        ServiceInvoicePosting invoice,
+        IReadOnlyDictionary<string, Account> accounts)
+    {
+        var lines = new List<(string, Guid, decimal, decimal, string?)>();
+
+        void Line(string code, decimal debit, decimal credit, string? memo)
+        {
+            if (debit == 0m && credit == 0m)
+            {
+                return;
+            }
+
+            var account = accounts[code];
+            lines.Add((account.Code, account.Id, debit, credit, memo));
+        }
+
+        Line(AccountCodes.Cash, invoice.AmountDue, 0m, "Taken from the customer");
+        Line(AccountCodes.LabourRevenue, 0m, invoice.Labour, "Labour sold");
+        Line(AccountCodes.PartsRevenue, 0m, invoice.Parts, "Parts sold");
+        Line(AccountCodes.SubletRevenue, 0m, invoice.Sublet, "Sublet work");
+
+        return lines;
+    }
+
     private async Task<Result<IReadOnlyDictionary<string, Account>>> AccountMapAsync(CancellationToken cancellationToken)
     {
         var accounts = await _db.Accounts.AsNoTracking().ToDictionaryAsync(a => a.Code, cancellationToken);
@@ -431,6 +545,7 @@ public sealed class AccountingService(
             AccountCodes.Cash, AccountCodes.VehicleInventory, AccountCodes.TradeInventory,
             AccountCodes.VehicleSalesRevenue, AccountCodes.FeeRevenue,
             AccountCodes.SalesDiscounts, AccountCodes.CostOfVehicleSales,
+            AccountCodes.LabourRevenue, AccountCodes.PartsRevenue, AccountCodes.SubletRevenue,
         ];
 
         var missing = required.Where(code => !accounts.ContainsKey(code)).ToList();

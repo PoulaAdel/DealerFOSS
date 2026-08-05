@@ -40,6 +40,13 @@ secrets.json
 .claude
 .claude/settings.local.json
 
+# Coding-assistant instructions — kept on disk, deliberately not published.
+# The contributor-facing half of this content lives in docs/LOCAL-DEVELOPMENT.md.
+CLAUDE.md
+AGENTS.md
+.cursorrules
+docs/10-Claude-Code-Execution-Prompt.md
+
 # OS
 .DS_Store
 Thumbs.db

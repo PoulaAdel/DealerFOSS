@@ -38,6 +38,13 @@ public sealed record LeadSummary(
     Guid CustomerId,
     string CustomerName,
     Guid? VehicleOfInterestId,
+
+    /// <summary>
+    /// What the car is, resolved through <c>IVehicles</c> in one query for the
+    /// whole page. Null when the enquiry names no particular car — which is
+    /// ordinary, and different from a car that could not be read.
+    /// </summary>
+    string? VehicleOfInterest,
     Guid? AssignedToUserId,
     DateTimeOffset CapturedAt,
     int DaysOpen);
@@ -57,6 +64,16 @@ public sealed record LeadDetail(
     DateTimeOffset CapturedAt,
     DateTimeOffset? ClosedAt,
     bool IsOpen,
+
+    /// <summary>
+    /// The statuses this lead may move to, from <see cref="LeadStatusRules"/>.
+    ///
+    /// Sent so a screen offers exactly what the domain allows instead of keeping
+    /// its own copy of the transition table — two copies would drift, and the
+    /// browser's would be the wrong one. Whether *this caller* may make the move
+    /// is still the server's answer on the way in.
+    /// </summary>
+    IReadOnlyList<string> AvailableMoves,
     IReadOnlyList<LeadHistoryEntry> History);
 
 public sealed record LeadHistoryEntry(

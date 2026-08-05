@@ -73,6 +73,16 @@ public static class AccountCodes
     public const string TradeInventory = "1310";
     public const string VehicleSalesRevenue = "4000";
     public const string FeeRevenue = "4100";
+
+    /// <summary>Time sold in the workshop.</summary>
+    public const string LabourRevenue = "4200";
+
+    /// <summary>Parts sold on a repair order. Not parts held in stock — there are none yet.</summary>
+    public const string PartsRevenue = "4300";
+
+    /// <summary>Work sent out to another business and billed on.</summary>
+    public const string SubletRevenue = "4400";
+
     public const string SalesDiscounts = "4900";
     public const string CostOfVehicleSales = "5000";
 }

@@ -46,14 +46,43 @@ public static class Permissions
     /// </summary>
     public const string DealsApprove = "Deals.Approve";
 
+    /// <summary>Seeing a workshop's jobs. Held per rooftop, or organization-wide.</summary>
+    public const string ServiceRead = "Service.Read";
+
+    /// <summary>Booking a car in, writing up the work, and moving the job along.</summary>
+    public const string ServiceWrite = "Service.Write";
+
+    /// <summary>
+    /// Recording that the customer agreed to pay for work found mid-job.
+    /// Deliberately separate from writing it up — noticing that the discs are
+    /// gone and having the conversation about paying for them are different acts,
+    /// and only the second one may put money on a bill.
+    ///
+    /// Unlike Deals.Approve there is no ban on the same person doing both: in an
+    /// independent workshop the advisor who spots the work is usually the one who
+    /// telephones, and forbidding that would stop real shops working. The control
+    /// is that the answer is a distinct, permissioned, timestamped act.
+    /// </summary>
+    public const string ServiceAuthorize = "Service.Authorize";
+
     /// <summary>Reading the ledger.</summary>
     public const string AccountingRead = "Accounting.Read";
 
     /// <summary>
-    /// Putting something in the ledger, or reversing it. Held by whoever is
-    /// accountable for the numbers — normally not the salesperson.
+    /// Putting something in the ledger. Anybody who can finish a transaction that
+    /// posts — delivering a car, invoicing a repair order — needs it, because the
+    /// business event and its entry commit together.
     /// </summary>
     public const string AccountingPost = "Accounting.Post";
+
+    /// <summary>
+    /// Undoing a posted entry by posting its opposite. Separate from
+    /// <see cref="AccountingPost"/>, because this is the operation that can hide a
+    /// mistake — the one act in the ledger a person might want to perform quietly.
+    /// Whoever is accountable for the numbers holds it; the people who merely
+    /// finish sales and jobs do not.
+    /// </summary>
+    public const string AccountingReverse = "Accounting.Reverse";
 
     /// <summary>
     /// Changing the security rules the organization applies to its own staff —
@@ -97,8 +126,12 @@ public static class Permissions
         DealsRead,
         DealsWrite,
         DealsApprove,
+        ServiceRead,
+        ServiceWrite,
+        ServiceAuthorize,
         AccountingRead,
         AccountingPost,
+        AccountingReverse,
     ];
 }
 

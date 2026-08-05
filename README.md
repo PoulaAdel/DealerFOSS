@@ -19,16 +19,12 @@ The project does not call a customer/vehicle/deal UI a complete DMS. Accounting,
 
 **[Implementation status](docs/implementation/STATUS.md)** — the engineering detail, where every completed item names the command that proves it.
 
-> **Renamed from an earlier working title.** The code, tests, and databases are
-> already `DealerFOSS`; what remains is the GitHub repository name and the local
-> containers. [`docs/RENAME-TO-DEALERFOSS.md`](docs/RENAME-TO-DEALERFOSS.md) has
-> the commands and what each one costs. Delete it once done.
-
 ## New here?
 
 Start with **[Onboarding](docs/ONBOARDING.md)** — a 30-minute path that reads the
 code before the documents, gets the app running, and lists the traps worth knowing.
-Then [`CLAUDE.md`](CLAUDE.md) for the verified local setup and canonical commands.
+Then [Local Development](docs/LOCAL-DEVELOPMENT.md) for prerequisites, the
+canonical commands, and the environment facts that are easy to get wrong.
 
 ## Repository map
 

@@ -1,6 +1,6 @@
 # 08 — Governance & Standards
 
-← [Delivery Roadmap](07-Delivery-Roadmap.md) · Next: [Codex Execution Prompt](09-Codex-Execution-Prompt.md) · [Workbook](00-Workbook.md)
+← [Delivery Roadmap](07-Delivery-Roadmap.md) · Next: [Implementation Roadmap](09-Implementation-Roadmap.md) · [Workbook](00-Workbook.md)
 
 ## 1. License and product promise
 

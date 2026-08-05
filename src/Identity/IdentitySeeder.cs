@@ -32,6 +32,8 @@ public static class IdentitySeeder
 
     public const string SalespersonRole = "Salesperson";
 
+    public const string TechnicianRole = "Technician";
+
     public static async Task SeedDevelopmentAsync(
         string tenantConnection,
         IClock clock,
@@ -41,13 +43,15 @@ public static class IdentitySeeder
         DevelopmentAccount rooftopScoped,
         DevelopmentAccount unassigned,
         DevelopmentAccount salesperson,
-        DevelopmentAccount secondFactor)
+        DevelopmentAccount secondFactor,
+        DevelopmentAccount technician)
     {
         ArgumentNullException.ThrowIfNull(organizationWide);
         ArgumentNullException.ThrowIfNull(rooftopScoped);
         ArgumentNullException.ThrowIfNull(unassigned);
         ArgumentNullException.ThrowIfNull(salesperson);
         ArgumentNullException.ThrowIfNull(secondFactor);
+        ArgumentNullException.ThrowIfNull(technician);
 
         var options = new DbContextOptionsBuilder<IdentityDb>()
             .UseSqlServer(tenantConnection)
@@ -74,8 +78,13 @@ public static class IdentitySeeder
             Permissions.DealsRead,
             Permissions.DealsWrite,
             Permissions.DealsApprove,
+            Permissions.ServiceRead,
+            Permissions.ServiceWrite,
+            Permissions.ServiceAuthorize,
             Permissions.AccountingRead,
             Permissions.AccountingPost,
+            // The only role that may make a posted entry disappear.
+            Permissions.AccountingReverse,
             // Who must hold a second factor is a management decision, so the
             // manager role is where it sits. No role is seeded as requiring one
             // — that is the dealership's call, not ours.
@@ -100,6 +109,16 @@ public static class IdentitySeeder
             Permissions.LeadsRead,
             Permissions.DealsRead,
             Permissions.AccountingRead,
+            // The service advisor's job in full: book a car in, write up what was
+            // found, ring the customer, and record what they said. This is the
+            // role the workshop actually runs on, so it holds Service.Authorize
+            // even though it cannot move a deal — the two are unrelated jobs.
+            Permissions.ServiceRead,
+            Permissions.ServiceWrite,
+            Permissions.ServiceAuthorize,
+            // Invoicing a job posts it, so an advisor who can invoice must be
+            // able to post. Reversing is still a manager's job.
+            Permissions.AccountingPost,
         ]);
 
         // A salesperson does the whole job except sign their own deal off. That
@@ -118,10 +137,28 @@ public static class IdentitySeeder
             Permissions.DealsRead,
             Permissions.DealsWrite,
             // Delivering a car posts the sale, so a salesperson who can deliver
-            // must be able to post it. Reversing is still a manager's job,
-            // because that is the operation that can hide a mistake.
+            // must be able to post it. Reversing is a manager's job, because that
+            // is the operation that can hide a mistake — and it is now a separate
+            // permission rather than a comment hoping nobody notices.
             Permissions.AccountingRead,
             Permissions.AccountingPost,
+        ]);
+
+        // A technician writes up what they find and cannot say the customer agreed
+        // to pay for it. That one missing permission is the workshop's segregation
+        // of duties, and it is what the tests assert rather than a claim in a
+        // document. They also have no reason to see a deal or a customer's whole
+        // record — the car and the job in front of them is the job.
+        var technicianRole = await UpsertRoleAsync(db, TechnicianRole,
+        [
+            Permissions.OrganizationRead,
+            Permissions.VehiclesRead,
+            // A job names whose car it is, so reading the job means reading the
+            // customer. Withholding this would not hide the name — it would break
+            // the list, which is the worse kind of security theatre.
+            Permissions.CustomersRead,
+            Permissions.ServiceRead,
+            Permissions.ServiceWrite,
         ]);
 
         // Accounts are reconciled one at a time rather than all-or-nothing, for the
@@ -137,6 +174,9 @@ public static class IdentitySeeder
 
         await UpsertUserAsync(db, hasher, password, salesperson,
             () => UserAssignment.ForRooftop(Guid.NewGuid(), salesperson.Id, sales.Id, firstRooftop));
+
+        await UpsertUserAsync(db, hasher, password, technician,
+            () => UserAssignment.ForRooftop(Guid.NewGuid(), technician.Id, technicianRole.Id, firstRooftop));
 
         // No assignment at all, on purpose.
         await UpsertUserAsync(db, hasher, password, unassigned, assignment: null);

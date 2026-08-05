@@ -36,6 +36,13 @@ that every capability shares a project ([ADR-017](../../../docs/adr/0017-three-p
 **The customer's name is resolved, never copied.** A lead list asks Customers for
 the names of the customers on that page, in one query. Keeping a copy on the lead
 would make every screen show whatever the name was on the day the enquiry arrived.
+The car of interest works the same way, through `IVehicles.GetManyAsync` — one
+query for the page, not one per row.
+
+**The screen is told which moves are legal; it does not work them out.**
+`LeadDetail.AvailableMoves` is `LeadStatusRules.MovesFrom` and nothing else, so a
+browser offers exactly what the domain allows. Do not let a screen grow its own
+transition table: two copies drift, and the one people see is the wrong one.
 
 **A lost lead can come back.** They were not ready in March and walked in again in
 June — that is the same enquiry continuing, and reopening it keeps the history of
@@ -74,4 +81,8 @@ through `ICustomers`, so it is checked by the Customers capability's own rules.
 Appointments as records, activities and reminders beyond a note on each status
 change, lead-source ROI reporting, automatic assignment rules, duplicate-lead
 detection, and any inbound feed from a marketplace or the dealership website.
-Turning a won lead into a deal arrives with Sales.
+
+**Assignment to a named colleague.** `AssignAsync` takes any user id and the
+screen can only send the caller's own or null, because nothing in the product
+lists staff. That is a missing capability, not a missing parameter — see the next
+milestone in `docs/implementation/STATUS.md`.

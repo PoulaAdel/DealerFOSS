@@ -38,6 +38,14 @@ public interface IAccounting
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Records the accounting consequence of a repair order being invoiced.
+    /// Called by RepairOrders; it is not something a person does.
+    /// </summary>
+    Task<Result<JournalEntryDetail>> PostServiceInvoiceAsync(
+        ServiceInvoicePosting invoice,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Undoes a posted entry by posting its opposite. The original is untouched —
     /// that is the whole point.
     /// </summary>
@@ -62,6 +70,26 @@ public sealed record DeliveryPosting(
     decimal TradePayoff,
     decimal AmountDue,
     decimal VehicleCost,
+    string Memo);
+
+/// <summary>
+/// Everything the ledger needs to record a service invoice, stated in business
+/// terms so the caller does not need to know which accounts move.
+/// </summary>
+/// <remarks>
+/// There is no cost side here, and that is deliberate rather than forgotten.
+/// Relieving parts at cost needs a parts inventory, and there is not one — so
+/// service revenue posts, and gross profit on service does not exist yet. Naming
+/// the gap is better than inventing a cost figure the books would then carry.
+/// </remarks>
+public sealed record ServiceInvoicePosting(
+    RooftopId RooftopId,
+    string Reference,
+    string Currency,
+    decimal Labour,
+    decimal Parts,
+    decimal Sublet,
+    decimal AmountDue,
     string Memo);
 
 public sealed record AccountView(Guid Id, string Code, string Name, string Kind);

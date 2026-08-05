@@ -16,8 +16,9 @@ the short version; the authoritative rules live in the workbook under
 
 ## Local setup
 
-Read [`CLAUDE.md`](../CLAUDE.md) first — it records the verified setup for this
-project, including which SQL engine actually works on a given host.
+Read [docs/LOCAL-DEVELOPMENT.md](../docs/LOCAL-DEVELOPMENT.md) first — it records
+the verified setup for this project, including both SQL paths and the bind-mount
+trap that makes the container look unsupported when it is not.
 
 ```bash
 # Prerequisites: .NET SDK (see global.json) · a reachable SQL Server

@@ -23,6 +23,7 @@ public sealed class LedgerTests(HostFixture fixture)
 
     private const string Manager = DevelopmentSeeder.DevUsers.OrganizationWideEmail;
     private const string Advisor = DevelopmentSeeder.DevUsers.FirstRooftopOnlyEmail;
+    private const string Sales = DevelopmentSeeder.DevUsers.SalespersonEmail;
 
     private readonly HostFixture _fixture = fixture;
 
@@ -190,6 +191,29 @@ public sealed class LedgerTests(HostFixture fixture)
 
         using var reverse = await PostAsync($"{Journal}/{entryId}/reverse", Advisor, new { reason = "No." });
         reverse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Posting_an_entry_and_undoing_one_are_different_rights()
+    {
+        var sale = await DeliverAsync();
+        var entryId = (await EntryForAsync(sale.DealId)).GetProperty("id").GetString()!;
+
+        // The salesperson delivered that car, which posted this entry — so they
+        // demonstrably hold Accounting.Post. Reversing it is a separate right they
+        // do not hold, and that separation is the point: reversing is the one
+        // ledger operation that can make a mistake disappear.
+        using var reverse = await PostAsync(
+            $"{Journal}/{entryId}/reverse", Sales, new { reason = "Undo my own posting." });
+
+        reverse.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            because: "whoever finishes a sale is not automatically whoever may unwind its entry");
+
+        using var manager = await PostAsync(
+            $"{Journal}/{entryId}/reverse", Manager, new { reason = "Posted in error." });
+
+        manager.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "somebody must still be able to correct it");
     }
 
     // --- helpers -----------------------------------------------------------

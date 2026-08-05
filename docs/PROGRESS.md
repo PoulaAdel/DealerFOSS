@@ -3,7 +3,7 @@
 Plain language, no jargon. For the engineering detail — every claim paired with
 the command that proves it — see [implementation/STATUS.md](implementation/STATUS.md).
 
-**Last updated:** 4 August 2026
+**Last updated:** 5 August 2026
 
 ---
 
@@ -22,14 +22,20 @@ spreadsheet and take them all out again. And the backup has actually been
 restored from — proven by running the whole system against the restored copy,
 not by assuming.
 
-Nine screens exist — customers, the deal desk, the stock list, the trial balance,
-setting up two-step sign-in, moving records in and out, and a console for whoever
-runs the installation — and a machine checks on every change that they really
-appear and behave, which until recently only a person could confirm.
+Ten screens exist — customers, enquiries, the deal desk, the stock list, the
+trial balance, setting up two-step sign-in, moving records in and out, and a
+console for whoever runs the installation — and a machine checks on every change
+that they really appear and behave, which until recently only a person could
+confirm.
 
-**The next stage is the everyday product**, starting with the customer screen.
+**The everyday product now runs end to end on the screen**: an enquiry arrives,
+is chased, and becomes a deal on a specific car with the two linked.
 
-**About 25% of the first release. Stage 1 of 8, with stages 3 and 4 well under way.**
+**And the dealership no longer stops when the customer drives away.** A car can
+be booked into the workshop, worked on, and invoiced — and work nobody agreed to
+pay for cannot reach the bill. That part has no screen yet.
+
+**About 30% of the first release. Stage 1 of 8, with stages 3, 4 and 5 under way.**
 
 ---
 
@@ -214,20 +220,69 @@ months of focused work.
   can tell it arrived whole. Taking data out is a separate permission from
   putting it in, because walking out with every customer the group has is a
   different act from loading a supplier's stock list
+- **The enquiry that comes before the sale, on a screen.** Somebody rings up or
+  walks onto the lot; that enquiry is taken down against a customer, with the car
+  they asked about and what they actually said, and then chased. It is picked up
+  by whoever is going to work it and can be put back for somebody else. Every
+  move carries a note, and the whole story stays on the record — including the
+  customer who went quiet in March and walked back in in June, which is one
+  enquiry reopened rather than a second one that loses the first attempt. When
+  they buy, one button opens the deal desk with the buyer already filled in and
+  the enquiry attached, so the sale can be traced back to where it came from
+- **The screen offers only the moves the rules allow, and it does not know them.**
+  It asks the server what this particular enquiry can do next and draws exactly
+  that. It matters because the alternative — the screen keeping its own copy of
+  the rules — is how two versions of the same rule end up disagreeing, and the
+  one people see is always the wrong one
+
+### The workshop
+
+- **A car can be booked in, worked on, and invoiced.** Against the customer's own
+  car, not one of yours off the lot — which sounds obvious and is the distinction
+  that decides whether the whole thing still works the day after a warranty runs
+  out
+- **Work is recorded as hours and a rate, not just a total.** "It took 1.5 hours
+  and we charged 120 an hour" answers the question a workshop manager actually
+  asks; "180" does not
+- **A bill cannot include work nobody agreed to pay for.** A technician takes a
+  wheel off and finds the brakes are shot. That gets written down straight away —
+  but the job **cannot be invoiced** until somebody has actually rung the customer
+  and recorded what they said. The refusal names the specific job you still need
+  to ring about, so it sends you to the phone rather than just saying no
+- **Saying no is a proper answer, not a deletion.** Declined work stays on the
+  record at nothing. A year later, when the same fault brings the same car back,
+  "we did offer and you declined" is written down rather than remembered
+- **Writing work up and saying the customer agreed are different jobs.** A
+  technician can do the first and not the second. They are deliberately *not*
+  forbidden from being the same person — in a small shop the advisor who spots it
+  is usually the one who telephones — but recording the answer is its own
+  deliberate act, with a note saying how it was obtained
+- **Invoicing writes its own accounting entry**, splitting labour from parts,
+  because "we sold 464 of service" tells a manager nothing and "180 labour, 284
+  parts" is the number they run the department on
 
 ## What does not exist
 
 - **A full set of books.** Sales are recorded and accounts total up; there are no
   accounting periods and no month-end close yet
+- **Parts as stock.** A part on a repair order is a description and a price.
+  Nothing is reserved, ordered, or counted — so the workshop's *income* is
+  recorded and what the parts cost you is not, which means there is no profit
+  figure for service yet. That gap is deliberate: a made-up cost would be worse
+  than an honest blank
+- **A screen for the workshop.** All of the above works, and nothing draws it yet
 - Finance applications, lenders, or F&I products
 - Taxes and registration fees calculated by jurisdiction
 - Printed or signed paperwork
 - Appointments as real diary entries, or automatic follow-up reminders
 - Photos of a vehicle, or aging reports
-- Service appointments or repair orders
-- Parts, or reports
-- Screens for customers, leads, or selling a car — the system underneath does all
-  three, but there is nothing to click yet
+- Booking a service in advance, or planning who is working on what tomorrow
+- Reports of any kind
+- **Handing an enquiry to a *named* colleague.** You can pick one up and put it
+  back in the pool, and somebody else can take it from there — but nothing in the
+  system will list your staff to choose from, because nothing lists staff at all
+  yet. That is a real screen with real privacy questions behind it, not an
+  oversight
 - A way to add a second person who runs the servers. There is one, created when
   the system is set up, and no way to add another yet — nor to get back in if
   they lose their phone
@@ -243,12 +298,20 @@ months of focused work.
 
 ## Next
 
-**The enquiry that comes before the sale.** Selling a car works on the screen
-now; what is missing is where the customer came from. Somebody rings up or walks
-onto the lot, and that enquiry gets chased until it turns into a deal or goes
-cold. All of it already works underneath — chasing, handing it to another
-salesperson, keeping every note, and picking it up again months later — with
-nothing to click.
+Two are ready, and they are genuinely different bets.
+
+**A screen for the workshop.** Everything above works and nothing draws it. The
+screen that earns its place first is the advisor's list of *jobs waiting on a
+customer* — every one of those is a phone call somebody owes and an invoice that
+cannot go out until they make it.
+
+**Staff, on a screen.** Everything built keeps running into the same wall: the
+system knows who its people are, and there is no way to see or manage them. An
+enquiry cannot be handed to a named colleague, a deal cannot say who sold it by
+name, a manager cannot add a new starter or change what somebody may reach, and
+the support role that appears in a dealership after a support visit is invisible
+to the people it was added to. Every one of those reads as a missing feature;
+they are all one missing screen.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one

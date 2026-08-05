@@ -21,6 +21,7 @@ using DealerFOSS.Identity;
 using DealerFOSS.Inventory;
 using DealerFOSS.Leads;
 using DealerFOSS.Organization;
+using DealerFOSS.RepairOrders;
 using DealerFOSS.Tenancy;
 using DealerFOSS.Vehicles;
 using CustomerAddress = DealerFOSS.Customers.Address;
@@ -144,6 +145,13 @@ public static class DevelopmentSeeder
         /// </summary>
         public static Guid Salesperson { get; } = new("44444444-4444-4444-4444-444444444444");
 
+        /// <summary>
+        /// Writes up workshop findings at the first rooftop but cannot record that
+        /// the customer agreed to pay for them. The workshop's equivalent of the
+        /// salesperson's missing approval, and what makes that split testable.
+        /// </summary>
+        public static Guid Technician { get; } = new("66666666-6666-6666-6666-666666666666");
+
         /// <summary>Shared password for every development account.</summary>
         public const string Password = "Dev@Pass1!";
 
@@ -158,6 +166,7 @@ public static class DevelopmentSeeder
         public const string UnassignedEmail = "nobody@dev.local";
         public const string SalespersonEmail = "sales@dev.local";
         public const string SecondFactorEmail = "mfa@dev.local";
+        public const string TechnicianEmail = "tech@dev.local";
     }
 
     private static async Task SeedTenantAsync(
@@ -203,13 +212,15 @@ public static class DevelopmentSeeder
             new DevelopmentAccount(DevUsers.FirstRooftopOnly, DevUsers.FirstRooftopOnlyEmail, "Single Rooftop Advisor"),
             new DevelopmentAccount(DevUsers.Unassigned, DevUsers.UnassignedEmail, "Unassigned User"),
             new DevelopmentAccount(DevUsers.Salesperson, DevUsers.SalespersonEmail, "Rooftop Salesperson"),
-            new DevelopmentAccount(DevUsers.SecondFactor, DevUsers.SecondFactorEmail, "Second Factor Test"));
+            new DevelopmentAccount(DevUsers.SecondFactor, DevUsers.SecondFactorEmail, "Second Factor Test"),
+            new DevelopmentAccount(DevUsers.Technician, DevUsers.TechnicianEmail, "Workshop Technician"));
 
         await SeedCustomersAsync(tenantDb);
         await SeedStockAsync(tenantDb, clock);
         await SeedChartOfAccountsAsync(tenantDb);
         await SeedLeadsAsync(tenantDb, clock);
         await SeedDealsAsync(tenantDb, clock);
+        await SeedRepairOrdersAsync(tenantDb, clock);
 
         var record = await hostCatalog.Tenants.SingleOrDefaultAsync(t => t.Slug == slug);
         if (record is null)
@@ -358,6 +369,57 @@ public static class DevelopmentSeeder
     }
 
     /// <summary>
+    /// Two jobs in the workshop: one just booked in, and one under way with a
+    /// piece of work the technician found and nobody has put to the customer yet.
+    /// The second is the interesting one — it is a job that CANNOT be invoiced,
+    /// which is the control the capability exists to hold, visible without anybody
+    /// having to construct it.
+    /// </summary>
+    private static async Task SeedRepairOrdersAsync(TenantDb db, IClock clock)
+    {
+        if (await db.RepairOrders.AnyAsync())
+        {
+            return;
+        }
+
+        var rooftop = await db.Rooftops.OrderBy(r => r.Code).Select(r => r.Id).FirstOrDefaultAsync();
+        var customers = await db.Customers.OrderBy(c => c.LastName).Select(c => c.Id).Take(2).ToListAsync();
+        var vehicles = await db.Vehicles.OrderBy(v => v.Vin).Select(v => v.Id).Take(2).ToListAsync();
+
+        if (rooftop == default || customers.Count == 0 || vehicles.Count == 0)
+        {
+            return;
+        }
+
+        var now = clock.UtcNow;
+
+        var booked = RepairOrder.Open(
+            Guid.NewGuid(), rooftop, customers[0], vehicles[0], "RO-1001",
+            "Squealing from the front when braking.", "USD", now.AddDays(-1),
+            odometerReading: 48_210);
+
+        var underWay = RepairOrder.Open(
+            Guid.NewGuid(), rooftop, customers[^1], vehicles[^1], "RO-1002",
+            "Service due, and a warning light on the dash.", "USD", now.AddDays(-2),
+            odometerReading: 71_455);
+
+        // Booked in for a service, so this is authorized on arrival.
+        underWay.AddLine(ServiceLineKind.Labour, "Full service", 1.5m, 120m, 0m, now.AddDays(-2), null);
+        underWay.AddLine(ServiceLineKind.Part, "Oil and filter kit", null, null, 68.40m, now.AddDays(-2), null);
+
+        underWay.ChangeStatus(RepairOrderStatus.InProgress, now.AddDays(-1), note: "On the ramp.");
+
+        // Found once the wheels were off. Nobody has rung the customer, so this
+        // line is Pending and the job cannot be invoiced until somebody does.
+        underWay.AddLine(
+            ServiceLineKind.Part, "Front discs and pads — worn beyond limit",
+            null, null, 284.00m, now.AddHours(-4), null);
+
+        db.RepairOrders.AddRange(booked, underWay);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
     /// One deal waiting for a manager, on a car that is consequently held rather
     /// than available. Seeded directly rather than through DealService, because
     /// the seeder has no signed-in user to authorize — the reservation is done by
@@ -419,6 +481,9 @@ public static class DevelopmentSeeder
             (AccountCodes.TradeInventory, "Trade-in inventory", AccountKind.Asset),
             (AccountCodes.VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
             (AccountCodes.FeeRevenue, "Fee income", AccountKind.Revenue),
+            (AccountCodes.LabourRevenue, "Labour sales", AccountKind.Revenue),
+            (AccountCodes.PartsRevenue, "Parts sales", AccountKind.Revenue),
+            (AccountCodes.SubletRevenue, "Sublet sales", AccountKind.Revenue),
             (AccountCodes.SalesDiscounts, "Sales discounts", AccountKind.Revenue),
             (AccountCodes.CostOfVehicleSales, "Cost of vehicle sales", AccountKind.Expense),
         ];

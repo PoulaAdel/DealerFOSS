@@ -7,7 +7,7 @@
 # manual check against a real running Host.
 #
 # Prerequisites: a reachable SQL engine. On Windows, LocalDB is the verified
-# option (see CLAUDE.md):
+# option (see docs/LOCAL-DEVELOPMENT.md):
 #   sqllocaldb start MSSQLLocalDB
 #
 # Usage (from repo root, Windows PowerShell 5.1):
@@ -435,6 +435,71 @@ try {
     $reverseTwice = Get-Status "/api/v1/accounting/journal/$($posted.id)/reverse" "northgroup" $orgWide "Post" @{ reason = "Again." }
     "reversing the same entry twice        -> HTTP $reverseTwice (expect 409)"
 
+    # Posting an entry and undoing one are different rights. The salesperson just
+    # posted this one by delivering the car, which is exactly what makes the
+    # refusal meaningful rather than an accident of them holding nothing.
+    $salesReverse = Get-Status "/api/v1/accounting/journal/$($posted.id)/reverse" "northgroup" $sales "Post" @{ reason = "Undo my own posting." }
+    "salesperson reverses their own entry  -> HTTP $salesReverse (expect 403)"
+
+    Write-Host "`n--- the workshop: work nobody agreed to is not billed ---" -ForegroundColor Cyan
+    $technician = New-DealerSession "northgroup" "tech@dev.local"
+
+    # A car booked in for a service, with a second fault found once it was on the
+    # ramp. The found work cannot reach an invoice until somebody has actually
+    # asked the customer — which is the control the capability exists to hold.
+    $job = Invoke-Api "/api/v1/repair-orders" $orgWide @{
+        rooftopId = $firstRooftopId; customerId = $customer.id; vehicleId = $vehicle.id
+        complaint = "Squealing from the front when braking."; currency = "USD"; odometerReading = 48210
+    }
+    "booked in as {0}                  (expect RO-something)" -f $job.number
+
+    $null = Invoke-Api "/api/v1/repair-orders/$($job.id)/lines" $orgWide @{
+        kind = "Labour"; description = "Full service"; hours = 1.5; rate = 120
+    }
+    $null = Invoke-Api "/api/v1/repair-orders/$($job.id)/status" $orgWide @{ status = "InProgress" }
+
+    # Found on the ramp: nobody has rung the customer about this one.
+    $withFound = Invoke-Api "/api/v1/repair-orders/$($job.id)/lines" $orgWide @{
+        kind = "Part"; description = "Front discs and pads"; unitAmount = 284
+    }
+    $pending = @($withFound.lines | Where-Object { $_.authorization -eq "Pending" })
+    "work found on the ramp: {0} line(s)      (expect 1)" -f $pending.Count
+
+    $null = Invoke-Api "/api/v1/repair-orders/$($job.id)/status" $orgWide @{ status = "Completed" }
+
+    $billTooSoon = Get-Status "/api/v1/repair-orders/$($job.id)/status" "northgroup" $orgWide "Post" @{ status = "Invoiced" }
+    "invoicing with work unanswered        -> HTTP $billTooSoon (expect 409)"
+
+    # A technician writes work up; saying the customer agreed to pay is not theirs.
+    $techAuthorises = Get-Status "/api/v1/repair-orders/$($job.id)/lines/$($pending[0].id)/answer" "northgroup" $technician "Post" @{ approved = $true }
+    "technician says customer agreed       -> HTTP $techAuthorises (expect 403)"
+
+    $null = Invoke-Api "/api/v1/repair-orders/$($job.id)/lines/$($pending[0].id)/answer" $orgWide @{
+        approved = $true; note = "Phoned 10:40, agreed."
+    }
+    $invoiced = Invoke-Api "/api/v1/repair-orders/$($job.id)/status" $orgWide @{ status = "Invoiced" }
+    "once answered, the job bills {0}     (expect 464)" -f $invoiced.amountDue
+
+    $serviceEntries = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($job.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $serviceEntry = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal/$(@($serviceEntries)[0].id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+
+    # Labour and parts land on their own accounts: "we sold 464 of service" is
+    # useless to a workshop manager, and the split is what they run on.
+    $labour = (@($serviceEntry.lines | Where-Object { $_.accountCode -eq "4200" }) | Measure-Object -Property credit -Sum).Sum
+    $parts = (@($serviceEntry.lines | Where-Object { $_.accountCode -eq "4300" }) | Measure-Object -Property credit -Sum).Sum
+    "posted as labour {0} and parts {1}   (expect 180 and 284)" -f $labour, $parts
+    $serviceBalanced = ($serviceEntry.totalDebits -eq $serviceEntry.totalCredits)
+    "service entry debits {0} vs credits {1} (expect equal)" -f $serviceEntry.totalDebits, $serviceEntry.totalCredits
+
+    $siblingJob = Invoke-Api "/api/v1/repair-orders" $orgWide @{
+        rooftopId = $siblingId; customerId = $customer.id; vehicleId = $vehicle.id
+        complaint = "Service due."; currency = "USD"
+    }
+    $siblingJobStatus = Get-Status "/api/v1/repair-orders/$($siblingJob.id)" "northgroup" $scoped
+    "scoped user -> sibling job by id      -> HTTP $siblingJobStatus (expect 403)"
+
     Write-Host "`n--- anti-forgery on writes ---" -ForegroundColor Cyan
     # The shape of a cross-site forged write: the browser's cookies ride along,
     # but nothing can set the header. It must be refused even though the session
@@ -741,10 +806,14 @@ try {
         -and ($partial.rowsCreated -eq 1) -and ($partial.rowsFailed -eq 1) `
         -and ($badRowNumber -eq 3) -and ($advisorImports -eq 403) `
         -and ($noSession -eq 401) -and ($crossTenant -eq 401) -and ($afterLogout -eq 401) `
-        -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404)
+        -and ($missingTenant -eq 400) -and ($unknownTenant -eq 404) `
+        -and ($salesReverse -eq 403) `
+        -and ($pending.Count -eq 1) -and ($billTooSoon -eq 409) -and ($techAuthorises -eq 403) `
+        -and ($invoiced.amountDue -eq 464) -and ($labour -eq 180) -and ($parts -eq 284) `
+        -and $serviceBalanced -and ($siblingJobStatus -eq 403)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, and the ledger balances." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, work nobody agreed to is not billed, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

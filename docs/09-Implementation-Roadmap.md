@@ -1,16 +1,12 @@
-# 09 - Codex Project Execution Prompt
+# 09 - Implementation Roadmap
 
-This document is a reusable master prompt for Codex. Give Codex this file, or paste the section beginning at **Master prompt**, when asking it to implement DealerFOSS.
+This document owns the **implementation** roadmap: the engineering phases `I0`–`I9`, their exit criteria, and the rules that decide when a phase is actually complete. It does not replace the product or architecture documents — it says how to turn them into working software without losing scope, quality, or readability.
 
-Claude Code users should use [10 - Claude Code Project Execution Prompt](10-Claude-Code-Execution-Prompt.md), which reuses this document's canonical implementation roadmap.
+Delivery dates and business gates are owned by [07 - Delivery Roadmap](07-Delivery-Roadmap.md). The two are deliberately separate: an `I` phase closes on evidence, not on a date.
 
-It does not replace the product or architecture documents. It tells Codex how to turn them into working software without losing scope, quality, or readability.
+## Working rules
 
-## Master prompt
-
-You are the principal implementation agent for **DealerFOSS**, an AGPLv3 open-source Dealer Management System for independent dealers and dealer groups.
-
-Your job is to move the repository toward a secure, tested, deployable product. Do not merely produce plans or scaffolding when working code can safely be implemented. Work phase by phase, preserve the architecture, verify every change, and leave the repository buildable.
+DealerFOSS is an AGPLv3 open-source Dealer Management System for independent dealers and dealer groups. The job of every implementation run is to move the repository toward a secure, tested, deployable product. Do not produce plans or scaffolding when working code can safely be implemented. Work phase by phase, preserve the architecture, verify every change, and leave the repository buildable.
 
 ### 1. Source of truth
 
@@ -26,9 +22,9 @@ Before changing code, read all files under `docs/` in this order:
 8. `07-Delivery-Roadmap.md`
 9. `08-Governance-and-Standards.md`
 10. `adr/README.md` and relevant diagrams
-11. this execution prompt
+11. this roadmap
 
-Also read repository-local agent instructions and existing source/tests before acting.
+Also read the existing source and tests before acting.
 
 When documents conflict:
 
@@ -58,9 +54,9 @@ Preserve these unless a new ADR explicitly supersedes them:
 - Migration, reconciliation, backup/restore, export, security, accessibility, and observability are product requirements.
 - Posted accounting records, parts movements, compliance evidence, and audit records are immutable; corrections append reversals or adjustments.
 
-### 3. Behavior expected from Codex
+### 3. Behavior expected of every implementation run
 
-At the start of every implementation run:
+At the start of a run:
 
 1. Inspect repository state without assuming a phase is complete.
 2. Determine the earliest implementation phase (`I0`, `I1`, and so on) whose exit criteria are not satisfied.
@@ -94,17 +90,17 @@ When blocked by credentials, vendor access, legal review, or a business choice:
 
 ### 4. Implementation roadmap
 
-Follow the implementation phases in order. Their `I` prefix distinguishes Codex engineering phases from the product/delivery phases in `07-Delivery-Roadmap.md`. A later implementation phase may be explored only when it does not bypass an unmet foundation or create rework. The dates in `07-Delivery-Roadmap.md` are planning estimates; exit evidence, not elapsed time, completes a phase.
+Follow the implementation phases in order. Their `I` prefix distinguishes engineering phases from the product/delivery phases in `07-Delivery-Roadmap.md`. A later implementation phase may be explored only when it does not bypass an unmet foundation or create rework. The dates in `07-Delivery-Roadmap.md` are planning estimates; exit evidence, not elapsed time, completes a phase.
 
 Three rules govern every phase:
 
 **Exit criteria are permanent.** Once met, a criterion becomes a standing CI gate. A later phase may not regress an earlier guarantee — tenant isolation proven in I1 must still be proven in I7. Re-verify, never assume.
 
-**Criteria are labelled `(agent-verifiable)` or `(human-verifiable)`.** An agent runs axe-core, times a local restore, and executes isolation tests; it cannot perform a screen-reader review, validate production disaster recovery, obtain vendor certification, or accept a pilot. Claiming a human-verifiable criterion without recorded external evidence violates §3 and is a reporting failure, not a shortcut.
+**Criteria are labelled `(automated)` or `(manual)`.** Automated means a command proves it — axe-core, a timed local restore, the isolation tests. Manual means a person must do it: a screen-reader review, validating production disaster recovery, obtaining vendor certification, accepting a pilot. Claiming a manual criterion without recorded external evidence violates §3 and is a reporting failure, not a shortcut.
 
 **Work already completed out of order is preserved.** If a later phase's work already exists and is verified while an earlier phase has gaps, backfill the gaps *without regressing the working slice*. Never delete or rewrite passing, verified behavior merely to satisfy phase ordering; record the out-of-order state in the status file instead.
 
-| Codex implementation phase | Delivery-roadmap relationship |
+| Implementation phase | Delivery-roadmap relationship |
 |---|---|
 | I0 | engineering baseline needed before Delivery Phase 1 |
 | I1 | Delivery Phase 1 foundation |
@@ -117,7 +113,7 @@ Three rules govern every phase:
 | I8 | Delivery Phase 8 controlled pilot support |
 | I9+ | standalone releases after the coexistence gates |
 
-Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and representative extracts) is primarily human-owned. Codex records those items as external blockers and can prepare checklists, schemas, fixture requirements, and evaluation tooling; it cannot mark them complete without evidence.
+Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and representative extracts) is business-owned. Record those items as external blockers. Checklists, schemas, fixture requirements, and evaluation tooling can be prepared ahead of them; none of it marks them complete without evidence.
 
 #### Implementation Phase I0 - Repository and engineering baseline
 
@@ -139,13 +135,13 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 
 **Exit criteria:**
 
-- a clean checkout can build and test using the commands in `CLAUDE.md` *(agent-verifiable)*;
-- the backend starts locally *(agent-verifiable)*;
-- SQL-backed integration smoke tests run repeatably *(agent-verifiable)*;
-- architecture tests fail on an intentionally forbidden reference *(agent-verifiable)*;
-- health and telemetry work without exposing secrets *(agent-verifiable)*;
+- a clean checkout can build and test using the commands in `CLAUDE.md` *(automated)*;
+- the backend starts locally *(automated)*;
+- SQL-backed integration smoke tests run repeatably *(automated)*;
+- architecture tests fail on an intentionally forbidden reference *(automated)*;
+- health and telemetry work without exposing secrets *(automated)*;
 - the Windows development path is documented and the container path is documented and validated on a host that can run it *(container validation is human-verifiable)*;
-- CI is green *(agent-verifiable)*.
+- CI is green *(automated)*.
 
 #### Implementation Phase I1 - Organization, tenancy, identity, and security foundation
 
@@ -167,14 +163,14 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 
 **Exit criteria:**
 
-- two dealer organizations resolve to separate databases *(agent-verifiable)*;
-- one organization contains multiple rooftops and scoped users *(agent-verifiable)*;
-- cross-tenant and unauthorized-rooftop reads/writes fail in endpoint and background-job tests *(agent-verifiable)*;
-- global administration cannot silently access tenant business data *(agent-verifiable)*;
-- session revoke, expiry, CSRF, MFA policy, and permission changes are tested *(agent-verifiable)*;
-- tenant creation and migration are rehearsed *(agent-verifiable)*; backup and restore are rehearsed to a working system *(human-verifiable)*;
-- audit events capture scoped security-sensitive changes *(agent-verifiable)*;
-- the frontend shell starts and passes typecheck and accessibility smoke tests *(agent-verifiable)*.
+- two dealer organizations resolve to separate databases *(automated)*;
+- one organization contains multiple rooftops and scoped users *(automated)*;
+- cross-tenant and unauthorized-rooftop reads/writes fail in endpoint and background-job tests *(automated)*;
+- global administration cannot silently access tenant business data *(automated)*;
+- session revoke, expiry, CSRF, MFA policy, and permission changes are tested *(automated)*;
+- tenant creation and migration are rehearsed *(automated)*; backup and restore are rehearsed to a working system *(manual)*;
+- audit events capture scoped security-sensitive changes *(automated)*;
+- the frontend shell starts and passes typecheck and accessibility smoke tests *(automated)*.
 
 #### Implementation Phase I2 - Integration runtime, migration, reconciliation, and export
 
@@ -323,7 +319,7 @@ Delivery Phase 0 (dealer discovery, provider access, pilot agreements, and repre
 
 **Goal:** validate the release with real dealer organizations without hiding external dependencies.
 
-Codex can prepare software, data tools, checklists, dashboards, runbooks, and fixes. People must supply contracts, credentials, production authorization, business sign-off, security review, and operational decisions.
+Software, data tools, checklists, dashboards, runbooks, and fixes can be prepared here. People must supply contracts, credentials, production authorization, business sign-off, security review, and operational decisions.
 
 **Exit criteria:**
 
@@ -425,11 +421,11 @@ Last verified commit/date:
 
 Checkboxes require evidence. A file existing is not evidence that a workflow works.
 
-`Last verified commit/date` records a commit when one exists. Agents do not commit unless explicitly asked (see `docs/10-Claude-Code-Execution-Prompt.md` §4), so when the work is uncommitted, record the date plus the verification command and its result instead — never leave the line blank or imply a commit that does not exist.
+`Last verified commit/date` records a commit when one exists. When the work is verified but not yet committed, record the date plus the verification command and its result instead — never leave the line blank or imply a commit that does not exist.
 
-The status file is a **reporting artifact, never a source of truth**. The repository governs: when the two disagree, correct the file. Re-verify by running the commands in `CLAUDE.md` rather than by trusting a previous run's checkbox.
+The status file is a **reporting artifact, never a source of truth**. The repository governs: when the two disagree, correct the file. Re-verify by running the commands in [`LOCAL-DEVELOPMENT.md`](LOCAL-DEVELOPMENT.md) rather than by trusting a previous run's checkbox.
 
-### 9. Response format after each Codex run
+### 9. Report format after each run
 
 Lead with the outcome, then report:
 
@@ -442,16 +438,10 @@ Lead with the outcome, then report:
 
 Do not report a phase complete unless every exit criterion has evidence.
 
-### 10. Starting instruction
+### 10. Where to start
 
-Start now.
-
-Read the docs and inspect the repository. Determine the earliest incomplete implementation phase from evidence. If the repository contains only planning documents, begin with **Implementation Phase I0 - Repository and engineering baseline**.
+Read the docs and inspect the repository. Determine the earliest incomplete implementation phase **from evidence**, not from a checkbox. If the repository contains only planning documents, begin with **Implementation Phase I0 - Repository and engineering baseline**.
 
 Select the smallest coherent milestone that moves that phase toward its exit criteria, implement it fully, verify it, update the implementation status, and hand off the result. Continue through additional milestones only while each remains safely verifiable and the repository stays buildable.
 
-## Short invocation for later runs
-
-After the master prompt has already been established, use:
-
-> Continue DealerFOSS from the earliest unmet exit criterion in `docs/09-Codex-Execution-Prompt.md`. Read `docs/implementation/STATUS.md`, verify repository state rather than trusting checkboxes, implement one coherent milestone completely, run all relevant tests, update the status evidence, and report the next milestone. Preserve all Accepted ADRs and the dealer-organization/multi-rooftop tenancy model.
+Preserve all Accepted ADRs and the dealer-organization/multi-rooftop tenancy model in every one of them.

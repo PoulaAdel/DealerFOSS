@@ -1,0 +1,133 @@
+// ServiceLine — one piece of work on a repair order: labour, a part, or a job
+// sent out.
+//
+// Use:  added through RepairOrder.AddLine, never constructed directly, so the
+//       arithmetic and the authorization state always start out consistent.
+// Edit: labour is stored as hours AND a rate, not just a total. A service
+//       department's entire margin conversation is "how long did that take
+//       against what we charged for it", and a line that only kept the money
+//       cannot answer it. The total is derived, so the two can never disagree.
+//
+//       A line the customer declined keeps its amount rather than being deleted.
+//       "We offered, they said no" is worth more than silence when the same car
+//       comes back with the same fault.
+
+namespace DealerFOSS.RepairOrders;
+
+public sealed class ServiceLine
+{
+    public Guid Id { get; private set; }
+
+    public Guid RepairOrderId { get; private set; }
+
+    public ServiceLineKind Kind { get; private set; }
+
+    public string Description { get; private set; } = string.Empty;
+
+    /// <summary>Hours booked. Null on anything that is not labour.</summary>
+    public decimal? Hours { get; private set; }
+
+    /// <summary>Charged per hour. Null on anything that is not labour.</summary>
+    public decimal? Rate { get; private set; }
+
+    /// <summary>What a part or a sublet job costs the customer. Zero for labour.</summary>
+    public decimal UnitAmount { get; private set; }
+
+    public LineAuthorization Authorization { get; private set; }
+
+    public DateTimeOffset? AuthorizedAt { get; private set; }
+
+    /// <summary>Who recorded the customer's answer. Not the customer themselves.</summary>
+    public Guid? AuthorizedByUserId { get; private set; }
+
+    /// <summary>How the answer was obtained — "phoned, agreed 10:40".</summary>
+    public string? AuthorizationNote { get; private set; }
+
+    /// <summary>
+    /// What this line adds to the bill. Labour multiplies out; everything else is
+    /// its own amount. A declined line is worth nothing, which is what keeps it
+    /// visible on the record without reaching the total.
+    /// </summary>
+    public decimal Amount => Authorization == LineAuthorization.Declined
+        ? 0m
+        : Kind == ServiceLineKind.Labour
+            ? Math.Round((Hours ?? 0m) * (Rate ?? 0m), 2, MidpointRounding.AwayFromZero)
+            : UnitAmount;
+
+    private ServiceLine()
+    {
+    }
+
+    internal ServiceLine(
+        Guid id,
+        Guid repairOrderId,
+        ServiceLineKind kind,
+        string description,
+        decimal? hours,
+        decimal? rate,
+        decimal unitAmount,
+        LineAuthorization authorization,
+        DateTimeOffset? authorizedAt,
+        Guid? authorizedByUserId)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            throw new ArgumentException("A line needs a description.", nameof(description));
+        }
+
+        if (kind == ServiceLineKind.Labour)
+        {
+            if (hours is null or <= 0m)
+            {
+                throw new ArgumentException("Labour needs hours.", nameof(hours));
+            }
+
+            if (rate is null or < 0m)
+            {
+                throw new ArgumentException("Labour needs a rate.", nameof(rate));
+            }
+        }
+        else
+        {
+            if (unitAmount < 0m)
+            {
+                throw new ArgumentException($"A {kind} cannot cost less than nothing.", nameof(unitAmount));
+            }
+        }
+
+        Id = id;
+        RepairOrderId = repairOrderId;
+        Kind = kind;
+        Description = description.Trim();
+        Hours = kind == ServiceLineKind.Labour ? hours : null;
+        Rate = kind == ServiceLineKind.Labour ? rate : null;
+        UnitAmount = kind == ServiceLineKind.Labour ? 0m : unitAmount;
+        Authorization = authorization;
+        AuthorizedAt = authorizedAt;
+        AuthorizedByUserId = authorizedByUserId;
+    }
+
+    /// <summary>
+    /// Records what the customer said. One answer only: re-asking a line that has
+    /// already been answered would overwrite the timestamp on the conversation
+    /// that actually happened.
+    /// </summary>
+    internal void Answer(
+        bool approved,
+        DateTimeOffset answeredAt,
+        Guid? answeredByUserId,
+        string? note)
+    {
+        if (Authorization != LineAuthorization.Pending)
+        {
+            throw new InvalidOperationException(
+                $"This line was already {Authorization.ToString().ToLowerInvariant()}. "
+                + "Add a new line if the customer has changed their mind.");
+        }
+
+        Authorization = approved ? LineAuthorization.Authorized : LineAuthorization.Declined;
+        AuthorizedAt = answeredAt;
+        AuthorizedByUserId = answeredByUserId;
+        AuthorizationNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+    }
+}

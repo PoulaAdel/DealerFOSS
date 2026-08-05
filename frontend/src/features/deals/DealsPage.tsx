@@ -13,6 +13,7 @@
 //       a button that is present and then refused wastes somebody's time.
 
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { ApiError, api, post } from '../../shared/api';
 import { DealTerms } from './DealTerms';
 import { StartDeal } from './StartDeal';
@@ -27,10 +28,18 @@ type Load =
   | { kind: 'failed'; message: string };
 
 export function DealsPage() {
+  // A won enquiry sends the salesperson here with the lead attached. The deal
+  // records which enquiry produced it, so this is a real link rather than a
+  // convenience: without it the two halves of the same sale sit in the system
+  // unaware of each other.
+  const [params, setParams] = useSearchParams();
+  const fromLead = params.get('leadId');
+  const forCustomer = params.get('customerId');
+
   const [openOnly, setOpenOnly] = useState(true);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [selected, setSelected] = useState<DealDetail | null>(null);
-  const [starting, setStarting] = useState(false);
+  const [starting, setStarting] = useState(fromLead !== null);
 
   const find = useCallback(async (open: boolean) => {
     setLoad({ kind: 'loading' });
@@ -88,12 +97,20 @@ export function DealsPage() {
 
       {starting ? (
         <StartDeal
+          leadId={fromLead}
+          customerId={forCustomer}
           onStarted={async (deal) => {
             setStarting(false);
             setSelected(deal);
+            // The handoff is spent. Leaving it in the address bar would restart
+            // the same deal on a refresh, or on the back button.
+            setParams({}, { replace: true });
             await find(openOnly);
           }}
-          onCancel={() => setStarting(false)}
+          onCancel={() => {
+            setStarting(false);
+            setParams({}, { replace: true });
+          }}
         />
       ) : (
         <div className="actions actions--lead">

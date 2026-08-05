@@ -125,6 +125,20 @@ public sealed class LeadService(
             return Result.Failure<IReadOnlyList<LeadSummary>>(names.Error);
         }
 
+        // The same reasoning as the customer names above: one query for the page,
+        // and never a copy of the car's description kept on the lead.
+        var cars = await _vehicles.GetManyAsync(
+            rows.Where(l => l.VehicleOfInterestId is not null)
+                .Select(l => l.VehicleOfInterestId!.Value)
+                .Distinct()
+                .ToList(),
+            cancellationToken);
+
+        if (cars.IsFailure)
+        {
+            return Result.Failure<IReadOnlyList<LeadSummary>>(cars.Error);
+        }
+
         var now = _clock.UtcNow;
 
         return Result.Success<IReadOnlyList<LeadSummary>>(
@@ -136,6 +150,7 @@ public sealed class LeadService(
                 l.CustomerId,
                 NameFor(names.Value, l.CustomerId),
                 l.VehicleOfInterestId,
+                CarFor(cars.Value, l.VehicleOfInterestId),
                 l.AssignedToUserId,
                 l.CapturedAt,
                 DaysOpen(l, now))).ToList());
@@ -352,12 +367,16 @@ public sealed class LeadService(
             lead.CapturedAt,
             lead.ClosedAt,
             lead.IsOpen,
+            LeadStatusRules.MovesFrom(lead.Status).Select(s => s.ToString()).ToList(),
             history
                 .OrderBy(h => h.OccurredAt)
                 .Select(h => new LeadHistoryEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt, h.Note))
                 .ToList()));
     }
+
+    private static string? CarFor(IReadOnlyList<VehicleSummary> cars, Guid? vehicleId) =>
+        vehicleId is null ? null : cars.FirstOrDefault(v => v.Id == vehicleId.Value)?.DisplayName;
 
     private static string NameFor(IReadOnlyList<CustomerSummary> names, Guid customerId)
     {

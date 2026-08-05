@@ -164,6 +164,9 @@ public enum JournalSource
     /// <summary>Undoing an earlier entry.</summary>
     Reversal = 1,
 
+    /// <summary>A repair order was invoiced.</summary>
+    ServiceInvoice = 3,
+
     /// <summary>Entered by hand. Not yet possible.</summary>
     Manual = 2,
 }

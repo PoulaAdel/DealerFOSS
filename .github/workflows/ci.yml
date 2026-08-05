@@ -25,7 +25,8 @@ jobs:
 
     # A real SQL Server, so tenant isolation is proven in CI rather than mocked.
     # The image runs correctly on the Linux runner; some Windows/WSL2 developer
-    # hosts cannot run it, which is why CLAUDE.md documents a LocalDB fallback.
+    # hosts cannot run it, which is why docs/LOCAL-DEVELOPMENT.md documents a
+    # LocalDB fallback.
     services:
       sql:
         image: mcr.microsoft.com/mssql/server:2022-latest

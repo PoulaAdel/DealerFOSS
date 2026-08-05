@@ -28,6 +28,16 @@ public interface IVehicles
 
     Task<Result<VehicleDetail>> GetAsync(Guid vehicleId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// A known set of vehicles, in one query. A work list showing which car each
+    /// enquiry is about would otherwise fetch them one at a time — this exists so
+    /// a caller never has to choose between a slow screen and a stale copy of the
+    /// name. Unknown ids are simply absent from the result.
+    /// </summary>
+    Task<Result<IReadOnlyList<VehicleSummary>>> GetManyAsync(
+        IReadOnlyCollection<Guid> vehicleIds,
+        CancellationToken cancellationToken);
+
     Task<Result<VehicleDetail>> AddAsync(NewVehicle vehicle, CancellationToken cancellationToken);
 
     /// <summary>

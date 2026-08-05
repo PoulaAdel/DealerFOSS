@@ -10,6 +10,7 @@
 //       particular person, the rule has been copied and the copies will drift.
 
 import { render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DealsPage } from './DealsPage';
@@ -46,6 +47,20 @@ const detail = (over: Partial<DealDetail> = {}): DealDetail => ({
   ...over,
 });
 
+/**
+ * The desk reads the address bar: a won enquiry hands the deal over through it.
+ * So these mount inside a router, which is also what the real application does —
+ * a test that rendered the page outside one was quietly testing something the
+ * product never runs.
+ */
+function renderDeals(at = '/deals') {
+  return render(
+    <MemoryRouter initialEntries={[at]}>
+      <DealsPage />
+    </MemoryRouter>,
+  );
+}
+
 async function openDeal() {
   await userEvent.click(await screen.findByRole('button', { name: 'Marisol Alvarez' }));
 }
@@ -53,7 +68,7 @@ async function openDeal() {
 describe('the deal desk', () => {
   it('lists what is being worked', async () => {
     mockApi({ '/deals': { ok: true, body: [summary] } });
-    render(<DealsPage />);
+    renderDeals();
 
     expect(await screen.findByRole('button', { name: 'Marisol Alvarez' })).toBeVisible();
     expect(screen.getByText('2021 Toyota RAV4 XLE')).toBeVisible();
@@ -63,7 +78,7 @@ describe('the deal desk', () => {
 
   it('defaults to the ones still being worked', async () => {
     mockApi({ '/deals': { ok: true, body: [summary] } });
-    render(<DealsPage />);
+    renderDeals();
     await screen.findByRole('button', { name: 'Marisol Alvarez' });
 
     // A desk full of finished deals is not a desk.
@@ -72,7 +87,7 @@ describe('the deal desk', () => {
 
   it('says the desk is empty rather than showing an empty table', async () => {
     mockApi({ '/deals': { ok: true, body: [] } });
-    render(<DealsPage />);
+    renderDeals();
 
     expect(await screen.findByText(/No deals here/)).toBeVisible();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
@@ -80,12 +95,12 @@ describe('the deal desk', () => {
 
   it('explains a refusal, and offers a retry when the server is unreachable', async () => {
     mockApi({ '/deals': { ok: false, status: 403, code: 'deals.forbidden', detail: 'No.' } });
-    const { unmount } = render(<DealsPage />);
+    const { unmount } = renderDeals();
     expect(await screen.findByRole('alert')).toHaveTextContent(/do not have access to deals/i);
     unmount();
 
     mockApiUnreachable();
-    render(<DealsPage />);
+    renderDeals();
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not reach the server/);
     expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
   });
@@ -98,7 +113,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [summary] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
 
     const panel = await screen.findByRole('heading', { name: /Marisol Alvarez/ });
@@ -126,7 +141,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [summary] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
 
     // A person reading down the column has to reach the total at the bottom.
@@ -154,7 +169,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [summary] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
 
     // Owing more than it is worth genuinely adds to the bill.
@@ -178,7 +193,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [summary] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
 
     // It changes what the customer has to find, so it is stated rather than left
@@ -192,7 +207,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [summary] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
 
     expect(await screen.findByRole('button', { name: 'Send to a manager' })).toBeVisible();
@@ -206,7 +221,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [{ ...summary, status: 'Submitted' }] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
 
     expect(await screen.findByRole('button', { name: 'Approve' })).toBeVisible();
@@ -224,7 +239,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [{ ...summary, status: 'Submitted' }] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
     await userEvent.click(await screen.findByRole('button', { name: 'Approve' }));
 
@@ -240,7 +255,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [summary] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
     await userEvent.click(await screen.findByRole('button', { name: 'Send to a manager' }));
 
@@ -253,11 +268,66 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [{ ...summary, status: 'Delivered' }] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
 
     expect(await screen.findByText(/This deal is finished/)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Mark lost' })).not.toBeInTheDocument();
+  });
+
+  it('opens ready to build when a won enquiry hands the deal over', async () => {
+    mockApi({
+      '/customers/c1': {
+        ok: true,
+        body: {
+          id: 'c1', displayName: 'Marisol Alvarez', kind: 'Person',
+          primaryEmail: null, primaryPhone: null,
+        },
+      },
+      '/inventory': { ok: true, body: [] },
+      '/deals': { ok: true, body: [] },
+    });
+
+    renderDeals('/deals?leadId=l1&customerId=c1');
+
+    // The buyer is decided by the enquiry. Offering a picker here would let
+    // somebody build the deal for the wrong person while the lead still claims
+    // credit for it.
+    expect(await screen.findByText(/From the enquiry for/)).toBeVisible();
+    expect(screen.getByText('Marisol Alvarez')).toBeVisible();
+    expect(screen.queryByLabelText('Who is buying')).not.toBeInTheDocument();
+  });
+
+  it('carries the enquiry onto the deal it creates', async () => {
+    mockApi({
+      '/customers/c1': {
+        ok: true,
+        body: {
+          id: 'c1', displayName: 'Marisol Alvarez', kind: 'Person',
+          primaryEmail: null, primaryPhone: null,
+        },
+      },
+      '/inventory': {
+        ok: true,
+        body: [{
+          id: 'u1', stockNumber: 'NAG-1042', rooftopId: 'r1', status: 'Available',
+          vehicleId: 'v1', vin: '1HGCM82633A004352', vehicleDisplayName: '2021 Toyota RAV4 XLE',
+        }],
+      },
+      '/deals': [{ ok: true, body: [] }, { ok: true, body: detail({ leadId: 'l1' }) }, { ok: true, body: [summary] }],
+    });
+
+    renderDeals('/deals?leadId=l1&customerId=c1');
+    await screen.findByText(/From the enquiry for/);
+
+    await userEvent.selectOptions(screen.getByLabelText('Which car'), 'u1');
+    await userEvent.click(screen.getByRole('button', { name: 'Start the deal' }));
+
+    // Without this the two halves of one sale sit in the system unaware of each
+    // other, and nothing can say which enquiries turned into cars sold.
+    const created = apiCalls().find((c) => c.path === '/deals' && c.init?.method === 'POST');
+    expect(created).toBeDefined();
+    expect(JSON.parse(String(created!.init!.body)).leadId).toBe('l1');
   });
 
   it('shows what happened, newest first', async () => {
@@ -275,7 +345,7 @@ describe('one deal', () => {
       '/deals': { ok: true, body: [{ ...summary, status: 'Submitted' }] },
     });
 
-    render(<DealsPage />);
+    renderDeals();
     await openDeal();
 
     const history = await screen.findByRole('list');

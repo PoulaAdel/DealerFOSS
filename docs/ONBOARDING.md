@@ -55,9 +55,10 @@ Read everything else **when you are about to touch it**.
 
 ## 2. Run it (10 minutes)
 
-Prerequisites and the verified local setup live in [`CLAUDE.md`](../CLAUDE.md) —
-read it before fighting your environment, because the obvious choice is not
-always the working one on a given host.
+Prerequisites and the verified local setup live in
+[Local Development](LOCAL-DEVELOPMENT.md) — read it before fighting your
+environment, because the obvious choice is not always the working one on a given
+host.
 
 ```bash
 sqllocaldb start MSSQLLocalDB
@@ -133,8 +134,7 @@ The whole thing, asserted end to end:
 3. **Write the failing test first**, then implement until it passes.
 4. Verify: build → test → `verify-e2e.ps1`.
 5. Update `STATUS.md`, pairing each claim with the command that proves it.
-6. Commit — see [CONTRIBUTING](../.github/CONTRIBUTING.md) and, for the branching
-   model this repository actually uses, [`CLAUDE.md`](../CLAUDE.md).
+6. Commit — see [CONTRIBUTING](../.github/CONTRIBUTING.md).
 
 ### The habit that matters most
 
@@ -157,7 +157,7 @@ comment explaining why it is legitimate — that is the standard for adding anot
 | Trap | What happens |
 |---|---|
 | `dotnet test --no-build` after a **failed** build | Runs stale binaries and can report a false pass. Always confirm the build succeeded first. |
-| Reaching for the SQL Server container | It does not run on every host. `CLAUDE.md` records the working option. |
+| Reaching for the SQL Server container | Never bind-mount `/var/opt/mssql` to a Windows path — it dies inside SQLPAL and reads as an unsupported host. [Local Development](LOCAL-DEVELOPMENT.md) has both working paths. |
 | `identity` in hand-written SQL | Reserved T-SQL keyword — bracket it as `[identity]`. EF quotes it automatically. |
 | Config in `WebApplicationFactory` | `Program.cs` reads configuration before in-memory sources are applied; use environment variables. |
 | Adding a strongly-typed id | Needs a JSON converter, or it serializes as `{"value":"…"}` and breaks route binding. |

@@ -91,6 +91,33 @@ public sealed class VehicleService(
             : Result.Success(Describe(vehicle));
     }
 
+    public async Task<Result<IReadOnlyList<VehicleSummary>>> GetManyAsync(
+        IReadOnlyCollection<Guid> vehicleIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(vehicleIds);
+
+        if (!await IsAllowedAnywhereAsync(ReadPermission, cancellationToken))
+        {
+            return Result.Failure<IReadOnlyList<VehicleSummary>>(VehicleErrors.Forbidden);
+        }
+
+        if (vehicleIds.Count == 0)
+        {
+            return Result.Success<IReadOnlyList<VehicleSummary>>([]);
+        }
+
+        var wanted = vehicleIds.Distinct().ToList();
+
+        var vehicles = await _db.Vehicles
+            .AsNoTracking()
+            .Where(v => wanted.Contains(v.Id))
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IReadOnlyList<VehicleSummary>>(
+            vehicles.Select(Summarize).ToList());
+    }
+
     public async Task<Result<VehicleDetail>> AddAsync(NewVehicle vehicle, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(vehicle);

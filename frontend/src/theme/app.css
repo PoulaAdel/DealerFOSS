@@ -191,9 +191,15 @@ textarea {
   letter-spacing: -0.02em;
 }
 
+/* Wraps. The bar itself already wraps, but a nav that does not will push the
+   whole page sideways once there are enough screens to fit — which is exactly
+   what adding the seventh link did at 375px. Every link must stay reachable
+   without the page scrolling under the reader. */
 .shell__bar nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+  min-width: 0;
 }
 
 .shell__bar nav a {
@@ -623,9 +629,13 @@ tfoot td {
 
 /* What happened to this deal, newest first. Plain list rather than a table:
    it is a story, not figures to compare down a column. */
+/* Unnumbered on purpose. This list is newest first, so "1." against the most
+   recent entry reads as the first thing that happened — the exact opposite of
+   the truth. The stage name at the start of each line is the marker. */
 .history {
   margin: 8px 0 0;
-  padding-left: 1.2rem;
+  padding-left: 0;
+  list-style: none;
   font-size: 0.88rem;
 }
 
@@ -652,6 +662,47 @@ tfoot td {
 .chip--lost {
   background: var(--fail-soft);
   color: var(--fail);
+}
+
+/* --- the enquiry before the deal --- */
+
+.chip--new {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--working,
+.chip--appointment {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip--won {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+/* What the customer actually said, kept as their words rather than paraphrased
+   into a field. Indented so it reads as a quotation and not as more form. */
+.enquiry {
+  margin: 12px 0;
+  padding: 8px 14px;
+  border-left: 3px solid var(--line);
+  color: var(--ink-2);
+}
+
+/* A checkbox filter sits beside the select in the page head, so it has to line
+   up with it rather than stack as a block label would. */
+.filter label.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.filter label.check input {
+  width: auto;
+  margin: 0;
 }
 
 /* A customer name in the list opens the deal. It reads as a link and behaves as

@@ -86,6 +86,30 @@ public sealed class LeadTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task A_lead_reports_the_moves_it_allows_from_where_it_is()
+    {
+        var leadId = await CaptureAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        // The transition table lives in LeadStatusRules and nowhere else. Sending
+        // it means a screen offers exactly what the domain allows rather than
+        // keeping a second copy that drifts — and this asserts the two agree.
+        using var fresh = await SendAsync(HttpMethod.Get, $"{Leads}/{leadId}", Manager);
+        Moves(await fresh.Content.ReadFromJsonAsync<JsonElement>())
+            .Should().BeEquivalentTo("Working", "Lost");
+
+        using var working = await PostAsync($"{Leads}/{leadId}/status", Manager, new { status = "Working" });
+        working.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var won = await PostAsync($"{Leads}/{leadId}/status", Manager, new { status = "Won" });
+        won.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var atWon = await won.Content.ReadFromJsonAsync<JsonElement>();
+        atWon.GetProperty("status").GetString().Should().Be("Won");
+        Moves(atWon).Should().BeEmpty(
+            because: "a won lead is finished, and a screen must offer nothing");
+    }
+
+    [Fact]
     public async Task A_move_the_life_cycle_does_not_allow_is_refused_with_a_reason()
     {
         var leadId = await CaptureAsync(Manager, await RooftopIdAsync("NAG-01"));
@@ -210,6 +234,9 @@ public sealed class LeadTests(HostFixture fixture)
         var results = await response.Content.ReadFromJsonAsync<JsonElement>();
         return results.EnumerateArray().Select(l => l.GetProperty("id").GetString()!).ToList();
     }
+
+    private static List<string> Moves(JsonElement lead) =>
+        lead.GetProperty("availableMoves").EnumerateArray().Select(m => m.GetString()!).ToList();
 
     private async Task<string> RooftopIdAsync(string code)
     {

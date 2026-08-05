@@ -98,6 +98,81 @@ export interface TrialBalance {
   accounts: AccountBalance[];
 }
 
+// --- the enquiry that comes before the deal ---
+
+export type LeadStatus = 'New' | 'Working' | 'Appointment' | 'Won' | 'Lost';
+
+export type LeadSource =
+  | 'Unknown'
+  | 'WalkIn'
+  | 'Phone'
+  | 'Website'
+  | 'Referral'
+  | 'Marketplace';
+
+export const leadSources: LeadSource[] = [
+  'WalkIn',
+  'Phone',
+  'Website',
+  'Referral',
+  'Marketplace',
+  'Unknown',
+];
+
+export interface LeadSummary {
+  id: string;
+  rooftopId: string;
+  status: LeadStatus;
+  source: LeadSource;
+  customerId: string;
+  customerName: string;
+  vehicleOfInterestId: string | null;
+  /** Null when the enquiry named no particular car. Resolved server-side per page. */
+  vehicleOfInterest: string | null;
+  assignedToUserId: string | null;
+  capturedAt: string;
+  /** Stops counting on the day the lead closed, so aging is not skewed by old lost leads. */
+  daysOpen: number;
+}
+
+export interface LeadHistoryEntry {
+  fromStatus: string | null;
+  toStatus: string;
+  occurredAt: string;
+  note: string | null;
+}
+
+/**
+ * Note this does **not** extend LeadSummary: a detail carries the enquiry text
+ * and the history a list has no business fetching, and the list carries an aging
+ * figure the detail does not. Pretending one is the other would put a `daysOpen`
+ * in the type that is never in the payload.
+ */
+export interface LeadDetail {
+  id: string;
+  rooftopId: string;
+  status: LeadStatus;
+  source: LeadSource;
+  customerId: string;
+  customerName: string;
+  vehicleOfInterestId: string | null;
+  vehicleOfInterest: string | null;
+  assignedToUserId: string | null;
+  enquiry: string | null;
+  capturedAt: string;
+  closedAt: string | null;
+  isOpen: boolean;
+
+  /**
+   * Where this lead may go from here, decided by `LeadStatusRules` on the server.
+   *
+   * The screen offers exactly these and holds no transition table of its own —
+   * a second copy would drift, and the browser's would be the wrong one.
+   */
+  availableMoves: LeadStatus[];
+  history: LeadHistoryEntry[];
+}
+
 // --- selling a car ---
 
 export type DealStatus = 'Draft' | 'Submitted' | 'Approved' | 'Delivered' | 'Lost';

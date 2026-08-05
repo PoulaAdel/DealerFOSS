@@ -1,0 +1,421 @@
+// RepairOrderTests (integration) — proves a car can be booked in, worked on, and
+// billed; that work nobody asked the customer about cannot reach an invoice; and
+// that one workshop cannot see another's jobs.
+//
+// Use:  runs with the normal test suite; needs a reachable SQL engine.
+// Edit: the control worth guarding here is the authorization gate. A technician
+//       who can record "the customer agreed" is not a control at all, and an
+//       invoice that goes out with unanswered work on it is a complaint, not a
+//       bug. Both must fail loudly if the checks in RepairOrderService or
+//       RepairOrder are removed.
+
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using FluentAssertions;
+using DealerFOSS.App;
+
+namespace DealerFOSS.IntegrationTests;
+
+[Collection(nameof(HostCollection))]
+public sealed class RepairOrderTests(HostFixture fixture)
+{
+    private const string Tenant = "northgroup";
+    private const string Jobs = "/api/v1/repair-orders";
+    private const string Customers = "/api/v1/customers";
+    private const string Vehicles = "/api/v1/vehicles";
+    private const string Ledger = "/api/v1/accounting/journal";
+
+    private const string Manager = DevelopmentSeeder.DevUsers.OrganizationWideEmail;
+    private const string Advisor = DevelopmentSeeder.DevUsers.FirstRooftopOnlyEmail;
+    private const string Technician = DevelopmentSeeder.DevUsers.TechnicianEmail;
+    private const string Sales = DevelopmentSeeder.DevUsers.SalespersonEmail;
+
+    private readonly HostFixture _fixture = fixture;
+
+    [Fact]
+    public async Task A_car_can_be_booked_in_worked_on_and_invoiced()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        // Booked in for a service: authorized on arrival.
+        await AddLineAsync(jobId, Manager, new { kind = "Labour", description = "Full service", hours = 1.5m, rate = 120m });
+        await AddLineAsync(jobId, Manager, new { kind = "Part", description = "Oil and filter", unitAmount = 68.40m });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        var job = await GetJobAsync(jobId, Manager);
+        job.GetProperty("status").GetString().Should().Be("Invoiced");
+        job.GetProperty("labourTotal").GetDecimal().Should().Be(180m);
+        job.GetProperty("partsTotal").GetDecimal().Should().Be(68.40m);
+        job.GetProperty("amountDue").GetDecimal().Should().Be(248.40m);
+        job.GetProperty("history").EnumerateArray().Should().HaveCount(4);
+        job.GetProperty("number").GetString().Should().StartWith("RO-");
+    }
+
+    [Fact]
+    public async Task Work_found_during_the_job_cannot_be_invoiced_until_the_customer_answers()
+    {
+        var jobId = await ReadyToBillWithFoundWorkAsync();
+
+        using var refused = await PostAsync($"{Jobs}/{jobId}/status", Manager, new { status = "Invoiced" });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        var body = await refused.Content.ReadAsStringAsync();
+        body.Should().Contain("service.work_not_authorized");
+        body.Should().Contain("Front discs",
+            because: "the refusal must name the call somebody still owes, not just refuse");
+
+        // And the job did not move.
+        (await GetJobAsync(jobId, Manager)).GetProperty("status").GetString().Should().Be("Completed");
+    }
+
+    [Fact]
+    public async Task Once_the_customer_answers_the_job_bills_for_what_they_agreed_to()
+    {
+        var jobId = await ReadyToBillWithFoundWorkAsync();
+        var lineId = await PendingLineIdAsync(jobId, Manager);
+
+        using var answered = await PostAsync(
+            $"{Jobs}/{jobId}/lines/{lineId}/answer", Manager,
+            new { approved = true, note = "Phoned 10:40, agreed." });
+
+        answered.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        var job = await GetJobAsync(jobId, Manager);
+        job.GetProperty("amountDue").GetDecimal().Should().Be(464m);
+
+        var line = job.GetProperty("lines").EnumerateArray()
+            .Single(l => l.GetProperty("id").GetString() == lineId);
+        line.GetProperty("authorization").GetString().Should().Be("Authorized");
+        line.GetProperty("authorizationNote").GetString().Should().Be("Phoned 10:40, agreed.");
+    }
+
+    [Fact]
+    public async Task Declined_work_stays_on_the_record_and_off_the_bill()
+    {
+        var jobId = await ReadyToBillWithFoundWorkAsync();
+        var lineId = await PendingLineIdAsync(jobId, Manager);
+
+        using var declined = await PostAsync(
+            $"{Jobs}/{jobId}/lines/{lineId}/answer", Manager,
+            new { approved = false, note = "Will do it next time." });
+
+        declined.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        var job = await GetJobAsync(jobId, Manager);
+        job.GetProperty("amountDue").GetDecimal().Should().Be(180m);
+
+        // Still there, at nil — which is what makes "we did offer" provable.
+        var line = job.GetProperty("lines").EnumerateArray()
+            .Single(l => l.GetProperty("id").GetString() == lineId);
+        line.GetProperty("authorization").GetString().Should().Be("Declined");
+        line.GetProperty("amount").GetDecimal().Should().Be(0m);
+    }
+
+    // --- the segregation of duties ------------------------------------------
+
+    [Fact]
+    public async Task A_technician_can_write_work_up_but_cannot_say_the_customer_agreed()
+    {
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var jobId = await OpenJobAsync(Manager, rooftop);
+        await AddLineAsync(jobId, Manager, new { kind = "Labour", description = "Full service", hours = 1.5m, rate = 120m });
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+
+        // The technician finds the work and writes it up — that is their job.
+        using var found = await PostAsync($"{Jobs}/{jobId}/lines", Technician, new
+        {
+            kind = "Part", description = "Front discs and pads", unitAmount = 284m,
+        });
+        found.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var lineId = await PendingLineIdAsync(jobId, Manager);
+
+        // Saying the customer agreed to pay for it is somebody else's.
+        using var selfAuthorized = await PostAsync(
+            $"{Jobs}/{jobId}/lines/{lineId}/answer", Technician, new { approved = true });
+
+        selfAuthorized.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await selfAuthorized.Content.ReadAsStringAsync()).Should().Contain("Service.Authorize");
+    }
+
+    [Fact]
+    public async Task An_advisor_can_answer_for_the_customer()
+    {
+        var jobId = await ReadyToBillWithFoundWorkAsync();
+        var lineId = await PendingLineIdAsync(jobId, Manager);
+
+        using var answered = await PostAsync(
+            $"{Jobs}/{jobId}/lines/{lineId}/answer", Advisor, new { approved = true, note = "Agreed on the phone." });
+
+        answered.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "the advisor is the person who actually rings the customer");
+    }
+
+    [Fact]
+    public async Task A_salesperson_has_no_business_in_the_workshop()
+    {
+        using var response = await SendAsync(HttpMethod.Get, Jobs, Sales);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    // --- the ledger ----------------------------------------------------------
+
+    [Fact]
+    public async Task Invoicing_posts_labour_and_parts_to_the_ledger_separately()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new { kind = "Labour", description = "Full service", hours = 1.5m, rate = 120m });
+        await AddLineAsync(jobId, Manager, new { kind = "Part", description = "Oil and filter", unitAmount = 68.40m });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
+        entries.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var posted = (await entries.Content.ReadFromJsonAsync<JsonElement>())
+            .EnumerateArray().Should().ContainSingle().Subject;
+
+        posted.GetProperty("source").GetString().Should().Be("ServiceInvoice");
+        posted.GetProperty("total").GetDecimal().Should().Be(248.40m);
+
+        using var detail = await SendAsync(
+            HttpMethod.Get, $"{Ledger}/{posted.GetProperty("id").GetString()}", Manager);
+        var lines = (await detail.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("lines");
+
+        // Labour and parts land on their own accounts. "We sold 248 of service" is
+        // useless to a workshop manager; the split is the number they run on.
+        Credit(lines, "4200").Should().Be(180m);
+        Credit(lines, "4300").Should().Be(68.40m);
+        Debit(lines, "1000").Should().Be(248.40m);
+    }
+
+    [Fact]
+    public async Task A_refused_invoice_posts_nothing_to_the_ledger()
+    {
+        var jobId = await ReadyToBillWithFoundWorkAsync();
+
+        using var refused = await PostAsync($"{Jobs}/{jobId}/status", Manager, new { status = "Invoiced" });
+        refused.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
+        (await entries.Content.ReadFromJsonAsync<JsonElement>())
+            .EnumerateArray().Should().BeEmpty(
+                because: "the posting and the status change share a transaction");
+    }
+
+    // --- the rooftop boundary ------------------------------------------------
+
+    [Fact]
+    public async Task A_rooftop_scoped_user_does_not_see_another_workshops_jobs()
+    {
+        var mine = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        var theirs = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-02"));
+
+        var visible = await ListIdsAsync($"{Jobs}?limit=200", Advisor);
+
+        visible.Should().Contain(mine);
+        visible.Should().NotContain(theirs,
+            because: "the response must never carry another workshop's jobs");
+    }
+
+    [Fact]
+    public async Task A_rooftop_scoped_user_is_refused_another_workshops_job_by_direct_id()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-02"));
+
+        using var response = await SendAsync(HttpMethod.Get, $"{Jobs}/{jobId}", Advisor);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task A_job_number_is_unique_within_a_workshop_and_reusable_across_them()
+    {
+        var first = await GetJobAsync(await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01")), Manager);
+        var second = await GetJobAsync(await OpenJobAsync(Manager, await RooftopIdAsync("NAG-02")), Manager);
+
+        first.GetProperty("number").GetString().Should().NotBeNullOrWhiteSpace();
+        second.GetProperty("number").GetString().Should().NotBeNullOrWhiteSpace();
+
+        // Each workshop numbers its own jobs, so neither has to explain a gap in
+        // its sequence caused by the other one being busy.
+        first.GetProperty("rooftopId").ToString()
+            .Should().NotBe(second.GetProperty("rooftopId").ToString());
+    }
+
+    // --- helpers -------------------------------------------------------------
+
+    private static decimal Credit(JsonElement lines, string accountCode) =>
+        lines.EnumerateArray()
+            .Where(l => l.GetProperty("accountCode").GetString() == accountCode)
+            .Sum(l => l.GetProperty("credit").GetDecimal());
+
+    private static decimal Debit(JsonElement lines, string accountCode) =>
+        lines.EnumerateArray()
+            .Where(l => l.GetProperty("accountCode").GetString() == accountCode)
+            .Sum(l => l.GetProperty("debit").GetDecimal());
+
+    private static string UniqueVin()
+    {
+        var body = Guid.NewGuid().ToString("N").ToUpperInvariant()
+            .Replace("I", "1", StringComparison.Ordinal)
+            .Replace("O", "0", StringComparison.Ordinal)
+            .Replace("Q", "9", StringComparison.Ordinal);
+
+        return body[..17];
+    }
+
+    /// <summary>
+    /// A completed job with 180 of authorized labour and 284 found mid-job that
+    /// nobody has answered — the state that cannot be invoiced.
+    /// </summary>
+    private async Task<string> ReadyToBillWithFoundWorkAsync()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new { kind = "Labour", description = "Full service", hours = 1.5m, rate = 120m });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Part", description = "Front discs and pads", unitAmount = 284m,
+        });
+
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+
+        return jobId;
+    }
+
+    private async Task<string> PendingLineIdAsync(string jobId, string email)
+    {
+        var job = await GetJobAsync(jobId, email);
+
+        return job.GetProperty("lines").EnumerateArray()
+            .Single(l => l.GetProperty("authorization").GetString() == "Pending")
+            .GetProperty("id").GetString()!;
+    }
+
+    private async Task<string> OpenJobAsync(string email, string rooftopId)
+    {
+        using var response = await PostAsync(Jobs, email, new
+        {
+            rooftopId,
+            customerId = await AddCustomerAsync(),
+            vehicleId = await AddVehicleAsync(),
+            complaint = "Squealing from the front when braking.",
+            currency = "USD",
+            odometerReading = 48_210,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+    }
+
+    private async Task AddLineAsync(string jobId, string email, object line)
+    {
+        using var response = await PostAsync($"{Jobs}/{jobId}/lines", email, line);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private async Task<HttpStatusCode> MoveAsync(string jobId, string email, string status)
+    {
+        using var response = await PostAsync($"{Jobs}/{jobId}/status", email, new { status });
+        return response.StatusCode;
+    }
+
+    private async Task<JsonElement> GetJobAsync(string jobId, string email)
+    {
+        using var response = await SendAsync(HttpMethod.Get, $"{Jobs}/{jobId}", email);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return await response.Content.ReadFromJsonAsync<JsonElement>();
+    }
+
+    private async Task<string> AddCustomerAsync()
+    {
+        using var response = await PostAsync(Customers, Manager, new
+        {
+            kind = "Person", firstName = "Service", lastName = $"Test{Guid.NewGuid():N}"[..12],
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+    }
+
+    /// <summary>A car the customer owns — not a unit in stock.</summary>
+    private async Task<string> AddVehicleAsync()
+    {
+        using var response = await PostAsync(Vehicles, Manager, new
+        {
+            vin = UniqueVin(), modelYear = 2019, make = "Ford", model = "Focus",
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+    }
+
+    private async Task<IReadOnlyList<string>> ListIdsAsync(string path, string email)
+    {
+        using var response = await SendAsync(HttpMethod.Get, path, email);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var results = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return results.EnumerateArray().Select(j => j.GetProperty("id").GetString()!).ToList();
+    }
+
+    private async Task<string> RooftopIdAsync(string code)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "/api/v1/organization", Manager);
+        var root = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        return root.GetProperty("legalEntities")
+            .EnumerateArray()
+            .SelectMany(entity => entity.GetProperty("rooftops").EnumerateArray())
+            .Single(rooftop => rooftop.GetProperty("code").GetString() == code)
+            .GetProperty("id")
+            .ToString();
+    }
+
+    private async Task<HttpResponseMessage> PostAsync(string path, string email, object body)
+    {
+        using var client = _fixture.CreateClient();
+        var session = await _fixture.SignInAsync(email, Tenant);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(path, UriKind.Relative))
+        {
+            Content = JsonContent.Create(body),
+        };
+        request.Headers.Add("X-Tenant", Tenant);
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
+        request.Headers.Add("X-CSRF-Token", session.AntiForgeryToken);
+
+        return await client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, string email)
+    {
+        using var client = _fixture.CreateClient();
+        var session = await _fixture.SignInAsync(email, Tenant);
+
+        using var request = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
+        request.Headers.Add("X-Tenant", Tenant);
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
+
+        if (method != HttpMethod.Get)
+        {
+            request.Headers.Add("X-CSRF-Token", session.AntiForgeryToken);
+        }
+
+        return await client.SendAsync(request);
+    }
+}

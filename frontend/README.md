@@ -147,8 +147,8 @@ and re-locks when the file or kind changes. That is the kind of rule that gets
 is what makes removing it fail loudly.
 
 **Every screen renders every state.** Loading, empty, permission-denied, failure,
-and retry. A screen that only handles the happy path is not finished
-([doc 10 §5](../docs/10-Claude-Code-Execution-Prompt.md)). `InventoryPage` is the
+and retry. A screen that only handles the happy path is not finished.
+`InventoryPage` is the
 reference for what that looks like, and `InventoryPage.test.tsx` is what stops
 that claim being taken on trust.
 
