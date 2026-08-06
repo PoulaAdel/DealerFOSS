@@ -130,6 +130,8 @@ export interface LeadSummary {
   /** Null when the enquiry named no particular car. Resolved server-side per page. */
   vehicleOfInterest: string | null;
   assignedToUserId: string | null;
+  /** Who is chasing it, by name. Null when nobody has picked it up. */
+  assignedTo: string | null;
   capturedAt: string;
   /** Stops counting on the day the lead closed, so aging is not skewed by old lost leads. */
   daysOpen: number;
@@ -148,6 +150,40 @@ export interface LeadHistoryEntry {
  * figure the detail does not. Pretending one is the other would put a `daysOpen`
  * in the type that is never in the payload.
  */
+/** One colleague, as the staff screen sees them. Carries no credential material. */
+export interface StaffMember {
+  id: string;
+  email: string;
+  displayName: string;
+  isActive: boolean;
+  hasSecondFactor: boolean;
+  canSignIn: boolean;
+  /** True for a starter who has not redeemed a code — a different state from a leaver. */
+  awaitingEnrolment: boolean;
+  assignments: StaffAssignment[];
+}
+
+export interface StaffAssignment {
+  id: string;
+  roleId: string;
+  roleName: string;
+  isOrganizationWide: boolean;
+  rooftopId: string | null;
+}
+
+export interface StaffRole {
+  id: string;
+  name: string;
+  requiresSecondFactor: boolean;
+  permissions: string[];
+}
+
+/** Returned once and never again — only its hash is stored. */
+export interface StaffEnrolmentCode {
+  code: string;
+  expiresAt: string;
+}
+
 export interface LeadDetail {
   id: string;
   rooftopId: string;
@@ -158,6 +194,7 @@ export interface LeadDetail {
   vehicleOfInterestId: string | null;
   vehicleOfInterest: string | null;
   assignedToUserId: string | null;
+  assignedTo: string | null;
   enquiry: string | null;
   capturedAt: string;
   closedAt: string | null;

@@ -38,6 +38,8 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
 
     public DbSet<SignInChallenge> SignInChallenges => Set<SignInChallenge>();
 
+    public DbSet<StaffEnrolment> StaffEnrolments => Set<StaffEnrolment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -73,6 +75,19 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
             builder.Property(x => x.CodeHash).HasMaxLength(64).IsRequired();
             builder.Ignore(x => x.IsAvailable);
             builder.HasIndex(x => new { x.UserId, x.CodeHash });
+        });
+
+        modelBuilder.Entity<StaffEnrolment>(builder =>
+        {
+            builder.ToTable("StaffEnrolments");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
+            builder.Property(x => x.CodeHash).HasMaxLength(64).IsRequired();
+
+            // The redemption path finds the live code for one account, and the
+            // cleanup path finds expired ones.
+            builder.HasIndex(x => new { x.UserId, x.ConsumedAt });
+            builder.HasIndex(x => x.ExpiresAt);
         });
 
         modelBuilder.Entity<SignInChallenge>(builder =>

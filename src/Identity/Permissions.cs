@@ -85,6 +85,26 @@ public static class Permissions
     public const string AccountingReverse = "Accounting.Reverse";
 
     /// <summary>
+    /// Seeing who works here and what they may reach. Held per rooftop, or
+    /// organization-wide: a one-lot manager sees the people whose access touches
+    /// their lot, which includes anybody organization-wide, because those people
+    /// really can reach it.
+    /// </summary>
+    public const string StaffRead = "Staff.Read";
+
+    /// <summary>
+    /// Adding a starter, granting and removing roles, and stopping a leaver.
+    ///
+    /// Checked at the scope of the grant being made, not at "somewhere": handing
+    /// somebody a role at one rooftop needs this permission at that rooftop, and
+    /// handing them organization-wide access needs it organization-wide. Without
+    /// that split, a single-lot manager could grant themselves the group.
+    /// Stopping an account is organization-wide too — signing in is not a
+    /// per-rooftop thing, so neither is taking it away.
+    /// </summary>
+    public const string StaffManage = "Staff.Manage";
+
+    /// <summary>
     /// Changing the security rules the organization applies to its own staff —
     /// today, which roles must hold a second factor. Held organization-wide by
     /// design: a rule about the whole dealership is not set from one lot.
@@ -132,6 +152,8 @@ public static class Permissions
         AccountingRead,
         AccountingPost,
         AccountingReverse,
+        StaffRead,
+        StaffManage,
     ];
 }
 

@@ -213,6 +213,7 @@ if (tenancyEnabled)
     app.MapLeads();
     app.MapDeals();
     app.MapRepairOrders();
+    app.MapStaff();
     app.MapAccounting();
 }
 

@@ -18,6 +18,8 @@ import { RecordsPage } from '../features/migration/RecordsPage';
 import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
 import { DealsPage } from '../features/deals/DealsPage';
+import { StaffPage } from '../features/staff/StaffPage';
+import { SetFirstPassword } from '../features/auth/SetFirstPassword';
 import { AdminApp } from './AdminApp';
 
 export function App() {
@@ -60,6 +62,12 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/sign-in" element={<SignIn />} />
+        {/*
+          A starter has no password, so they can never reach a signed-in route.
+          This is the one place they can get to, and it has to live out here with
+          sign-in rather than behind the session.
+        */}
+        <Route path="/set-password" element={<SetFirstPassword />} />
         <Route path="*" element={<Navigate to="/sign-in" replace />} />
       </Routes>
     );
@@ -89,6 +97,7 @@ function AppRoutes() {
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/accounting" element={<TrialBalancePage />} />
         <Route path="/records" element={<RecordsPage />} />
+        <Route path="/staff" element={<StaffPage />} />
         <Route path="/security/second-factor" element={<SecondFactorSetup />} />
         <Route path="*" element={<Navigate to="/inventory" replace />} />
       </Route>
@@ -125,6 +134,7 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
             <NavLink to="/inventory">Stock</NavLink>
             <NavLink to="/accounting">Trial balance</NavLink>
             <NavLink to="/records">Records</NavLink>
+            <NavLink to="/staff">People</NavLink>
             <NavLink to="/security/second-factor">Two-step sign-in</NavLink>
           </nav>
         )}

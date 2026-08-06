@@ -41,6 +41,9 @@ public sealed class CurrentUserMiddleware(RequestDelegate next)
         "/api/v1/auth/login",
         "/api/v1/auth/login/second-factor",
         "/api/v1/auth/logout",
+        // Setting a first password. The caller cannot possibly have a session —
+        // not having one is the state this endpoint exists to fix.
+        "/api/v1/auth/enrol",
     ];
 
     /// <summary>

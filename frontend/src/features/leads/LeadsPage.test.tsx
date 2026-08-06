@@ -32,6 +32,7 @@ const summary: LeadSummary = {
   vehicleOfInterestId: 'v1',
   vehicleOfInterest: '2021 Toyota RAV4 XLE',
   assignedToUserId: null,
+  assignedTo: null,
   capturedAt: '2026-08-01T09:00:00Z',
   daysOpen: 4,
 };
@@ -46,6 +47,7 @@ const detail = (over: Partial<LeadDetail> = {}): LeadDetail => ({
   vehicleOfInterestId: 'v1',
   vehicleOfInterest: '2021 Toyota RAV4 XLE',
   assignedToUserId: null,
+  assignedTo: null,
   enquiry: 'Wants something around 25k.',
   capturedAt: '2026-08-01T09:00:00Z',
   closedAt: null,
@@ -75,6 +77,76 @@ const signedIn = { ok: true as const, body: { userId: me, mustEnrolSecondFactor:
 async function openLead() {
   await userEvent.click(await screen.findByRole('button', { name: 'Priya Raman' }));
 }
+
+const colleague = (over: Record<string, unknown> = {}) => ({
+  id: 'u2',
+  email: 'sales@dev.local',
+  displayName: 'Rooftop Salesperson',
+  isActive: true,
+  hasSecondFactor: false,
+  canSignIn: true,
+  awaitingEnrolment: false,
+  assignments: [
+    { id: 'a1', roleId: 'r', roleName: 'Salesperson', isOrganizationWide: false, rooftopId: 'r1' },
+  ],
+  ...over,
+});
+
+describe('handing an enquiry to a named colleague', () => {
+  it('offers colleagues by name', async () => {
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads/l1': { ok: true, body: detail() },
+      '/leads': { ok: true, body: [summary] },
+      '/staff': { ok: true, body: [colleague()] },
+    });
+    renderLeads();
+    await openLead();
+
+    expect(await screen.findByRole('option', { name: 'Rooftop Salesperson' })).toBeInTheDocument();
+  });
+
+  it('does not offer somebody who holds no role, because the enquiry would vanish', async () => {
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads/l1': { ok: true, body: detail() },
+      '/leads': { ok: true, body: [summary] },
+      '/staff': { ok: true, body: [colleague({ assignments: [] })] },
+    });
+    renderLeads();
+    await openLead();
+
+    expect(screen.queryByLabelText('Hand to')).toBeNull();
+  });
+
+  it('draws no picker at all when the caller may not read the staff list', async () => {
+    // A salesperson without Staff.Read still has claim and release. An empty
+    // picker would read as a broken screen rather than as a permission they do
+    // not hold — the same reasoning as the missing rooftop picker.
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads/l1': { ok: true, body: detail() },
+      '/leads': { ok: true, body: [summary] },
+      '/staff': { ok: false, status: 403, code: 'staff.read_forbidden', detail: 'No.' },
+    });
+    renderLeads();
+    await openLead();
+
+    expect(await screen.findByRole('button', { name: 'I will chase this' })).toBeVisible();
+    expect(screen.queryByLabelText('Hand to')).toBeNull();
+  });
+
+  it('names who is chasing it rather than saying "somebody else"', async () => {
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads': { ok: true, body: [{ ...summary, assignedToUserId: 'u9', assignedTo: 'Ada Nwosu' }] },
+      '/staff': { ok: true, body: [] },
+    });
+    renderLeads();
+
+    expect(await screen.findByText('Ada Nwosu')).toBeVisible();
+  });
+});
 
 describe('the enquiry list', () => {
   it('lists what is being chased, and what each one is about', async () => {

@@ -46,6 +46,13 @@ public sealed record LeadSummary(
     /// </summary>
     string? VehicleOfInterest,
     Guid? AssignedToUserId,
+
+    /// <summary>
+    /// Who is chasing it, by name. Null when nobody has picked it up. Resolved
+    /// through the staff directory's name-only lookup, which needs no permission
+    /// — showing a colleague's name is not reading the staff directory.
+    /// </summary>
+    string? AssignedTo,
     DateTimeOffset CapturedAt,
     int DaysOpen);
 
@@ -60,6 +67,9 @@ public sealed record LeadDetail(
     Guid? VehicleOfInterestId,
     string? VehicleOfInterest,
     Guid? AssignedToUserId,
+
+    /// <summary>Who is chasing it, by name. Null when nobody has picked it up.</summary>
+    string? AssignedTo,
     string? Enquiry,
     DateTimeOffset CapturedAt,
     DateTimeOffset? ClosedAt,

@@ -27,6 +27,7 @@ public sealed class LeadService(
     IVehicles vehicles,
     ICurrentUser currentUser,
     IAuditSink audit,
+    IStaffDirectory staff,
     IClock clock)
     : ILeads
 {
@@ -42,6 +43,7 @@ public sealed class LeadService(
     private readonly IVehicles _vehicles = vehicles;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
+    private readonly IStaffDirectory _staff = staff;
     private readonly IClock _clock = clock;
 
     public async Task<Result<IReadOnlyList<LeadSummary>>> ListAsync(
@@ -139,6 +141,15 @@ public sealed class LeadService(
             return Result.Failure<IReadOnlyList<LeadSummary>>(cars.Error);
         }
 
+        // Printing a colleague's name is not the same act as reading the staff
+        // directory, so this needs no Staff.Read — see IStaffDirectory.NamesForAsync.
+        var chasers = await _staff.NamesForAsync(
+            rows.Where(l => l.AssignedToUserId is not null)
+                .Select(l => l.AssignedToUserId!.Value)
+                .Distinct()
+                .ToList(),
+            cancellationToken);
+
         var now = _clock.UtcNow;
 
         return Result.Success<IReadOnlyList<LeadSummary>>(
@@ -152,6 +163,7 @@ public sealed class LeadService(
                 l.VehicleOfInterestId,
                 CarFor(cars.Value, l.VehicleOfInterestId),
                 l.AssignedToUserId,
+                ChaserFor(chasers, l.AssignedToUserId),
                 l.CapturedAt,
                 DaysOpen(l, now))).ToList());
     }
@@ -363,6 +375,11 @@ public sealed class LeadService(
             lead.VehicleOfInterestId,
             vehicleName,
             lead.AssignedToUserId,
+            ChaserFor(
+                await _staff.NamesForAsync(
+                    lead.AssignedToUserId is { } chaser ? [chaser] : [],
+                    cancellationToken),
+                lead.AssignedToUserId),
             lead.Enquiry,
             lead.CapturedAt,
             lead.ClosedAt,
@@ -374,6 +391,9 @@ public sealed class LeadService(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt, h.Note))
                 .ToList()));
     }
+
+    private static string? ChaserFor(IReadOnlyList<StaffName> people, Guid? userId) =>
+        userId is null ? null : people.FirstOrDefault(p => p.Id == userId.Value)?.DisplayName;
 
     private static string? CarFor(IReadOnlyList<VehicleSummary> cars, Guid? vehicleId) =>
         vehicleId is null ? null : cars.FirstOrDefault(v => v.Id == vehicleId.Value)?.DisplayName;

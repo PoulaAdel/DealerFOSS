@@ -42,6 +42,10 @@ public sealed class AntiForgeryMiddleware(RequestDelegate next)
         // The control-plane equivalent, for the identical reason: no
         // administrator session exists yet to have issued a token.
         "/api/v1/admin/login",
+        // A starter redeeming their one-time code has no password, so no session,
+        // so nothing to have issued a token. The code is the credential, and it
+        // is single-use, hashed, and expires.
+        "/api/v1/auth/enrol",
     ];
 
     private readonly RequestDelegate _next = next;

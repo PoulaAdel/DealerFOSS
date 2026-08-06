@@ -116,6 +116,15 @@ export function post<T>(path: string, body: unknown): Promise<T> {
 }
 
 /**
+ * DELETE. Carries the anti-forgery token like any other write — a request that
+ * takes something away is exactly the kind another site would like to make on
+ * your behalf.
+ */
+export function remove<T>(path: string): Promise<T> {
+  return api<T>(path, { method: 'DELETE' });
+}
+
+/**
  * Fetches a file and hands the browser a download.
  *
  * A plain `<a href>` cannot do this: every call needs the tenant header, and an

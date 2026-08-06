@@ -117,6 +117,16 @@ public sealed class BoundaryTests
             "IdentityRegistration", "IdentitySeeder", "DevelopmentAccount",
             "ControlPlaneSeeder",
             "Permissions",
+            // Added deliberately: a dealership must be able to see and manage its
+            // own staff, and until now that was a developer's job. Note what this
+            // contract does NOT carry, because that is what makes it safe to
+            // export: no password hash, no TOTP secret, no session or recovery
+            // code, and no way to edit the permission catalogue — assigning
+            // grants an EXISTING role at an EXISTING scope. The enrolment code is
+            // returned in plaintext exactly once and stored only as a hash, so
+            // this surface never hands out a reusable credential.
+            "IStaffDirectory", "StaffMember", "StaffAssignment", "StaffRole",
+            "NewStaffMember", "StaffEnrolmentCode", "StaffErrors", "StaffName",
         };
 
         // Migration classes are generated artifacts and are public by design;

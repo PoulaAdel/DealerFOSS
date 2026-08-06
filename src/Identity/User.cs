@@ -78,6 +78,13 @@ internal sealed class User : AuditableEntity
     public void Deactivate() => IsActive = false;
 
     /// <summary>
+    /// Lets somebody back in. Their assignments were never removed, so a returner
+    /// comes back to what they had rather than to nothing — which is right for a
+    /// seasonal leaver and is why deactivating deliberately deletes nothing.
+    /// </summary>
+    public void Reactivate() => IsActive = true;
+
+    /// <summary>
     /// Stores an already-hashed credential. Hashing belongs to the service that
     /// owns the algorithm; the domain never sees a plaintext password.
     /// </summary>

@@ -1,10 +1,10 @@
 # Implementation Status
 
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
-Current milestone: **stage 5 — the workshop.** A car is booked in, worked on, and invoiced, and work nobody agreed to cannot reach the bill (complete, API only)
-Last verified: 2026-08-05 · `dotnet build` 0 warnings/0 errors, `dotnet test` 384/384,
+Current milestone: **staff.** A dealership can see and manage its own people, and a starter sets their own password with a one-time code (complete, with a screen)
+Last verified: 2026-08-05 · `dotnet build` 0 warnings/0 errors, `dotnet test` 401/401,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 115/115, and `npm run build` all pass
+`npm run typecheck`, `npm test` 130/130, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -191,6 +191,20 @@ them is written.
 
   **Deliberately not included, and named rather than hidden:** there is **no parts inventory** — a part on a job is a description and a price, nothing is reserved or relieved from stock, so the ledger records service **revenue and no cost** and *gross profit on service does not exist yet*. Inventing a cost figure would be worse than the gap. Also excluded: estimate versus actual, a labour operation catalogue, flat-rate times, technician clocking and therefore any efficiency reporting, warranty claims, internal jobs, split-pay across customer/warranty/internal, appointments and workshop loading, a printed invoice, and **a screen** — the API is complete and nothing drives it.
 
+- **2026-08-05 — A dealership can see and manage its own people, and a starter sets their own password.** Five gaps recorded across four earlier milestones turned out to be one missing capability: an enquiry could not be handed to a *named* colleague, the deal desk said "Somebody else" where a name belonged, the `DealerFOSS Support` role sat in every tenant a support visit had touched with **no way for the dealership to see it**, nobody could add a starter or stop a leaver, and a job could not be given to a named technician. All of it needed a staff list, and there wasn't one.
+
+  **This opened Identity's sealed surface for the fourth time, deliberately.** `BoundaryTests` names every exported type and fails the build on a new one; `IStaffDirectory` and its records are now on that list with the reasoning beside them. What makes it safe is what it refuses to carry: no password hash, no TOTP secret, no session or recovery-code value. The projection is built by hand rather than mapped from the entity, so a field added to `User` later cannot cross the boundary unless somebody comes here and writes it out — and `No_credential_material_ever_appears_in_a_staff_response` reads the **raw JSON** rather than a typed model, because a typed check only catches fields somebody remembered to declare. Also absent, and a decision rather than an oversight: **when somebody last signed in.** Its honest use is spotting a dormant account; what it answers on a shared screen is "when was Dave working", and the audit trail is the right place to look when there is a reason to.
+
+  **A starter never has a password typed for them.** There is no email sending, so there is no invite link — and the two easy answers (a manager choosing a temporary password, or an account nobody can use) both fail. Instead the account is created with **no credential at all**, and a single-use, hashed, 24-hour code is read out. `User.CanSignIn` already meant "active and holds a credential", so an un-enrolled starter is refused by machinery that already existed rather than by a new check somebody could forget. The code is 12 characters from an alphabet with O/0, I/1 and S/5 removed, because it is spoken across a desk far more often than copied.
+
+  **Who may grant what is not uniform, and that is the point.** Handing somebody a role *at a rooftop* needs `Staff.Manage` at that rooftop; handing them *organization-wide* access needs it organization-wide. Without the split, whoever manages one lot could hand themselves the group. Stopping an account is organization-wide too — signing in is not a per-rooftop thing — and it **revokes live sessions in the same act**, so a leaver stops on the very next request rather than whenever their session would have lapsed. Nothing is deleted: their name still has to appear against the deals they did.
+
+  **Two tests were found to be decoration, by rehearsal rather than by inspection.** Removing `enrolment.Consume(...)` left every test green — the "already has a password" guard fires first, so the consumed-code check is unreachable today. Removing the supersede loop was green too — redemption only ever looks at the newest live code. Both mechanisms were kept (they close a hazard the day a password reset exists) but the tests were **renamed to what they actually prove**, with the rehearsal result written down. Separately, `queryByLabelText('Hand to')` never matched anything: a wrapping `<label>` takes its accessible name from its whole `textContent`, which included every option — so two handover tests were passing vacuously. The label is now associated by id, and the rehearsal fails correctly.
+
+  **Verified in a real browser, end to end:** added Rosa Delgado, read the code off the screen, signed out, redeemed it at `/set-password`, and signed in as her — where she correctly sees nothing, because she holds no role yet. **A defect only a browser could find:** the staff table was missing the `div.scroll` wrapper every other wide table uses, so at 375px its five columns pushed the whole page sideways instead of scrolling inside their own box. Measured, fixed, measured again (337 visible of 664, page not pushed). Evidence: `dotnet test` 401/401 (was 384), `npm test` 130/130 (was 115), `verify-e2e.ps1` PASS. Four rehearsals: leaking a password hash failed exactly the credential test, letting a rooftop-scoped manager grant organization-wide access failed exactly the escalation test, offering a role-less colleague failed exactly the dead-end test, and dropping the show-once warning failed exactly the test that demands it *(automated)*
+
+  **Deliberately not included:** resetting a forgotten password (a different feature needing proof the asker owns the account — issuing a code to an enrolled account is refused rather than quietly becoming that feature), editing the permission catalogue, creating a role, merging or deleting a person, and any notion of a working pattern or shift. Named technician assignment on the workshop screen is now unblocked but not yet wired.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -200,29 +214,19 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** the workshop has a screen — or the dealership can see its own staff. Both are ready to build; the first makes yesterday's work usable, the second unblocks four things at once.
+**Outcome:** the workshop has a screen. It is the last capability with real logic and nothing driving it, and the maintainer's stated direction is **depth in one department** — service is the one with a complete backend, a screen-shaped hole, and a named next step after it (parts).
 
-### Option A — a screen for the workshop
+The screen that matters is the advisor's: **the jobs with work waiting on a customer**, because every one of those is a phone call somebody owes and an invoice that cannot go out. `RepairOrderSummary.LinesAwaitingAnswer` exists precisely so that list can be drawn without opening anything.
 
-The capability is complete and nothing drives it. The screen that matters is the advisor's: **the jobs with work waiting on a customer**, because every one of those is a phone call somebody owes and an invoice that cannot go out. `RepairOrderSummary.LinesAwaitingAnswer` exists precisely so that list can be drawn without opening anything.
+- **Included:** the jobs at a rooftop, opening one to see its lines and totals, adding work, recording what the customer said against each line, moving the job on, and — newly possible — assigning it to a **named** technician through `IStaffDirectory`.
+- **Explicitly excluded:** a printed invoice, appointments and workshop loading, and anything about parts stock.
+- **Caution:** the screen must not offer Invoice when a line is Pending — but it must still *ask* rather than predicting, because whether this caller may invoice is the server's answer. Show the refusal, and show which line caused it. The deal desk and the leads screen are both written this way; a third copy of a transition table would be the one that drifts.
+- **Settled 2026-08-05:** a service advisor **may** authorize work they wrote up themselves. This is not an oversight — most independents have one person doing both, and the control is that recording the customer's answer is a separate, permissioned, timestamped act. Do not "fix" it into the salesperson/approver split.
 
-- **Included:** the jobs at a rooftop, opening one to see its lines and totals, adding work, recording what the customer said with the note, and moving the job on.
-- **Explicitly excluded:** a printed invoice, appointments, and anything about parts stock.
-- **Caution:** the screen must not offer Invoice when a line is Pending — but it must still *ask* rather than predicting, because whether this caller may invoice is the server's answer. Show the refusal, and show which line caused it.
-
-### Option B — the dealership can see and manage its own staff
-
-Four separate gaps recorded across the last four milestones turn out to be one missing capability, and it is now the thing most often in the way:
-
-1. an enquiry cannot be handed to a **named** colleague — the leads screen ships claim-and-release because nothing lists people;
-2. the deal desk and the lead list say "You" or "Somebody else" where a name belongs;
-3. the `DealerFOSS Support` role appears in any tenant a support visit has touched and **the dealership cannot see that it is there** — visible only in `verify-e2e.ps1` and the audit trail, which is close to the opposite of what the support-access design promised;
-4. nobody can add a new starter, change what somebody may reach, or stop a leaver, so every one of those is a developer's job today.
-
-- **Included:** listing the people at the caller's authorized rooftops with the roles they hold, seeing what a role grants, assigning and unassigning a person to a rooftop, and — once names exist — assigning a lead to one of them.
-- **Explicitly excluded:** creating a user with credentials from a screen, password resets, inviting somebody by email, and editing the permission catalogue. Those are credential handling, and they belong in one place (`src/Identity`) with their own milestone.
-- **Caution, and the reason this is not a small job:** `IAccessDirectory` is one of eight types Identity exports, and `BoundaryTests` asserts that list. A staff listing means adding to a **deliberately sealed** security surface — doc it as the security decision it is, keep it to a read model that returns no credential material, and make it rooftop-scoped like every other list. A "who works here" endpoint that ignores scope leaks the group's org chart to a single-lot user.
+**The department's next step after that is parts**, and it is worth naming now: service currently records revenue and no cost, so **there is no service profit figure**. A pilot dealer will ask for one.
 
 **Also outstanding, and cheap:** the API refuses a write whose anti-forgery token is missing, but no screen has yet had to recover from it. `ApiError.needsSignIn` covers the case and nothing acts on it — a write that fails this way should send the person to sign in again rather than showing them a raw refusal.
 
 **Also outstanding:** leads, deals, and the ledger still have no import or export path, so "take your data with you" covers customers and vehicles and not yet the whole business.
+
+**Closed 2026-08-05:** the `DealerFOSS Support` role used to sit in every tenant a support visit had touched with no way for the dealership to see it. `GET /api/v1/staff/roles` now lists every role and what holding it grants, so that residue is visible in the product rather than only in the audit trail.

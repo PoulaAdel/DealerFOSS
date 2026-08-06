@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router';
 import { ApiError, api, post } from '../../shared/api';
 import { useSession } from '../../app/session';
 import { CaptureLead, sourceLabel } from './CaptureLead';
-import type { LeadDetail, LeadStatus, LeadSummary } from '../../shared/contracts';
+import type { LeadDetail, LeadStatus, LeadSummary, StaffMember } from '../../shared/contracts';
 
 const PageSize = 50;
 
@@ -220,7 +220,7 @@ function LeadPanel({
           ? 'Nobody has picked this up yet.'
           : mine
             ? 'You are chasing this one.'
-            : 'Somebody else is chasing this one.'}
+            : `${lead.assignedTo ?? 'Somebody else'} is chasing this one.`}
       </p>
 
       <div className="actions">
@@ -233,6 +233,12 @@ function LeadPanel({
             {lead.assignedToUserId === null ? 'I will chase this' : 'Take it over'}
           </button>
         )}
+
+        <HandOver
+          busy={busy}
+          exclude={lead.assignedToUserId}
+          onHandOver={(userId) => void assign(userId)}
+        />
       </div>
 
       <p className="error" aria-live="polite">
@@ -281,6 +287,89 @@ function LeadPanel({
  * holds no opinion about which move follows which — that is exactly the knowledge
  * that must not exist in two places.
  */
+/**
+ * Hand an enquiry to a named colleague.
+ *
+ * Loads the staff list on mount and renders NOTHING if the caller cannot read it
+ * — a salesperson without `Staff.Read` still has claim and release, and an empty
+ * picker sitting there would read as a broken screen rather than as a permission
+ * they do not hold. Same reasoning as the missing rooftop picker on the list.
+ */
+function HandOver({
+  busy,
+  exclude,
+  onHandOver,
+}: {
+  busy: boolean;
+  exclude: string | null;
+  onHandOver: (userId: string) => void;
+}) {
+  const [colleagues, setColleagues] = useState<StaffMember[] | null>(null);
+
+  useEffect(() => {
+    let current = true;
+
+    void (async () => {
+      try {
+        const people = await api<StaffMember[]>('/staff');
+        if (current) {
+          setColleagues(people);
+        }
+      } catch {
+        // Refused, or unreachable. Either way there is no picker to draw, and
+        // the buttons beside it still work.
+        if (current) {
+          setColleagues([]);
+        }
+      }
+    })();
+
+    return () => {
+      current = false;
+    };
+  }, []);
+
+  // Two dead ends are excluded, and only two. Somebody who cannot sign in
+  // obviously cannot chase an enquiry; somebody holding no role at all can sign
+  // in and reach nothing, so an enquiry handed to them disappears. Anything
+  // beyond that would mean guessing at permissions from here, and the server is
+  // the only party that actually knows.
+  const options = (colleagues ?? []).filter(
+    (p) => p.canSignIn && p.assignments.length > 0 && p.id !== exclude,
+  );
+
+  if (options.length === 0) {
+    return null;
+  }
+
+  return (
+    // The label is associated by id rather than by wrapping the select. A
+    // wrapping label takes its accessible name from its whole textContent, which
+    // here would be "Hand to" plus every option — so the control had no usable
+    // name, and a test querying for one silently matched nothing.
+    <div className="handover">
+      <label htmlFor="hand-to">Hand to</label>
+      <select
+        id="hand-to"
+        disabled={busy}
+        value=""
+        onChange={(event) => {
+          if (event.target.value !== '') {
+            onHandOver(event.target.value);
+          }
+        }}
+      >
+        <option value="">Choose a colleague</option>
+        {options.map((person) => (
+          <option key={person.id} value={person.id}>
+            {person.displayName}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function Moves({
   lead, busy, note, onNote, onMove,
 }: {
@@ -438,7 +527,7 @@ function LeadTable({
                   ? 'Nobody yet'
                   : me !== null && lead.assignedToUserId === me
                     ? 'You'
-                    : 'Somebody else'}
+                    : (lead.assignedTo ?? 'Somebody else')}
               </td>
               <td>
                 <span className={`chip chip--${lead.status.toLowerCase()}`}>{lead.status}</span>

@@ -85,6 +85,11 @@ public static class IdentitySeeder
             Permissions.AccountingPost,
             // The only role that may make a posted entry disappear.
             Permissions.AccountingReverse,
+            // Seeing and managing the people who work here. The manager holds it
+            // organization-wide, which is what lets them add a starter and hand
+            // out group-level access; a rooftop-scoped holder could do neither.
+            Permissions.StaffRead,
+            Permissions.StaffManage,
             // Who must hold a second factor is a management decision, so the
             // manager role is where it sits. No role is seeded as requiring one
             // — that is the dealership's call, not ours.
@@ -134,6 +139,10 @@ public static class IdentitySeeder
             Permissions.InventoryManage,
             Permissions.LeadsRead,
             Permissions.LeadsManage,
+            // Reading the staff list, not managing it. Handing an enquiry to a
+            // named colleague needs to know who the colleagues are; changing what
+            // any of them may reach is a manager's job and stays one.
+            Permissions.StaffRead,
             Permissions.DealsRead,
             Permissions.DealsWrite,
             // Delivering a car posts the sale, so a salesperson who can deliver

@@ -261,6 +261,32 @@ months of focused work.
   because "we sold 464 of service" tells a manager nothing and "180 labour, 284
   parts" is the number they run the department on
 
+### The people who work there
+
+- **You can see who works here, and what each of them can reach.** Their name,
+  their email, the roles they hold, whether they have set up two-step sign-in,
+  and whether they are working, stopped, or still waiting to set a password
+- **Adding a starter never means typing a password for them.** The account is
+  created unable to sign in, and the screen produces a one-time code you read
+  out. They set their own password with it. Nobody at the dealership ever sees or
+  chooses it — including whoever added them
+- **The code can only be shown once, and the screen says so.** Only a scrambled
+  copy is kept, so it genuinely cannot be looked up again. If it goes astray you
+  make a new one, which stops the old one working
+- **Handing an enquiry to a named colleague works.** The lead list says who is
+  chasing each one by name instead of "somebody else"
+- **Somebody who manages one location cannot hand out access everywhere.** They
+  can give somebody a role at their own lot; granting access across the whole
+  group needs group-level permission. Without that split, whoever runs one site
+  could quietly give themselves the lot
+- **Stopping a leaver takes effect immediately** — their sessions end on their
+  very next click, not whenever they would have been signed out anyway. Nothing
+  is deleted: their name still has to appear against the deals they did
+- **You can finally see the support role.** When someone from the vendor visits
+  your dealership to help, a support role is left behind in your system. Until
+  now you had no way to see it existed. It is on the roles list like everything
+  else, with exactly what it can reach spelled out
+
 ## What does not exist
 
 - **A full set of books.** Sales are recorded and accounts total up; there are no
@@ -278,14 +304,14 @@ months of focused work.
 - Photos of a vehicle, or aging reports
 - Booking a service in advance, or planning who is working on what tomorrow
 - Reports of any kind
-- **Handing an enquiry to a *named* colleague.** You can pick one up and put it
-  back in the pool, and somebody else can take it from there — but nothing in the
-  system will list your staff to choose from, because nothing lists staff at all
-  yet. That is a real screen with real privacy questions behind it, not an
-  oversight
 - A way to add a second person who runs the servers. There is one, created when
   the system is set up, and no way to add another yet — nor to get back in if
   they lose their phone
+- **Resetting a forgotten password.** A new starter sets their own with a
+  one-time code, but somebody who forgets theirs later has nowhere to go. That
+  needs a way to prove the person asking really owns the account, which is a
+  different job with different safeguards — so it is refused outright rather than
+  quietly becoming that feature
 - Creating a new dealership from the administration side. It can list them and
   take one out of service; setting a new one up is still a developer's job
 - Cancelling an import once it has started, or watching its progress while it
@@ -298,20 +324,18 @@ months of focused work.
 
 ## Next
 
-Two are ready, and they are genuinely different bets.
+**A screen for the workshop**, and then depth in that department.
 
-**A screen for the workshop.** Everything above works and nothing draws it. The
-screen that earns its place first is the advisor's list of *jobs waiting on a
-customer* — every one of those is a phone call somebody owes and an invoice that
-cannot go out until they make it.
+Everything the workshop does works and nothing draws it. The screen that earns
+its place first is the advisor's list of *jobs waiting on a customer* — every one
+of those is a phone call somebody owes and an invoice that cannot go out until
+they make it. Now that staff have names, a job can also be given to a named
+technician rather than to nobody in particular.
 
-**Staff, on a screen.** Everything built keeps running into the same wall: the
-system knows who its people are, and there is no way to see or manage them. An
-enquiry cannot be handed to a named colleague, a deal cannot say who sold it by
-name, a manager cannot add a new starter or change what somebody may reach, and
-the support role that appears in a dealership after a support visit is invisible
-to the people it was added to. Every one of those reads as a missing feature;
-they are all one missing screen.
+**After that, parts.** It is worth being blunt about why: the workshop records
+what a job *billed* and nothing about what it *cost*, so there is no figure for
+what the service department actually earned. Any real dealership will ask for
+that in the first week.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one
