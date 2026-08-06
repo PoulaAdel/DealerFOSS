@@ -1,10 +1,10 @@
 # Implementation Status
 
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
-Current milestone: **the workshop screen.** Every capability now has a screen (complete)
-Last verified: 2026-08-05 · `dotnet build` 0 warnings/0 errors, `dotnet test` 401/401,
+Current milestone: **parts as real stock.** The workshop knows what a job cost, not just what it billed (complete, with a screen)
+Last verified: 2026-08-06 · `dotnet build` 0 warnings/0 errors, `dotnet test` 428/428,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 149/149, and `npm run build` all pass
+`npm run typecheck`, `npm test` 159/159, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -106,7 +106,7 @@ them is written.
 |---|---|---|
 | *(consequence of the deployment answer below)* | Secret protection must be cross-platform | **Implemented** — AES-256-GCM envelope encryption with key ids. No re-encryption tool yet, so rotation currently means "add a key and keep the old one". |
 | May a salesperson approve their own deal? | **No.** A sales manager approves it. | **Implemented** — enforced on the entity so background callers cannot route around it, and a denial is audited. Holding `Deals.Approve` is not sufficient if it is your own deal. |
-| When does an accounting month close? | Calendar month end, fiscal year = calendar year, prior-month entries accepted until the 10th, then locked. Per organization. | **Recorded, not enforced.** Standard franchised-dealer practice chosen as the default; see `src/App/Accounting/README.md`. Wants confirmation from a real dealer's accountant. |
+| When does an accounting month close? | **Answered 2026-08-06 by the maintainer.** The **cutoff is the calendar month end** (the 30th or 31st). The close then runs over **the next few business days** — reconciling accounts, posting adjustments, reviewing statements — and the month is **locked at the end of that**. Fiscal year = calendar year. Per organization. | **Recorded, not enforced.** Supersedes the earlier assumed rule ("prior-month entries until the 10th, then locked"), which was wrong in a way that matters: **locking is an act somebody performs, not a date that passes.** The close window has no fixed length, so the model needs an accounting period with a state and an explicit Close operation — not a date comparison. See `src/App/Accounting/README.md`. |
 | Where does this deploy? | **All three:** Windows service, Linux container, and hosted. | **Acted on.** DPAPI ruled out as Windows-only; replaced with AES-256-GCM envelope encryption keyed from configuration, which every target supplies the same way (`Secrets__Keys__<id>`). `deploy/README.md` covers all three. |
 
 - **2026-07-31 — Secret protection, so this can ship at all.** Tenant connection strings are encrypted at rest with AES-256-GCM: a fresh nonce per value, an authentication tag so a tampered value fails rather than decrypting to something wrong, and a key id carried with the ciphertext so a key can be rotated without making existing data unreadable. Cross-platform, because all three deployment targets are wanted. Evidence: `dotnet test` 258/258, including a tamper test and a rotation test. **Gap named, not hidden:** nothing re-encrypts values under a new key, so rotation today means adding a key and keeping the old one; and switching an existing installation from the development pass-through needs a migration pass that does not exist.
@@ -215,6 +215,22 @@ them is written.
 
   **Deliberately not included:** a printed invoice, appointments and workshop loading, editing a line's amount once written up, and anything about parts stock — which is the next thing this department needs, because the workshop records what a job billed and nothing about what it cost.
 
+- **2026-08-06 — Parts are real stock, and service finally has a profit figure.** Until now a part on a repair order was a description and a price somebody typed. Invoicing recorded revenue and no cost, so "what did the workshop actually make" had no answer — the gap was named in `ServiceInvoicePosting`'s own remarks. It is closed: parts leave the shelf when a job is invoiced, in the same transaction as the invoice and the ledger entry, and the books carry cost of parts sales against parts inventory.
+
+  **The costing method is the manager's to choose** (maintainer's decision, 2026-08-06), defaulting to moving average, with last-cost and FIFO available. That choice forced the central design decision: **stock is held as receipt layers, always** — not as a running total plus an average. If it were, an organization that later switched to FIFO would have no delivery history to consume and would silently produce wrong costs from the day it switched. Keeping layers means all three methods read the same data, so switching is safe at any moment and needs no migration. `Every_method_reads_the_same_layers_so_switching_needs_no_migration` is the test that says so.
+
+  **Switching affects future sales only, and the screen says so out loud.** A sold line freezes its cost and the ledger is immutable, so changing the method cannot restate a month already reported on. A manager who believed otherwise would have been misled by the control, which is why that sentence is a guarded assertion rather than a nicety.
+
+  **Stock cannot go negative.** Invoicing a job for parts that are not there is refused with a message naming the part and the shortfall, and the refusal rolls the whole invoice back. A workshop that can sell parts it does not have has no stock figure at all.
+
+  **Scope follows the same shape as everything else.** A part *number* is organization-wide — it means the same component at every location, so adding to the catalogue and changing the costing method both need organization-wide permission. The *stock* is rooftop-owned, like `InventoryUnit`: two lots holding the same number hold two different piles. Booking a delivery in is checked at that rooftop.
+
+  **Two defects found by walking it, neither visible to any test.** A newly catalogued part was **invisible** — the list only emitted a row per shelf that had stock, so a new part could never be opened, and a part that cannot be opened cannot have stock booked onto it. A closed loop with no way in; the list now shows unstocked parts with a null rooftop and "Not stocked". Separately, EF warned at startup that `ServiceLine.CostAmount` and `PartQuantity` had no precision configured and **would be silently truncated** — now (18,4) and (18,3), matching the receipt they come from, because a part costing 0.0125 each is ordinary and fractions of a litre are how fluids are issued.
+
+  **Verified in a browser:** added a part typed as `mz-690 411` (stored as `MZ690411`), booked in 10 at 5.00 and 10 at 9.00, saw 20 on hand at **7.00** average with both delivery notes listed, switched to FIFO and watched the unit cost move to **5.00**, switched back. Layout measured at 375px: both tables contained, page not pushed, ten nav links. Evidence: `dotnet test` 428/428 (was 401), `npm test` 159/159 (was 149), `verify-e2e.ps1` PASS — which now books stock in, sells two, and checks the cost, the shelf, and both sides of the ledger entry on a live host. Three rehearsals, each failing exactly the tests that guard it: dropping the frozen cost (2), allowing negative stock (3), and removing the "future sales only" warning (1) *(automated)*
+
+  **Deliberately not included:** purchase orders and supplier records, stock takes and adjustments, bins and locations, superseded part numbers, returns to supplier, and any link to a manufacturer's parts catalogue. Also: a part typed by hand still bills and carries **no** cost rather than a zero — those are different things, and a zero would read as free.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -224,17 +240,18 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** parts become real stock, so the service department has a profit figure.
+**Outcome:** the month can be closed, and a closed month cannot be quietly rewritten.
 
-The stated direction is **depth in one department**, and service is now the deep one — except for the hole underneath it. A part on a repair order is a description and a price typed by hand. Nothing is reserved, ordered, counted, or costed, so **invoicing records revenue and no cost** and there is no answer to "what did the workshop actually make". Any real dealership asks that in the first week, and the ledger cannot answer it today.
+The maintainer answered the last open accounting question on 2026-08-06, which unblocks this. The ledger records entries and totals accounts; there are no periods, so nothing stops a posting landing in a month somebody has already reported on. That is the difference between a running total and a set of books.
 
-- **Included:** a part as a stocked item with a number and a cost, quantity on hand per rooftop, taking parts onto a job at cost and selling them at a price, and relieving stock when the job is invoiced — inside the same transaction as the invoice, like the sale ledger already is.
-- **Explicitly excluded:** purchase orders and supplier records, stock takes and adjustments, bins and locations, superseded part numbers, returns to supplier, and anything that talks to a manufacturer's parts catalogue.
-- **Caution:** the cost that matters is the cost **at the moment it was sold**, not today's. `JournalLine` already works this way and `DealHistory` records the amount at each change — follow that, or a supplier price rise will silently rewrite last month's profit.
-- **Caution:** parts are rooftop-owned stock, like `InventoryUnit` and unlike `Vehicle`. Two lots holding the same part number hold two different piles of it.
+- **Included:** an accounting period per organization with a state, a Close operation that locks it, refusing postings dated into a locked period, and a permissioned, audited **reopen** for a manager.
+- **Explicitly excluded:** year-end close and retained-earnings roll-up, comparative statements, budgets, and any statutory reporting format.
+- **Caution, and the thing to get right:** **locking is an act somebody performs, not a date that passes.** The cutoff is the calendar month end, but the close then runs over however many business days the work takes. Build it as a period with a state and an explicit Close; a date comparison would either lock a month somebody is still working on or leave one open because nobody's calendar said otherwise.
+- **Caution:** an adjustment posted *during* the close belongs in the month being closed — that is what the window is for. Only a *locked* period refuses.
+- **Settled 2026-08-06:** after a month is locked, a manager **may reopen it** — permissioned and audited, not silent. The alternative (refuse and post to the open month) was rejected deliberately, so the audit trail is what makes a reopened month honest. `JournalEntry` is immutable, so a reopen changes what may be *added*, never what is already there.
 - **Settled 2026-08-05:** a service advisor **may** authorize work they wrote up themselves. Not an oversight — most independents have one person doing both, and the control is that recording the customer's answer is a separate, permissioned, timestamped act. Do not "fix" it into the salesperson/approver split.
 
-**Also outstanding, and now the largest gap that is not parts:** nothing prints. A car can be delivered and a repair order invoiced, and the customer is handed nothing. That is the other thing a pilot dealership notices immediately.
+**Also outstanding, and the largest gap that is not accounting:** nothing prints. A car can be delivered and a repair order invoiced, and the customer is handed nothing. That is the other thing a pilot dealership notices immediately.
 
 **Also outstanding, and cheap:** the API refuses a write whose anti-forgery token is missing, but no screen has yet had to recover from it. `ApiError.needsSignIn` covers the case and nothing acts on it — a write that fails this way should send the person to sign in again rather than showing them a raw refusal.
 

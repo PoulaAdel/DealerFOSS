@@ -44,6 +44,27 @@ public sealed class ServiceLine
     public string? AuthorizationNote { get; private set; }
 
     /// <summary>
+    /// The catalogue part this line sells, when it is one. Null means a part
+    /// typed in by hand — still billable, still on the record, but nothing comes
+    /// off a shelf for it and it contributes no cost. Both are legitimate: a
+    /// one-off item bought for a single job never enters the catalogue.
+    /// </summary>
+    public Guid? PartId { get; private set; }
+
+    /// <summary>How many come off the shelf. Null when this line sells no stock.</summary>
+    public decimal? PartQuantity { get; private set; }
+
+    /// <summary>
+    /// What the parts on this line cost, worked out and frozen at the moment the
+    /// job was invoiced. Never recalculated — a supplier price rise must not
+    /// rewrite what last month's work cost.
+    /// </summary>
+    public decimal? CostAmount { get; private set; }
+
+    /// <summary>Whether this line sells stock that has to come off a shelf.</summary>
+    public bool DrawsFromStock => PartId is not null && PartQuantity is > 0m;
+
+    /// <summary>
     /// What this line adds to the bill. Labour multiplies out; everything else is
     /// its own amount. A declined line is worth nothing, which is what keeps it
     /// visible on the record without reaching the total.
@@ -68,11 +89,26 @@ public sealed class ServiceLine
         decimal unitAmount,
         LineAuthorization authorization,
         DateTimeOffset? authorizedAt,
-        Guid? authorizedByUserId)
+        Guid? authorizedByUserId,
+        Guid? partId = null,
+        decimal? partQuantity = null)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
             throw new ArgumentException("A line needs a description.", nameof(description));
+        }
+
+        if (partId is not null && kind != ServiceLineKind.Part)
+        {
+            throw new ArgumentException(
+                "Only a Part line can draw from stock — labour and sublet work have no shelf.",
+                nameof(partId));
+        }
+
+        if (partId is not null && partQuantity is null or <= 0m)
+        {
+            throw new ArgumentException(
+                "A line that draws from stock needs a quantity.", nameof(partQuantity));
         }
 
         if (kind == ServiceLineKind.Labour)
@@ -105,6 +141,23 @@ public sealed class ServiceLine
         Authorization = authorization;
         AuthorizedAt = authorizedAt;
         AuthorizedByUserId = authorizedByUserId;
+        PartId = partId;
+        PartQuantity = partId is null ? null : partQuantity;
+    }
+
+    /// <summary>
+    /// Freezes what the parts on this line cost. Called once, while invoicing,
+    /// with the figure the costing method produced at that moment. Deliberately
+    /// has no way to be called again — see CostAmount.
+    /// </summary>
+    internal void RecordCost(decimal cost)
+    {
+        if (CostAmount is not null)
+        {
+            throw new InvalidOperationException("This line already has a cost recorded against it.");
+        }
+
+        CostAmount = cost;
     }
 
     /// <summary>

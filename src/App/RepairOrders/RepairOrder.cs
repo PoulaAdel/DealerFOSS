@@ -167,7 +167,9 @@ public sealed class RepairOrder : AuditableEntity
         decimal? rate,
         decimal unitAmount,
         DateTimeOffset addedAt,
-        Guid? addedByUserId)
+        Guid? addedByUserId,
+        Guid? partId = null,
+        decimal? partQuantity = null)
     {
         EnsureLinesAreOpen();
 
@@ -183,7 +185,9 @@ public sealed class RepairOrder : AuditableEntity
             unitAmount,
             authorizedOnArrival ? LineAuthorization.Authorized : LineAuthorization.Pending,
             authorizedOnArrival ? addedAt : null,
-            authorizedOnArrival ? addedByUserId : null);
+            authorizedOnArrival ? addedByUserId : null,
+            partId,
+            partQuantity);
 
         _lines.Add(line);
         return line;

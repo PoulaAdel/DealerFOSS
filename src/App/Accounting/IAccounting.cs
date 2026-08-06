@@ -77,10 +77,18 @@ public sealed record DeliveryPosting(
 /// terms so the caller does not need to know which accounts move.
 /// </summary>
 /// <remarks>
-/// There is no cost side here, and that is deliberate rather than forgotten.
-/// Relieving parts at cost needs a parts inventory, and there is not one — so
-/// service revenue posts, and gross profit on service does not exist yet. Naming
-/// the gap is better than inventing a cost figure the books would then carry.
+/// <para>
+/// <c>PartsCost</c> closed the gap this remark used to name. Until parts were
+/// real stock there was no honest cost figure, so service revenue posted and
+/// gross profit on service did not exist. It does now: the cost is worked out by
+/// the organization's chosen costing method at the moment of invoicing, and
+/// frozen on the line.
+/// </para>
+/// <para>
+/// Zero is a legitimate value and means something specific — nothing on this job
+/// came off a shelf. A workshop selling only labour genuinely has no parts cost,
+/// which is not the same as having an unknown one.
+/// </para>
 /// </remarks>
 public sealed record ServiceInvoicePosting(
     RooftopId RooftopId,
@@ -90,6 +98,7 @@ public sealed record ServiceInvoicePosting(
     decimal Parts,
     decimal Sublet,
     decimal AmountDue,
+    decimal PartsCost,
     string Memo);
 
 public sealed record AccountView(Guid Id, string Code, string Name, string Kind);

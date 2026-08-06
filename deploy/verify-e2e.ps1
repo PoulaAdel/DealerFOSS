@@ -243,10 +243,19 @@ try {
     # POSTs JSON and returns the parsed response, for the steps that need the
     # created record's id rather than just its status code.
     function Invoke-Api([string]$path, $session, $body) {
-        return Invoke-RestMethod "$baseUrl$path" -Method Post `
-            -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" `
-            -Headers @{ "X-Tenant" = "northgroup"; "X-CSRF-Token" = $session.Csrf } `
-            -WebSession $session
+        try {
+            return Invoke-RestMethod "$baseUrl$path" -Method Post `
+                -Body ($body | ConvertTo-Json -Depth 5) -ContentType "application/json" `
+                -Headers @{ "X-Tenant" = "northgroup"; "X-CSRF-Token" = $session.Csrf } `
+                -WebSession $session
+        }
+        catch {
+            # Without the path, a failure here reads as "something POSTed
+            # somewhere returned 405", which is no help at all in a script this
+            # long.
+            $code = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { "no response" }
+            throw "POST $path failed with $code. $($_.Exception.Message)"
+        }
     }
 
     function Get-Org([string]$tenant, $session) {
@@ -492,6 +501,74 @@ try {
     "posted as labour {0} and parts {1}   (expect 180 and 284)" -f $labour, $parts
     $serviceBalanced = ($serviceEntry.totalDebits -eq $serviceEntry.totalCredits)
     "service entry debits {0} vs credits {1} (expect equal)" -f $serviceEntry.totalDebits, $serviceEntry.totalCredits
+
+    Write-Host "`n--- parts: the workshop knows what the job cost, not just what it billed ---" -ForegroundColor Cyan
+
+    # Two deliveries at different prices, so the costing methods genuinely
+    # disagree and the setting is doing something.
+    $partNumber = "VE" + [Guid]::NewGuid().ToString("N").Substring(0, 10)
+    $part = Invoke-Api "/api/v1/parts" $orgWide @{ partNumber = $partNumber; description = "Front brake pad set" }
+    $null = Invoke-Api "/api/v1/parts/$($part.id)/receipts" $orgWide @{
+        quantity = 10; unitCost = 5; rooftopId = $firstRooftopId; reference = "DN-1001"
+    }
+    $null = Invoke-Api "/api/v1/parts/$($part.id)/receipts" $orgWide @{
+        quantity = 10; unitCost = 9; rooftopId = $firstRooftopId; reference = "DN-1002"
+    }
+    $stocked = Invoke-RestMethod "$baseUrl/api/v1/parts/$($part.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $shelf = @($stocked.stock)[0]
+    "booked in 20, average cost {0}         (expect 7)" -f $shelf.unitCost
+
+    # A job that sells two of them. This is the whole point: before parts were
+    # real stock, invoicing recorded revenue and no cost at all.
+    $partsJob = Invoke-Api "/api/v1/repair-orders" $orgWide @{
+        rooftopId = $firstRooftopId; customerId = $customer.id; vehicleId = $vehicle.id
+        complaint = "Brakes."; currency = "USD"
+    }
+    $null = Invoke-Api "/api/v1/repair-orders/$($partsJob.id)/lines" $orgWide @{
+        kind = "Part"; description = "Front brake pad set"; unitAmount = 90
+        partId = $part.id; partQuantity = 2
+    }
+    $null = Invoke-Api "/api/v1/repair-orders/$($partsJob.id)/status" $orgWide @{ status = "InProgress" }
+    $null = Invoke-Api "/api/v1/repair-orders/$($partsJob.id)/status" $orgWide @{ status = "Completed" }
+    $partsInvoiced = Invoke-Api "/api/v1/repair-orders/$($partsJob.id)/status" $orgWide @{ status = "Invoiced" }
+
+    $soldLine = @($partsInvoiced.lines | Where-Object { $null -ne $_.partId })[0]
+    "sold 2, cost recorded {0}             (expect 14)" -f $soldLine.cost
+
+    $afterSale = Invoke-RestMethod "$baseUrl/api/v1/parts/$($part.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    "stock left on the shelf {0}            (expect 18)" -f (@($afterSale.stock)[0].quantityOnHand)
+
+    # And the books carry it: cost of parts sales debited, parts inventory
+    # credited. That pair is what turns revenue into a profit figure.
+    $partsEntries = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($partsJob.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $partsEntry = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal/$(@($partsEntries)[0].id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $cogs = (@($partsEntry.lines | Where-Object { $_.accountCode -eq "5300" }) | Measure-Object -Property debit -Sum).Sum
+    $shelfCredit = (@($partsEntry.lines | Where-Object { $_.accountCode -eq "1400" }) | Measure-Object -Property credit -Sum).Sum
+    "posted cost {0}, off the shelf {1}     (expect 14 and 14)" -f $cogs, $shelfCredit
+    $partsBalanced = ($partsEntry.totalDebits -eq $partsEntry.totalCredits)
+    "parts entry debits {0} vs credits {1} (expect equal)" -f $partsEntry.totalDebits, $partsEntry.totalCredits
+
+    # Selling what is not there is refused rather than going negative.
+    $shortJob = Invoke-Api "/api/v1/repair-orders" $orgWide @{
+        rooftopId = $firstRooftopId; customerId = $customer.id; vehicleId = $vehicle.id
+        complaint = "More brakes."; currency = "USD"
+    }
+    $null = Invoke-Api "/api/v1/repair-orders/$($shortJob.id)/lines" $orgWide @{
+        kind = "Part"; description = "Front brake pad set"; unitAmount = 90
+        partId = $part.id; partQuantity = 500
+    }
+    $null = Invoke-Api "/api/v1/repair-orders/$($shortJob.id)/status" $orgWide @{ status = "InProgress" }
+    $null = Invoke-Api "/api/v1/repair-orders/$($shortJob.id)/status" $orgWide @{ status = "Completed" }
+    $shortStatus = Get-Status "/api/v1/repair-orders/$($shortJob.id)/status" "northgroup" $orgWide "Post" @{ status = "Invoiced" }
+    "invoicing 500 of a part we have 18 of -> HTTP $shortStatus (expect 409)"
+
+    # How the group values its stock is not a decision one lot makes.
+    $scopedCosting = Get-Status "/api/v1/parts/costing" "northgroup" $scoped "Post" @{ method = "Fifo" }
+    "one-lot user changes costing method   -> HTTP $scopedCosting (expect 403)"
 
     $siblingJob = Invoke-Api "/api/v1/repair-orders" $orgWide @{
         rooftopId = $siblingId; customerId = $customer.id; vehicleId = $vehicle.id
@@ -810,10 +887,14 @@ try {
         -and ($salesReverse -eq 403) `
         -and ($pending.Count -eq 1) -and ($billTooSoon -eq 409) -and ($techAuthorises -eq 403) `
         -and ($invoiced.amountDue -eq 464) -and ($labour -eq 180) -and ($parts -eq 284) `
-        -and $serviceBalanced -and ($siblingJobStatus -eq 403)
+        -and $serviceBalanced -and ($siblingJobStatus -eq 403) `
+        -and ($shelf.unitCost -eq 7) -and ($soldLine.cost -eq 14) `
+        -and ((@($afterSale.stock)[0].quantityOnHand) -eq 18) `
+        -and ($cogs -eq 14) -and ($shelfCredit -eq 14) -and $partsBalanced `
+        -and ($shortStatus -eq 409) -and ($scopedCosting -eq 403)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, work nobody agreed to is not billed, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, and the ledger balances." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, work nobody agreed to is not billed, parts leave the shelf at cost so service has a profit figure, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

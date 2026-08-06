@@ -278,6 +278,29 @@ months of focused work.
   532 of service" tells a manager nothing
 - **A job can be given to a named technician**
 
+### Parts, and what the workshop actually earns
+
+- **A part is real stock now.** It has a number, a description, and a count on
+  each location's shelf — and the number is matched however anybody types it, so
+  `MZ-690411`, `mz690411` and `MZ 690 411` are the same component rather than
+  three catalogue entries
+- **The workshop finally has a profit figure.** Until now a job recorded what it
+  billed and nothing about what it cost. Selling a part takes it off the shelf at
+  cost, and the books carry that cost — which is the difference between "we
+  invoiced 532" and "we made X on it"
+- **You choose how parts are valued**, and can change it whenever you like:
+  average cost of what is on the shelf (the default), the last price you paid, or
+  oldest-stock-first. The screen explains each one in a sentence
+- **Changing it only affects future sales**, and says so. Work already invoiced
+  keeps the cost it was sold at — nothing you have already reported on can move
+  underneath you
+- **You can see why a part costs what it does.** Every delivery still on the
+  shelf is listed with its date, its delivery note and its price. The average is
+  not a number you have to take on trust
+- **You cannot sell parts you do not have.** Invoicing a job for stock that is
+  not there is refused, and the refusal names the part and how many are actually
+  on the shelf, so somebody goes and books the delivery in
+
 ### The people who work there
 
 - **You can see who works here, and what each of them can reach.** Their name,
@@ -308,11 +331,10 @@ months of focused work.
 
 - **A full set of books.** Sales are recorded and accounts total up; there are no
   accounting periods and no month-end close yet
-- **Parts as stock.** A part on a repair order is a description and a price.
-  Nothing is reserved, ordered, or counted — so the workshop's *income* is
-  recorded and what the parts cost you is not, which means there is no profit
-  figure for service yet. That gap is deliberate: a made-up cost would be worse
-  than an honest blank
+- **Ordering parts.** You can book a delivery in and sell from the shelf, but
+  there are no purchase orders, no supplier records, no stock takes, and no
+  returns to a supplier. Counting the shelf and correcting it is still a job for
+  a spreadsheet
 - **A screen for the workshop.** All of the above works, and nothing draws it yet
 - Finance applications, lenders, or F&I products
 - Taxes and registration fees calculated by jurisdiction
@@ -341,14 +363,14 @@ months of focused work.
 
 ## Next
 
-**Parts, as real stock.**
+**Closing the month.**
 
-Worth being blunt about why. The workshop records what a job *billed* and nothing
-about what it *cost* — a part is a description and a price somebody types. So
-there is no figure for what the service department actually earned, and no
-honest answer to the first question a dealer principal asks about their
-workshop. Everything else in service is now built and on screen; this is the
-floor missing underneath it.
+Your answer on the month-end rule unblocked this. Sales and service are recorded
+and the accounts add up, but nothing stops an entry landing in a month you have
+already reported on — which is the difference between a running total and a set
+of books. So: a month gets closed on purpose, a closed month refuses new
+postings, and a manager can reopen one when something genuinely turns up late,
+with that reopening written into the record.
 
 **After that, printing.** A car can be delivered and a repair order invoiced, and
 the customer is handed nothing at all. That is the other thing a real dealership
@@ -366,5 +388,5 @@ would prove nothing.
 |---|---|
 | **Pointing a phone at the setup page** | Everything else about the screens has now been checked on a real browser. The one thing left is physical: does a phone camera actually read that square? |
 | Pilot dealerships and access to their current systems | Stage 2 cannot be finished or proven without real data and a real provider connection |
-| Confirming the month-end rule with a real dealer's accountant | Calendar month end with a grace period to the 10th is assumed, not confirmed |
+| ~~Confirming the month-end rule~~ | **Answered 6 Aug.** Cutoff is the calendar month end; the close runs over the next few business days and the month is locked at the end of it. Now recorded and no longer blocking |
 | Deciding where backups are kept | The scripts write `.bak` files onto this machine and stop there. **Each one holds every customer record in plain form** — copying them somewhere safe, and encrypting them, is a decision about your customers' data that I should not make for you |

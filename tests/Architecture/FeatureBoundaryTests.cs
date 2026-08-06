@@ -44,6 +44,12 @@ public sealed class FeatureBoundaryTests
         { "DealerFOSS.Leads", ["DealerFOSS.Customers.Customer", "DealerFOSS.Customers.ContactPoint", "DealerFOSS.Vehicles.Vehicle", "DealerFOSS.Inventory.InventoryUnit"] },
         { "DealerFOSS.Deals", ["DealerFOSS.Customers.Customer", "DealerFOSS.Customers.ContactPoint", "DealerFOSS.Vehicles.Vehicle", "DealerFOSS.Inventory.InventoryUnit", "DealerFOSS.Inventory.InventoryStatusChange", "DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.Account"] },
         { "DealerFOSS.Accounting", ["DealerFOSS.Organization.Rooftop", "DealerFOSS.Organization.LegalEntity", "DealerFOSS.Organization.DealerOrganization"] },
+        // RepairOrders asks IParts what a job's parts cost and takes them off the
+        // shelf. It must never touch the stock itself — a capability that could
+        // edit another's layers could quietly change what last month cost.
+        { "DealerFOSS.RepairOrders", ["DealerFOSS.Parts.Part", "DealerFOSS.Parts.StockReceipt", "DealerFOSS.Parts.PartsSettings", "DealerFOSS.Customers.Customer", "DealerFOSS.Vehicles.Vehicle"] },
+        // And the reverse: Parts knows about shelves and costs, not about jobs.
+        { "DealerFOSS.Parts", ["DealerFOSS.RepairOrders.RepairOrder", "DealerFOSS.RepairOrders.ServiceLine", "DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.Account"] },
     };
 
     [Theory]

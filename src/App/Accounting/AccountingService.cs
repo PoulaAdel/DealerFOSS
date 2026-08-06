@@ -533,6 +533,15 @@ public sealed class AccountingService(
         Line(AccountCodes.PartsRevenue, 0m, invoice.Parts, "Parts sold");
         Line(AccountCodes.SubletRevenue, 0m, invoice.Sublet, "Sublet work");
 
+        // The cost side, and the reason service now has a gross profit figure.
+        // These two are equal and opposite, so they balance on their own and
+        // cannot change whether the entry balances overall — the value simply
+        // moves off the shelf and into cost of sales. Zero means nothing on the
+        // job came off a shelf, and Line() skips it rather than posting a pair of
+        // noughts.
+        Line(AccountCodes.CostOfPartsSales, invoice.PartsCost, 0m, "Parts used, at cost");
+        Line(AccountCodes.PartsInventory, 0m, invoice.PartsCost, "Off the shelf");
+
         return lines;
     }
 
@@ -546,6 +555,7 @@ public sealed class AccountingService(
             AccountCodes.VehicleSalesRevenue, AccountCodes.FeeRevenue,
             AccountCodes.SalesDiscounts, AccountCodes.CostOfVehicleSales,
             AccountCodes.LabourRevenue, AccountCodes.PartsRevenue, AccountCodes.SubletRevenue,
+            AccountCodes.PartsInventory, AccountCodes.CostOfPartsSales,
         ];
 
         var missing = required.Where(code => !accounts.ContainsKey(code)).ToList();

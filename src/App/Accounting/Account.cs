@@ -77,7 +77,7 @@ public static class AccountCodes
     /// <summary>Time sold in the workshop.</summary>
     public const string LabourRevenue = "4200";
 
-    /// <summary>Parts sold on a repair order. Not parts held in stock — there are none yet.</summary>
+    /// <summary>Parts sold on a repair order.</summary>
     public const string PartsRevenue = "4300";
 
     /// <summary>Work sent out to another business and billed on.</summary>
@@ -85,4 +85,18 @@ public static class AccountCodes
 
     public const string SalesDiscounts = "4900";
     public const string CostOfVehicleSales = "5000";
+
+    /// <summary>
+    /// What the parts sold on a repair order cost. Paired with
+    /// <see cref="PartsInventory"/>: selling a part moves its value off the shelf
+    /// and into cost of sales, which is what turns service revenue into a service
+    /// profit figure.
+    /// </summary>
+    public const string CostOfPartsSales = "5300";
+
+    /// <summary>
+    /// The value of parts sitting on the shelf. An asset, like vehicle stock —
+    /// the dealership owns it until it is sold.
+    /// </summary>
+    public const string PartsInventory = "1400";
 }

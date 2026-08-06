@@ -96,8 +96,22 @@ internal sealed class ServiceLineConfiguration : IEntityTypeConfiguration<Servic
         builder.Property(x => x.Authorization).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.AuthorizationNote).HasMaxLength(1000);
 
+        // Three decimals on the quantity, matching StockReceipt: fluids and
+        // consumables are issued in fractions of a litre, and the default
+        // precision would silently truncate them — EF says so at startup, which
+        // is how this was caught.
+        builder.Property(x => x.PartQuantity).HasPrecision(18, 3);
+
+        // Four on the cost, also matching the receipt it came from. A part
+        // costing 0.0125 each is ordinary in a parts department, and rounding it
+        // on the way in would make the profit figure wrong by a little, forever.
+        builder.Property(x => x.CostAmount).HasPrecision(18, 4);
+
+        builder.HasIndex(x => x.PartId);
+
         // Derived from hours, rate, and whether the customer said yes.
         builder.Ignore(x => x.Amount);
+        builder.Ignore(x => x.DrawsFromStock);
 
         builder.HasIndex(x => x.RepairOrderId);
 

@@ -24,6 +24,7 @@ using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.Identity;
 using DealerFOSS.Data;
+using DealerFOSS.Parts;
 using DealerFOSS.Vehicles;
 
 namespace DealerFOSS.RepairOrders;
@@ -34,6 +35,7 @@ public sealed class RepairOrderService(
     ICustomers customers,
     IVehicles vehicles,
     IAccounting accounting,
+    IParts parts,
     ICurrentUser currentUser,
     IAuditSink audit,
     IClock clock)
@@ -53,6 +55,7 @@ public sealed class RepairOrderService(
     private readonly ICustomers _customers = customers;
     private readonly IVehicles _vehicles = vehicles;
     private readonly IAccounting _accounting = accounting;
+    private readonly IParts _parts = parts;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
@@ -274,7 +277,7 @@ public sealed class RepairOrderService(
         {
             order.AddLine(
                 kind, line.Description, line.Hours, line.Rate, line.UnitAmount,
-                _clock.UtcNow, _currentUser.Id);
+                _clock.UtcNow, _currentUser.Id, line.PartId, line.PartQuantity);
         }
         catch (ArgumentException ex)
         {
@@ -454,8 +457,42 @@ public sealed class RepairOrderService(
         // whether the customer was billed.
         if (next == RepairOrderStatus.Invoiced)
         {
+            // Stock comes off the shelf here, not when the part was written up.
+            // A job can be built and cancelled; only invoicing is the moment the
+            // part is definitely gone — and it is also the moment whose cost the
+            // books should carry. IParts does not save; this method's
+            // SaveChanges commits the stock movement with the invoice and the
+            // ledger entry, so the three cannot disagree.
+            var issued = await _parts.IssueAsync(
+                order.Lines
+                    .Where(l => l.DrawsFromStock && l.Authorization != LineAuthorization.Declined)
+                    .Select(l => new PartIssue(l.PartId!.Value, l.PartQuantity!.Value))
+                    .ToList(),
+                order.RooftopId,
+                cancellationToken);
+
+            if (issued.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<RepairOrderDetail>(issued.Error);
+            }
+
+            // Frozen per line, so a later price change cannot rewrite it.
+            foreach (var line in order.Lines.Where(l => l.DrawsFromStock))
+            {
+                var cost = issued.Value.Parts
+                    .Where(p => p.PartId == line.PartId!.Value)
+                    .Select(p => (decimal?)p.Cost)
+                    .FirstOrDefault();
+
+                if (cost is not null && line.CostAmount is null)
+                {
+                    line.RecordCost(cost.Value);
+                }
+            }
+
             var posted = await _accounting.PostServiceInvoiceAsync(
-                BuildPosting(order), cancellationToken);
+                BuildPosting(order, issued.Value.TotalCost), cancellationToken);
 
             if (posted.IsFailure)
             {
@@ -490,7 +527,7 @@ public sealed class RepairOrderService(
     /// know what a service line is and RepairOrders never has to know what an
     /// account is.
     /// </summary>
-    private static ServiceInvoicePosting BuildPosting(RepairOrder order) =>
+    private static ServiceInvoicePosting BuildPosting(RepairOrder order, decimal partsCost) =>
         new(
             order.RooftopId,
             order.Id.ToString(),
@@ -499,6 +536,10 @@ public sealed class RepairOrderService(
             Parts: order.PartsTotal.Amount,
             Sublet: order.SubletTotal.Amount,
             AmountDue: order.AmountDue.Amount,
+            // Zero when nothing on the job came off a shelf — a workshop selling
+            // only labour has no parts cost, which is different from having an
+            // unknown one.
+            PartsCost: partsCost,
             Memo: $"Service invoice {order.Number}");
 
     /// <summary>
@@ -636,7 +677,10 @@ public sealed class RepairOrderService(
                     l.Authorization.ToString(),
                     l.AuthorizedAt,
                     l.AuthorizedByUserId,
-                    l.AuthorizationNote))
+                    l.AuthorizationNote,
+                    l.PartId,
+                    l.PartQuantity,
+                    l.CostAmount))
                 .ToList(),
             history
                 .OrderBy(h => h.OccurredAt)

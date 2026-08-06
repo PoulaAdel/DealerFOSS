@@ -24,6 +24,7 @@ using DealerFOSS.Identity;
 using DealerFOSS.Inventory;
 using DealerFOSS.Leads;
 using DealerFOSS.Organization;
+using DealerFOSS.Parts;
 using DealerFOSS.Tenancy;
 using DealerFOSS.Vehicles;
 using OpenTelemetry.Metrics;
@@ -83,6 +84,7 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IInventory, InventoryService>();
     builder.Services.AddScoped<ILeads, LeadService>();
     builder.Services.AddScoped<IDeals, DealService>();
+    builder.Services.AddScoped<IParts, PartsService>();
     builder.Services.AddScoped<IRepairOrders, RepairOrderService>();
     builder.Services.AddScoped<IAccounting, AccountingService>();
     builder.Services.AddScoped<IMigration, MigrationService>();
@@ -212,6 +214,7 @@ if (tenancyEnabled)
     app.MapInventory();
     app.MapLeads();
     app.MapDeals();
+    app.MapParts();
     app.MapRepairOrders();
     app.MapStaff();
     app.MapAccounting();

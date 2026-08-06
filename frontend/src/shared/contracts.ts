@@ -150,6 +150,58 @@ export interface LeadHistoryEntry {
  * figure the detail does not. Pretending one is the other would put a `daysOpen`
  * in the type that is never in the payload.
  */
+export type PartsCostingMethod = 'MovingAverage' | 'LastCost' | 'Fifo';
+
+/** The current method and every method available, both from the server. */
+export interface PartsCostingSetting {
+  method: PartsCostingMethod;
+  options: PartsCostingOption[];
+}
+
+export interface PartsCostingOption {
+  method: PartsCostingMethod;
+  name: string;
+  explanation: string;
+}
+
+export interface PartSummary {
+  id: string;
+  partNumber: string;
+  description: string;
+  /** Null when the part has never been stocked anywhere the caller can see. */
+  rooftopId: string | null;
+  quantityOnHand: number;
+  /** What one would cost to sell now under the current method. A forecast, not a commitment. */
+  unitCost: number;
+  currency: string;
+}
+
+export interface PartDetail {
+  id: string;
+  partNumber: string;
+  description: string;
+  costingMethod: PartsCostingMethod;
+  stock: PartStockAtRooftop[];
+}
+
+export interface PartStockAtRooftop {
+  rooftopId: string;
+  quantityOnHand: number;
+  unitCost: number;
+  currency: string;
+  layers: StockLayerView[];
+}
+
+/** One delivery still on the shelf — the honest answer to "why does this cost that?". */
+export interface StockLayerView {
+  id: string;
+  quantityReceived: number;
+  remainingQuantity: number;
+  unitCost: number;
+  receivedAt: string;
+  reference: string | null;
+}
+
 export type RepairOrderStatus = 'Booked' | 'InProgress' | 'Completed' | 'Invoiced' | 'Cancelled';
 
 export type ServiceLineKind = 'Labour' | 'Part' | 'Sublet';

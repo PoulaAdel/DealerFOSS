@@ -144,7 +144,18 @@ public sealed record ServiceLineView(
     string Authorization,
     DateTimeOffset? AuthorizedAt,
     Guid? AuthorizedByUserId,
-    string? AuthorizationNote);
+    string? AuthorizationNote,
+
+    /// <summary>The catalogue part sold, when this line draws from stock.</summary>
+    Guid? PartId,
+    decimal? PartQuantity,
+
+    /// <summary>
+    /// What the parts on this line cost, frozen at invoicing. Null until the job
+    /// is invoiced, and null forever on a line that sells no stock — those are
+    /// different things and the screen should not conflate them.
+    /// </summary>
+    decimal? Cost);
 
 public sealed record RepairOrderHistoryEntry(
     string? FromStatus,
@@ -168,7 +179,16 @@ public sealed record NewServiceLine(
     string Description,
     decimal? Hours = null,
     decimal? Rate = null,
-    decimal UnitAmount = 0m);
+    decimal UnitAmount = 0m,
+
+    /// <summary>
+    /// The catalogue part this line sells, when it is one. Leaving it null is a
+    /// legitimate choice, not a shortcut — a one-off item bought for a single job
+    /// never enters the catalogue, and it still has to be billable. What it does
+    /// mean is that nothing comes off a shelf and the line carries no cost.
+    /// </summary>
+    Guid? PartId = null,
+    decimal? PartQuantity = null);
 
 /// <summary>
 /// What the customer said. <paramref name="Note"/> is how it was obtained —

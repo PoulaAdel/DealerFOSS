@@ -84,6 +84,17 @@ public static class Permissions
     /// </summary>
     public const string AccountingReverse = "Accounting.Reverse";
 
+    /// <summary>Seeing the parts catalogue and what is on the shelf.</summary>
+    public const string PartsRead = "Parts.Read";
+
+    /// <summary>
+    /// Booking stock in, and — organization-wide only — adding a part to the
+    /// catalogue or changing how parts are costed. A part number means the same
+    /// thing at every location, and how the group values its stock is not a
+    /// decision one lot makes.
+    /// </summary>
+    public const string PartsManage = "Parts.Manage";
+
     /// <summary>
     /// Seeing who works here and what they may reach. Held per rooftop, or
     /// organization-wide: a one-lot manager sees the people whose access touches
@@ -154,6 +165,8 @@ public static class Permissions
         AccountingReverse,
         StaffRead,
         StaffManage,
+        PartsRead,
+        PartsManage,
     ];
 }
 

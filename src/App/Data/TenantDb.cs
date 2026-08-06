@@ -20,6 +20,7 @@ using DealerFOSS.Deals;
 using DealerFOSS.Inventory;
 using DealerFOSS.Leads;
 using DealerFOSS.Organization;
+using DealerFOSS.Parts;
 using DealerFOSS.RepairOrders;
 using DealerFOSS.Vehicles;
 
@@ -67,6 +68,12 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
     public DbSet<ServiceLine> ServiceLines => Set<ServiceLine>();
 
     public DbSet<RepairOrderStatusChange> RepairOrderHistory => Set<RepairOrderStatusChange>();
+
+    public DbSet<Part> Parts => Set<Part>();
+
+    public DbSet<StockReceipt> StockReceipts => Set<StockReceipt>();
+
+    public DbSet<PartsSettings> PartsSettings => Set<PartsSettings>();
 
     public DbSet<Account> Accounts => Set<Account>();
 

@@ -83,23 +83,31 @@ roles express rather than the code.
 
 ## The closing period, decided but not yet enforced
 
-The maintainer had no strong preference here, so the default is standard
-franchised-dealer practice:
+**Answered by the maintainer, 2026-08-06.** This supersedes an earlier assumed
+rule, and the difference is not cosmetic — see the warning below.
 
-- **Close monthly, on the calendar month end.** Dealerships close hard and fast
-  because manufacturers want a financial statement within roughly the first ten
-  days of the following month.
+- **The cutoff is the calendar month end**, the 30th or the 31st. That is the
+  line transactions fall on one side or the other of.
+- **The close then runs over the next few business days.** Accounts are
+  reconciled, adjustments posted, statements reviewed — and only then is the
+  month locked.
 - **Fiscal year is the calendar year.**
-- **A grace window** — prior-month entries may post until the 10th of the
-  following month, after which the period locks and a correction has to be made
-  in the open period instead.
 - **Per organization**, because a group with several franchises may be pushed to
   a different rhythm by a manufacturer.
 
-> This is general industry practice written down as a starting point, not advice
-> checked against any specific franchise agreement. It should be confirmed with a
-> dealer's own accountant before a pilot, and it is deliberately configuration
-> rather than a constant so that confirming it is cheap.
+> **Locking is an act somebody performs, not a date that passes.** The earlier
+> version of this note said prior-month entries were accepted "until the 10th,
+> then locked", which would have been built as a date comparison — and that is
+> the wrong shape. The close window has no fixed length: it is however long the
+> work takes. So the model is an **accounting period with a state** and an
+> explicit Close operation, not a rule about dates. Getting this backwards would
+> have meant either locking a month somebody was still working on, or leaving one
+> open because nobody's calendar said otherwise.
+
+An adjustment posted **during** the close is ordinary and belongs in the month
+being closed — that is what the window is for. What happens to a transaction
+dated inside a month that is **already locked** is a separate policy decision and
+is not yet settled.
 
 **None of this is enforced yet.** Nothing currently stops an entry posting into a
 month somebody already reported on. The decision is recorded here so the period

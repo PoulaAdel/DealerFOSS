@@ -90,6 +90,11 @@ public static class IdentitySeeder
             // out group-level access; a rooftop-scoped holder could do neither.
             Permissions.StaffRead,
             Permissions.StaffManage,
+            // The manager holds these organization-wide, which is what lets them
+            // add to the catalogue and set the costing method. A rooftop-scoped
+            // holder can book stock in and nothing else.
+            Permissions.PartsRead,
+            Permissions.PartsManage,
             // Who must hold a second factor is a management decision, so the
             // manager role is where it sits. No role is seeded as requiring one
             // — that is the dealership's call, not ours.
@@ -121,6 +126,12 @@ public static class IdentitySeeder
             Permissions.ServiceRead,
             Permissions.ServiceWrite,
             Permissions.ServiceAuthorize,
+            // Reading the catalogue, so a part can be picked off the shelf rather
+            // than typed as free text. Booking stock IN is deliberately not here:
+            // that is the parts department's job, and there is no parts role yet,
+            // so it stays with the manager rather than being handed to whoever is
+            // nearest.
+            Permissions.PartsRead,
             // Invoicing a job posts it, so an advisor who can invoice must be
             // able to post. Reversing is still a manager's job.
             Permissions.AccountingPost,
@@ -168,6 +179,11 @@ public static class IdentitySeeder
             Permissions.CustomersRead,
             Permissions.ServiceRead,
             Permissions.ServiceWrite,
+            // Writing up work means naming the part that is needed, so the
+            // catalogue has to be readable. Still no Service.Authorize — a
+            // technician finds work, somebody else records that the customer
+            // agreed to pay for it.
+            Permissions.PartsRead,
         ]);
 
         // Accounts are reconciled one at a time rather than all-or-nothing, for the
