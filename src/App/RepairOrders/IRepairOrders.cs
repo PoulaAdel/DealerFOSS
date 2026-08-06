@@ -114,6 +114,13 @@ public sealed record RepairOrderDetail(
     decimal AmountDue,
     Guid? AdvisorUserId,
     Guid? TechnicianUserId,
+
+    /// <summary>
+    /// When the car came in. On the summary already; it belongs here too, because
+    /// "how long has this been sitting here" is the first thing anybody asks when
+    /// they open a job.
+    /// </summary>
+    DateTimeOffset OpenedAt,
     DateTimeOffset? InvoicedAt,
 
     /// <summary>Whether the work may still be edited.</summary>

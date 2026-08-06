@@ -150,6 +150,83 @@ export interface LeadHistoryEntry {
  * figure the detail does not. Pretending one is the other would put a `daysOpen`
  * in the type that is never in the payload.
  */
+export type RepairOrderStatus = 'Booked' | 'InProgress' | 'Completed' | 'Invoiced' | 'Cancelled';
+
+export type ServiceLineKind = 'Labour' | 'Part' | 'Sublet';
+
+/** Whether the customer has agreed to pay. Pending is what blocks an invoice. */
+export type LineAuthorization = 'Pending' | 'Authorized' | 'Declined';
+
+export interface RepairOrderSummary {
+  id: string;
+  rooftopId: string;
+  number: string;
+  status: RepairOrderStatus;
+  customerId: string;
+  customerName: string;
+  vehicleId: string;
+  vehicle: string;
+  complaint: string;
+  amountDue: number;
+  currency: string;
+  advisorUserId: string | null;
+  technicianUserId: string | null;
+  /** Phone calls the advisor owes. Every one of them blocks an invoice. */
+  linesAwaitingAnswer: number;
+  openedAt: string;
+}
+
+export interface ServiceLineView {
+  id: string;
+  kind: ServiceLineKind;
+  description: string;
+  hours: number | null;
+  rate: number | null;
+  amount: number;
+  authorization: LineAuthorization;
+  authorizedAt: string | null;
+  authorizedByUserId: string | null;
+  /** How the answer was obtained — the part that matters if it is questioned. */
+  authorizationNote: string | null;
+}
+
+export interface RepairOrderHistoryEntry {
+  fromStatus: RepairOrderStatus | null;
+  toStatus: RepairOrderStatus;
+  occurredAt: string;
+  changedByUserId: string | null;
+  note: string | null;
+  amountAtChange: number;
+}
+
+export interface RepairOrderDetail {
+  id: string;
+  rooftopId: string;
+  number: string;
+  status: RepairOrderStatus;
+  customerId: string;
+  customerName: string;
+  vehicleId: string;
+  vehicle: string;
+  complaint: string;
+  odometerReading: number | null;
+  currency: string;
+  labourTotal: number;
+  partsTotal: number;
+  subletTotal: number;
+  amountDue: number;
+  advisorUserId: string | null;
+  technicianUserId: string | null;
+  openedAt: string;
+  invoicedAt: string | null;
+  /** Whether the work may still be edited. False once the job is Completed. */
+  linesAreOpen: boolean;
+  /** From RepairOrderStatusRules. The screen keeps no copy of the transitions. */
+  availableMoves: RepairOrderStatus[];
+  lines: ServiceLineView[];
+  history: RepairOrderHistoryEntry[];
+}
+
 /** One colleague, as the staff screen sees them. Carries no credential material. */
 export interface StaffMember {
   id: string;

@@ -261,6 +261,23 @@ months of focused work.
   because "we sold 464 of service" tells a manager nothing and "180 labour, 284
   parts" is the number they run the department on
 
+### The workshop, on screen
+
+- **The first thing you see is the calls somebody owes.** Not a list of jobs — a
+  list of customers who need ringing, because every one of those is an invoice
+  that cannot go out until somebody picks up the phone
+- **The bill is refused by name.** Try to invoice a job with work nobody has
+  agreed to, and it tells you *which* piece of work and who to ring about it.
+  The button is deliberately not greyed out: a refusal that names the problem is
+  worth more than a button that quietly does nothing
+- **Recording the answer asks how you got it** — "phoned 14:20, spoke to Mr
+  Dhillon" — because that is the part that matters if the bill is ever questioned
+- **Work the customer declined shows a dash, not a price.** A figure in a money
+  column reads as a charge
+- **Labour, parts and sent-out work are totalled separately**, because "we sold
+  532 of service" tells a manager nothing
+- **A job can be given to a named technician**
+
 ### The people who work there
 
 - **You can see who works here, and what each of them can reach.** Their name,
@@ -324,18 +341,18 @@ months of focused work.
 
 ## Next
 
-**A screen for the workshop**, and then depth in that department.
+**Parts, as real stock.**
 
-Everything the workshop does works and nothing draws it. The screen that earns
-its place first is the advisor's list of *jobs waiting on a customer* — every one
-of those is a phone call somebody owes and an invoice that cannot go out until
-they make it. Now that staff have names, a job can also be given to a named
-technician rather than to nobody in particular.
+Worth being blunt about why. The workshop records what a job *billed* and nothing
+about what it *cost* — a part is a description and a price somebody types. So
+there is no figure for what the service department actually earned, and no
+honest answer to the first question a dealer principal asks about their
+workshop. Everything else in service is now built and on screen; this is the
+floor missing underneath it.
 
-**After that, parts.** It is worth being blunt about why: the workshop records
-what a job *billed* and nothing about what it *cost*, so there is no figure for
-what the service department actually earned. Any real dealership will ask for
-that in the first week.
+**After that, printing.** A car can be delivered and a repair order invoiced, and
+the customer is handed nothing at all. That is the other thing a real dealership
+notices in the first hour.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one

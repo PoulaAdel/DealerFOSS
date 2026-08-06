@@ -19,6 +19,7 @@ import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
 import { DealsPage } from '../features/deals/DealsPage';
 import { StaffPage } from '../features/staff/StaffPage';
+import { WorkshopPage } from '../features/service/WorkshopPage';
 import { SetFirstPassword } from '../features/auth/SetFirstPassword';
 import { AdminApp } from './AdminApp';
 
@@ -97,6 +98,7 @@ function AppRoutes() {
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/accounting" element={<TrialBalancePage />} />
         <Route path="/records" element={<RecordsPage />} />
+        <Route path="/workshop" element={<WorkshopPage />} />
         <Route path="/staff" element={<StaffPage />} />
         <Route path="/security/second-factor" element={<SecondFactorSetup />} />
         <Route path="*" element={<Navigate to="/inventory" replace />} />
@@ -132,6 +134,7 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
             <NavLink to="/leads">Enquiries</NavLink>
             <NavLink to="/deals">Deals</NavLink>
             <NavLink to="/inventory">Stock</NavLink>
+            <NavLink to="/workshop">Workshop</NavLink>
             <NavLink to="/accounting">Trial balance</NavLink>
             <NavLink to="/records">Records</NavLink>
             <NavLink to="/staff">People</NavLink>

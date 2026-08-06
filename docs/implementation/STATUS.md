@@ -1,10 +1,10 @@
 # Implementation Status
 
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
-Current milestone: **staff.** A dealership can see and manage its own people, and a starter sets their own password with a one-time code (complete, with a screen)
+Current milestone: **the workshop screen.** Every capability now has a screen (complete)
 Last verified: 2026-08-05 · `dotnet build` 0 warnings/0 errors, `dotnet test` 401/401,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 130/130, and `npm run build` all pass
+`npm run typecheck`, `npm test` 149/149, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -205,6 +205,16 @@ them is written.
 
   **Deliberately not included:** resetting a forgotten password (a different feature needing proof the asker owns the account — issuing a code to an enrolled account is refused rather than quietly becoming that feature), editing the permission catalogue, creating a role, merging or deleting a person, and any notion of a working pattern or shift. Named technician assignment on the workshop screen is now unblocked but not yet wired.
 
+- **2026-08-05 — The workshop has a screen, and every capability now has one.** The last capability with real logic and nothing driving it. The list **leads with the calls somebody owes** rather than with a status filter: `linesAwaitingAnswer` is on the summary precisely so that panel can be drawn without opening anything, and every job on it is a phone call blocking an invoice.
+
+  **Invoice is offered even when a line is unanswered, on purpose.** The screen asks and shows the refusal, because that refusal names the line — verified in a browser as *"1 line(s) are still waiting on the customer: Front discs and pads — worn beyond limit."* A greyed-out button would say less and would be a third copy of a rule that already lives in `RepairOrderStatusRules`. Same reasoning as the deal desk and the leads screen.
+
+  **A flow defect that only walking it could find.** The answer button was gated on `linesAreOpen`, which is wrong: that flag governs editing the **work**, and the server's `AnswerLine` deliberately has no such check — because the real sequence is *finish the job → try to invoice → be told to ring → ring → record → invoice*. The screen told you to record what the customer said and had hidden the only way to do it. Every test passed; the browser found it in one click. Now gated on the line being Pending, with `Remove` and the write-up form still frozen. `still lets somebody record the answer after the work is frozen` guards it.
+
+  **Verified in a browser, whole loop:** opened RO-1002, completed it, was refused the invoice by name, recorded *"Phoned 14:20, spoke to Mr Dhillon at Brightline"* against the line, and invoiced — ending at *"Invoiced 8/6/2026. Nothing more to do."* Layout measured at 375px: all three tables contained (287 of 356, 337 of 337, 337 of 569) and the page not pushed sideways, with a ninth nav link. One backend change: `RepairOrderDetail.OpenedAt`, which the summary already carried — "how long has this been sitting here" is the first thing anybody asks on opening a job. Evidence: `dotnet test` 401/401, `npm test` 149/149 (was 130), `verify-e2e.ps1` PASS. Three rehearsals, each failing exactly the test that guards it: predicting the invoice refusal instead of asking, dropping the note from the customer's answer, and the flow defect above *(automated)*
+
+  **Deliberately not included:** a printed invoice, appointments and workshop loading, editing a line's amount once written up, and anything about parts stock — which is the next thing this department needs, because the workshop records what a job billed and nothing about what it cost.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -214,16 +224,17 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** the workshop has a screen. It is the last capability with real logic and nothing driving it, and the maintainer's stated direction is **depth in one department** — service is the one with a complete backend, a screen-shaped hole, and a named next step after it (parts).
+**Outcome:** parts become real stock, so the service department has a profit figure.
 
-The screen that matters is the advisor's: **the jobs with work waiting on a customer**, because every one of those is a phone call somebody owes and an invoice that cannot go out. `RepairOrderSummary.LinesAwaitingAnswer` exists precisely so that list can be drawn without opening anything.
+The stated direction is **depth in one department**, and service is now the deep one — except for the hole underneath it. A part on a repair order is a description and a price typed by hand. Nothing is reserved, ordered, counted, or costed, so **invoicing records revenue and no cost** and there is no answer to "what did the workshop actually make". Any real dealership asks that in the first week, and the ledger cannot answer it today.
 
-- **Included:** the jobs at a rooftop, opening one to see its lines and totals, adding work, recording what the customer said against each line, moving the job on, and — newly possible — assigning it to a **named** technician through `IStaffDirectory`.
-- **Explicitly excluded:** a printed invoice, appointments and workshop loading, and anything about parts stock.
-- **Caution:** the screen must not offer Invoice when a line is Pending — but it must still *ask* rather than predicting, because whether this caller may invoice is the server's answer. Show the refusal, and show which line caused it. The deal desk and the leads screen are both written this way; a third copy of a transition table would be the one that drifts.
-- **Settled 2026-08-05:** a service advisor **may** authorize work they wrote up themselves. This is not an oversight — most independents have one person doing both, and the control is that recording the customer's answer is a separate, permissioned, timestamped act. Do not "fix" it into the salesperson/approver split.
+- **Included:** a part as a stocked item with a number and a cost, quantity on hand per rooftop, taking parts onto a job at cost and selling them at a price, and relieving stock when the job is invoiced — inside the same transaction as the invoice, like the sale ledger already is.
+- **Explicitly excluded:** purchase orders and supplier records, stock takes and adjustments, bins and locations, superseded part numbers, returns to supplier, and anything that talks to a manufacturer's parts catalogue.
+- **Caution:** the cost that matters is the cost **at the moment it was sold**, not today's. `JournalLine` already works this way and `DealHistory` records the amount at each change — follow that, or a supplier price rise will silently rewrite last month's profit.
+- **Caution:** parts are rooftop-owned stock, like `InventoryUnit` and unlike `Vehicle`. Two lots holding the same part number hold two different piles of it.
+- **Settled 2026-08-05:** a service advisor **may** authorize work they wrote up themselves. Not an oversight — most independents have one person doing both, and the control is that recording the customer's answer is a separate, permissioned, timestamped act. Do not "fix" it into the salesperson/approver split.
 
-**The department's next step after that is parts**, and it is worth naming now: service currently records revenue and no cost, so **there is no service profit figure**. A pilot dealer will ask for one.
+**Also outstanding, and now the largest gap that is not parts:** nothing prints. A car can be delivered and a repair order invoiced, and the customer is handed nothing. That is the other thing a pilot dealership notices immediately.
 
 **Also outstanding, and cheap:** the API refuses a write whose anti-forgery token is missing, but no screen has yet had to recover from it. `ApiError.needsSignIn` covers the case and nothing acts on it — a write that fails this way should send the person to sign in again rather than showing them a raw refusal.
 

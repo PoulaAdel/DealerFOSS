@@ -619,6 +619,9 @@ public sealed class RepairOrderService(
             order.AmountDue.Amount,
             order.AdvisorUserId,
             order.TechnicianUserId,
+            // The same field the summary reports as OpenedAt: an audit stamp, and
+            // for a repair order "created" and "booked in" are the same moment.
+            order.CreatedAt,
             order.InvoicedAt,
             order.LinesAreOpen,
             RepairOrderStatusRules.MovesFrom(order.Status).Select(s => s.ToString()).ToList(),
