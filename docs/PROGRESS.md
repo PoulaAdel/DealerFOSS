@@ -278,6 +278,26 @@ months of focused work.
   532 of service" tells a manager nothing
 - **A job can be given to a named technician**
 
+### Closing the month
+
+- **A month gets closed on purpose.** There is no date that does it for you, and
+  no countdown — because the close takes however many days the work takes. You
+  close it when you are finished
+- **A closed month stops taking postings**, and says so. Somebody invoicing a job
+  into a locked month is told the month is closed rather than getting an
+  unexplained failure
+- **You can reopen one when something genuinely turns up late** — but it asks why,
+  and your answer goes on the month's record permanently. Anybody looking later
+  can see the month was reopened and what for
+- **Reopening is a separate permission from closing.** Closing is routine
+  month-end work; reopening lets a figure you have already reported move, so it
+  can be held by fewer people
+- **The books have a start you choose.** Nothing can be posted into a month until
+  it is open — so the accounts begin where you decided, not wherever somebody
+  first mistyped a date
+- **Correcting a closed month still works the same way it always did.** You post
+  a reversal, dated today, and the closed month stays exactly as you reported it
+
 ### Parts, and what the workshop actually earns
 
 - **A part is real stock now.** It has a number, a description, and a count on
@@ -329,8 +349,9 @@ months of focused work.
 
 ## What does not exist
 
-- **A full set of books.** Sales are recorded and accounts total up; there are no
-  accounting periods and no month-end close yet
+- **A full set of books.** The month closes and locks, but there is no year-end,
+  no comparative statements, no budgets, and nothing in a format a tax authority
+  would recognise
 - **Ordering parts.** You can book a delivery in and sell from the shelf, but
   there are no purchase orders, no supplier records, no stock takes, and no
   returns to a supplier. Counting the shelf and correcting it is still a job for
@@ -363,18 +384,17 @@ months of focused work.
 
 ## Next
 
-**Closing the month.**
+**Printing.**
 
-Your answer on the month-end rule unblocked this. Sales and service are recorded
-and the accounts add up, but nothing stops an entry landing in a month you have
-already reported on — which is the difference between a running total and a set
-of books. So: a month gets closed on purpose, a closed month refuses new
-postings, and a manager can reopen one when something genuinely turns up late,
-with that reopening written into the record.
+A car can be delivered and a repair order invoiced, and the person paying walks
+away with nothing at all. It is the most visible gap left, and unlike the
+connectors it is waiting on nobody. A deal summary and a service invoice, made
+from what is already recorded — and made so that reprinting last month's invoice
+gives you last month's figures rather than today's.
 
-**After that, printing.** A car can be delivered and a repair order invoiced, and
-the customer is handed nothing at all. That is the other thing a real dealership
-notices in the first hour.
+**Still the quiet gate on everything:** setting up a new dealership is a
+developer's job. Whatever else gets built, nothing can go in front of a real
+dealer until that is a normal operation.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one

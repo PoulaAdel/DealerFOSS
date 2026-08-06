@@ -53,7 +53,64 @@ public interface IAccounting
         Guid entryId,
         string reason,
         CancellationToken cancellationToken);
+
+    /// <summary>The organization's months, newest first, with their state.</summary>
+    Task<Result<IReadOnlyList<AccountingPeriodView>>> ListPeriodsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Starts a month. Nothing may post into a month that has not been opened —
+    /// the books have a deliberate beginning rather than one inferred from the
+    /// first thing anybody typed.
+    /// </summary>
+    Task<Result<AccountingPeriodView>> OpenPeriodAsync(
+        int year,
+        int month,
+        string? note,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Locks a month at the end of the close. Called when the reconciling and
+    /// adjusting is done, not on a date.
+    /// </summary>
+    Task<Result<AccountingPeriodView>> ClosePeriodAsync(
+        int year,
+        int month,
+        string? note,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Unlocks a closed month. Its own permission and a written reason, because
+    /// a figure somebody has already reported is about to be able to move.
+    /// </summary>
+    Task<Result<AccountingPeriodView>> ReopenPeriodAsync(
+        int year,
+        int month,
+        string reason,
+        CancellationToken cancellationToken);
 }
+
+public sealed record AccountingPeriodView(
+    Guid Id,
+    int Year,
+    int Month,
+    string State,
+    DateOnly StartsOn,
+
+    /// <summary>The cutoff — the 30th or 31st, whichever this month has.</summary>
+    DateOnly EndsOn,
+    DateTimeOffset? ClosedAt,
+    Guid? ClosedByUserId,
+
+    /// <summary>How many entries are dated into it. What a manager checks before closing.</summary>
+    int Entries,
+    IReadOnlyList<AccountingPeriodChangeView> History);
+
+public sealed record AccountingPeriodChangeView(
+    string? FromState,
+    string ToState,
+    DateTimeOffset OccurredAt,
+    Guid? ChangedByUserId,
+    string? Note);
 
 /// <summary>
 /// Everything the ledger needs to record a delivery, stated in business terms so

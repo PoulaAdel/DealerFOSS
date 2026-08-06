@@ -84,6 +84,23 @@ public static class Permissions
     /// </summary>
     public const string AccountingReverse = "Accounting.Reverse";
 
+    /// <summary>
+    /// Opening a month and closing it at the end of the close work. Held
+    /// organization-wide: the books close as a whole, not one lot at a time.
+    /// </summary>
+    public const string AccountingClosePeriod = "Accounting.ClosePeriod";
+
+    /// <summary>
+    /// Unlocking a month that was already closed.
+    ///
+    /// Deliberately separate from closing. Closing is routine month-end work;
+    /// reopening lets a figure somebody has already reported move, so it should
+    /// be holdable by fewer people than the job that closed it in the first
+    /// place. Every reopen needs a written reason and is kept in the period's
+    /// history.
+    /// </summary>
+    public const string AccountingReopenPeriod = "Accounting.ReopenPeriod";
+
     /// <summary>Seeing the parts catalogue and what is on the shelf.</summary>
     public const string PartsRead = "Parts.Read";
 
@@ -167,6 +184,8 @@ public static class Permissions
         StaffManage,
         PartsRead,
         PartsManage,
+        AccountingClosePeriod,
+        AccountingReopenPeriod,
     ];
 }
 

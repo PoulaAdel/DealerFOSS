@@ -95,6 +95,12 @@ public static class IdentitySeeder
             // holder can book stock in and nothing else.
             Permissions.PartsRead,
             Permissions.PartsManage,
+            // Closing the month, and unlocking one that was closed. Both are on
+            // the manager because there is no separate bookkeeper role yet — but
+            // they are two permissions, not one, so a dealership that wants the
+            // reopen held by fewer people can already arrange that.
+            Permissions.AccountingClosePeriod,
+            Permissions.AccountingReopenPeriod,
             // Who must hold a second factor is a management decision, so the
             // manager role is where it sits. No role is seeded as requiring one
             // — that is the dealership's call, not ours.

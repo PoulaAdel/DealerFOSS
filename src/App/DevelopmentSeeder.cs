@@ -218,6 +218,7 @@ public static class DevelopmentSeeder
         await SeedCustomersAsync(tenantDb);
         await SeedStockAsync(tenantDb, clock);
         await SeedChartOfAccountsAsync(tenantDb);
+        await OpenTheBooksAsync(tenantDb, clock);
         await SeedLeadsAsync(tenantDb, clock);
         await SeedDealsAsync(tenantDb, clock);
         await SeedRepairOrdersAsync(tenantDb, clock);
@@ -472,6 +473,42 @@ public static class DevelopmentSeeder
     /// rather than created once, so a database seeded before accounting existed
     /// picks it up instead of failing to post.
     /// </summary>
+    /// <summary>
+    /// Opens the books for this month, and the two before it.
+    ///
+    /// Nothing can post into a month that has not been opened — the maintainer
+    /// chose an explicit start over one inferred from the first thing anybody
+    /// typed. That makes opening the books part of setting a dealership up, not
+    /// something a developer discovers when the first sale is refused. Three
+    /// months because the seeded deals and jobs are backdated.
+    ///
+    /// Reconciled every run rather than created once, for the same reason as the
+    /// chart of accounts above.
+    /// </summary>
+    private static async Task OpenTheBooksAsync(TenantDb db, IClock clock)
+    {
+        var today = DateOnly.FromDateTime(clock.UtcNow.UtcDateTime);
+
+        for (var back = 2; back >= 0; back--)
+        {
+            var month = today.AddMonths(-back);
+
+            var exists = await db.AccountingPeriods
+                .AnyAsync(p => p.Year == month.Year && p.Month == month.Month);
+
+            if (exists)
+            {
+                continue;
+            }
+
+            db.AccountingPeriods.Add(AccountingPeriod.Open(
+                Guid.NewGuid(), month.Year, month.Month, clock.UtcNow, null,
+                "Opened when the dealership was set up."));
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     private static async Task SeedChartOfAccountsAsync(TenantDb db)
     {
         (string Code, string Name, AccountKind Kind)[] chart =

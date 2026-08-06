@@ -577,6 +577,48 @@ try {
     $siblingJobStatus = Get-Status "/api/v1/repair-orders/$($siblingJob.id)" "northgroup" $scoped
     "scoped user -> sibling job by id      -> HTTP $siblingJobStatus (expect 403)"
 
+    Write-Host "`n--- the month can be closed, and a closed month refuses ---" -ForegroundColor Cyan
+
+    $now = [DateTime]::UtcNow
+    $periodPath = "/api/v1/accounting/periods/$($now.Year)/$($now.Month)"
+
+    # One lot does not close the group's books.
+    $scopedClose = Get-Status "$periodPath/close" "northgroup" $scoped "Post" @{ note = $null }
+    "a one-lot user closes the month       -> HTTP $scopedClose (expect 403)"
+
+    $null = Invoke-Api "$periodPath/close" $orgWide @{ note = "Month-end done." }
+
+    # Anything that posts is now refused, and says why.
+    $lockedJob = Invoke-Api "/api/v1/repair-orders" $orgWide @{
+        rooftopId = $firstRooftopId; customerId = $customer.id; vehicleId = $vehicle.id
+        complaint = "After the close."; currency = "USD"
+    }
+    $null = Invoke-Api "/api/v1/repair-orders/$($lockedJob.id)/lines" $orgWide @{
+        kind = "Labour"; description = "An hour"; hours = 1; rate = 100
+    }
+    $null = Invoke-Api "/api/v1/repair-orders/$($lockedJob.id)/status" $orgWide @{ status = "InProgress" }
+    $null = Invoke-Api "/api/v1/repair-orders/$($lockedJob.id)/status" $orgWide @{ status = "Completed" }
+    $postIntoClosed = Get-Status "/api/v1/repair-orders/$($lockedJob.id)/status" "northgroup" $orgWide "Post" @{ status = "Invoiced" }
+    "invoicing into a closed month         -> HTTP $postIntoClosed (expect 409)"
+
+    # Reopening needs a reason on the record.
+    $reopenNoReason = Get-Status "$periodPath/reopen" "northgroup" $orgWide "Post" @{ note = $null }
+    "reopening with no reason              -> HTTP $reopenNoReason (expect 400)"
+
+    # And reopening is its own permission, not the one that closed it.
+    $reopened = Invoke-Api "$periodPath/reopen" $orgWide @{ note = "A supplier invoice arrived on the 4th." }
+    "reopened, state now {0}              (expect Open)" -f $reopened.state
+
+    $afterReopen = Invoke-Api "/api/v1/repair-orders/$($lockedJob.id)/status" $orgWide @{ status = "Invoiced" }
+    "and the job invoices {0}             (expect 100)" -f $afterReopen.amountDue
+
+    # Every transition is kept, including why a reported month was unlocked.
+    $periods = Invoke-RestMethod "$baseUrl/api/v1/accounting/periods" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $thisMonth = @($periods | Where-Object { $_.year -eq $now.Year -and $_.month -eq $now.Month })[0]
+    $reopenNote = @($thisMonth.history | Where-Object { $_.note -like "*supplier invoice*" }).Count
+    "the reopen is on the record: {0}       (expect 1)" -f $reopenNote
+
     Write-Host "`n--- anti-forgery on writes ---" -ForegroundColor Cyan
     # The shape of a cross-site forged write: the browser's cookies ride along,
     # but nothing can set the header. It must be refused even though the session
@@ -891,10 +933,13 @@ try {
         -and ($shelf.unitCost -eq 7) -and ($soldLine.cost -eq 14) `
         -and ((@($afterSale.stock)[0].quantityOnHand) -eq 18) `
         -and ($cogs -eq 14) -and ($shelfCredit -eq 14) -and $partsBalanced `
-        -and ($shortStatus -eq 409) -and ($scopedCosting -eq 403)
+        -and ($shortStatus -eq 409) -and ($scopedCosting -eq 403) `
+        -and ($scopedClose -eq 403) -and ($postIntoClosed -eq 409) `
+        -and ($reopenNoReason -eq 400) -and ($reopened.state -eq "Open") `
+        -and ($afterReopen.amountDue -eq 100) -and ($reopenNote -eq 1)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, work nobody agreed to is not billed, parts leave the shelf at cost so service has a profit figure, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, and the ledger balances." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, work nobody agreed to is not billed, parts leave the shelf at cost so service has a profit figure, a closed month refuses postings until somebody reopens it on the record, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

@@ -28,6 +28,14 @@ internal static class AccountingEndpoints
         group.MapGet("/journal", ListAsync);
         group.MapGet("/journal/{entryId:guid}", GetAsync);
         group.MapPost("/journal/{entryId:guid}/reverse", ReverseAsync);
+
+        // Opening, closing, and reopening a month. Separate paths rather than one
+        // "set the state" endpoint, because reopening needs a different
+        // permission and a reason, and a single endpoint would blur that.
+        group.MapGet("/periods", ListPeriodsAsync);
+        group.MapPost("/periods", OpenPeriodAsync);
+        group.MapPost("/periods/{year:int}/{month:int}/close", ClosePeriodAsync);
+        group.MapPost("/periods/{year:int}/{month:int}/reopen", ReopenPeriodAsync);
     }
 
     private static async Task<IResult> ListAccountsAsync(
@@ -35,6 +43,53 @@ internal static class AccountingEndpoints
         CancellationToken cancellationToken)
     {
         var result = await accounting.ListAccountsAsync(cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ListPeriodsAsync(
+        IAccounting accounting,
+        CancellationToken cancellationToken)
+    {
+        var result = await accounting.ListPeriodsAsync(cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> OpenPeriodAsync(
+        OpenPeriodRequest request,
+        IAccounting accounting,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await accounting.OpenPeriodAsync(
+            request.Year, request.Month, request.Note, cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ClosePeriodAsync(
+        int year,
+        int month,
+        PeriodNoteRequest? request,
+        IAccounting accounting,
+        CancellationToken cancellationToken)
+    {
+        var result = await accounting.ClosePeriodAsync(year, month, request?.Note, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ReopenPeriodAsync(
+        int year,
+        int month,
+        PeriodNoteRequest request,
+        IAccounting accounting,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await accounting.ReopenPeriodAsync(
+            year, month, request.Note ?? string.Empty, cancellationToken);
+
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
@@ -96,3 +151,12 @@ internal static class AccountingEndpoints
 
 /// <summary>A reversal always states why. An unexplained one is a mistake.</summary>
 internal sealed record ReverseRequest(string Reason);
+
+internal sealed record OpenPeriodRequest(int Year, int Month, string? Note = null);
+
+/// <summary>
+/// Optional when closing, required when reopening — the service enforces that,
+/// because "why is a reported month being unlocked" is the question the history
+/// exists to answer.
+/// </summary>
+internal sealed record PeriodNoteRequest(string? Note = null);

@@ -22,6 +22,50 @@ internal static class AccountingSchema
     public const string Name = "accounting";
 }
 
+internal sealed class AccountingPeriodConfiguration : IEntityTypeConfiguration<AccountingPeriod>
+{
+    public void Configure(EntityTypeBuilder<AccountingPeriod> builder)
+    {
+        builder.ToTable("AccountingPeriods", AccountingSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.State).HasConversion<string>().HasMaxLength(20);
+
+        // Derived from Year and Month.
+        builder.Ignore(x => x.StartsOn);
+        builder.Ignore(x => x.EndsOn);
+
+        // One period per month, and the database says so rather than trusting
+        // every caller to check first. Two rows for one month would mean two
+        // answers to "is March closed?".
+        builder.HasIndex(x => new { x.Year, x.Month }).IsUnique();
+
+        builder.HasMany(x => x.History)
+            .WithOne()
+            .HasForeignKey(h => h.AccountingPeriodId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.ConfigureAudit();
+    }
+}
+
+internal sealed class AccountingPeriodChangeConfiguration : IEntityTypeConfiguration<AccountingPeriodChange>
+{
+    public void Configure(EntityTypeBuilder<AccountingPeriodChange> builder)
+    {
+        builder.ToTable("AccountingPeriodHistory", AccountingSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.FromState).HasConversion<string>().HasMaxLength(20);
+        builder.Property(x => x.ToState).HasConversion<string>().HasMaxLength(20);
+
+        // Long enough for a real explanation of why a reported month was reopened.
+        builder.Property(x => x.Note).HasMaxLength(1000);
+
+        builder.HasIndex(x => new { x.AccountingPeriodId, x.OccurredAt });
+    }
+}
+
 internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 {
     public void Configure(EntityTypeBuilder<Account> builder)

@@ -40,6 +40,14 @@ public sealed class AccountingService(
     /// </summary>
     private const string ReversePermission = Permissions.AccountingReverse;
 
+    private const string ClosePeriodPermission = Permissions.AccountingClosePeriod;
+
+    /// <summary>
+    /// Its own right, and not the one that closes. Closing is routine month-end
+    /// work; reopening lets a reported figure move.
+    /// </summary>
+    private const string ReopenPeriodPermission = Permissions.AccountingReopenPeriod;
+
     private const int MaxResults = 200;
 
     private readonly TenantDb _db = db;
@@ -284,6 +292,17 @@ public sealed class AccountingService(
             return Result.Failure<JournalEntryDetail>(LedgerErrors.AlreadyPosted);
         }
 
+        // The books have to be open for the month this lands in. Checked here
+        // rather than in JournalEntry because the period is a fact about the
+        // organization, not about the entry.
+        var refusal = await PeriodRefusalAsync(
+            DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime), cancellationToken);
+
+        if (refusal is not null)
+        {
+            return Result.Failure<JournalEntryDetail>(refusal);
+        }
+
         var accounts = await AccountMapAsync(cancellationToken);
         if (accounts.IsFailure)
         {
@@ -354,6 +373,17 @@ public sealed class AccountingService(
         if (alreadyPosted)
         {
             return Result.Failure<JournalEntryDetail>(LedgerErrors.AlreadyPosted);
+        }
+
+        // The books have to be open for the month this lands in. Checked here
+        // rather than in JournalEntry because the period is a fact about the
+        // organization, not about the entry.
+        var refusal = await PeriodRefusalAsync(
+            DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime), cancellationToken);
+
+        if (refusal is not null)
+        {
+            return Result.Failure<JournalEntryDetail>(refusal);
         }
 
         var accounts = await AccountMapAsync(cancellationToken);
@@ -430,6 +460,17 @@ public sealed class AccountingService(
             return Result.Failure<JournalEntryDetail>(LedgerErrors.AlreadyReversed);
         }
 
+        // A reversal is dated today, so it lands in today's month — the closed
+        // month it corrects is left exactly as it was reported, which is the
+        // whole reason reversals exist.
+        var refusal = await PeriodRefusalAsync(
+            DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime), cancellationToken);
+
+        if (refusal is not null)
+        {
+            return Result.Failure<JournalEntryDetail>(refusal);
+        }
+
         JournalEntry reversal;
         try
         {
@@ -456,6 +497,194 @@ public sealed class AccountingService(
 
         return Result.Success(await DescribeAsync(reversal, cancellationToken));
     }
+
+    public async Task<Result<IReadOnlyList<AccountingPeriodView>>> ListPeriodsAsync(
+        CancellationToken cancellationToken)
+    {
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<IReadOnlyList<AccountingPeriodView>>(LedgerErrors.Forbidden);
+        }
+
+        var periods = await _db.AccountingPeriods
+            .AsNoTracking()
+            .Include(p => p.History)
+            .OrderByDescending(p => p.Year)
+            .ThenByDescending(p => p.Month)
+            .ToListAsync(cancellationToken);
+
+        // How many entries each month holds. A manager about to close one wants
+        // to know whether it is the month they think it is.
+        var counts = await _db.JournalEntries
+            .AsNoTracking()
+            .GroupBy(e => new { e.EntryDate.Year, e.EntryDate.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IReadOnlyList<AccountingPeriodView>>(
+            periods.Select(p => Describe(
+                p,
+                counts.FirstOrDefault(c => c.Year == p.Year && c.Month == p.Month)?.Count ?? 0)).ToList());
+    }
+
+    public Task<Result<AccountingPeriodView>> OpenPeriodAsync(
+        int year,
+        int month,
+        string? note,
+        CancellationToken cancellationToken) =>
+        ChangePeriodAsync(year, month, ClosePeriodPermission, PeriodAction.Open, note, cancellationToken);
+
+    public Task<Result<AccountingPeriodView>> ClosePeriodAsync(
+        int year,
+        int month,
+        string? note,
+        CancellationToken cancellationToken) =>
+        ChangePeriodAsync(year, month, ClosePeriodPermission, PeriodAction.Close, note, cancellationToken);
+
+    public Task<Result<AccountingPeriodView>> ReopenPeriodAsync(
+        int year,
+        int month,
+        string reason,
+        CancellationToken cancellationToken) =>
+        ChangePeriodAsync(year, month, ReopenPeriodPermission, PeriodAction.Reopen, reason, cancellationToken);
+
+    private enum PeriodAction
+    {
+        Open,
+        Close,
+        Reopen,
+    }
+
+    private async Task<Result<AccountingPeriodView>> ChangePeriodAsync(
+        int year,
+        int month,
+        string permission,
+        PeriodAction action,
+        string? note,
+        CancellationToken cancellationToken)
+    {
+        // Organization-wide, always. The books close as a whole; one lot does not
+        // close the group's month, and one lot does not reopen it either.
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, permission, cancellationToken);
+        if (!scope.IsOrganizationWide)
+        {
+            await _audit.RecordAsync(
+                AuditEntry.Denied(
+                    _currentUser.Id, permission, "AccountingPeriod", $"{year}-{month:00}", null,
+                    $"Attempted to {action.ToString().ToLowerInvariant()} an accounting period."),
+                cancellationToken);
+
+            return Result.Failure<AccountingPeriodView>(LedgerErrors.PeriodForbidden);
+        }
+
+        var period = await _db.AccountingPeriods
+            .Include(p => p.History)
+            .SingleOrDefaultAsync(p => p.Year == year && p.Month == month, cancellationToken);
+
+        try
+        {
+            switch (action)
+            {
+                case PeriodAction.Open when period is not null:
+                    return Result.Failure<AccountingPeriodView>(LedgerErrors.PeriodAlreadyExists);
+
+                case PeriodAction.Open:
+                    period = AccountingPeriod.Open(
+                        Guid.NewGuid(), year, month, _clock.UtcNow, _currentUser.Id, note);
+                    _db.AccountingPeriods.Add(period);
+                    break;
+
+                case PeriodAction.Close when period is null:
+                case PeriodAction.Reopen when period is null:
+                    return Result.Failure<AccountingPeriodView>(LedgerErrors.PeriodNotOpened);
+
+                case PeriodAction.Close:
+                    period.Close(_clock.UtcNow, _currentUser.Id, note);
+                    break;
+
+                case PeriodAction.Reopen:
+                    period.Reopen(_clock.UtcNow, _currentUser.Id, note ?? string.Empty);
+                    break;
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<AccountingPeriodView>(Error.Validation("accounting.invalid_period", ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Failure<AccountingPeriodView>(Error.Conflict("accounting.period_state", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(
+                _currentUser.Id, permission, AuditOutcome.Allowed,
+                "AccountingPeriod", period!.Id.ToString(), null,
+                action switch
+                {
+                    PeriodAction.Open => $"Opened the books for {year}-{month:00}.",
+                    PeriodAction.Close => $"Closed {year}-{month:00}.",
+                    _ => $"Reopened {year}-{month:00}. Reason: {note}",
+                },
+                null, null),
+            cancellationToken);
+
+        var entries = await _db.JournalEntries
+            .AsNoTracking()
+            .CountAsync(e => e.EntryDate.Year == year && e.EntryDate.Month == month, cancellationToken);
+
+        return Result.Success(Describe(period, entries));
+    }
+
+    /// <summary>
+    /// Whether the books will take an entry dated here. Called before every
+    /// posting, so a month nobody has opened and a month somebody has closed both
+    /// refuse — with different messages, because they need different actions.
+    /// </summary>
+    private async Task<Error?> PeriodRefusalAsync(DateOnly date, CancellationToken cancellationToken)
+    {
+        var period = await _db.AccountingPeriods
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p => p.Year == date.Year && p.Month == date.Month, cancellationToken);
+
+        if (period is null)
+        {
+            return Error.Conflict(
+                "accounting.period_not_opened",
+                $"The books for {date.Year}-{date.Month:00} have not been opened, so nothing can be "
+                    + "posted into that month yet.");
+        }
+
+        if (period.State == AccountingPeriodState.Closed)
+        {
+            return Error.Conflict(
+                "accounting.period_closed",
+                $"{date.Year}-{date.Month:00} is closed. Reopen it if something genuinely belongs in "
+                    + "that month, or post this to an open one.");
+        }
+
+        return null;
+    }
+
+    private static AccountingPeriodView Describe(AccountingPeriod period, int entries) =>
+        new(
+            period.Id,
+            period.Year,
+            period.Month,
+            period.State.ToString(),
+            period.StartsOn,
+            period.EndsOn,
+            period.ClosedAt,
+            period.ClosedByUserId,
+            entries,
+            period.History
+                .OrderBy(h => h.OccurredAt)
+                .Select(h => new AccountingPeriodChangeView(
+                    h.FromState?.ToString(), h.ToState.ToString(), h.OccurredAt, h.ChangedByUserId, h.Note))
+                .ToList());
 
     /// <summary>
     /// The one place that decides which accounts a retail sale moves.
@@ -615,6 +844,19 @@ internal static class LedgerErrors
     public static Error AlreadyReversed { get; } = Error.Conflict(
         "accounting.already_reversed",
         "That entry has already been reversed.");
+
+    public static Error PeriodForbidden { get; } = Error.Forbidden(
+        "accounting.period_forbidden",
+        "Opening, closing, and reopening the books needs organization-wide permission. "
+            + "The books close as a whole, not one location at a time.");
+
+    public static Error PeriodAlreadyExists { get; } = Error.Conflict(
+        "accounting.period_exists",
+        "The books for that month are already open.");
+
+    public static Error PeriodNotOpened { get; } = Error.NotFound(
+        "accounting.period_not_opened",
+        "The books for that month have never been opened.");
 
     public static Error CannotReverseAReversal { get; } = Error.Conflict(
         "accounting.cannot_reverse_a_reversal",

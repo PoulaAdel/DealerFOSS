@@ -1,10 +1,10 @@
 # Implementation Status
 
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
-Current milestone: **parts as real stock.** The workshop knows what a job cost, not just what it billed (complete, with a screen)
-Last verified: 2026-08-06 · `dotnet build` 0 warnings/0 errors, `dotnet test` 428/428,
+Current milestone: **month-end close.** The books have periods, and a closed month refuses postings until somebody reopens it on the record (complete, with a screen)
+Last verified: 2026-08-06 · `dotnet build` 0 warnings/0 errors, `dotnet test` 439/439,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 159/159, and `npm run build` all pass
+`npm run typecheck`, `npm test` 170/170, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -231,6 +231,20 @@ them is written.
 
   **Deliberately not included:** purchase orders and supplier records, stock takes and adjustments, bins and locations, superseded part numbers, returns to supplier, and any link to a manufacturer's parts catalogue. Also: a part typed by hand still bills and carries **no** cost rather than a zero — those are different things, and a zero would read as free.
 
+- **2026-08-06 — The month can be closed, and a closed month refuses.** The ledger recorded entries and totalled accounts, and nothing stopped a posting landing in a month somebody had already reported on. That is the difference between a running total and a set of books, and it is now closed.
+
+  **Locking is an act somebody performs, not a date that passes** — the maintainer's answer, and the whole shape of the design. The cutoff is the calendar month end, but the close then runs over however many business days the reconciling and adjusting takes. Built as a date comparison it would either lock a month somebody was still working on or leave one open because nobody's calendar said otherwise. So: an `AccountingPeriod` with a state and an explicit `Close`. An adjustment posted *during* the close belongs in the month being closed, which is exactly why `Open` is the state that accepts postings rather than "the current month".
+
+  **Reopening is its own permission** (maintainer's decision). `Accounting.ClosePeriod` is routine month-end work; `Accounting.ReopenPeriod` lets a figure somebody already reported move, so it is deliberately holdable by fewer people than the job that closed it. Both organization-wide — the books close as a whole, not one lot at a time. A reopen **requires a written reason**, and every transition is kept as `IAppendOnly` history, because closed → reopened → changed is precisely the sequence an auditor needs to reconstruct.
+
+  **The books have a deliberate beginning** (maintainer's decision): nothing posts into a month that has not been opened. That is a real consequence and it is handled rather than discovered — the refusal for a never-opened month is a *different* message from the refusal for a closed one, because they need opposite actions, and `DevelopmentSeeder` opens the books as part of setting a dealership up.
+
+  **A reversal still works against a closed month**, and that is not a loophole. A reversal is dated today, so it lands in today's month and leaves the closed month exactly as it was reported — which is the entire reason reversals exist rather than edits.
+
+  **Verified in a browser:** closed July, watched the history appear, opened the reopen panel and confirmed the button stays disabled with no reason typed, reopened with *"A supplier invoice arrived on the 4th"*, and saw it land on the record. Layout measured at 375px with an eleventh nav link: table contained, page not pushed. Evidence: `dotnet test` 439/439 (was 428), `npm test` 170/170 (was 159), `verify-e2e.ps1` PASS — which now closes the month on a live host, is refused a posting with 409, is refused a reasonless reopen with 400, reopens, invoices, and checks the reason is in the period's history. Three rehearsals, each failing exactly the test that guards it: letting a closed month accept a posting, dropping the reopen-reason requirement, and closing without asking on screen *(automated)*
+
+  **Deliberately not included:** year-end close and retained-earnings roll-up, comparative statements, budgets, statutory reporting formats, and any automatic closing. Named rather than hidden: closing does not yet check that anything is *reconciled* — it locks the month, and whether the work was actually done is still a person's judgement.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -240,18 +254,18 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** the month can be closed, and a closed month cannot be quietly rewritten.
+**Outcome:** the customer is handed something. Nothing in this system prints.
 
-The maintainer answered the last open accounting question on 2026-08-06, which unblocks this. The ledger records entries and totals accounts; there are no periods, so nothing stops a posting landing in a month somebody has already reported on. That is the difference between a running total and a set of books.
+A car can be delivered and a repair order invoiced, and the person paying walks away with nothing at all. It is the most visible gap left, and unlike the connectors it is blocked on nobody.
 
-- **Included:** an accounting period per organization with a state, a Close operation that locks it, refusing postings dated into a locked period, and a permissioned, audited **reopen** for a manager.
-- **Explicitly excluded:** year-end close and retained-earnings roll-up, comparative statements, budgets, and any statutory reporting format.
-- **Caution, and the thing to get right:** **locking is an act somebody performs, not a date that passes.** The cutoff is the calendar month end, but the close then runs over however many business days the work takes. Build it as a period with a state and an explicit Close; a date comparison would either lock a month somebody is still working on or leave one open because nobody's calendar said otherwise.
-- **Caution:** an adjustment posted *during* the close belongs in the month being closed — that is what the window is for. Only a *locked* period refuses.
-- **Settled 2026-08-06:** after a month is locked, a manager **may reopen it** — permissioned and audited, not silent. The alternative (refuse and post to the open month) was rejected deliberately, so the audit trail is what makes a reopened month honest. `JournalEntry` is immutable, so a reopen changes what may be *added*, never what is already there.
+- **Included:** a deal summary and a service invoice, generated server-side as PDFs from the data already recorded, downloadable from the deal desk and the workshop screen.
+- **Explicitly excluded:** letterheads and per-dealership branding, emailing anything, statutory finance documents, and printing from the browser's own print dialogue (which cannot produce a stable document).
+- **Caution:** a document is a **snapshot of what was agreed**, not a live view. Regenerating last month's invoice must produce last month's figures — the frozen line costs and `DealHistory`'s amount-at-each-change already work this way; follow them rather than re-reading current state.
+- **Caution:** rendering a document needs a library. `NuGetAudit` fails the build on a vulnerable package, so check the licence and the advisory history before adding one — an AGPL project cannot take a component with an incompatible licence.
+- **Settled 2026-08-06:** the books have a deliberate beginning; nothing posts into an unopened month. Any new tenant-provisioning path must open the books, or the dealership's first sale is refused for a reason nobody will guess.
 - **Settled 2026-08-05:** a service advisor **may** authorize work they wrote up themselves. Not an oversight — most independents have one person doing both, and the control is that recording the customer's answer is a separate, permissioned, timestamped act. Do not "fix" it into the salesperson/approver split.
 
-**Also outstanding, and the largest gap that is not accounting:** nothing prints. A car can be delivered and a repair order invoiced, and the customer is handed nothing. That is the other thing a pilot dealership notices immediately.
+**Also outstanding, and the quiet gate on everything:** provisioning a new dealership is still a developer's job. Nothing can go in front of a pilot without it, whatever else gets built.
 
 **Also outstanding, and cheap:** the API refuses a write whose anti-forgery token is missing, but no screen has yet had to recover from it. `ApiError.needsSignIn` covers the case and nothing acts on it — a write that fails this way should send the person to sign in again rather than showing them a raw refusal.
 

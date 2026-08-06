@@ -150,6 +150,31 @@ export interface LeadHistoryEntry {
  * figure the detail does not. Pretending one is the other would put a `daysOpen`
  * in the type that is never in the payload.
  */
+export type AccountingPeriodState = 'Open' | 'Closed';
+
+export interface AccountingPeriodView {
+  id: string;
+  year: number;
+  month: number;
+  state: AccountingPeriodState;
+  startsOn: string;
+  /** The cutoff — the 30th or 31st, whichever the month has. */
+  endsOn: string;
+  closedAt: string | null;
+  closedByUserId: string | null;
+  /** How many entries are dated into it. What a manager checks before closing. */
+  entries: number;
+  history: AccountingPeriodChangeView[];
+}
+
+export interface AccountingPeriodChangeView {
+  fromState: AccountingPeriodState | null;
+  toState: AccountingPeriodState;
+  occurredAt: string;
+  changedByUserId: string | null;
+  note: string | null;
+}
+
 export type PartsCostingMethod = 'MovingAverage' | 'LastCost' | 'Fifo';
 
 /** The current method and every method available, both from the server. */
