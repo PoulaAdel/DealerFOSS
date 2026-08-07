@@ -88,6 +88,7 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IDeals, DealService>();
     builder.Services.AddScoped<IFinanceProducts, FinanceProductService>();
     builder.Services.AddScoped<IDocuments, DocumentService>();
+    builder.Services.AddScoped<ITenantProvisioning, TenantProvisioning>();
     builder.Services.AddScoped<IParts, PartsService>();
     builder.Services.AddScoped<IRepairOrders, RepairOrderService>();
     builder.Services.AddScoped<IAccounting, AccountingService>();

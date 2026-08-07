@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, adminApi, adminPost } from '../../shared/adminApi';
-import type { TenantRow } from '../../shared/contracts';
+import type { ProvisionedTenant, TenantRow } from '../../shared/contracts';
 
 type Load =
   | { kind: 'loading' }
@@ -21,6 +21,8 @@ type Load =
 export function TenantsPage() {
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [working, setWorking] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [provisioned, setProvisioned] = useState<ProvisionedTenant | null>(null);
 
   const fetchTenants = useCallback(async () => {
     setLoad({ kind: 'loading' });
@@ -70,7 +72,44 @@ export function TenantsPage() {
     <>
       <header className="page__head">
         <h1>Dealerships</h1>
+        {creating ? null : (
+          <button type="button" className="primary" onClick={() => setCreating(true)}>
+            Set up a dealership
+          </button>
+        )}
       </header>
+
+      {provisioned === null ? null : (
+        <section className="panel panel--code" aria-live="polite">
+          <h2>{provisioned.name} is ready</h2>
+          <p>
+            Their first manager is <strong>{provisioned.managerEmail}</strong>. Read
+            this code out to them — they set their own password with it at the
+            sign-in screen.
+          </p>
+          <p className="code">{provisioned.enrolmentCode}</p>
+          <p className="note">
+            <strong>This is the only time it can be shown.</strong> Only a scrambled
+            copy is kept, so it cannot be looked up again — if it goes astray, the
+            manager can be issued a new one from the dealership's own People
+            screen. The books are open, so they can trade straight away.
+          </p>
+          <button type="button" onClick={() => setProvisioned(null)}>
+            I have passed it on
+          </button>
+        </section>
+      )}
+
+      {creating ? (
+        <CreateTenant
+          onCancel={() => setCreating(false)}
+          onCreated={async (result) => {
+            setCreating(false);
+            setProvisioned(result);
+            await fetchTenants();
+          }}
+        />
+      ) : null}
 
       {load.kind === 'loading' ? (
         <p className="state" aria-live="polite">
@@ -146,5 +185,160 @@ export function TenantsPage() {
         </div>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Setting up a dealership.
+ *
+ * There is deliberately no password field. The manager gets a one-time code and
+ * chooses their own — the same path a starter uses, and the reason nobody at the
+ * vendor ever knows a dealership password.
+ *
+ * The short name is refused rather than tidied if it has capitals or spaces: it
+ * becomes part of a database name and travels in a header on every request, and
+ * silently storing something other than what was typed is a surprise waiting to
+ * happen.
+ */
+function CreateTenant({
+  onCancel,
+  onCreated,
+}: {
+  onCancel: () => void;
+  onCreated: (result: ProvisionedTenant) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [rooftopName, setRooftopName] = useState('');
+  const [rooftopCode, setRooftopCode] = useState('');
+  const [managerName, setManagerName] = useState('');
+  const [managerEmail, setManagerEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Suggested, never forced — the operator can type over it, and the server has
+  // the final say on whether it is usable.
+  const suggested = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+
+  const effectiveSlug = slug.trim() === '' ? suggested : slug.trim();
+
+  async function submit() {
+    setBusy(true);
+    setError(null);
+
+    try {
+      await onCreated(
+        await adminPost<ProvisionedTenant>('/tenants', {
+          slug: effectiveSlug,
+          name: name.trim(),
+          legalEntityName: name.trim(),
+          rooftopName: rooftopName.trim() === '' ? name.trim() : rooftopName.trim(),
+          rooftopCode: rooftopCode.trim(),
+          managerEmail: managerEmail.trim(),
+          managerName: managerName.trim(),
+        }),
+      );
+    } catch (failure) {
+      setError(failure instanceof ApiError ? failure.message : 'The dealership was not created.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ready =
+    name.trim() !== '' &&
+    effectiveSlug !== '' &&
+    rooftopCode.trim() !== '' &&
+    managerName.trim() !== '' &&
+    managerEmail.trim() !== '';
+
+  return (
+    <section className="panel">
+      <h2>Set up a dealership</h2>
+      <p className="note">
+        This creates their database, opens their books for this month, and creates
+        one manager who then adds everybody else. You will never see or choose
+        their password.
+      </p>
+
+      <div className="field">
+        <label htmlFor="tenant-name">Dealership name</label>
+        <input id="tenant-name" value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+
+      <div className="field">
+        <label htmlFor="tenant-slug">Short name</label>
+        <input
+          id="tenant-slug"
+          value={slug}
+          placeholder={suggested}
+          onChange={(e) => setSlug(e.target.value)}
+        />
+        <p className="hint">
+          Lowercase letters, digits and hyphens. Their staff type this to sign in,
+          and it cannot be changed afterwards.
+        </p>
+      </div>
+
+      <div className="row">
+        <div className="field field--grow">
+          <label htmlFor="tenant-rooftop">First location</label>
+          <input
+            id="tenant-rooftop"
+            value={rooftopName}
+            placeholder={name.trim() === '' ? 'Main site' : name.trim()}
+            onChange={(e) => setRooftopName(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="tenant-code">Location code</label>
+          <input
+            id="tenant-code"
+            value={rooftopCode}
+            placeholder="MAIN"
+            onChange={(e) => setRooftopCode(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="row">
+        <div className="field field--grow">
+          <label htmlFor="tenant-manager">Manager's name</label>
+          <input
+            id="tenant-manager"
+            value={managerName}
+            onChange={(e) => setManagerName(e.target.value)}
+          />
+        </div>
+
+        <div className="field field--grow">
+          <label htmlFor="tenant-email">Manager's email</label>
+          <input
+            id="tenant-email"
+            type="email"
+            value={managerEmail}
+            onChange={(e) => setManagerEmail(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <p className="error" aria-live="polite">
+        {error ?? ''}
+      </p>
+
+      <div className="actions">
+        <button type="button" className="primary" disabled={busy || !ready} onClick={() => void submit()}>
+          {busy ? 'Setting it up…' : 'Set it up'}
+        </button>
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </section>
   );
 }

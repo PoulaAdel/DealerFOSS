@@ -150,6 +150,15 @@ export interface LeadHistoryEntry {
  * figure the detail does not. Pretending one is the other would put a `daysOpen`
  * in the type that is never in the payload.
  */
+/** A freshly created dealership. The code is shown once and never retrievable. */
+export interface ProvisionedTenant {
+  slug: string;
+  name: string;
+  managerEmail: string;
+  enrolmentCode: string;
+  openedBooksFrom: string;
+}
+
 export type FinanceProductKind = 'Warranty' | 'Gap' | 'ServicePlan' | 'Protection' | 'Other';
 
 /** A product the dealership can sell with a car. The defaults are a starting point. */

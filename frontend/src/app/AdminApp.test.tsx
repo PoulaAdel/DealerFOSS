@@ -79,6 +79,57 @@ describe('the administration console', () => {
     expect(headers.every((h) => h?.['X-Tenant'] === undefined)).toBe(true);
   });
 
+  it('sets up a dealership without ever asking for a password', async () => {
+    atAdmin();
+    mockApi({
+      '/admin/me': { ok: true, body: administrator },
+      '/admin/tenants': [
+        { ok: true, body: tenants },
+        {
+          ok: true,
+          body: {
+            slug: 'newmotors',
+            name: 'New Motors',
+            managerEmail: 'manager@newmotors.local',
+            enrolmentCode: 'ABCD-EFGH-JKLM',
+            openedBooksFrom: '2026-08-07T09:00:00Z',
+          },
+        },
+        { ok: true, body: tenants },
+      ],
+    });
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Set up a dealership' }));
+
+    // Nobody at the vendor should ever know a dealership password.
+    expect(screen.queryByLabelText(/password/i)).toBeNull();
+
+    await userEvent.type(screen.getByLabelText('Dealership name'), 'New Motors');
+    await userEvent.type(screen.getByLabelText('Location code'), 'MAIN');
+    await userEvent.type(screen.getByLabelText("Manager's name"), 'Dana Reed');
+    await userEvent.type(screen.getByLabelText("Manager's email"), 'manager@newmotors.local');
+    await userEvent.click(screen.getByRole('button', { name: 'Set it up' }));
+
+    expect(await screen.findByText('ABCD-EFGH-JKLM')).toBeVisible();
+    expect(screen.getByText(/only time it can be shown/i)).toBeVisible();
+    expect(screen.getByText(/books are open/i)).toBeVisible();
+  });
+
+  it('suggests a short name from the dealership name rather than demanding one', async () => {
+    atAdmin();
+    mockApi({
+      '/admin/me': { ok: true, body: administrator },
+      '/admin/tenants': { ok: true, body: tenants },
+    });
+
+    render(<App />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Set up a dealership' }));
+    await userEvent.type(screen.getByLabelText('Dealership name'), 'New Motors Group');
+
+    expect(screen.getByLabelText('Short name')).toHaveAttribute('placeholder', 'new-motors-group');
+  });
+
   it('lists the dealerships with their state, and nothing about their business', async () => {
     atAdmin();
     mockApi({

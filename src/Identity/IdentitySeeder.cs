@@ -62,8 +62,30 @@ public static class IdentitySeeder
 
         var hasher = new PasswordHasher<User>();
 
-        // Reconciled on every run, not created once: each new feature adds
-        // permissions, and Grant is idempotent so nothing already correct changes.
+        var roles = await SeedRolesAsync(db);
+        var manager = roles.Manager;
+        var advisor = roles.Advisor;
+        var sales = roles.Sales;
+        var technicianRole = roles.Technician;
+
+        await SeedDevelopmentAccountsAsync(
+            db, hasher, password, firstRooftop, manager, advisor, sales, technicianRole,
+            organizationWide, rooftopScoped, unassigned, salesperson, secondFactor, technician);
+    }
+
+    /// <summary>
+    /// The roles every dealership gets, and what each may reach.
+    ///
+    /// Shared by the development seeder and by provisioning a real dealership on
+    /// purpose: two catalogues would drift, and the version a paying dealership
+    /// received would be the one nobody was testing against.
+    ///
+    /// Reconciled on every run, not created once: each new feature adds
+    /// permissions, and Grant is idempotent so nothing already correct changes.
+    /// </summary>
+    internal static async Task<(Role Manager, Role Advisor, Role Sales, Role Technician)> SeedRolesAsync(
+        IdentityDb db)
+    {
         var manager = await UpsertRoleAsync(db, ManagerRole,
         [
             Permissions.OrganizationRead,
@@ -196,6 +218,86 @@ public static class IdentitySeeder
             Permissions.PartsRead,
         ]);
 
+        await db.SaveChangesAsync();
+
+        return (manager, advisor, sales, technicianRole);
+    }
+
+    /// <summary>
+    /// Creates the first person at a brand-new dealership: one manager, with no
+    /// password, and a one-time code for them to set their own.
+    ///
+    /// The same enrolment path a starter uses, deliberately. Provisioning could
+    /// have invented a temporary password, and that would have been a second
+    /// place credentials are created — the one place nobody would be looking
+    /// when the first one was hardened.
+    /// </summary>
+    public static async Task<string> ProvisionFirstManagerAsync(
+        string tenantConnection,
+        IClock clock,
+        string email,
+        string displayName)
+    {
+        ArgumentNullException.ThrowIfNull(clock);
+
+        var options = new DbContextOptionsBuilder<IdentityDb>()
+            .UseSqlServer(tenantConnection)
+            .Options;
+
+        await using var db = new IdentityDb(options, clock);
+        await db.Database.MigrateAsync();
+
+        var roles = await SeedRolesAsync(db);
+
+        var normalized = (email ?? string.Empty).Trim().ToLowerInvariant();
+        var existing = await db.Users.SingleOrDefaultAsync(u => u.Email == normalized);
+
+        // Idempotent: provisioning that half-failed and is retried must not throw
+        // on the account it already made.
+        var user = existing ?? new User(Guid.NewGuid(), normalized, displayName);
+
+        if (existing is null)
+        {
+            db.Users.Add(user);
+
+            // Organization-wide, because this is the person who will then add
+            // everybody else — and nobody exists yet to grant it to them.
+            user.Assignments.Add(UserAssignment.ForOrganization(Guid.NewGuid(), user.Id, roles.Manager.Id));
+        }
+
+        var now = clock.UtcNow;
+
+        foreach (var outstanding in await db.StaffEnrolments
+            .Where(e => e.UserId == user.Id && e.ConsumedAt == null)
+            .ToListAsync())
+        {
+            outstanding.Supersede(now);
+        }
+
+        var (code, hash) = StaffEnrolment.NewCode();
+        db.StaffEnrolments.Add(new StaffEnrolment(Guid.NewGuid(), user.Id, hash, user.Id, now));
+
+        await db.SaveChangesAsync();
+
+        return code;
+    }
+
+    private static async Task SeedDevelopmentAccountsAsync(
+        IdentityDb db,
+        PasswordHasher<User> hasher,
+        string password,
+        RooftopId firstRooftop,
+        Role manager,
+        Role advisor,
+        Role sales,
+        Role technicianRole,
+        DevelopmentAccount organizationWide,
+        DevelopmentAccount rooftopScoped,
+        DevelopmentAccount unassigned,
+        DevelopmentAccount salesperson,
+        DevelopmentAccount secondFactor,
+        DevelopmentAccount technician)
+    {
         // Accounts are reconciled one at a time rather than all-or-nothing, for the
         // same reason roles are: a database seeded before an account existed
         // should grow the new one instead of needing a wipe.

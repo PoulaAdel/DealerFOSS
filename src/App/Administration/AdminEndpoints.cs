@@ -50,6 +50,7 @@ internal static class AdminEndpoints
         // Operating the installation: which dealerships exist, and whether each
         // is usable. Routing and lifecycle only — never their contents.
         group.MapGet("/tenants", ListTenantsAsync);
+        group.MapPost("/tenants", CreateTenantAsync);
         group.MapPost("/tenants/{slug}/status", SetTenantStatusAsync);
 
         group.MapPost("/support-access", OpenSupportAccessAsync);
@@ -152,6 +153,25 @@ internal static class AdminEndpoints
     /// each row carries: a name, a key, a state, and a schema version. Nothing an
     /// administrator could learn about a dealership's business from reading it.
     /// </summary>
+    /// <summary>
+    /// Creates a dealership. Reachable only behind the administrator cookie like
+    /// everything else in this group — and the enrolment code in the response is
+    /// the only time it can be seen.
+    /// </summary>
+    private static async Task<IResult> CreateTenantAsync(
+        NewTenant request,
+        ITenantProvisioning provisioning,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await provisioning.CreateAsync(request, cancellationToken);
+
+        return result.IsSuccess
+            ? Results.Created($"/api/v1/admin/tenants/{result.Value.Slug}", result.Value)
+            : result.Error.ToProblem();
+    }
+
     private static async Task<IResult> ListTenantsAsync(
         HostDb hostCatalog,
         CancellationToken cancellationToken)

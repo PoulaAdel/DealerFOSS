@@ -32,10 +32,20 @@ confirm.
 is chased, and becomes a deal on a specific car with the two linked.
 
 **And the dealership no longer stops when the customer drives away.** A car can
-be booked into the workshop, worked on, and invoiced — and work nobody agreed to
-pay for cannot reach the bill. That part has no screen yet.
+be booked into the workshop, worked on, and invoiced — with parts coming off the
+shelf at cost, so the department has a real profit figure — and work nobody
+agreed to pay for cannot reach the bill. The month can be closed and locked. The
+customer is handed a printed order or invoice.
 
-**About 30% of the first release. Stage 1 of 8, with stages 3, 4 and 5 under way.**
+**Every one of those has a screen.** There is no part of the system left that
+only a developer can reach.
+
+**And a dealership can now be set up without a developer** — one form in the
+operator console creates it, opens its books, and produces a one-time code for
+its first manager.
+
+**About 63% of the first release. Three of the eight stages are finished and four
+more are under way.**
 
 ---
 
@@ -47,13 +57,13 @@ months of focused work.
 | | Stage | What it means | Status |
 |---|---|---|---|
 | 0 | Find pilot dealers, get provider access | Agreements, real data samples, access to the systems we must connect to. People work, not code. | **Yours to do** |
-| 1 | Foundation | Keeping dealership groups apart, locations, staff permissions, and signing in. | **Done** |
-| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Well under way** |
-| 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Well under way** |
-| 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, paperwork. | **Well under way** |
-| 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | Not started |
-| 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | Not started |
-| 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | Not started |
+| 1 | Foundation | Keeping dealership groups apart, locations, staff and permissions, signing in, backups. | **Done** — only signing in with an existing company login is missing, and that needs a provider to test against |
+| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Half** — in and out both work, with a screen. Keeping in step with another live system does not exist |
+| 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Done** |
+| 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, warranties, paperwork. | **Done** |
+| 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Half** — the workshop and parts stock are built. Finance applications to lenders and a booking diary are not |
+| 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | **Most of it** — balances, month-end, staff admin, an operator console, and setting up a new dealership. Dashboards do not exist |
+| 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | **Started** — backups are rehearsed; the rest is not |
 | 8 | Live pilot | Two dealerships running on it for 60 days. | Not started |
 
 ---

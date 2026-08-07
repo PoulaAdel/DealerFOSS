@@ -1,10 +1,10 @@
 # Implementation Status
 
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
-Current milestone: **printing.** A customer is handed a vehicle order or a service invoice (complete, with a screen)
-Last verified: 2026-08-07 · `dotnet build` 0 warnings/0 errors, `dotnet test` 462/462,
+Current milestone: **provisioning.** A dealership can be set up from the operator console, without a developer (complete, with a screen)
+Last verified: 2026-08-07 · `dotnet build` 0 warnings/0 errors, `dotnet test` 473/473,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 180/180, and `npm run build` all pass
+`npm run typecheck`, `npm test` 182/182, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -274,6 +274,20 @@ them is written.
   **Verified in a browser** on real data: the vehicle order reads 399 − 500 + 26,995 − 3,300 = **23,594**, matching its printed total, and the service invoice's 68.40 + 284.00 parts plus 180.00 labour reaches **532.40**. Also confirmed the design's premise: navigating straight to a document URL is refused for a missing tenant header, which is why `openDocument` fetches rather than using a link. Evidence: `dotnet test` 462/462 (was 452), `npm test` 180/180, `verify-e2e.ps1` PASS *(automated)*
 
   **Deliberately not included:** letterheads and per-dealership branding, emailing anything, statutory finance documents, terms and conditions text, and signature capture. Named rather than hidden: the vehicle order says on its face that it is not a tax invoice, because it is not one.
+
+- **2026-08-07 — A dealership can be set up without a developer.** The gate in front of every pilot. Creating a tenant was a seeder run, so however good the rest got, none of it could be put in front of a real dealer. From the operator console it is now one form: the database is created and migrated, the organization and its first location are written, the chart of accounts is seeded, **the books are opened**, and one manager is created who sets their own password with a one-time code.
+
+  **Opening the books is the step this milestone exists for.** Nothing posts into a month that has not been opened, so a dealership provisioned without it looks entirely healthy — the tenant resolves, sign-in works, screens load — right up until its first sale is refused for a reason nobody would guess. `A_new_dealership_can_record_a_sale_immediately` drives the whole path end to end and rehearsal confirms it is the only test that fails when the step is removed.
+
+  **No password is ever invented.** The first manager gets the same enrolment code a starter gets, so there is exactly one place credentials are created rather than a second one nobody would think to harden. `IdentitySeeder.SeedRolesAsync` was extracted so a real dealership and the development seeder get an identical role catalogue — two would have drifted, and the version a paying dealership received would be the one nobody was testing against. Code generation moved to `StaffEnrolment` for the same reason.
+
+  **The architecture tests moved this code twice, and were right both times.** It was written in `Administration`, which may not reference a business capability; then in `Tenancy`, which may not either. Provisioning both builds a database and writes an organization and a chart of accounts, so it belongs in neither — it is not a capability, it composes several, and it now sits in the composition root beside `DevelopmentSeeder`. The rules found that, not review.
+
+  **An uppercase short name is refused rather than tidied.** Silently storing `upper` for a typed `UPPER` would be a surprise, and `TenantResolver` compares the slug raw against a cache keyed by the raw string — so normalising on write but not on read could behave differently on a cache hit than on a miss. Refusing keeps every stored slug lowercase and side-steps it.
+
+  **The catalog row is written last**, so a run that fails half way leaves an orphaned database rather than a tenant that resolves to a broken one — the untidy failure instead of the dangerous one. Evidence: `dotnet test` 473/473 (was 462), `npm test` 182/182, `verify-e2e.ps1` PASS. Rehearsed: skipping the books fails exactly the end-to-end sale test *(automated)*
+
+  **Deliberately not included:** deleting a dealership, moving one between servers, restoring one into a new tenant, choosing a database name by hand, and any second location beyond the first — that is the dealership's own job once they are in.
 
 ## Active risks and blockers
 

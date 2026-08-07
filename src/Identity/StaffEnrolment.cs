@@ -12,6 +12,9 @@
 //       Issuing a new code supersedes any outstanding one. Two live codes for one
 //       account doubles the guessing surface for no benefit.
 
+using System.Security.Cryptography;
+using System.Text;
+
 namespace DealerFOSS.Identity;
 
 internal sealed class StaffEnrolment
@@ -66,4 +69,38 @@ internal sealed class StaffEnrolment
 
     /// <summary>Kills an outstanding code because a newer one has been issued.</summary>
     public void Supersede(DateTimeOffset at) => ConsumedAt = at;
+
+    /// <summary>
+    /// A fresh code and its hash. Lives here rather than on the service because
+    /// provisioning a brand-new dealership issues one too, and two
+    /// implementations of "what a code looks like" would eventually disagree
+    /// about the alphabet — at which point half the codes would not be typeable.
+    ///
+    /// Readable aloud and still hard to guess: uppercase and digits with the
+    /// shapes that get misheard removed (no O/0, I/1, S/5), because this code is
+    /// spoken across a desk far more often than it is copied.
+    /// </summary>
+    public static (string Code, string Hash) NewCode()
+    {
+        const string alphabet = "ABCDEFGHJKLMNPQRTUVWXYZ2346789";
+        var chars = new char[12];
+
+        for (var i = 0; i < chars.Length; i++)
+        {
+            chars[i] = alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)];
+        }
+
+        // Grouped for reading out; the groups are cosmetic and stripped on the
+        // way back in.
+        var code = $"{new string(chars, 0, 4)}-{new string(chars, 4, 4)}-{new string(chars, 8, 4)}";
+
+        return (code, HashOf(code));
+    }
+
+    public static string HashOf(string code) =>
+        Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(
+                (code ?? string.Empty)
+                    .Replace("-", string.Empty, StringComparison.Ordinal)
+                    .ToUpperInvariant())));
 }

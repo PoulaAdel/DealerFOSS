@@ -203,8 +203,8 @@ internal sealed class StaffDirectoryService(
             old.Supersede(now);
         }
 
-        var code = NewCode();
-        _db.StaffEnrolments.Add(new StaffEnrolment(Guid.NewGuid(), userId, Hash(code), actingUserId, now));
+        var (code, hash) = StaffEnrolment.NewCode();
+        _db.StaffEnrolments.Add(new StaffEnrolment(Guid.NewGuid(), userId, hash, actingUserId, now));
         await _db.SaveChangesAsync(cancellationToken);
 
         await _audit.RecordAsync(
@@ -252,7 +252,7 @@ internal sealed class StaffDirectoryService(
             return Result.Failure(StaffErrors.EnrolmentRefused);
         }
 
-        if (!FixedTimeEquals(enrolment.CodeHash, Hash(code ?? string.Empty)))
+        if (!FixedTimeEquals(enrolment.CodeHash, StaffEnrolment.HashOf(code ?? string.Empty)))
         {
             enrolment.RecordFailure();
             await _db.SaveChangesAsync(cancellationToken);
@@ -455,29 +455,9 @@ internal sealed class StaffDirectoryService(
             .ToList();
     }
 
-    /// <summary>
-    /// Readable aloud and still hard to guess. Uppercase letters and digits with
-    /// the shapes that get misheard removed (no O/0, I/1, S/5), because this code
-    /// is spoken across a desk far more often than it is copied.
-    /// </summary>
-    private static string NewCode()
-    {
-        const string alphabet = "ABCDEFGHJKLMNPQRTUVWXYZ2346789";
-        var chars = new char[12];
-
-        for (var i = 0; i < chars.Length; i++)
-        {
-            chars[i] = alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)];
-        }
-
-        // Grouped for reading out; the groups are cosmetic and are stripped on the
-        // way back in.
-        return $"{new string(chars, 0, 4)}-{new string(chars, 4, 4)}-{new string(chars, 8, 4)}";
-    }
-
-    private static string Hash(string code) =>
-        Convert.ToHexString(SHA256.HashData(
-            Encoding.UTF8.GetBytes(code.Replace("-", string.Empty, StringComparison.Ordinal).ToUpperInvariant())));
+    // Code generation and hashing moved to StaffEnrolment: provisioning a brand
+    // new dealership issues one too, and two implementations would eventually
+    // disagree about the alphabet.
 
     private static bool FixedTimeEquals(string left, string right) =>
         CryptographicOperations.FixedTimeEquals(
