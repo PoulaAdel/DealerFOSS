@@ -8,8 +8,22 @@
 // Imported from react-router rather than react-router-dom: in v8 the DOM
 // bindings moved into the main package and react-router-dom is a shim. The
 // version matters — 7.12 to 8.2 carry a CSRF advisory (GHSA-qwww-vcr4-c8h2).
-import { NavLink, Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router';
+import { useState } from 'react';
+import {
+  NavLink,
+  Navigate,
+  Outlet,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+  useNavigate,
+} from 'react-router';
 import { SessionProvider, useSession } from './session';
+import { AppearanceProvider } from '../shared/appearance';
+import { AppearanceControls } from './AppearanceControls';
+import { ShortcutsPanel } from './Shortcuts';
+import { useHotkeys } from '../shared/useHotkeys';
+import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { SignIn } from '../features/auth/SignIn';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { TrialBalancePage } from '../features/accounting/TrialBalancePage';
@@ -27,24 +41,29 @@ import { AdminApp } from './AdminApp';
 
 export function App() {
   return (
-    <Router>
-      <Routes>
-        {/* The split is above SessionProvider on purpose. An administrator has
-            no dealership, so asking /auth/me on their behalf would be a
-            meaningless question — and mounting both session contexts at once
-            would make it possible to write a screen that does not know which
-            of the two identities it is holding. */}
-        <Route path="/admin/*" element={<AdminApp />} />
-        <Route
-          path="*"
-          element={
-            <SessionProvider>
-              <AppRoutes />
-            </SessionProvider>
-          }
-        />
-      </Routes>
-    </Router>
+    // Outside the router and both sessions: the theme applies to the sign-in
+    // screen and the administration console as much as to the shell, and a
+    // choice made on one must not be forgotten by the next.
+    <AppearanceProvider>
+      <Router>
+        <Routes>
+          {/* The split is above SessionProvider on purpose. An administrator has
+              no dealership, so asking /auth/me on their behalf would be a
+              meaningless question — and mounting both session contexts at once
+              would make it possible to write a screen that does not know which
+              of the two identities it is holding. */}
+          <Route path="/admin/*" element={<AdminApp />} />
+          <Route
+            path="*"
+            element={
+              <SessionProvider>
+                <AppRoutes />
+              </SessionProvider>
+            }
+          />
+        </Routes>
+      </Router>
+    </AppearanceProvider>
   );
 }
 
@@ -94,6 +113,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<Shell />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/leads" element={<LeadsPage />} />
         <Route path="/deals" element={<DealsPage />} />
@@ -105,7 +125,9 @@ function AppRoutes() {
         <Route path="/parts" element={<PartsPage />} />
         <Route path="/staff" element={<StaffPage />} />
         <Route path="/security/second-factor" element={<SecondFactorSetup />} />
-        <Route path="*" element={<Navigate to="/inventory" replace />} />
+        {/* The dashboard is the landing screen: "how did we do" is the question
+            somebody opening this at 8am is actually asking. */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
   );
@@ -118,6 +140,26 @@ function AppRoutes() {
  */
 function Shell({ restricted = false }: { restricted?: boolean }) {
   const { tenant, signOut } = useSession();
+  const navigate = useNavigate();
+  const [showingShortcuts, setShowingShortcuts] = useState(false);
+
+  // Bound here rather than on each screen, so "g s" works from wherever you are.
+  // The list is in Shortcuts.tsx and the panel is generated from it, which is
+  // what stops a binding existing that nothing tells anybody about.
+  useHotkeys(
+    {
+      'g d': () => navigate('/dashboard'),
+      'g s': () => navigate('/inventory'),
+      'g c': () => navigate('/customers'),
+      'g e': () => navigate('/leads'),
+      'g l': () => navigate('/deals'),
+      'g w': () => navigate('/workshop'),
+      'g p': () => navigate('/parts'),
+      'g b': () => navigate('/accounting/periods'),
+      '?': () => setShowingShortcuts(true),
+    },
+    !restricted,
+  );
 
   return (
     <div className="shell">
@@ -132,6 +174,7 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
 
         {restricted ? null : (
           <nav aria-label="Main">
+            <NavLink to="/dashboard">This month</NavLink>
             <NavLink to="/customers">Customers</NavLink>
             {/* Ordered the way the work happens: an enquiry arrives, and some of
                 them become deals. */}
@@ -151,12 +194,25 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
         )}
 
         <div className="shell__right">
+          <AppearanceControls />
+          {restricted ? null : (
+            <button
+              type="button"
+              className="link"
+              onClick={() => setShowingShortcuts(true)}
+              title="Keyboard shortcuts ( ? )"
+            >
+              Shortcuts
+            </button>
+          )}
           <span className="shell__tenant">{tenant}</span>
           <button type="button" onClick={() => void signOut()}>
             Sign out
           </button>
         </div>
       </header>
+
+      {showingShortcuts ? <ShortcutsPanel onClose={() => setShowingShortcuts(false)} /> : null}
 
       <main id="main" className="shell__main" tabIndex={-1}>
         <Outlet />

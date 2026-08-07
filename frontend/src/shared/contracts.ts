@@ -98,6 +98,84 @@ export interface TrialBalance {
   accounts: AccountBalance[];
 }
 
+// --- how did we do this month? ---
+
+/** One department's revenue, cost, and the difference. Margin is null when nothing sold. */
+export interface DepartmentResult {
+  name: string;
+  revenue: number;
+  cost: number;
+  gross: number;
+  margin: number | null;
+}
+
+/** The department names the server uses. Matching on a spelling, in one place. */
+export const departments = {
+  vehicles: 'Vehicles',
+  finance: 'Finance and insurance',
+  service: 'Service',
+} as const;
+
+export interface LedgerPerformance {
+  from: string | null;
+  to: string | null;
+  currency: string;
+  departments: DepartmentResult[];
+  totalRevenue: number;
+  totalCost: number;
+  totalGross: number;
+  /** Cars that left the lot, less any delivery reversed in the same period. */
+  vehiclesDelivered: number;
+  serviceInvoices: number;
+}
+
+export interface StockAgeBand {
+  name: string;
+  fromDay: number;
+  /** Null on the last band, which is open-ended — and the one that matters. */
+  toDay: number | null;
+  units: number;
+}
+
+export interface AgingUnit {
+  id: string;
+  stockNumber: string;
+  vehicleDisplayName: string;
+  status: InventoryStatus;
+  daysInStock: number;
+  /** True when the age is counted from entry because no acquisition date was recorded. */
+  ageIsEstimated: boolean;
+}
+
+export interface StockAging {
+  asOf: string;
+  units: number;
+  bands: StockAgeBand[];
+  /** The oldest few, named. A count says there is a problem; this says which cars. */
+  oldest: AgingUnit[];
+}
+
+export type BooksState = 'NotOpened' | 'Open' | 'Closed' | 'Unknown';
+
+/** Sections a caller may not read. Named rather than silently blank. */
+export type WithheldSection = 'Trading' | 'Stock';
+
+export interface MonthInReview {
+  year: number;
+  month: number;
+  startsOn: string;
+  /** The cutoff — the 30th or 31st, whichever this month has. */
+  endsOn: string;
+  books: BooksState;
+  closedAt: string | null;
+  /** Null when withheld. `withheld` says which sections those are. */
+  trading: LedgerPerformance | null;
+  /** The same query over the previous month, for comparison. */
+  priorMonth: LedgerPerformance | null;
+  stock: StockAging | null;
+  withheld: WithheldSection[];
+}
+
 // --- the enquiry that comes before the deal ---
 
 export type LeadStatus = 'New' | 'Working' | 'Appointment' | 'Won' | 'Lost';

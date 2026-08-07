@@ -13,6 +13,7 @@ import { AdminSignIn } from '../features/admin/AdminSignIn';
 import { AdminSecondFactorSetup } from '../features/admin/AdminSecondFactorSetup';
 import { TenantsPage } from '../features/admin/TenantsPage';
 import { SupportAccessPage } from '../features/admin/SupportAccessPage';
+import { AppearanceControls } from './AppearanceControls';
 
 export function AdminApp() {
   return (
@@ -83,6 +84,7 @@ function AdminShell({ restricted = false }: { restricted?: boolean }) {
         )}
 
         <div className="shell__right">
+          <AppearanceControls />
           <span className="shell__tenant">{administrator?.email}</span>
           <button type="button" onClick={() => void signOut()}>
             Sign out

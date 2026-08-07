@@ -166,49 +166,13 @@ public sealed class AccountingService(
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
-        if (scope.GrantsNothing)
+        var covered = await CoveredEntriesAsync(query, cancellationToken);
+        if (covered.IsFailure)
         {
-            return Result.Failure<TrialBalance>(LedgerErrors.Forbidden);
+            return Result.Failure<TrialBalance>(covered.Error);
         }
 
-        if (query.RooftopId is { } requested && !scope.Covers(requested))
-        {
-            return Result.Failure<TrialBalance>(LedgerErrors.Forbidden);
-        }
-
-        var entries = _db.JournalEntries.AsNoTracking();
-
-        // The same rooftop filter as every other read: a balance must never
-        // total up a location the caller cannot see.
-        if (!scope.IsOrganizationWide)
-        {
-            var allowed = scope.Rooftops.ToList();
-            entries = entries.Where(e => allowed.Contains(e.RooftopId));
-        }
-
-        if (query.RooftopId is { } only)
-        {
-            entries = entries.Where(e => e.RooftopId == only);
-        }
-
-        if (query.From is { } from)
-        {
-            entries = entries.Where(e => e.EntryDate >= from);
-        }
-
-        if (query.To is { } to)
-        {
-            entries = entries.Where(e => e.EntryDate <= to);
-        }
-
-        // Mixing currencies in one column would produce a number that means
-        // nothing. Better to refuse than to print it.
-        var currencies = await entries.Select(e => e.Currency).Distinct().ToListAsync(cancellationToken);
-        if (currencies.Count > 1)
-        {
-            return Result.Failure<TrialBalance>(LedgerErrors.MixedCurrencies(currencies));
-        }
+        var (entries, currency) = covered.Value;
 
         var totals = await (
             from line in _db.JournalLines.AsNoTracking()
@@ -253,11 +217,187 @@ public sealed class AccountingService(
         return Result.Success(new TrialBalance(
             query.From,
             query.To,
-            currencies.Count == 1 ? currencies[0] : string.Empty,
+            currency,
             totalDebits,
             totalCredits,
             totalDebits == totalCredits,
             balances));
+    }
+
+    public async Task<Result<LedgerPerformance>> PerformanceAsync(
+        BalanceQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        // Deliberately the same scoping, the same filters, and the same
+        // mixed-currency refusal as the trial balance — one method, so a figure
+        // on a dashboard cannot cover a rooftop the trial balance would not.
+        var covered = await CoveredEntriesAsync(query, cancellationToken);
+        if (covered.IsFailure)
+        {
+            return Result.Failure<LedgerPerformance>(covered.Error);
+        }
+
+        var (entries, currency) = covered.Value;
+
+        var totals = await (
+            from line in _db.JournalLines.AsNoTracking()
+            join entry in entries on line.EntryId equals entry.Id
+            group line by line.AccountCode into byCode
+            select new
+            {
+                Code = byCode.Key,
+                Debits = byCode.Sum(l => l.Debit),
+                Credits = byCode.Sum(l => l.Credit),
+            }).ToDictionaryAsync(t => t.Code, cancellationToken);
+
+        // On the account's normal side. Revenue net of what was debited to it,
+        // which is how the discount account subtracts itself: 4900 is a revenue
+        // account that only ever takes debits, so Earned() returns it negative
+        // and a discount reduces the sale it belongs to.
+        decimal Earned(string code) =>
+            totals.TryGetValue(code, out var t) ? t.Credits - t.Debits : 0m;
+
+        decimal Spent(string code) =>
+            totals.TryGetValue(code, out var t) ? t.Debits - t.Credits : 0m;
+
+        var departments = new List<DepartmentResult>
+        {
+            Department(
+                Departments.Vehicles,
+                Earned(AccountCodes.VehicleSalesRevenue)
+                    + Earned(AccountCodes.FeeRevenue)
+                    + Earned(AccountCodes.SalesDiscounts),
+                Spent(AccountCodes.CostOfVehicleSales)),
+            Department(
+                Departments.FinanceAndInsurance,
+                Earned(AccountCodes.FinanceProductRevenue),
+                Spent(AccountCodes.CostOfFinanceProducts)),
+            Department(
+                Departments.Service,
+                Earned(AccountCodes.LabourRevenue)
+                    + Earned(AccountCodes.PartsRevenue)
+                    + Earned(AccountCodes.SubletRevenue),
+                Spent(AccountCodes.CostOfPartsSales)),
+        };
+
+        var deliveries = await CountAsync(entries, JournalSource.DealDelivery, cancellationToken);
+        var invoices = await CountAsync(entries, JournalSource.ServiceInvoice, cancellationToken);
+
+        return Result.Success(new LedgerPerformance(
+            query.From,
+            query.To,
+            currency,
+            departments,
+            departments.Sum(d => d.Revenue),
+            departments.Sum(d => d.Cost),
+            departments.Sum(d => d.Gross),
+            deliveries,
+            invoices));
+    }
+
+    private static DepartmentResult Department(string name, decimal revenue, decimal cost)
+    {
+        var gross = revenue - cost;
+
+        return new DepartmentResult(
+            name,
+            revenue,
+            cost,
+            gross,
+
+            // No revenue is not a zero margin. A department that has not sold
+            // anything has no margin to state, and 0% would read as "we sold
+            // things and made nothing on them".
+            revenue == 0m ? null : gross / revenue);
+    }
+
+    /// <summary>
+    /// How many of one kind of event landed in the period, less the ones reversed
+    /// within it.
+    /// </summary>
+    /// <remarks>
+    /// A reversal posted in a later month is not subtracted here, and that is
+    /// correct rather than a gap: the reversal's own lines are dated into the
+    /// later month, so the revenue leaves that month too. The count and the money
+    /// move together, which is the only property that makes them worth showing
+    /// side by side.
+    /// </remarks>
+    private async Task<int> CountAsync(
+        IQueryable<JournalEntry> entries,
+        JournalSource source,
+        CancellationToken cancellationToken)
+    {
+        var posted = await entries.CountAsync(e => e.Source == source, cancellationToken);
+
+        var undone = await (
+            from reversal in entries.Where(e => e.Source == JournalSource.Reversal)
+            join original in _db.JournalEntries.AsNoTracking()
+                on reversal.ReversesEntryId equals original.Id
+            where original.Source == source
+            select reversal.Id).CountAsync(cancellationToken);
+
+        return posted - undone;
+    }
+
+    /// <summary>
+    /// The entries this caller may total, narrowed by the query, and the one
+    /// currency they are all in.
+    /// </summary>
+    /// <remarks>
+    /// Shared by every report that adds journal lines up. The rooftop filter is
+    /// applied to the query rather than to the results, so a location the caller
+    /// may not see is never read — removing that is what LedgerScopeTests catches.
+    /// </remarks>
+    private async Task<Result<(IQueryable<JournalEntry> Entries, string Currency)>> CoveredEntriesAsync(
+        BalanceQuery query,
+        CancellationToken cancellationToken)
+    {
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<(IQueryable<JournalEntry>, string)>(LedgerErrors.Forbidden);
+        }
+
+        if (query.RooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<(IQueryable<JournalEntry>, string)>(LedgerErrors.Forbidden);
+        }
+
+        var entries = _db.JournalEntries.AsNoTracking();
+
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            entries = entries.Where(e => allowed.Contains(e.RooftopId));
+        }
+
+        if (query.RooftopId is { } only)
+        {
+            entries = entries.Where(e => e.RooftopId == only);
+        }
+
+        if (query.From is { } from)
+        {
+            entries = entries.Where(e => e.EntryDate >= from);
+        }
+
+        if (query.To is { } to)
+        {
+            entries = entries.Where(e => e.EntryDate <= to);
+        }
+
+        // Mixing currencies in one column would produce a number that means
+        // nothing. Better to refuse than to print it.
+        var currencies = await entries.Select(e => e.Currency).Distinct().ToListAsync(cancellationToken);
+        if (currencies.Count > 1)
+        {
+            return Result.Failure<(IQueryable<JournalEntry>, string)>(
+                LedgerErrors.MixedCurrencies(currencies));
+        }
+
+        return Result.Success((entries, currencies.Count == 1 ? currencies[0] : string.Empty));
     }
 
     public async Task<Result<JournalEntryDetail>> PostDeliveryAsync(

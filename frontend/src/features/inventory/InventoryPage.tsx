@@ -7,6 +7,7 @@
 //       renders the happy path is not finished.
 
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { ApiError, api } from '../../shared/api';
 import { inventoryStatuses, type InventoryStatus, type InventoryUnitSummary } from '../../shared/contracts';
 
@@ -28,13 +29,23 @@ export function InventoryPage() {
   const [status, setStatus] = useState<InventoryStatus | ''>('');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
 
+  // Somebody arrived here from a car named somewhere else — the dashboard's
+  // oldest-stock list is the one that does this. Landing on the whole list
+  // instead would make that link a promise the screen does not keep.
+  const [params, setParams] = useSearchParams();
+  const stockNumber = params.get('stock') ?? '';
+
   const fetchUnits = useCallback(async () => {
     setLoad({ kind: 'loading' });
 
+    const filters = [
+      `limit=${PageSize}`,
+      ...(status ? [`status=${encodeURIComponent(status)}`] : []),
+      ...(stockNumber ? [`stock=${encodeURIComponent(stockNumber)}`] : []),
+    ];
+
     try {
-      const query = status
-        ? `?status=${encodeURIComponent(status)}&limit=${PageSize}`
-        : `?limit=${PageSize}`;
+      const query = `?${filters.join('&')}`;
       setLoad({ kind: 'ready', units: await api<InventoryUnitSummary[]>(`/inventory${query}`) });
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 403) {
@@ -47,7 +58,7 @@ export function InventoryPage() {
         message: failure instanceof ApiError ? failure.message : 'Could not load the stock list.',
       });
     }
-  }, [status]);
+  }, [status, stockNumber]);
 
   useEffect(() => {
     void fetchUnits();
@@ -74,6 +85,15 @@ export function InventoryPage() {
           </select>
         </div>
       </header>
+
+      {stockNumber === '' ? null : (
+        <p className="notice" role="status">
+          Showing stock number <span className="mono">{stockNumber}</span> only.{' '}
+          <button type="button" className="link" onClick={() => setParams({})}>
+            Show everything
+          </button>
+        </p>
+      )}
 
       <Body load={load} onRetry={fetchUnits} />
     </>
@@ -128,9 +148,12 @@ function UnitTable({ units }: { units: InventoryUnitSummary[] }) {
     <div className="scroll">
       <table>
         <caption className="visually-hidden">
+          {/* "1 vehicles" is what a caption reads out when somebody arrives here
+              from a link that named one car — which is now a route this screen
+              genuinely has. */}
           {capped
             ? `The first ${units.length} vehicles in stock. There may be more.`
-            : `${units.length} vehicles in stock`}
+            : `${units.length} ${units.length === 1 ? 'vehicle' : 'vehicles'} in stock`}
         </caption>
         <thead>
           <tr>

@@ -317,6 +317,109 @@ public sealed class InventoryService(
         return Result.Success(Describe(unit, vehicle, history));
     }
 
+    public async Task<Result<StockAging>> AgingAsync(
+        StockAgingQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<StockAging>(InventoryErrors.Forbidden);
+        }
+
+        if (query.RooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<StockAging>(InventoryErrors.Forbidden);
+        }
+
+        var asOf = query.AsOf ?? DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime);
+
+        var units = _db.InventoryUnits.AsNoTracking().Where(u => Unsold.Contains(u.Status));
+
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            units = units.Where(u => allowed.Contains(u.RooftopId));
+        }
+
+        if (query.RooftopId is { } only)
+        {
+            units = units.Where(u => u.RooftopId == only);
+        }
+
+        // No Take: this is a count of everything standing on the lot, and a lot
+        // with more cars than a page limit is exactly the one whose aging matters.
+        // The rows are small and the answer is wrong if any are left out.
+        var rows = await Join(units).ToListAsync(cancellationToken);
+
+        var aged = rows
+            .Select(row => Age(row.Unit, row.Vehicle, asOf))
+            .OrderByDescending(unit => unit.DaysInStock)
+            .ThenBy(unit => unit.StockNumber, StringComparer.Ordinal)
+            .ToList();
+
+        var bands = AgeBands
+            .Select(band => new StockAgeBand(
+                band.Name,
+                band.FromDay,
+                band.ToDay,
+                aged.Count(unit =>
+                    unit.DaysInStock >= band.FromDay
+                    && (band.ToDay is null || unit.DaysInStock <= band.ToDay))))
+            .ToList();
+
+        return Result.Success(new StockAging(
+            asOf,
+            aged.Count,
+            bands,
+            aged.Take(OldestShown).ToList()));
+    }
+
+    /// <summary>
+    /// The statuses that still represent money tied up. Incoming counts: it is
+    /// bought and paid for, and a car that never arrives is precisely the kind of
+    /// aging nobody notices.
+    /// </summary>
+    private static readonly InventoryStatus[] Unsold =
+    [
+        InventoryStatus.Incoming,
+        InventoryStatus.Reconditioning,
+        InventoryStatus.Available,
+        InventoryStatus.OnHold,
+    ];
+
+    /// <summary>
+    /// Thirty-day bands, which is how floor-plan interest is charged and therefore
+    /// how a dealer already thinks about stock. The last one is open-ended.
+    /// </summary>
+    private static readonly (string Name, int FromDay, int? ToDay)[] AgeBands =
+    [
+        ("0 to 30 days", 0, 30),
+        ("31 to 60 days", 31, 60),
+        ("61 to 90 days", 61, 90),
+        ("Over 90 days", 91, null),
+    ];
+
+    private const int OldestShown = 5;
+
+    private static AgingUnit Age(InventoryUnit unit, Vehicle vehicle, DateOnly asOf)
+    {
+        // Falls back to the day the unit was entered when nobody recorded an
+        // acquisition date. Treating a missing date as age zero would hide the
+        // oldest cars in the newest band, which is the one mistake this report
+        // cannot afford — so the estimate is used and then declared.
+        var estimated = unit.AcquiredOn is null;
+        var from = unit.AcquiredOn ?? DateOnly.FromDateTime(unit.CreatedAt.UtcDateTime);
+
+        // A car entered with tomorrow's acquisition date is not minus one day old.
+        var days = Math.Max(0, asOf.DayNumber - from.DayNumber);
+
+        return new AgingUnit(
+            unit.Id, unit.StockNumber, vehicle.DisplayName, unit.Status.ToString(), days, estimated);
+    }
+
     /// <summary>
     /// A unit is only meaningful next to its vehicle, so every read pairs the two
     /// in one query rather than fetching vehicles row by row.

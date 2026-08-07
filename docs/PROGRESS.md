@@ -3,7 +3,7 @@
 Plain language, no jargon. For the engineering detail — every claim paired with
 the command that proves it — see [implementation/STATUS.md](implementation/STATUS.md).
 
-**Last updated:** 5 August 2026
+**Last updated:** 7 August 2026
 
 ---
 
@@ -44,7 +44,12 @@ only a developer can reach.
 operator console creates it, opens its books, and produces a one-time code for
 its first manager.
 
-**About 63% of the first release. Three of the eight stages are finished and four
+**There is now a screen that answers "how did we do this month?"** — front, back
+and service profit against last month, how many cars went out, and how old the
+unsold stock is. Every figure on it is read out of the accounts rather than added
+up a second time, so it cannot drift away from the books.
+
+**About 66% of the first release. Four of the eight stages are finished and three
 more are under way.**
 
 ---
@@ -62,7 +67,7 @@ months of focused work.
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Done** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, warranties, paperwork. | **Done** |
 | 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Half** — the workshop and parts stock are built. Finance applications to lenders and a booking diary are not |
-| 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | **Most of it** — balances, month-end, staff admin, an operator console, and setting up a new dealership. Dashboards do not exist |
+| 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | **Done** — balances, month-end, staff admin, an operator console, setting up a new dealership, and a dashboard for the month |
 | 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | **Started** — backups are rehearsed; the rest is not |
 | 8 | Live pilot | Two dealerships running on it for 60 days. | Not started |
 
@@ -336,6 +341,27 @@ months of focused work.
 - **Correcting a closed month still works the same way it always did.** You post
   a reversal, dated today, and the closed month stays exactly as you reported it
 
+### How did we do this month
+
+- **One screen, one question.** What the month made, split into the car, the
+  warranty, and the workshop — because those are three different businesses and
+  one combined number hides whichever is doing badly
+- **Every figure is set against last month**, in words rather than only an arrow.
+  A number on its own does not tell anybody whether it was a good month
+- **The figures come out of the accounts**, not from adding the deals up a second
+  time. Two sets of arithmetic over the same month eventually disagree, and then
+  nobody can say which is right
+- **It says whether the month is still open**, because that is what decides
+  whether any of it can still change
+- **How old the unsold stock is**, in thirty-day bands with the worst offenders
+  named — and clicking one takes you straight to that car
+- **You see what you are entitled to.** Somebody who may look at the stock but not
+  the money sees the stock, and is told in a sentence why the rest is missing
+  rather than being shown an empty page that looks like a bad month
+- **Light or dark, and it mirrors for right-to-left reading.** The whole
+  application does, not only this screen
+- **It can be driven without a mouse.** Press `?` for the list
+
 ### Parts, and what the workshop actually earns
 
 - **A part is real stock now.** It has a number, a description, and a count on
@@ -394,14 +420,21 @@ months of focused work.
   there are no purchase orders, no supplier records, no stock takes, and no
   returns to a supplier. Counting the shelf and correcting it is still a job for
   a spreadsheet
-- **A screen for the workshop.** All of the above works, and nothing draws it yet
-- Finance applications, lenders, or F&I products
+- Finance applications and lenders. The **products** sold alongside a car —
+  warranties, cover, service plans — do exist and carry their own profit; sending
+  an application to a lender does not
 - Taxes and registration fees calculated by jurisdiction
-- Printed or signed paperwork
+- **Signed** paperwork. A vehicle order and a service invoice both print; nothing
+  captures a signature
 - Appointments as real diary entries, or automatic follow-up reminders
-- Photos of a vehicle, or aging reports
+- Photos of a vehicle
 - Booking a service in advance, or planning who is working on what tomorrow
-- Reports of any kind
+- **Reports beyond the month.** There is a dashboard for the current month and a
+  trial balance. There is nothing for a quarter or a year, no comparison between
+  locations side by side, and no league table by salesperson or advisor
+- **Reading the dashboard in another language.** The page mirrors itself for
+  right-to-left reading and switches between light and dark, but every word in it
+  is still English
 - A way to add a second person who runs the servers. There is one, created when
   the system is set up, and no way to add another yet — nor to get back in if
   they lose their phone
@@ -410,8 +443,6 @@ months of focused work.
   needs a way to prove the person asking really owns the account, which is a
   different job with different safeguards — so it is refused outright rather than
   quietly becoming that feature
-- Creating a new dealership from the administration side. It can list them and
-  take one out of service; setting a new one up is still a developer's job
 - Cancelling an import once it has started, or watching its progress while it
   runs — it reports when it finishes
 - Moving anything beyond customers and cars. Enquiries, deals and the books have
@@ -422,14 +453,18 @@ months of focused work.
 
 ## Next
 
-**Setting up a dealership without a developer.**
+**Something you can actually install.**
 
-This is the gate in front of everything else. However good the rest gets,
-creating a new dealership is still a job for somebody with the source code — so
-nothing can be put in front of a real dealer until it is an ordinary operation.
-Per your answer it goes in the administrator console, next to the list of
-dealerships that is already there: create it, and out comes a working dealership
-with its books open and one manager who sets their own password.
+Every part of the product now has a screen, and a dealership can be created from
+the operator console. What is missing is the box it arrives in: there is a
+runbook telling an operator how to run it, and nothing packaged for them to run.
+That is a container image and a Windows service, so the runbook has something to
+point at.
+
+**Then: a forgotten password.** A new starter sets their own with a one-time code,
+but somebody who forgets theirs in week two has nowhere to go. It is the gap most
+likely to be hit by a real pilot, and it needs a way to prove the person asking
+owns the account — a different job with different safeguards.
 
 After that the honest list is short and mostly waiting on you: connectors to a
 real DMS, and a pilot to point them at.

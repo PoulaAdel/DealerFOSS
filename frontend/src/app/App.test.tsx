@@ -13,6 +13,38 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 import { mockApi, mockApiUnreachable } from '../test/setup';
 import { setCurrentTenant } from '../shared/api';
+import type { MonthInReview } from '../shared/contracts';
+
+/** Enough of a month for the landing screen to draw. */
+const month: MonthInReview = {
+  year: 2026,
+  month: 8,
+  startsOn: '2026-08-01',
+  endsOn: '2026-08-31',
+  books: 'Open',
+  closedAt: null,
+  trading: {
+    from: '2026-08-01',
+    to: '2026-08-31',
+    currency: 'USD',
+    departments: [],
+    totalRevenue: 0,
+    totalCost: 0,
+    totalGross: 0,
+    vehiclesDelivered: 0,
+    serviceInvoices: 0,
+  },
+  priorMonth: null,
+  stock: { asOf: '2026-08-07', units: 0, bands: [], oldest: [] },
+  withheld: [],
+};
+
+/** What a signed-in browser asks for the moment it lands. */
+const signedIn = {
+  '/auth/me': { ok: true as const, body: { userId: 'u1', mustEnrolSecondFactor: false } },
+  '/reporting/month': { ok: true as const, body: month },
+  '/organization': { ok: true as const, body: { legalEntities: [] } },
+};
 
 describe('the application shell', () => {
   it('shows the sign-in form when nobody is signed in', async () => {
@@ -26,18 +58,17 @@ describe('the application shell', () => {
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled();
   });
 
-  it('shows the stock list and the navigation once signed in', async () => {
+  it('lands on the month and shows the navigation once signed in', async () => {
     setCurrentTenant('northgroup');
-    mockApi({
-      '/auth/me': { ok: true, body: { userId: 'u1', mustEnrolSecondFactor: false } },
-      '/inventory': { ok: true, body: [] },
-    });
+    mockApi(signedIn);
 
     render(<App />);
 
-    // The default route redirects to the stock list, so this is also the proof
-    // that routing runs rather than merely compiling.
-    expect(await screen.findByRole('heading', { name: 'Stock' })).toBeVisible();
+    // The default route redirects to the dashboard, so this is also the proof
+    // that routing runs rather than merely compiling. Asserted on the lede
+    // rather than the heading, which is a month name and therefore a moving
+    // target every first of the month.
+    expect(await screen.findByText('So far this month.')).toBeVisible();
     expect(screen.getByRole('link', { name: 'Trial balance' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible();
     expect(screen.getByText('northgroup')).toBeVisible();
@@ -46,9 +77,8 @@ describe('the application shell', () => {
   it('moves between screens when the navigation is used', async () => {
     setCurrentTenant('northgroup');
     mockApi({
-      '/auth/me': { ok: true, body: { userId: 'u1', mustEnrolSecondFactor: false } },
-      '/inventory': { ok: true, body: [] },
-      '/accounting/trial-balance': {
+      ...signedIn,
+      '/accounting/balances': {
         ok: true,
         body: {
           from: null, to: null, currency: 'USD',
@@ -58,11 +88,38 @@ describe('the application shell', () => {
     });
 
     render(<App />);
-    await screen.findByRole('heading', { name: 'Stock' });
+    await screen.findByText('So far this month.');
 
     await userEvent.click(screen.getByRole('link', { name: 'Trial balance' }));
 
     expect(await screen.findByRole('heading', { name: 'Trial balance' })).toBeVisible();
+  });
+
+  it('takes a keyboard-only user between screens without a mouse', async () => {
+    setCurrentTenant('northgroup');
+    mockApi({ ...signedIn, '/inventory': { ok: true, body: [] } });
+
+    render(<App />);
+    await screen.findByText('So far this month.');
+
+    // "g" then "s". A power user never reaches for the navigation.
+    await userEvent.keyboard('gs');
+
+    expect(await screen.findByRole('heading', { name: 'Stock' })).toBeVisible();
+  });
+
+  it('can be asked what the shortcuts are, because an unknown one is useless', async () => {
+    setCurrentTenant('northgroup');
+    mockApi(signedIn);
+
+    render(<App />);
+    await screen.findByText('So far this month.');
+
+    await userEvent.keyboard('?');
+
+    const panel = await screen.findByRole('dialog', { name: 'Keyboard shortcuts' });
+    expect(panel).toBeVisible();
+    expect(screen.getByText('Go to stock')).toBeVisible();
   });
 
   it('says the server is unreachable rather than showing a blank page', async () => {
@@ -78,14 +135,10 @@ describe('the application shell', () => {
 
   it('offers a way out that clears the session', async () => {
     setCurrentTenant('northgroup');
-    mockApi({
-      '/auth/me': { ok: true, body: { userId: 'u1', mustEnrolSecondFactor: false } },
-      '/auth/logout': { ok: true, status: 204 },
-      '/inventory': { ok: true, body: [] },
-    });
+    mockApi({ ...signedIn, '/auth/logout': { ok: true, status: 204 } });
 
     render(<App />);
-    await screen.findByRole('heading', { name: 'Stock' });
+    await screen.findByText('So far this month.');
 
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
 

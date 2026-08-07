@@ -55,6 +55,11 @@ public sealed class FeatureBoundaryTests
         // that could reprice the catalogue from inside a deal is one that could
         // rewrite what an earlier deal made.
         { "DealerFOSS.Finance", ["DealerFOSS.Deals.Deal", "DealerFOSS.Deals.DealCharge", "DealerFOSS.Deals.DealProduct", "DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.Account"] },
+        // Reporting composes contracts and owns no data of its own. Touching an
+        // entity here would mean a dashboard querying the tables directly — which
+        // is a way to read past a rooftop scope, in the last place anybody would
+        // think to look for one.
+        { "DealerFOSS.Reporting", ["DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.JournalLine", "DealerFOSS.Accounting.Account", "DealerFOSS.Accounting.AccountingPeriod", "DealerFOSS.Inventory.InventoryUnit", "DealerFOSS.Deals.Deal"] },
     };
 
     [Theory]
@@ -169,6 +174,24 @@ public sealed class FeatureBoundaryTests
 
         result.IsSuccessful.Should().BeTrue(
             because: "the control plane operates the deployment and reads none of it; offenders: "
+                + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Reporting_must_not_reach_the_database_at_all()
+    {
+        // The stronger half of the rule above. Reporting exists to arrange figures
+        // other capabilities computed, and every one of them applies its own
+        // rooftop scope on the way out. A TenantDb here would let a dashboard
+        // total up a location its reader may not see, and the total would look
+        // exactly like a correct one.
+        var result = Types.InAssembly(App)
+            .That().ResideInNamespace("DealerFOSS.Reporting")
+            .Should().NotHaveDependencyOn("DealerFOSS.Data")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "a dashboard reads through contracts, never through tables; offenders: "
                 + string.Join(", ", result.FailingTypeNames ?? []));
     }
 

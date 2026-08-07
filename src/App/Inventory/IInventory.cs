@@ -42,7 +42,57 @@ public interface IInventory
         Guid unitId,
         StatusChangeRequest change,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// How long the unsold stock has been standing. The one inventory figure that
+    /// costs money every day nobody looks at it.
+    /// </summary>
+    /// <remarks>
+    /// Answered here rather than by whatever screen wants it, because the age of a
+    /// unit depends on knowing which statuses still count as stock and what to do
+    /// when nobody recorded an acquisition date. Both are Inventory's business.
+    /// </remarks>
+    Task<Result<StockAging>> AgingAsync(StockAgingQuery query, CancellationToken cancellationToken);
 }
+
+/// <summary>Which stock to age, and as at when.</summary>
+public sealed record StockAgingQuery(RooftopId? RooftopId = null, DateOnly? AsOf = null);
+
+/// <summary>
+/// The unsold stock, grouped by how long it has been here. Sold and removed units
+/// are excluded: aging is a question about money still tied up, and a car that
+/// left is not tying anything up.
+/// </summary>
+public sealed record StockAging(
+    DateOnly AsOf,
+    int Units,
+    IReadOnlyList<StockAgeBand> Bands,
+
+    /// <summary>
+    /// The oldest few, named. A band count says there is a problem; this says
+    /// which cars it is, which is the difference between a chart and an action.
+    /// </summary>
+    IReadOnlyList<AgingUnit> Oldest);
+
+/// <summary>
+/// One band. <paramref name="ToDay"/> is null on the last one, which is open-ended
+/// — and is the band a manager is actually looking for.
+/// </summary>
+public sealed record StockAgeBand(string Name, int FromDay, int? ToDay, int Units);
+
+public sealed record AgingUnit(
+    Guid Id,
+    string StockNumber,
+    string VehicleDisplayName,
+    string Status,
+    int DaysInStock,
+
+    /// <summary>
+    /// True when the age is counted from the day the unit was entered rather than
+    /// from an acquisition date, because nobody recorded one. Said out loud so a
+    /// manager can tell a genuinely old car from a badly entered one.
+    /// </summary>
+    bool AgeIsEstimated);
 
 /// <summary>One unit as an inventory list shows it.</summary>
 public sealed record InventoryUnitSummary(

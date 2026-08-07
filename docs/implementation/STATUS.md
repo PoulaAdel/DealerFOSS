@@ -305,6 +305,26 @@ them is written.
 
   **Not included, and requested:** dashboards. Named here rather than half-built.
 
+- **2026-08-07 — How did we do this month, answered in one screen and one call.** The figures existed; nothing put them in front of a dealer principal. There is now a landing screen showing front, back, and service gross against last month, cars delivered, jobs invoiced, gross per car, and how old the unsold stock is — plus whether the month's books are still open, because that is what decides whether any of it can still move.
+
+  **The gross comes from the ledger, not from the deals.** A dashboard that added deal totals up would be a second opinion about the same month, and the two would eventually disagree with nobody able to say which was right. `IAccounting.PerformanceAsync` reads the same journal lines the trial balance reads, through the same rooftop scoping — one method, so a figure on a dashboard cannot cover a location the trial balance would not. The department split lives in Accounting because working out gross means knowing 4000 is a sale and 5000 is what it cost; aging lives in Inventory because it means knowing which statuses still count as stock. The new `Reporting` capability holds neither rule — it owns no table, no entity, and no `TenantDb`, which an architecture test now enforces.
+
+  **Permission is per panel, not per page.** A salesperson who may read stock and not the ledger sees the stock and is told in words why the money is absent. A refusal becomes an absence; every other failure is still reported as itself, because two currencies in the ledger is a fact the reader needs and "not yours to see" is a fact about the reader. A caller entitled to nothing is refused outright, so an empty dashboard never silently means a forbidden one.
+
+  **Three rehearsals, three catches.** Flipping the discount sign moved front gross by 600 and the delta test caught it; not subtracting reversals from the count left a car that had been un-sold still counted; overlapping the 30/31-day band boundary double-counted three units. The count and the money move together on purpose — otherwise somebody divides one by the other and gets a nonsense average per car.
+
+  **Two figures refuse to lie in the quiet months.** A department that sold nothing has *no* margin rather than a margin of zero, and a month compared against one that made nothing says "up from nothing" rather than dividing by it. Both are only wrong in a new dealership's first month, which is the one nobody tests by hand.
+
+  **The frontend gained the infrastructure the screen needed, and it applies everywhere.** An explicit light/dark/auto choice on `<html>`, resolved to a real theme in code so the stylesheet carries one palette instead of two copies; a direction toggle, with every physical `left`/`right` rule in the stylesheet converted to logical properties so the whole application mirrors; keyboard navigation (`g` then a letter, `[`/`]`/`t` on the dashboard) with a `?` panel generated from the same table the shell binds, so a shortcut cannot exist without being documented; and transitions expressed through one token that `prefers-reduced-motion` switches off for all of them at once.
+
+  **Two colour pairs failed WCAG AA on measurement and were changed.** `--ink-3` was 4.0:1 on white — under AA for the small print it is used for, which is most of the labels in the application. `--accent` on `--accent-soft` was 4.1:1, the pairing behind every status chip and the active navigation pill. Worse, the dark theme's primary button was **white on light amber at 2.4:1**, hard-coded as `#fff` in two rules; it is now an `--on-accent` token that flips with the theme. Every measured pair in both themes now clears 4.5:1, the lowest being 4.51.
+
+  **Verified in a browser**, in both themes and both directions: the month reads $532 service gross on 1 job from the seeded data, stepping back a month re-ages the stock as at that month's cutoff (26 days rather than 33) rather than showing today's, and the oldest-stock link lands on the stock list filtered to that one car. Evidence: `dotnet test` 509/509 (was 483), `npm test` 215/215 (was 182), `verify-e2e.ps1` PASS — which now also asserts the month reports 24,000 more front gross on one more car after a delivery, and returns to zero on both after the reversal *(automated)*
+
+  **Known and not a defect:** in right-to-left mode the English strings show their full stops at the visual start. That is correct bidirectional rendering of left-to-right text in a right-to-left paragraph, and it goes away when the content itself is right-to-left. The layout mirrors; there are no translations yet.
+
+  **Deliberately not included:** a per-rooftop breakdown side by side (the query takes one rooftop, so a group asks once per location), salesperson and advisor league tables, and anything daily.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |

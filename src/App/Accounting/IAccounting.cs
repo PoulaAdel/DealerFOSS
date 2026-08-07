@@ -30,6 +30,19 @@ public interface IAccounting
     Task<Result<TrialBalance>> TrialBalanceAsync(BalanceQuery query, CancellationToken cancellationToken);
 
     /// <summary>
+    /// What each department made over a period, and how many transactions made
+    /// it. Same reads as a trial balance, arranged the way a dealer principal
+    /// asks the question rather than the way an accountant checks it.
+    /// </summary>
+    /// <remarks>
+    /// This lives here, and not in whatever screen wants it, because working out
+    /// gross profit means knowing that 4000 is a vehicle sale and 5000 is what it
+    /// cost. Accounting owns the chart of accounts; a second place that also knew
+    /// the codes would be a second place to get them wrong.
+    /// </remarks>
+    Task<Result<LedgerPerformance>> PerformanceAsync(BalanceQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Records the accounting consequence of a car leaving the lot. Called by
     /// Deals when a deal is delivered; it is not something a person does.
     /// </summary>
@@ -235,6 +248,64 @@ public sealed record AccountBalance(
     decimal Debits,
     decimal Credits,
     decimal Balance);
+
+/// <summary>
+/// A period's trading, by department. Every figure here is derived from the same
+/// journal lines a trial balance totals, so the two can never disagree — which is
+/// the point of deriving a dashboard from the ledger rather than from the deals.
+/// </summary>
+public sealed record LedgerPerformance(
+    DateOnly? From,
+    DateOnly? To,
+    string Currency,
+    IReadOnlyList<DepartmentResult> Departments,
+    decimal TotalRevenue,
+    decimal TotalCost,
+    decimal TotalGross,
+
+    /// <summary>
+    /// Cars that left the lot, counted from the deliveries posted in the period.
+    /// A delivery reversed in this period is subtracted, so the count moves with
+    /// the money it produced instead of drifting away from it.
+    /// </summary>
+    int VehiclesDelivered,
+
+    /// <summary>Repair orders invoiced in the period, counted the same way.</summary>
+    int ServiceInvoices);
+
+/// <summary>
+/// One department's revenue, cost, and the difference. Named rather than keyed by
+/// account code: what a manager reads is "the cars made this much", and the codes
+/// that produced it are the ledger's business.
+/// </summary>
+public sealed record DepartmentResult(
+    string Name,
+    decimal Revenue,
+    decimal Cost,
+    decimal Gross,
+
+    /// <summary>
+    /// Gross as a share of revenue, 0 to 1. Null when nothing was sold — a
+    /// department with no revenue has no margin, and printing 0% would say
+    /// something false about a month that simply has not started.
+    /// </summary>
+    decimal? Margin);
+
+/// <summary>
+/// The departments a dashboard reports, in the order a dealer reads them. Public
+/// so a screen can label a figure without inventing its own spelling.
+/// </summary>
+public static class Departments
+{
+    /// <summary>Front-end gross — the car itself, its fees, less what it cost.</summary>
+    public const string Vehicles = "Vehicles";
+
+    /// <summary>Back-end gross — warranties and cover, less what the provider charges.</summary>
+    public const string FinanceAndInsurance = "Finance and insurance";
+
+    /// <summary>Labour, parts, and sublet, less what the parts cost off the shelf.</summary>
+    public const string Service = "Service";
+}
 
 public sealed record JournalQuery(
     RooftopId? RooftopId = null,

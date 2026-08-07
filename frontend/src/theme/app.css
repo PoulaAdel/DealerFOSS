@@ -1,20 +1,48 @@
 /* app.css — the whole visual language, for now.
  *
  * Use:  imported once by main.tsx.
- * Edit: it stays one file until it genuinely stops scanning. Two rules are not
- *       taste: every interactive element keeps a visible focus ring, and colour
- *       never carries meaning on its own — a status chip says its own name.
+ * Edit: it stays one file until it genuinely stops scanning. Four rules are not
+ *       taste:
+ *
+ *       - every interactive element keeps a visible focus ring;
+ *       - colour never carries meaning on its own — a status chip says its own
+ *         name, and an arrow is always beside a word;
+ *       - nothing is styled by a physical side. `padding-left` breaks the moment
+ *         the page runs right to left, and this application supports both. Use
+ *         the logical property: inline-start, inline-end, margin-inline;
+ *       - no colour is written outside the token block below. A hex code in a
+ *         component rule is a colour that will be wrong in one of the two themes.
+ *
+ *       There is one dark palette, keyed off one attribute. "Follow the machine"
+ *       is resolved to a real light or dark in appearance.tsx, so there is no
+ *       second copy of these colours inside a media query to keep in step.
  */
 
-:root {
+:root,
+:root[data-theme='light'] {
   --ink: #16191f;
   --ink-2: #4a525e;
-  --ink-3: #77808d;
+
+  /* Was #77808d, which measured 4.0:1 on white and 4.1:1 on --ground — under
+     AA for the small print it is used for, which is most of the labels on this
+     application. #656e7c is 5.1:1 and 4.5:1. */
+  --ink-3: #656e7c;
   --ground: #eef0f3;
   --surface: #ffffff;
   --line: #d5d9df;
-  --accent: #a85f0e;
+
+  /* Was #a85f0e, which measured 4.1:1 against --accent-soft — the pairing used
+     by every chip and the active navigation pill, at 12px. #8f5009 is 5.3:1
+     there and improves white-on-accent from 4.9:1 to 6.3:1. The dark theme's
+     accent already measures 6.2:1 on its own soft, and is left alone. */
+  --accent: #8f5009;
   --accent-soft: #f6e9d6;
+
+  /* What is legible ON the accent, which is not the same colour in both themes.
+     White on the dark theme's light amber measures 2.4:1 — a primary button
+     nobody with ordinary eyesight in ordinary light can read comfortably. This
+     token is why that pair is stated once instead of hard-coded twice. */
+  --on-accent: #ffffff;
   --done: #256a4d;
   --done-soft: #dff0e7;
   --fail: #a5342b;
@@ -23,24 +51,45 @@
   --idle-soft: #e8eaee;
   --mono: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* How long a state change takes to read as a change rather than a jump. */
+  --beat: 140ms;
+  --lift: 0 1px 2px rgb(16 25 31 / 6%), 0 8px 24px rgb(16 25 31 / 6%);
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
+  --ink: #e8ecf1;
+  --ink-2: #a3adba;
+  --ink-3: #7b8593;
+  --ground: #0f1216;
+  --surface: #171b21;
+  --line: #272d36;
+  --accent: #e0973f;
+  --accent-soft: #33240f;
+  --on-accent: #16191f;
+  --done: #4fae83;
+  --done-soft: #12261d;
+  --fail: #e07a6d;
+  --fail-soft: #2b1512;
+  --idle: #6d7683;
+  --idle-soft: #1c2229;
+  --lift: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 30%);
+}
+
+/* Somebody who has asked their machine for less movement has asked this
+   application too. Every transition below is expressed through --beat, so
+   switching it off here switches all of them off — a component cannot forget. */
+@media (prefers-reduced-motion: reduce) {
   :root {
-    --ink: #e8ecf1;
-    --ink-2: #a3adba;
-    --ink-3: #7b8593;
-    --ground: #0f1216;
-    --surface: #171b21;
-    --line: #272d36;
-    --accent: #e0973f;
-    --accent-soft: #33240f;
-    --done: #4fae83;
-    --done-soft: #12261d;
-    --fail: #e07a6d;
-    --fail-soft: #2b1512;
-    --idle: #6d7683;
-    --idle-soft: #1c2229;
+    --beat: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -77,12 +126,17 @@ button {
   background: var(--surface);
   color: var(--ink);
   cursor: pointer;
+  transition: background var(--beat) ease, border-color var(--beat) ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--ink-3);
 }
 
 button[type='submit'] {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -163,7 +217,7 @@ textarea {
 
 .skip {
   position: absolute;
-  left: -9999px;
+  inset-inline-start: -9999px;
   top: 8px;
   padding: 10px 16px;
   background: var(--surface);
@@ -173,7 +227,7 @@ textarea {
 }
 
 .skip:focus {
-  left: 8px;
+  inset-inline-start: 8px;
 }
 
 .shell__bar {
@@ -207,6 +261,11 @@ textarea {
   border-radius: 999px;
   color: var(--ink-2);
   text-decoration: none;
+  transition: background var(--beat) ease, color var(--beat) ease;
+}
+
+.shell__bar nav a:hover {
+  background: var(--idle-soft);
 }
 
 .shell__bar nav a.active {
@@ -216,10 +275,14 @@ textarea {
 }
 
 .shell__right {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Wraps for the same reason the navigation does: the bar carries appearance
+     controls now, and at 375px an unwrapped row pushes the page sideways. */
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .shell__tenant {
@@ -286,7 +349,7 @@ table {
 }
 
 th {
-  text-align: left;
+  text-align: start;
   font-family: var(--mono);
   font-size: 0.68rem;
   letter-spacing: 0.1em;
@@ -355,7 +418,7 @@ tbody tr:last-child td {
 }
 
 .num {
-  text-align: right;
+  text-align: end;
   font-variant-numeric: tabular-nums;
 }
 
@@ -419,7 +482,7 @@ tfoot td {
 
 .steps {
   margin: 0;
-  padding-left: 1.2rem;
+  padding-inline-start: 1.2rem;
 }
 
 .steps > li {
@@ -484,7 +547,7 @@ tfoot td {
 }
 
 .shell__badge {
-  margin-left: 8px;
+  margin-inline-start: 8px;
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--accent-soft);
@@ -535,7 +598,7 @@ tfoot td {
 .actions button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -634,7 +697,7 @@ tfoot td {
    the truth. The stage name at the start of each line is the marker. */
 .history {
   margin: 8px 0 0;
-  padding-left: 0;
+  padding-inline-start: 0;
   list-style: none;
   font-size: 0.88rem;
 }
@@ -687,7 +750,7 @@ tfoot td {
 .enquiry {
   margin: 12px 0;
   padding: 8px 14px;
-  border-left: 3px solid var(--line);
+  border-inline-start: 3px solid var(--line);
   color: var(--ink-2);
 }
 
@@ -709,7 +772,7 @@ tfoot td {
    a button, because it changes this page rather than navigating. */
 table button.link {
   padding: 0;
-  text-align: left;
+  text-align: start;
   color: var(--ink);
 }
 
@@ -746,4 +809,340 @@ table button.link {
 
 .terms td:first-child select {
   min-width: 10.5rem;
+}
+
+/* --- segmented controls ---
+ *
+ * Used for the theme, the direction, and the month stepper. A group of buttons
+ * where one is current, rather than a dropdown: the choice and the state are the
+ * same object, so nobody has to open anything to find out where they are.
+ */
+
+.switcher {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.switcher button {
+  border: 0;
+  border-radius: 0;
+  padding: 5px 11px;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  background: none;
+  transition: background var(--beat) ease, color var(--beat) ease;
+}
+
+.switcher button + button {
+  border-inline-start: 1px solid var(--line);
+}
+
+.switcher button:hover:not(:disabled) {
+  background: var(--idle-soft);
+}
+
+/* aria-pressed is the source of truth, so the highlight and what a screen reader
+   announces cannot disagree. */
+.switcher button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.switcher button:disabled {
+  cursor: default;
+  color: var(--ink-3);
+}
+
+.appearance {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* --- the shortcuts sheet --- */
+
+.sheet {
+  position: fixed;
+  inset-block-start: 12vh;
+  inset-inline: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  inline-size: min(30rem, calc(100vw - 32px));
+  max-block-size: 70vh;
+  overflow-y: auto;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--lift);
+}
+
+/* The sheet is centred by translating half its own width — which is the wrong
+   direction once the page runs right to left. */
+:root[dir='rtl'] .sheet {
+  transform: translateX(50%);
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sheet__head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.keys {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+}
+
+.keys > div {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.keys dt,
+.keys dd {
+  margin: 0;
+}
+
+kbd {
+  display: inline-block;
+  min-inline-size: 1.6rem;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-block-end-width: 2px;
+  border-radius: 6px;
+  background: var(--ground);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+kbd + kbd {
+  margin-inline-start: 4px;
+}
+
+/* --- how did we do this month? --- */
+
+/* The path is drawn pointing at the start of a left-to-right line, so the
+   end-facing one is a flip, and both flip again when the line runs the other
+   way. Exactly one transform applies in each of the four cases. */
+.chev {
+  display: block;
+  inline-size: 8px;
+  block-size: 12px;
+}
+
+.chev--end,
+:root[dir='rtl'] .chev--start {
+  transform: scaleX(-1);
+}
+
+:root[dir='rtl'] .chev--end {
+  transform: none;
+}
+
+.dash__lede {
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+}
+
+.dash__controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* The figures dim while the next month is being fetched, so a changed month
+   reads as a response rather than as numbers that quietly differ. */
+.dash--settling {
+  opacity: 0.55;
+  transition: opacity var(--beat) ease;
+}
+
+.notice {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 0.9rem;
+}
+
+.verdict--open {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.verdict--closed {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.verdict--notopened,
+.verdict--unknown {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+/* The one figure somebody came for. Marked by a band on the leading edge, which
+   mirrors with the page rather than staying stubbornly on the left. */
+.tile--lead {
+  border-inline-start: 3px solid var(--accent);
+}
+
+.tile__label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.tile__value {
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile__change {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+}
+
+.tile__change--up {
+  color: var(--done);
+}
+
+.tile__change--down {
+  color: var(--fail);
+}
+
+.dash__split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.panel--dash {
+  max-width: none;
+  padding: 16px 18px;
+}
+
+.panel--dash h2 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.panel--dash h3 {
+  margin: 20px 0 8px;
+}
+
+.figures {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.figures dt {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.figures dd {
+  margin: 2px 0 0;
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.figures dd .muted {
+  font-size: 0.8rem;
+}
+
+/* --- stock age bands ---
+ *
+ * The bar is decorative and the count is text beside it. A chart whose only
+ * value is a width cannot be read out, and cannot be read precisely by anybody.
+ */
+
+.bands {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bands li {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr 2.5rem;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.88rem;
+}
+
+.bands__name {
+  color: var(--ink-2);
+}
+
+.bands__bar {
+  block-size: 10px;
+  border-radius: 999px;
+  background: var(--idle-soft);
+  overflow: hidden;
+}
+
+.bands__bar > span {
+  display: block;
+  block-size: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: inline-size var(--beat) ease;
+}
+
+.bands__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+abbr[title] {
+  cursor: help;
+  text-decoration: none;
+  color: var(--ink-3);
 }

@@ -8,6 +8,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { MemoryRouter } from 'react-router';
 import { InventoryPage } from './InventoryPage';
 import { apiCalls, mockApi, mockApiPending, mockApiUnreachable } from '../../test/setup';
 import type { InventoryUnitSummary } from '../../shared/contracts';
@@ -22,17 +23,29 @@ const unit: InventoryUnitSummary = {
   vehicleDisplayName: '2021 Toyota RAV4',
 };
 
+/**
+ * Inside a router because the screen reads `?stock=` from the address — that is
+ * how the dashboard hands somebody a specific car.
+ */
+function renderStock(at = '/inventory') {
+  return render(
+    <MemoryRouter initialEntries={[at]}>
+      <InventoryPage />
+    </MemoryRouter>,
+  );
+}
+
 describe('the stock list', () => {
   it('says it is loading before the answer arrives', () => {
     mockApiPending();
-    render(<InventoryPage />);
+    renderStock();
 
     expect(screen.getByText('Loading the stock list…')).toBeVisible();
   });
 
   it('draws a car once the list arrives', async () => {
     mockApi({ '/inventory': { ok: true, body: [unit] } });
-    render(<InventoryPage />);
+    renderStock();
 
     expect(await screen.findByText('NAG-1042')).toBeVisible();
     expect(screen.getByText('2021 Toyota RAV4')).toBeVisible();
@@ -42,7 +55,7 @@ describe('the stock list', () => {
 
   it('explains an empty lot instead of showing an empty table', async () => {
     mockApi({ '/inventory': { ok: true, body: [] } });
-    render(<InventoryPage />);
+    renderStock();
 
     expect(
       await screen.findByText(/Nothing here yet\. Cars appear once they are taken into stock\./),
@@ -54,7 +67,7 @@ describe('the stock list', () => {
     mockApi({
       '/inventory': { ok: false, status: 403, code: 'access.denied', detail: 'No.' },
     });
-    render(<InventoryPage />);
+    renderStock();
 
     const message = await screen.findByRole('alert');
     expect(message).toHaveTextContent(/do not have access to this location/i);
@@ -70,7 +83,7 @@ describe('the stock list', () => {
         { ok: true, body: [unit] },
       ],
     });
-    render(<InventoryPage />);
+    renderStock();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('The server answered 500.');
 
@@ -81,7 +94,7 @@ describe('the stock list', () => {
 
   it('says the server is unreachable rather than blaming the user', async () => {
     mockApiUnreachable();
-    render(<InventoryPage />);
+    renderStock();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not reach the server/);
   });
@@ -96,7 +109,7 @@ describe('the stock list', () => {
     }));
 
     mockApi({ '/inventory': { ok: true, body: full } });
-    render(<InventoryPage />);
+    renderStock();
 
     // Said twice on purpose, to two different audiences: the table's caption is
     // what a screen reader announces, the note is what a sighted user reads.
@@ -106,7 +119,7 @@ describe('the stock list', () => {
 
   it('says the count plainly when it is the whole lot', async () => {
     mockApi({ '/inventory': { ok: true, body: [unit] } });
-    render(<InventoryPage />);
+    renderStock();
 
     await screen.findByText('NAG-1042');
     expect(screen.queryByText(/There may be more/)).not.toBeInTheDocument();
@@ -114,7 +127,7 @@ describe('the stock list', () => {
 
   it('asks the server again when the status filter changes', async () => {
     mockApi({ '/inventory': { ok: true, body: [unit] } });
-    render(<InventoryPage />);
+    renderStock();
     await screen.findByText('NAG-1042');
 
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'Sold');
@@ -122,5 +135,27 @@ describe('the stock list', () => {
     // Filtering is the server's job: it is the only party that knows which
     // rooftops this caller may see.
     expect(apiCalls().some((c) => c.path.includes('status=Sold'))).toBe(true);
+  });
+
+  it('narrows to one car when sent here from somewhere that named it', async () => {
+    // The dashboard's oldest-stock list links here. Landing on the whole list
+    // would make that link a promise the screen does not keep.
+    mockApi({ '/inventory': { ok: true, body: [unit] } });
+    renderStock('/inventory?stock=NAG-1042');
+
+    await screen.findByText('2021 Toyota RAV4');
+
+    expect(apiCalls().some((c) => c.path.includes('stock=NAG-1042'))).toBe(true);
+    expect(screen.getByRole('button', { name: 'Show everything' })).toBeVisible();
+  });
+
+  it('offers the way back to the whole list', async () => {
+    mockApi({ '/inventory': { ok: true, body: [unit] } });
+    renderStock('/inventory?stock=NAG-1042');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Show everything' }));
+
+    const last = apiCalls().at(-1)!;
+    expect(last.path).not.toContain('stock=');
   });
 });

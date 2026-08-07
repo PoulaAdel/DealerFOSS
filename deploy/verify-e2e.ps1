@@ -422,6 +422,14 @@ try {
     "second deal on the same car           -> HTTP $doubleSell (expect 409)"
 
     Write-Host "`n--- the ledger behind the sale ---" -ForegroundColor Cyan
+
+    # Read before the car leaves, so what follows is this sale's contribution and
+    # not whatever the seeded month already held.
+    $monthBefore = Invoke-RestMethod "$baseUrl/api/v1/reporting/month" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $grossBefore = ($monthBefore.trading.departments | Where-Object { $_.name -eq "Vehicles" }).gross
+    $unitsBefore = $monthBefore.trading.vehiclesDelivered
+
     $null = Invoke-Api "/api/v1/deals/$($deal.id)/status" $orgWide @{ status = "Delivered" }
 
     $entries = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($deal.id)" `
@@ -434,12 +442,41 @@ try {
     "entry debits {0} vs credits {1}        (expect equal)" -f $posted.totalDebits, $posted.totalCredits
     $balanced = ($posted.totalDebits -eq $posted.totalCredits)
 
+    # The dashboard is derived from these same journal lines rather than from the
+    # deal, which is the only reason the two can never disagree. The unit was
+    # taken into stock with no cost, so the whole 24,000 is front gross.
+    $monthAfter = Invoke-RestMethod "$baseUrl/api/v1/reporting/month" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $grossAfter = ($monthAfter.trading.departments | Where-Object { $_.name -eq "Vehicles" }).gross
+    "the month now reports {0} more front gross (expect 24000)" -f ($grossAfter - $grossBefore)
+    "...on {0} more car(s) delivered           (expect 1)" -f ($monthAfter.trading.vehiclesDelivered - $unitsBefore)
+
     # A correction is a reversal; the original must survive it untouched.
     $reversal = Invoke-Api "/api/v1/accounting/journal/$($posted.id)/reverse" $orgWide @{ reason = "End-to-end check." }
     $originalAfter = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal/$($posted.id)" `
         -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
     $originalIntact = ($originalAfter.totalDebits -eq $posted.totalDebits)
     "reversal posted, original intact: {0}   (expect True)" -f $originalIntact
+
+    # And the dashboard follows the correction. The count and the money have to
+    # move together, or somebody divides one by the other and gets a nonsense
+    # average per car.
+    $monthUndone = Invoke-RestMethod "$baseUrl/api/v1/reporting/month" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $grossUndone = ($monthUndone.trading.departments | Where-Object { $_.name -eq "Vehicles" }).gross
+    "after the reversal the month is back to {0} (expect {1})" -f ($grossUndone - $grossBefore), 0
+    "...and {0} more car(s) than before        (expect 0)" -f ($monthUndone.trading.vehiclesDelivered - $unitsBefore)
+
+    $withheld = Invoke-RestMethod "$baseUrl/api/v1/reporting/month" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $sales
+    "a salesperson reads the same month     -> {0} withheld (expect 0)" -f @($withheld.withheld).Count
+
+    # A technician holds neither Accounting.Read nor Inventory.Read. An empty
+    # dashboard would read as "the dealership sold nothing", which is a different
+    # and much worse statement than "this is not yours to see".
+    $noFigures = New-DealerSession "northgroup" "tech@dev.local"
+    $technicianDashboard = Get-Status "/api/v1/reporting/month" "northgroup" $noFigures "Get"
+    "somebody entitled to none of it        -> HTTP $technicianDashboard (expect 403)"
 
     $reverseTwice = Get-Status "/api/v1/accounting/journal/$($posted.id)/reverse" "northgroup" $orgWide "Post" @{ reason = "Again." }
     "reversing the same entry twice        -> HTTP $reverseTwice (expect 409)"
@@ -1009,7 +1046,7 @@ try {
         -and ($afterReopen.amountDue -eq 100) -and ($reopenNote -eq 1)
 
     if ($ok) {
-        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, work nobody agreed to is not billed, parts leave the shelf at cost so service has a profit figure, a closed month refuses postings until somebody reopens it on the record, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, and the ledger balances." -ForegroundColor Green
+        Write-Host "`nPASS: tenants isolated, sessions enforced, rooftop scope holds, a deal needs a manager, work nobody agreed to is not billed, parts leave the shelf at cost so service has a profit figure, a closed month refuses postings until somebody reopens it on the record, a forged write is refused, a second factor can be demanded, whoever runs the servers is kept out of the data, an old system's records import safely, a dealership can take its data away and load it somewhere else, the month reads back exactly what the ledger holds, and the ledger balances." -ForegroundColor Green
     } else {
         Write-Host "`nFAIL: expectations not met." -ForegroundColor Red
         exit 1

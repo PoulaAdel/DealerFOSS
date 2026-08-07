@@ -22,6 +22,7 @@ using DealerFOSS.Deals;
 using DealerFOSS.Documents;
 using DealerFOSS.Finance;
 using DealerFOSS.RepairOrders;
+using DealerFOSS.Reporting;
 using DealerFOSS.Identity;
 using DealerFOSS.Inventory;
 using DealerFOSS.Leads;
@@ -93,6 +94,7 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IParts, PartsService>();
     builder.Services.AddScoped<IRepairOrders, RepairOrderService>();
     builder.Services.AddScoped<IAccounting, AccountingService>();
+    builder.Services.AddScoped<IReporting, ReportingService>();
     builder.Services.AddScoped<IMigration, MigrationService>();
 
     // Work that is not a request. It names the dealership it is working on
@@ -281,6 +283,7 @@ if (tenancyEnabled)
     app.MapFinance();
     app.MapDocuments();
     app.MapAccounting();
+    app.MapReporting();
 }
 
 // Development-only sample data (doc 08 §8), gated behind an explicit flag.
