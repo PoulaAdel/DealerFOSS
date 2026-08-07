@@ -1,8 +1,8 @@
 # Implementation Status
 
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
-Current milestone: **provisioning.** A dealership can be set up from the operator console, without a developer (complete, with a screen)
-Last verified: 2026-08-07 · `dotnet build` 0 warnings/0 errors, `dotnet test` 473/473,
+Current milestone: **security hardening and the operator runbook** (complete). Dashboards are the one remaining item of the three requested and are **not started**
+Last verified: 2026-08-07 · `dotnet build` 0 warnings/0 errors, `dotnet test` 483/483,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
 `npm run typecheck`, `npm test` 182/182, and `npm run build` all pass
 
@@ -288,6 +288,22 @@ them is written.
   **The catalog row is written last**, so a run that fails half way leaves an orphaned database rather than a tenant that resolves to a broken one — the untidy failure instead of the dangerous one. Evidence: `dotnet test` 473/473 (was 462), `npm test` 182/182, `verify-e2e.ps1` PASS. Rehearsed: skipping the books fails exactly the end-to-end sale test *(automated)*
 
   **Deliberately not included:** deleting a dealership, moving one between servers, restoring one into a new tenant, choosing a database name by hand, and any second location beyond the first — that is the dealership's own job once they are in.
+
+- **2026-08-07 — Security headers, a limit on guessing, an operator runbook, and a resolver bug that agreed only by coincidence.**
+
+  **`docs/OPERATING.md`** is the runbook for whoever runs an installation: first start and the secret key that must be backed up separately, setting a dealership up, suspension, support visits, backups and the `--repoint-tenants` trap, a symptom table, and an explicit list of what the system will not do (nothing is emailed; there is no password reset; a second operator cannot be created).
+
+  **Every response now carries security headers**, set by middleware registered *first* so a refused response carries them too — a header only present on the happy path is not a control, and that is the easy mistake. `frame-ancestors 'none'` matters specifically because the operator console has a Suspend button. The policy allows inline **styles** and forbids inline **script**: printed documents inline their whole stylesheet so they survive being saved and opened next year, while the half that turns a value into an execution stays shut.
+
+  **Credential endpoints are rate limited** — sign-in, second factor, enrolment, and the control-plane door. Deliberately not applied to business endpoints, which would punish a busy dealership for being busy.
+
+  **The limiter's first version had a real flaw, found by the suite going red.** Partitioning fell back to a constant `"unknown"` when there was no remote address, which put every caller in one bucket — twenty sign-ins from anywhere would have locked out everybody. That is also the shape of the production risk: a dealership behind one NAT shares an address. It now falls back to the connection id, and because the in-process test host is not a realistic caller (hundreds of sign-ins in seconds down one connection) **the limit is configurable, raised in `HostFixture`, and proven instead by `verify-e2e.ps1` against a real host over a real socket** — 40 wrong passwords, 27 refused. That is the more honest test.
+
+  **`TenantResolver` was fixed.** It compared the tenant key raw: `TenantCache` is case-insensitive while `t.Slug == tenantKey` inherits the SQL Server's collation, so the two agreed only by coincidence. On a case-sensitive installation the same request would have succeeded or 404'd **depending on whether the cache was warm** — intermittent, and the worst kind to be handed. The key is now normalized once and the normalized form used for both, including `Invalidate`, which would otherwise have left a suspended dealership serving traffic for the rest of the cache's lifetime. A theory covers `northgroup`, `NORTHGROUP`, `NorthGroup`, and a padded variant.
+
+  Evidence: `dotnet test` 483/483 (was 473), `npm test` 182/182, `verify-e2e.ps1` PASS — which now also asserts the headers and the throttling *(automated)*
+
+  **Not included, and requested:** dashboards. Named here rather than half-built.
 
 ## Active risks and blockers
 

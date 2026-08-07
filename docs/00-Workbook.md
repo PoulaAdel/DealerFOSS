@@ -21,6 +21,7 @@ This workbook is the single source of truth for product scope, architecture, str
 | 08 | [Governance & Standards](08-Governance-and-Standards.md) | licensing, contribution, releases, and coding standards |
 | 09 | [Implementation Roadmap](09-Implementation-Roadmap.md) | implementation workflow, phase roadmap, completion rules, and progress reporting |
 | — | [Local Development](LOCAL-DEVELOPMENT.md) | prerequisites, canonical commands, and the environment facts that are easy to get wrong |
+| — | [Operating](OPERATING.md) | **for whoever runs the installation** — first start, setting a dealership up, backups, and what to check when something is wrong |
 
 [Architecture decisions](adr/README.md) and [diagrams](diagrams/README.md) are concise companions to these documents. If prose and a diagram disagree, the owning document governs and the diagram must be corrected in the same change.
 

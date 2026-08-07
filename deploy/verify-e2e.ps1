@@ -934,6 +934,26 @@ try {
     $afterLogout = Get-Status "/api/v1/organization" "northgroup" $orgWide
     "after sign-out, same session          -> HTTP $afterLogout (expect 401)"
 
+    Write-Host "`n--- guessing a password stops being answered (last: it uses up the allowance) ---" -ForegroundColor Cyan
+
+    # Proven here rather than in the integration suite: that runs in-process and
+    # makes hundreds of sign-ins down one connection, which no partitioning can
+    # tell apart from an attack. This is a real host over a real socket, with the
+    # production limit.
+    $throttled = 0
+    for ($i = 0; $i -lt 40; $i++) {
+        $attempt = Get-Status "/api/v1/auth/login" "northgroup" $null "Post" @{
+            email = "gm@dev.local"; password = "wrong-$i"
+        }
+        if ($attempt -eq 429) { $throttled++ }
+    }
+    "40 wrong passwords -> {0} refused as too many (expect 1 or more)" -f $throttled
+
+    # And the headers a browser needs, on every response.
+    $headers = (Invoke-WebRequest "$baseUrl/health/live" -UseBasicParsing).Headers
+    $noSniff = $headers["X-Content-Type-Options"]
+    $frameDeny = $headers["X-Frame-Options"]
+    "security headers: {0} / {1}    (expect nosniff / DENY)" -f $noSniff, $frameDeny
     Write-Host "`n--- error contract ---" -ForegroundColor Cyan
     # No session here on purpose: a WebRequestSession remembers headers between
     # calls, which would silently re-send the previous tenant. The tenant is
@@ -981,6 +1001,7 @@ try {
         -and ((@($afterSale.stock)[0].quantityOnHand) -eq 18) `
         -and ($cogs -eq 14) -and ($shelfCredit -eq 14) -and $partsBalanced `
         -and ($shortStatus -eq 409) -and ($scopedCosting -eq 403) `
+        -and ($throttled -ge 1) -and ($noSniff -eq "nosniff") -and ($frameDeny -eq "DENY") `
         -and ($scopedProduct -eq 403) -and ($withCover.amountDue -eq 20900) `
         -and ($withCover.productGross -eq 200) -and ($afterReprice.productGross -eq 200) `
         -and ($scopedClose -eq 403) -and ($postIntoClosed -eq 409) `

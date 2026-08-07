@@ -28,6 +28,7 @@ using DealerFOSS.Leads;
 using DealerFOSS.Organization;
 using DealerFOSS.Parts;
 using DealerFOSS.Tenancy;
+using System.Threading.RateLimiting;
 using DealerFOSS.Vehicles;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -133,6 +134,51 @@ builder.Services
         }
     });
 
+// Rate limiting on the endpoints where somebody guesses a secret.
+//
+// Partitioned by client address, so one attacker cannot lock out a whole
+// dealership by exhausting a shared bucket — which is what a global limiter on a
+// sign-in page amounts to. A fixed window rather than a token bucket because the
+// threat is sustained volume, not a burst.
+//
+// Note what this does NOT replace: the second-factor challenge already dies
+// after five wrong codes, and an enrolment code after five. Those are per-secret
+// and this is per-caller; each covers what the other cannot.
+var credentialAttemptsPerMinute =
+    builder.Configuration.GetValue("RateLimiting:CredentialAttemptsPerMinute", 20);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy(RateLimits.Credentials, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            // Falls back to the connection id rather than a constant when there
+            // is no remote address. A shared constant would put every caller in
+            // ONE bucket — so twenty sign-ins from anywhere would lock out
+            // everybody, which is what happened the first time this was written
+            // and the whole test suite started failing. A real deployment always
+            // has a remote address (the client's, or the proxy's), so this
+            // fallback is effectively in-process callers only.
+            context.Connection.RemoteIpAddress?.ToString() ?? context.Connection.Id,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                // Twenty a minute is far beyond a person typing and far below
+                // anything worth calling an attack.
+                //
+                // Configurable because the in-process test host is not a
+                // realistic caller: it makes hundreds of sign-ins in seconds down
+                // one connection, and no partitioning scheme distinguishes that
+                // from an attack without also failing to catch a real one. The
+                // integration suite raises it and the limiter is proven instead
+                // by verify-e2e.ps1, against a real host over a real socket —
+                // which is the more honest test anyway.
+                PermitLimit = credentialAttemptsPerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+});
+
 var app = builder.Build();
 
 // Refuse to run with the development pass-through secret protector in any
@@ -176,7 +222,17 @@ if (args.Contains(RepointTenants.Verb, StringComparer.OrdinalIgnoreCase))
         Console.Out);
 }
 
+// First, so a response that fails anywhere below still carries them. A security
+// header set only on the happy path is not a control.
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 app.UseSerilogRequestLogging();
+
+// Guessing a password, a six-digit code, or an enrolment code is a volume game,
+// and volume is the one thing a limiter takes away. Applied to the credential
+// endpoints only — throttling the whole API would punish a busy dealership for
+// being busy.
+app.UseRateLimiter();
 
 if (tenancyEnabled)
 {

@@ -42,8 +42,13 @@ internal static class AuthEndpoints
     {
         var group = app.MapGroup("/api/v1/auth").WithTags("Auth");
 
-        group.MapPost("/login", LoginAsync);
-        group.MapPost("/login/second-factor", SecondFactorAsync);
+        // Rate limited: both are places where a wrong answer can simply be tried
+        // again. The second-factor challenge already dies after five wrong codes,
+        // which is per-secret; this is per-caller, and each covers what the other
+        // cannot.
+        group.MapPost("/login", LoginAsync).RequireRateLimiting(RateLimits.Credentials);
+        group.MapPost("/login/second-factor", SecondFactorAsync)
+            .RequireRateLimiting(RateLimits.Credentials);
         group.MapPost("/logout", LogoutAsync);
         group.MapGet("/me", Me);
 

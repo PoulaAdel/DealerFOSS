@@ -4,6 +4,17 @@
 // Use:  through ITenantResolver.
 // Edit: a suspended or retired tenant must keep resolving to null. If you add a
 //       status, decide explicitly whether it may serve traffic.
+//
+//       The key is normalized ONCE, here, and the normalized form is used for
+//       both the cache and the query. It used to be passed through raw, and the
+//       two layers agreed only by coincidence: TenantCache compares
+//       case-insensitively, while `t.Slug == tenantKey` inherits whatever
+//       collation the SQL Server was installed with. On a case-sensitive
+//       collation "NORTHGROUP" would miss in the database but HIT a warm cache —
+//       so the same request would succeed or 404 depending on cache state, which
+//       is the worst kind of bug to be handed. Slugs are stored lowercase
+//       (TenantProvisioning refuses anything else), so lowercasing the key makes
+//       both layers agree on purpose rather than by luck.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;
@@ -33,14 +44,16 @@ public sealed class TenantResolver(
             return null;
         }
 
-        if (_cache.TryGet(tenantKey, out var cached))
+        var key = Normalize(tenantKey);
+
+        if (_cache.TryGet(key, out var cached))
         {
             return cached;
         }
 
         var record = await _catalog.Tenants
             .AsNoTracking()
-            .SingleOrDefaultAsync(t => t.Slug == tenantKey, cancellationToken);
+            .SingleOrDefaultAsync(t => t.Slug == key, cancellationToken);
 
         if (record is null || record.Status != TenantStatus.Active)
         {
@@ -54,9 +67,17 @@ public sealed class TenantResolver(
             connectionString,
             record.DatabaseVersion);
 
-        _cache.Set(tenantKey, resolved);
+        _cache.Set(key, resolved);
         return resolved;
     }
 
-    public void Invalidate(string tenantKey) => _cache.Remove(tenantKey);
+    /// <summary>
+    /// Normalized the same way as the lookup. Invalidating with a raw key while
+    /// the entry was cached under a normalized one would leave a suspended
+    /// dealership serving traffic for the rest of the cache's lifetime.
+    /// </summary>
+    public void Invalidate(string tenantKey) =>
+        _cache.Remove(string.IsNullOrWhiteSpace(tenantKey) ? string.Empty : Normalize(tenantKey));
+
+    private static string Normalize(string tenantKey) => tenantKey.Trim().ToLowerInvariant();
 }

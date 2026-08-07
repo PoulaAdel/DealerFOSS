@@ -26,6 +26,33 @@ public sealed class TenantIsolationTests(HostFixture fixture)
 
     private readonly HostFixture _fixture = fixture;
 
+    [Theory]
+    [InlineData("northgroup")]
+    [InlineData("NORTHGROUP")]
+    [InlineData("NorthGroup")]
+    [InlineData("  northgroup  ")]
+    public async Task The_dealership_key_resolves_the_same_however_it_is_typed(string key)
+    {
+        // The resolver normalizes once and uses the normalized form for both the
+        // cache and the query. Before that they agreed only by coincidence: the
+        // cache compares case-insensitively while the database comparison
+        // inherits the server's collation — so on a case-sensitive installation
+        // the same request would succeed or 404 depending on whether the cache
+        // happened to be warm.
+        var session = await _fixture.SignInAsync(
+            DealerFOSS.App.DevelopmentSeeder.DevUsers.OrganizationWideEmail, "northgroup");
+
+        using var client = _fixture.CreateClient();
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get, new Uri(OrganizationEndpoint, UriKind.Relative));
+        request.Headers.Add("X-Tenant", key);
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
+
+        using var response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, because: $"'{key}' names the same dealership");
+    }
+
     [Fact]
     public async Task Multi_rooftop_organization_resolves_all_of_its_rooftops()
     {

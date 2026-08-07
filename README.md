@@ -26,6 +26,10 @@ code before the documents, gets the app running, and lists the traps worth knowi
 Then [Local Development](docs/LOCAL-DEVELOPMENT.md) for prerequisites, the
 canonical commands, and the environment facts that are easy to get wrong.
 
+**Running an installation rather than changing it?** [Operating](docs/OPERATING.md)
+is the runbook: first start, setting a dealership up, backups, and what to check
+when something is wrong.
+
 ## Repository map
 
 Every directory has one job. You should not need the docs to know where something lives.

@@ -89,6 +89,14 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
     {
         // Development is required for the seeder to run; it is idempotent.
         builder.UseEnvironment(Environments.Development);
+
+        // The credential rate limiter is effectively off in here. This suite
+        // makes hundreds of sign-ins in seconds down one in-process connection,
+        // which no partitioning scheme can tell apart from an attack without
+        // also failing to catch a real one. The limiter is proven instead by
+        // verify-e2e.ps1, against a real host over a real socket — the more
+        // honest test, since that is where a real caller lives.
+        builder.UseSetting("RateLimiting:CredentialAttemptsPerMinute", "1000000");
     }
 
     // Implemented explicitly: xUnit's IAsyncLifetime returns Task, while

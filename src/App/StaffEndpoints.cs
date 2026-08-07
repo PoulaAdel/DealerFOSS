@@ -50,7 +50,9 @@ internal static class StaffEndpoints
 
         // Deliberately outside the group: no session, no permission, no tenant
         // user. Only a valid one-time code gets anything done here.
-        app.MapPost("/api/v1/auth/enrol", RedeemAsync).WithTags("Staff");
+        app.MapPost("/api/v1/auth/enrol", RedeemAsync)
+            .WithTags("Staff")
+            .RequireRateLimiting(RateLimits.Credentials);
     }
 
     private static async Task<IResult> ListAsync(

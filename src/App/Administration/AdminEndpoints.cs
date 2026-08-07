@@ -40,7 +40,9 @@ internal static class AdminEndpoints
     {
         var group = app.MapGroup("/api/v1/admin").WithTags("Administration");
 
-        group.MapPost("/login", LoginAsync);
+        // The account that can step into any dealership is the one worth
+        // guessing at, so this is limited like the dealership door.
+        group.MapPost("/login", LoginAsync).RequireRateLimiting(RateLimits.Credentials);
         group.MapPost("/logout", LogoutAsync);
         group.MapGet("/me", Me);
 
