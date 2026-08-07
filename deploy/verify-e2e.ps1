@@ -577,6 +577,49 @@ try {
     $siblingJobStatus = Get-Status "/api/v1/repair-orders/$($siblingJob.id)" "northgroup" $scoped
     "scoped user -> sibling job by id      -> HTTP $siblingJobStatus (expect 403)"
 
+    Write-Host "`n--- F&I: what was sold with the car, and what it made ---" -ForegroundColor Cyan
+
+    # A provider arrangement is a group-level thing.
+    $scopedProduct = Get-Status "/api/v1/finance/products" "northgroup" $scoped "Post" @{
+        name = "Scoped attempt"; kind = "Warranty"; provider = "X"; defaultPrice = 1; defaultCost = 1
+    }
+    "a one-lot user adds to the catalogue  -> HTTP $scopedProduct (expect 403)"
+
+    $cover = Invoke-Api "/api/v1/finance/products" $orgWide @{
+        name = "3-year warranty $(New-Guid)"; kind = "Warranty"; provider = "Northgate Underwriting"
+        defaultPrice = 1200; defaultCost = 700; currency = "USD"; termMonths = 36
+    }
+
+    # Sold at a discount to hold the deal together — the recorded gross has to
+    # follow the price actually agreed, not the catalogue's.
+    # A car of its own: a deal holds its unit, so reusing one would fail for a
+    # reason that has nothing to do with F&I.
+    $fiUnit = Invoke-Api "/api/v1/inventory" $orgWide @{
+        vehicleId = $vehicle.id; rooftopId = $firstRooftopId; stockNumber = "F$suffix"
+    }
+    $null = Invoke-Api "/api/v1/inventory/$($fiUnit.id)/status" $orgWide @{ status = "Available" }
+
+    $fiDeal = Invoke-Api "/api/v1/deals" $sales @{
+        rooftopId = $firstRooftopId; customerId = $customer.id
+        inventoryUnitId = $fiUnit.id; currency = "USD"
+    }
+    $null = Invoke-Api "/api/v1/deals/$($fiDeal.id)/terms" $orgWide @{
+        charges = @(@{ kind = "VehiclePrice"; description = "Car"; amount = 20000 })
+    }
+    $withCover = Invoke-Api "/api/v1/deals/$($fiDeal.id)/products" $orgWide @{
+        products = @(@{ financeProductId = $cover.id; price = 900; cost = 700 })
+    }
+    "the deal now owes {0}              (expect 20900)" -f $withCover.amountDue
+    "and the cover made {0}                (expect 200)" -f $withCover.productGross
+
+    # Next month's price list must not rewrite this month's gross.
+    $null = Invoke-Api "/api/v1/finance/products/$($cover.id)/price" $orgWide @{
+        defaultPrice = 1500; defaultCost = 950
+    }
+    $afterReprice = Invoke-RestMethod "$baseUrl/api/v1/deals/$($fiDeal.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    "after repricing the catalogue: {0}    (expect 200)" -f $afterReprice.productGross
+
     Write-Host "`n--- the month can be closed, and a closed month refuses ---" -ForegroundColor Cyan
 
     $now = [DateTime]::UtcNow
@@ -606,7 +649,11 @@ try {
     "reopening with no reason              -> HTTP $reopenNoReason (expect 400)"
 
     # And reopening is its own permission, not the one that closed it.
-    $reopened = Invoke-Api "$periodPath/reopen" $orgWide @{ note = "A supplier invoice arrived on the 4th." }
+    # Unique per run. The period's history is append-only and this script is run
+    # repeatedly against the same database, so a fixed reason would accumulate and
+    # the count below would climb with every run — which is what happened.
+    $reopenReason = "A supplier invoice arrived on the 4th ($suffix)."
+    $reopened = Invoke-Api "$periodPath/reopen" $orgWide @{ note = $reopenReason }
     "reopened, state now {0}              (expect Open)" -f $reopened.state
 
     $afterReopen = Invoke-Api "/api/v1/repair-orders/$($lockedJob.id)/status" $orgWide @{ status = "Invoiced" }
@@ -616,7 +663,7 @@ try {
     $periods = Invoke-RestMethod "$baseUrl/api/v1/accounting/periods" `
         -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
     $thisMonth = @($periods | Where-Object { $_.year -eq $now.Year -and $_.month -eq $now.Month })[0]
-    $reopenNote = @($thisMonth.history | Where-Object { $_.note -like "*supplier invoice*" }).Count
+    $reopenNote = @($thisMonth.history | Where-Object { $_.note -eq $reopenReason }).Count
     "the reopen is on the record: {0}       (expect 1)" -f $reopenNote
 
     Write-Host "`n--- anti-forgery on writes ---" -ForegroundColor Cyan
@@ -934,6 +981,8 @@ try {
         -and ((@($afterSale.stock)[0].quantityOnHand) -eq 18) `
         -and ($cogs -eq 14) -and ($shelfCredit -eq 14) -and $partsBalanced `
         -and ($shortStatus -eq 409) -and ($scopedCosting -eq 403) `
+        -and ($scopedProduct -eq 403) -and ($withCover.amountDue -eq 20900) `
+        -and ($withCover.productGross -eq 200) -and ($afterReprice.productGross -eq 200) `
         -and ($scopedClose -eq 403) -and ($postIntoClosed -eq 409) `
         -and ($reopenNoReason -eq 400) -and ($reopened.state -eq "Open") `
         -and ($afterReopen.amountDue -eq 100) -and ($reopenNote -eq 1)

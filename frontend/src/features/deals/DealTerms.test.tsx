@@ -33,6 +33,8 @@ const base: DealDetail = {
   subtotal: 24000,
   tradeIn: null,
   charges: [{ kind: 'VehiclePrice', description: 'The car', amount: 24000 }],
+  products: [],
+  productGross: 0,
   approvedByUserId: null,
   approvedAt: null,
   termsAreOpen: true,

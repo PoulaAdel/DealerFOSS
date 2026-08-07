@@ -21,6 +21,7 @@ namespace DealerFOSS.Deals;
 public sealed class Deal : AuditableEntity
 {
     private readonly List<DealCharge> _charges = [];
+    private readonly List<DealProduct> _products = [];
     private readonly List<DealStatusChange> _history = [];
 
     public Guid Id { get; private set; }
@@ -52,17 +53,33 @@ public sealed class Deal : AuditableEntity
 
     public IReadOnlyList<DealCharge> Charges => _charges;
 
+    public IReadOnlyList<DealProduct> Products => _products;
+
     public IReadOnlyList<DealStatusChange> History => _history;
 
     /// <summary>Everything on the deal added up, before the trade.</summary>
-    public Money Subtotal => new(_charges.Sum(c => c.Amount), Currency);
+    public Money Subtotal => new(_charges.Sum(c => c.Amount) + _products.Sum(p => p.Price), Currency);
+
+    /// <summary>What the F&amp;I products on this deal sold for.</summary>
+    public Money ProductRevenue => new(_products.Sum(p => p.Price), Currency);
+
+    /// <summary>What they cost the dealership.</summary>
+    public Money ProductCost => new(_products.Sum(p => p.Cost), Currency);
+
+    /// <summary>
+    /// What the dealership made on the products. Reported separately from the car
+    /// because a dealer principal reads them as two different businesses, and on
+    /// many deals this is the larger of the two.
+    /// </summary>
+    public Money ProductGross => new(_products.Sum(p => p.Gross), Currency);
 
     /// <summary>
     /// What the customer actually has to find: the subtotal, less what the trade
     /// is worth, plus whatever is still owed on it.
     /// </summary>
     public Money AmountDue => new(
-        _charges.Sum(c => c.Amount) - (Trade?.Allowance ?? 0m) + (Trade?.Payoff ?? 0m),
+        _charges.Sum(c => c.Amount) + _products.Sum(p => p.Price)
+            - (Trade?.Allowance ?? 0m) + (Trade?.Payoff ?? 0m),
         Currency);
 
     public bool TermsAreOpen => DealStatusRules.TermsAreOpen(Status);
@@ -145,6 +162,41 @@ public sealed class Deal : AuditableEntity
         _charges.Clear();
         _charges.AddRange(replacement);
         Trade = trade;
+    }
+
+    /// <summary>
+    /// Replaces the F&amp;I products on the deal, each with the price and cost
+    /// agreed for THIS deal. Separate from SetTerms because the two are set by
+    /// different people at different moments — the salesperson prices the car,
+    /// the F&amp;I manager sells the products afterwards — and making one call
+    /// replace both would mean either could wipe the other's work.
+    /// </summary>
+    public void SetProducts(
+        IEnumerable<(Guid ProductId, string Name, decimal Price, decimal Cost, int? TermMonths, int? TermMiles)> products)
+    {
+        ArgumentNullException.ThrowIfNull(products);
+
+        if (!TermsAreOpen)
+        {
+            throw new InvalidOperationException(
+                $"A {Status} deal is frozen. Move it back to Draft to change what was sold.");
+        }
+
+        var replacement = products
+            .Select(p => new DealProduct(
+                Guid.NewGuid(), Id, p.ProductId, p.Name, p.Price, p.Cost, p.TermMonths, p.TermMiles))
+            .ToList();
+
+        // The same product twice on one deal is a mistake, not two sales — two
+        // warranties on one car is not a thing.
+        if (replacement.Select(p => p.FinanceProductId).Distinct().Count() != replacement.Count)
+        {
+            throw new ArgumentException(
+                "The same product appears twice. One deal sells each product once.", nameof(products));
+        }
+
+        _products.Clear();
+        _products.AddRange(replacement);
     }
 
     /// <summary>

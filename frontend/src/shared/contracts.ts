@@ -150,6 +150,35 @@ export interface LeadHistoryEntry {
  * figure the detail does not. Pretending one is the other would put a `daysOpen`
  * in the type that is never in the payload.
  */
+export type FinanceProductKind = 'Warranty' | 'Gap' | 'ServicePlan' | 'Protection' | 'Other';
+
+/** A product the dealership can sell with a car. The defaults are a starting point. */
+export interface FinanceProductView {
+  id: string;
+  name: string;
+  kind: FinanceProductKind;
+  provider: string;
+  defaultPrice: number;
+  defaultCost: number;
+  currency: string;
+  termMonths: number | null;
+  termMiles: number | null;
+  isAvailable: boolean;
+}
+
+/** One product sold on a deal. Cost and gross never appear on a customer's copy. */
+export interface DealProductView {
+  id: string;
+  financeProductId: string;
+  name: string;
+  provider: string | null;
+  price: number;
+  cost: number;
+  gross: number;
+  termMonths: number | null;
+  termMiles: number | null;
+}
+
 export type AccountingPeriodState = 'Open' | 'Closed';
 
 export interface AccountingPeriodView {
@@ -416,6 +445,10 @@ export interface DealDetail extends DealSummary {
   subtotal: number;
   tradeIn: TradeInView | null;
   charges: ChargeView[];
+  /** What was sold alongside the car. */
+  products: DealProductView[];
+  /** What those products made. Reported apart from the car, as a dealer reads it. */
+  productGross: number;
   approvedByUserId: string | null;
   approvedAt: string | null;
   /** False once submitted: the numbers are frozen from that point. */

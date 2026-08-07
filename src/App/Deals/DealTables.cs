@@ -67,6 +67,14 @@ internal sealed class DealConfiguration : IEntityTypeConfiguration<Deal>
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(x => x.Charges).AutoInclude();
 
+        // Auto-included for the same reason as charges: every read of a deal
+        // needs its total, and the total now includes what was sold with the car.
+        builder.HasMany(x => x.Products)
+            .WithOne()
+            .HasForeignKey(p => p.DealId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(x => x.Products).AutoInclude();
+
         builder.HasMany(x => x.History)
             .WithOne()
             .HasForeignKey(h => h.DealId)
@@ -87,6 +95,33 @@ internal sealed class DealChargeConfiguration : IEntityTypeConfiguration<DealCha
         builder.Property(x => x.Description).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Amount).HasPrecision(18, 2);
         builder.HasIndex(x => x.DealId);
+    }
+}
+
+internal sealed class DealProductConfiguration : IEntityTypeConfiguration<DealProduct>
+{
+    public void Configure(EntityTypeBuilder<DealProduct> builder)
+    {
+        builder.ToTable("DealProducts", DealSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
+        // Copied at the point of sale, so a renamed or withdrawn catalogue entry
+        // cannot change what this deal says was sold.
+        builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Price).HasPrecision(18, 2);
+        builder.Property(x => x.Cost).HasPrecision(18, 2);
+
+        // Price minus cost, computed.
+        builder.Ignore(x => x.Gross);
+
+        builder.HasIndex(x => x.DealId);
+
+        // No foreign key to FinanceProduct on purpose. The catalogue belongs to
+        // another capability, and a database-level link would let a delete there
+        // cascade into a sold deal — which must never happen. Withdrawal is how a
+        // product goes away, and the copied name is what keeps this row readable
+        // regardless.
     }
 }
 

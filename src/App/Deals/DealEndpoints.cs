@@ -28,6 +28,11 @@ internal static class DealEndpoints
         group.MapGet("/{dealId:guid}", GetAsync);
         group.MapPost("", StartAsync);
         group.MapPost("/{dealId:guid}/terms", SetTermsAsync);
+
+        // Its own path, not part of terms: the salesperson prices the car and the
+        // F&I manager sells the products afterwards, so one call replacing both
+        // would let either wipe the other's work.
+        group.MapPost("/{dealId:guid}/products", SetProductsAsync);
         group.MapPost("/{dealId:guid}/status", ChangeStatusAsync);
     }
 
@@ -84,6 +89,18 @@ internal static class DealEndpoints
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
+    private static async Task<IResult> SetProductsAsync(
+        Guid dealId,
+        SetProductsRequest request,
+        IDeals deals,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await deals.SetProductsAsync(dealId, request.Products ?? [], cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
     private static async Task<IResult> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest request,
@@ -94,3 +111,10 @@ internal static class DealEndpoints
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 }
+
+/// <summary>
+/// Replaces everything sold on the deal. A replace rather than an add, matching
+/// how the charges work — an F&amp;I manager reworking the menu sends the whole
+/// list, and sending an empty one is how a product is taken back off.
+/// </summary>
+internal sealed record SetProductsRequest(IReadOnlyList<SoldProduct>? Products);

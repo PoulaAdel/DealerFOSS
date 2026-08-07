@@ -101,6 +101,10 @@ public static class IdentitySeeder
             // reopen held by fewer people can already arrange that.
             Permissions.AccountingClosePeriod,
             Permissions.AccountingReopenPeriod,
+            // The F&I catalogue: what may be sold with a car, and what it costs
+            // the dealership. A group-level arrangement with a provider, so the
+            // manager holds it and a rooftop-scoped user does not.
+            Permissions.FinanceManageProducts,
             // Who must hold a second factor is a management decision, so the
             // manager role is where it sits. No role is seeded as requiring one
             // — that is the dealership's call, not ours.

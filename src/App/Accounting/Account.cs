@@ -99,4 +99,13 @@ public static class AccountCodes
     /// the dealership owns it until it is sold.
     /// </summary>
     public const string PartsInventory = "1400";
+
+    /// <summary>
+    /// Warranties, GAP, service plans sold with a car. Its own revenue line
+    /// because F&amp;I is reported as a separate business from the vehicle.
+    /// </summary>
+    public const string FinanceProductRevenue = "4500";
+
+    /// <summary>What those products cost the dealership — what the provider charges.</summary>
+    public const string CostOfFinanceProducts = "5500";
 }

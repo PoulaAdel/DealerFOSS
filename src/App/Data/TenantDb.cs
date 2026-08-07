@@ -17,6 +17,7 @@ using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.DataMigration;
 using DealerFOSS.Deals;
+using DealerFOSS.Finance;
 using DealerFOSS.Inventory;
 using DealerFOSS.Leads;
 using DealerFOSS.Organization;
@@ -61,7 +62,11 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
 
     public DbSet<DealCharge> DealCharges => Set<DealCharge>();
 
+    public DbSet<DealProduct> DealProducts => Set<DealProduct>();
+
     public DbSet<DealStatusChange> DealHistory => Set<DealStatusChange>();
+
+    public DbSet<FinanceProduct> FinanceProducts => Set<FinanceProduct>();
 
     public DbSet<RepairOrder> RepairOrders => Set<RepairOrder>();
 

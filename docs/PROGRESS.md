@@ -278,6 +278,20 @@ months of focused work.
   532 of service" tells a manager nothing
 - **A job can be given to a named technician**
 
+### What gets sold with the car
+
+- **Warranties, GAP and cover are sold on the deal**, each with its own price,
+  and they go onto what the customer owes
+- **The price is yours to change.** It starts from the catalogue and you type over
+  it — because that is how these are actually sold, and the figure you agree is
+  the one recorded
+- **Changing the price list later does not touch deals already done.** Last
+  month's profit stays last month's profit
+- **You can see what each one made**, separately from the car. On a lot of deals
+  this is the bigger number
+- **Withdrawing a product stops it being offered without unselling it.** Deals
+  that already have it keep it, exactly as agreed
+
 ### Closing the month
 
 - **A month gets closed on purpose.** There is no date that does it for you, and
@@ -390,11 +404,15 @@ A car can be delivered and a repair order invoiced, and the person paying walks
 away with nothing at all. It is the most visible gap left, and unlike the
 connectors it is waiting on nobody. A deal summary and a service invoice, made
 from what is already recorded — and made so that reprinting last month's invoice
-gives you last month's figures rather than today's.
+gives you last month's figures rather than today's. Your answer on how: a proper
+printable page rather than a new PDF component, so nothing gets added that could
+clash with the project's licence.
 
 **Still the quiet gate on everything:** setting up a new dealership is a
 developer's job. Whatever else gets built, nothing can go in front of a real
-dealer until that is a normal operation.
+dealer until that is a normal operation — and when it is built, it has to open
+the books, or the new dealership's first sale is refused for a reason nobody
+would guess.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one

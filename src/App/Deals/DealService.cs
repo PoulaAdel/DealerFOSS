@@ -20,6 +20,7 @@ using DealerFOSS.Accounting;
 using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.Data;
+using DealerFOSS.Finance;
 using DealerFOSS.Identity;
 using DealerFOSS.Inventory;
 
@@ -31,6 +32,7 @@ public sealed class DealService(
     ICustomers customers,
     IInventory inventory,
     IAccounting accounting,
+    IFinanceProducts products,
     ICurrentUser currentUser,
     IAuditSink audit,
     IClock clock)
@@ -50,6 +52,7 @@ public sealed class DealService(
     private readonly ICustomers _customers = customers;
     private readonly IInventory _inventory = inventory;
     private readonly IAccounting _accounting = accounting;
+    private readonly IFinanceProducts _products = products;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
@@ -299,6 +302,78 @@ public sealed class DealService(
         return await DescribeAsync(deal, cancellationToken);
     }
 
+    public async Task<Result<DealDetail>> SetProductsAsync(
+        Guid dealId,
+        IReadOnlyList<SoldProduct> products,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(products);
+
+        var deal = await LoadAsync(dealId, tracked: true, cancellationToken);
+        if (deal is null)
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        // The catalogue supplies the NAME only. The price and cost come from the
+        // caller, because they are negotiated per deal — reading them from the
+        // catalogue here would be the bug this whole design avoids.
+        var catalogue = await _products.GetManyAsync(
+            products.Select(p => p.FinanceProductId).ToList(), cancellationToken);
+
+        if (catalogue.IsFailure)
+        {
+            return Result.Failure<DealDetail>(catalogue.Error);
+        }
+
+        var sold = new List<(Guid, string, decimal, decimal, int?, int?)>();
+
+        foreach (var product in products)
+        {
+            var known = catalogue.Value.SingleOrDefault(c => c.Id == product.FinanceProductId);
+            if (known is null)
+            {
+                return Result.Failure<DealDetail>(DealErrors.UnknownProduct);
+            }
+
+            // A withdrawn product cannot be added to a NEW deal, but deals that
+            // already carry it are untouched — that is what withdrawal means.
+            if (!known.IsAvailable && !deal.Products.Any(p => p.FinanceProductId == product.FinanceProductId))
+            {
+                return Result.Failure<DealDetail>(DealErrors.ProductWithdrawn);
+            }
+
+            sold.Add((
+                product.FinanceProductId,
+                known.Name,
+                product.Price,
+                product.Cost,
+                product.TermMonths ?? known.TermMonths,
+                product.TermMiles ?? known.TermMiles));
+        }
+
+        try
+        {
+            deal.SetProducts(sold);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<DealDetail>(Error.Validation("deals.invalid_products", ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Failure<DealDetail>(Error.Conflict("deals.terms_frozen", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        return await DescribeAsync(deal, cancellationToken);
+    }
+
     public async Task<Result<DealDetail>> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest change,
@@ -444,6 +519,11 @@ public sealed class DealService(
             TradePayoff: deal.Trade?.Payoff ?? 0m,
             AmountDue: deal.AmountDue.Amount,
             VehicleCost: vehicleCost,
+            // F&I is its own revenue and its own cost, kept apart from the car's
+            // so a dealer principal can read the two as the separate businesses
+            // they are. Zero when nothing was sold with the car.
+            ProductRevenue: deal.ProductRevenue.Amount,
+            ProductCost: deal.ProductCost.Amount,
             Memo: $"Delivered deal {deal.Id}");
 
     private async Task<Deal?> LoadAsync(Guid dealId, bool tracked, CancellationToken cancellationToken)
@@ -526,6 +606,21 @@ public sealed class DealService(
             history = deal.History.ToList();
         }
 
+        // Provider names for whatever this deal sold, in one query. Absent for a
+        // product since removed from the catalogue, which is why the sale carries
+        // its own copy of the name.
+        var providers = new Dictionary<Guid, string>();
+        if (deal.Products.Count > 0)
+        {
+            var catalogue = await _products.GetManyAsync(
+                deal.Products.Select(p => p.FinanceProductId).ToList(), cancellationToken);
+
+            if (catalogue.IsSuccess)
+            {
+                providers = catalogue.Value.ToDictionary(c => c.Id, c => c.Provider);
+            }
+        }
+
         return Result.Success(new DealDetail(
             deal.Id,
             deal.RooftopId,
@@ -547,6 +642,22 @@ public sealed class DealService(
             deal.Charges
                 .Select(c => new ChargeView(c.Kind.ToString(), c.Description, c.Amount))
                 .ToList(),
+            deal.Products
+                .Select(p => new DealProductView(
+                    p.Id,
+                    p.FinanceProductId,
+                    p.Name,
+                    // The provider comes from the catalogue and may be absent if
+                    // the entry was withdrawn. The NAME never is — it was copied
+                    // onto the sale.
+                    providers.TryGetValue(p.FinanceProductId, out var provider) ? provider : null,
+                    p.Price,
+                    p.Cost,
+                    p.Gross,
+                    p.TermMonths,
+                    p.TermMiles))
+                .ToList(),
+            deal.ProductGross.Amount,
             deal.SalespersonUserId,
             deal.ApprovedByUserId,
             deal.ApprovedAt,
@@ -582,6 +693,15 @@ internal static class DealErrors
     public static Error UnknownChargeKind { get; } = Error.Validation(
         "deals.unknown_charge_kind",
         "That is not a kind of charge.");
+
+    public static Error UnknownProduct { get; } = Error.NotFound(
+        "deals.unknown_product",
+        "That is not a product in the catalogue.");
+
+    public static Error ProductWithdrawn { get; } = Error.Conflict(
+        "deals.product_withdrawn",
+        "That product is no longer offered. Deals that already carry it keep it; it cannot be "
+            + "added to a new one.");
 
     public static Error CustomerNotFound { get; } = Error.NotFound(
         "deals.customer_not_found",

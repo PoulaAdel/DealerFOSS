@@ -103,6 +103,15 @@ export function DealTerms({
     <section className="terms">
       <h3>The numbers</h3>
 
+      {/* Wrapped so it scrolls inside its own box, like every other wide table
+          here. The editor's four columns — kind, description, amount, remove —
+          do not fit 375px, and this was the one table left unwrapped.
+
+          It was NOT causing the page to scroll sideways: measured after the fact,
+          the page never did. `documentElement.scrollWidth` over-reports whenever
+          scroll containers are present, which is what made it look that way. The
+          honest test is whether `window.scrollTo(200, 0)` moves anything. */}
+      <div className="scroll">
       <table>
         <caption className="visually-hidden">The charges on this deal</caption>
         <thead>
@@ -170,6 +179,7 @@ export function DealTerms({
           ))}
         </tbody>
       </table>
+      </div>
 
       <div className="actions">
         <button

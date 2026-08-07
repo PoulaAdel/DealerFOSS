@@ -22,6 +22,18 @@ public interface IDeals
 
     Task<Result<DealDetail>> SetTermsAsync(Guid dealId, DealTerms terms, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Replaces the F&amp;I products sold on the deal. Separate from the terms
+    /// because the two are set by different people at different moments — the
+    /// salesperson prices the car, the F&amp;I manager sells the products
+    /// afterwards — and one call replacing both would let either wipe the other's
+    /// work.
+    /// </summary>
+    Task<Result<DealDetail>> SetProductsAsync(
+        Guid dealId,
+        IReadOnlyList<SoldProduct> products,
+        CancellationToken cancellationToken);
+
     Task<Result<DealDetail>> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest change,
@@ -59,6 +71,16 @@ public sealed record DealDetail(
     decimal AmountDue,
     TradeInView? TradeIn,
     IReadOnlyList<ChargeView> Charges,
+
+    /// <summary>What was sold alongside the car, with what each one made.</summary>
+    IReadOnlyList<DealProductView> Products,
+
+    /// <summary>
+    /// What the products made in total. Reported separately from the car because
+    /// a dealer principal reads them as two businesses — and on many deals this is
+    /// the larger one.
+    /// </summary>
+    decimal ProductGross,
     Guid? SalespersonUserId,
     Guid? ApprovedByUserId,
     DateTimeOffset? ApprovedAt,
@@ -66,6 +88,33 @@ public sealed record DealDetail(
     IReadOnlyList<DealHistoryEntry> History);
 
 public sealed record ChargeView(string Kind, string Description, decimal Amount);
+
+/// <summary>
+/// One product sold on this deal. <c>Cost</c> and <c>Gross</c> are the
+/// dealership's own figures and never appear on anything the customer is handed.
+/// </summary>
+public sealed record DealProductView(
+    Guid Id,
+    Guid FinanceProductId,
+    string Name,
+    string? Provider,
+    decimal Price,
+    decimal Cost,
+    decimal Gross,
+    int? TermMonths,
+    int? TermMiles);
+
+/// <summary>
+/// A product being sold, at the price and cost agreed for this deal. Both are
+/// stated rather than read from the catalogue — F&amp;I is negotiated, and next
+/// month's price list must not rewrite this month's gross.
+/// </summary>
+public sealed record SoldProduct(
+    Guid FinanceProductId,
+    decimal Price,
+    decimal Cost,
+    int? TermMonths = null,
+    int? TermMiles = null);
 
 public sealed record TradeInView(
     string Description,

@@ -50,6 +50,11 @@ public sealed class FeatureBoundaryTests
         { "DealerFOSS.RepairOrders", ["DealerFOSS.Parts.Part", "DealerFOSS.Parts.StockReceipt", "DealerFOSS.Parts.PartsSettings", "DealerFOSS.Customers.Customer", "DealerFOSS.Vehicles.Vehicle"] },
         // And the reverse: Parts knows about shelves and costs, not about jobs.
         { "DealerFOSS.Parts", ["DealerFOSS.RepairOrders.RepairOrder", "DealerFOSS.RepairOrders.ServiceLine", "DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.Account"] },
+        // Deals reads the F&I catalogue through IFinanceProducts to copy a name
+        // onto a sale. It must never touch FinanceProduct itself — a capability
+        // that could reprice the catalogue from inside a deal is one that could
+        // rewrite what an earlier deal made.
+        { "DealerFOSS.Finance", ["DealerFOSS.Deals.Deal", "DealerFOSS.Deals.DealCharge", "DealerFOSS.Deals.DealProduct", "DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.Account"] },
     };
 
     [Theory]

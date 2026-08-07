@@ -38,6 +38,8 @@ const detail = (over: Partial<DealDetail> = {}): DealDetail => ({
   subtotal: 24000,
   tradeIn: null,
   charges: [{ kind: 'VehiclePrice', description: 'The car', amount: 24000 }],
+  products: [],
+  productGross: 0,
   approvedByUserId: null,
   approvedAt: null,
   termsAreOpen: true,
@@ -119,6 +121,45 @@ describe('one deal', () => {
     const panel = await screen.findByRole('heading', { name: /Marisol Alvarez/ });
     expect(panel).toBeVisible();
     expect(screen.getByText('Due from the customer')).toBeVisible();
+  });
+
+  it('lists products in the summary, so the column adds up to the total', async () => {
+    // Found in a browser: a vehicle price of $41,500 sat above a total of
+    // $42,450 with nothing on screen explaining the difference. The same defect
+    // the trade-in had below, and found the same way — by reading down the
+    // column rather than by any test.
+    mockApi({
+      '/deals/d1': {
+        ok: true,
+        body: detail({
+          subtotal: 24950,
+          amountDue: 24950,
+          charges: [{ kind: 'VehiclePrice', description: 'The car', amount: 24000 }],
+          products: [
+            {
+              id: 'dp1',
+              financeProductId: 'fp1',
+              name: '3-year warranty',
+              provider: 'Northgate Underwriting',
+              price: 950,
+              cost: 700,
+              gross: 250,
+              termMonths: 36,
+              termMiles: null,
+            },
+          ],
+          productGross: 250,
+        }),
+      },
+      '/finance/products': { ok: true, body: [] },
+      '/deals': { ok: true, body: [summary] },
+    });
+
+    renderDeals();
+    await openDeal();
+
+    expect(await screen.findByText('$950.00')).toBeVisible();
+    expect(screen.getByText('$24,950.00')).toBeVisible();
   });
 
   it('shows a trade-in as reducing what is owed, so the column adds up', async () => {

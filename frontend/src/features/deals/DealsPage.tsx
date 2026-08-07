@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ApiError, api, post } from '../../shared/api';
 import { DealTerms } from './DealTerms';
+import { DealProducts } from './DealProducts';
 import { StartDeal } from './StartDeal';
 import type { DealDetail, DealStatus, DealSummary } from '../../shared/contracts';
 
@@ -195,6 +196,19 @@ function DealPanel({
               </tr>
             ))}
 
+            {/* Products are on the bill, so they belong in the column that adds
+                up to it. Leaving them out made the summary show a vehicle price
+                of 41,500 above a total of 42,450 with nothing to explain the
+                difference — the same defect the trade-in had, found the same way,
+                by reading down the column in a browser. */}
+            {deal.products.map((product) => (
+              <tr key={product.id}>
+                <td>Product</td>
+                <td>{product.name}</td>
+                <td className="num">{money(product.price, deal.currency)}</td>
+              </tr>
+            ))}
+
             {deal.tradeIn === null ? null : (
               <tr>
                 <td>Trade-in</td>
@@ -230,12 +244,18 @@ function DealPanel({
         // Mounted, not merely enabled. Once submitted this disappears entirely —
         // a disabled form still looks like somewhere to type, and somebody would
         // fill it in and lose the work.
-        <DealTerms deal={deal} onSaved={onChanged} />
+        <>
+          <DealTerms deal={deal} onSaved={onChanged} />
+          <DealProducts deal={deal} onChanged={onChanged} />
+        </>
       ) : (
-        <p className="note">
-          The numbers are frozen. They stopped being editable when this deal was
-          submitted, so what a manager approves is what was put in front of them.
-        </p>
+        <>
+          <p className="note">
+            The numbers are frozen. They stopped being editable when this deal was
+            submitted, so what a manager approves is what was put in front of them.
+          </p>
+          {deal.products.length === 0 ? null : <SoldProducts deal={deal} />}
+        </>
       )}
 
       <p className="error" aria-live="polite">
@@ -359,6 +379,52 @@ function Body({
         <DealTable deals={load.deals} onOpen={onOpen} />
       );
   }
+}
+
+/**
+ * What was sold with the car, once the deal is frozen. Read-only by definition —
+ * the editor is gone at this point, and this is the record of what a manager
+ * approved.
+ */
+function SoldProducts({ deal }: { deal: DealDetail }) {
+  const money = (amount: number) =>
+    new Intl.NumberFormat(undefined, { style: 'currency', currency: deal.currency }).format(amount);
+
+  return (
+    <>
+      <h3>Sold with the car</h3>
+      <div className="scroll">
+        <table className="table terms">
+          <thead>
+            <tr>
+              <th scope="col">Product</th>
+              <th scope="col" className="num">
+                Price
+              </th>
+              <th scope="col" className="num">
+                Gross
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {deal.products.map((product) => (
+              <tr key={product.id}>
+                <td>
+                  {product.name}
+                  {product.provider === null ? null : (
+                    <div className="muted">{product.provider}</div>
+                  )}
+                </td>
+                <td className="num">{money(product.price)}</td>
+                <td className="num">{money(product.gross)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="note">{money(deal.productGross)} made on what was sold with the car.</p>
+    </>
+  );
 }
 
 function DealTable({ deals, onOpen }: { deals: DealSummary[]; onOpen: (id: string) => void }) {

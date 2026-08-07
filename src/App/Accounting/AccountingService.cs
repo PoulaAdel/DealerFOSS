@@ -722,6 +722,13 @@ public sealed class AccountingService(
         Line(AccountCodes.FeeRevenue, 0m, d.Fees, "Fees");
         Line(AccountCodes.Cash, 0m, d.TradePayoff, "Paid to settle the trade");
 
+        // F&I: its own revenue line, and its own cost paid to the provider. Kept
+        // apart from the car's figures because a dealer principal reads front-end
+        // and back-end gross as two separate businesses.
+        Line(AccountCodes.FinanceProductRevenue, 0m, d.ProductRevenue, "Warranties and cover sold");
+        Line(AccountCodes.CostOfFinanceProducts, d.ProductCost, 0m, "Paid to the providers");
+        Line(AccountCodes.Cash, 0m, d.ProductCost, "Paid out to the providers");
+
         // Relieving inventory at cost, so gross profit is visible.
         Line(AccountCodes.CostOfVehicleSales, d.VehicleCost, 0m, "Cost of the vehicle sold");
         Line(AccountCodes.VehicleInventory, 0m, d.VehicleCost, "Vehicle off the lot");
@@ -785,6 +792,7 @@ public sealed class AccountingService(
             AccountCodes.SalesDiscounts, AccountCodes.CostOfVehicleSales,
             AccountCodes.LabourRevenue, AccountCodes.PartsRevenue, AccountCodes.SubletRevenue,
             AccountCodes.PartsInventory, AccountCodes.CostOfPartsSales,
+            AccountCodes.FinanceProductRevenue, AccountCodes.CostOfFinanceProducts,
         ];
 
         var missing = required.Where(code => !accounts.ContainsKey(code)).ToList();

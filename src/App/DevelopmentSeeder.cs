@@ -525,6 +525,8 @@ public static class DevelopmentSeeder
             (AccountCodes.CostOfVehicleSales, "Cost of vehicle sales", AccountKind.Expense),
             (AccountCodes.PartsInventory, "Parts inventory", AccountKind.Asset),
             (AccountCodes.CostOfPartsSales, "Cost of parts sales", AccountKind.Expense),
+            (AccountCodes.FinanceProductRevenue, "Finance product sales", AccountKind.Revenue),
+            (AccountCodes.CostOfFinanceProducts, "Cost of finance products", AccountKind.Expense),
         ];
 
         var existing = await db.Accounts.Select(a => a.Code).ToListAsync();

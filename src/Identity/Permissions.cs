@@ -101,6 +101,17 @@ public static class Permissions
     /// </summary>
     public const string AccountingReopenPeriod = "Accounting.ReopenPeriod";
 
+    /// <summary>
+    /// Adding, repricing, and withdrawing F&amp;I products. Organization-wide: a
+    /// provider arrangement is made for the group, and one lot inventing its own
+    /// version of the same warranty is how a catalogue stops being trustworthy.
+    ///
+    /// Note there is no matching read permission — seeing the catalogue rides on
+    /// <see cref="DealsRead"/>, because anybody building a deal needs to know what
+    /// may go on it.
+    /// </summary>
+    public const string FinanceManageProducts = "Finance.ManageProducts";
+
     /// <summary>Seeing the parts catalogue and what is on the shelf.</summary>
     public const string PartsRead = "Parts.Read";
 
@@ -186,6 +197,7 @@ public static class Permissions
         PartsManage,
         AccountingClosePeriod,
         AccountingReopenPeriod,
+        FinanceManageProducts,
     ];
 }
 

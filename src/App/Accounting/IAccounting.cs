@@ -127,6 +127,15 @@ public sealed record DeliveryPosting(
     decimal TradePayoff,
     decimal AmountDue,
     decimal VehicleCost,
+
+    /// <summary>
+    /// What the F&amp;I products sold for, and what they cost the dealership. Kept
+    /// out of <c>Fees</c> deliberately: warranty and GAP income is a different
+    /// business from the car, with its own gross, and merging them would make the
+    /// one figure a dealer principal most wants unreadable.
+    /// </summary>
+    decimal ProductRevenue,
+    decimal ProductCost,
     string Memo);
 
 /// <summary>
