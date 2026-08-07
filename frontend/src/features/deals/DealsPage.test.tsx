@@ -123,6 +123,22 @@ describe('one deal', () => {
     expect(screen.getByText('Due from the customer')).toBeVisible();
   });
 
+  it('offers to print the order even once the deal is finished', async () => {
+    // The stage buttons disappear on a delivered deal, and that is exactly when
+    // somebody asks for another copy of the paperwork. The print button lives in
+    // the header for that reason.
+    mockApi({
+      '/deals/d1': { ok: true, body: detail({ status: 'Delivered', termsAreOpen: false }) },
+      '/finance/products': { ok: true, body: [] },
+      '/deals': { ok: true, body: [summary] },
+    });
+    renderDeals();
+    await openDeal();
+
+    expect(await screen.findByRole('button', { name: 'Print the order' })).toBeVisible();
+    expect(screen.getByText(/This deal is finished/i)).toBeVisible();
+  });
+
   it('lists products in the summary, so the column adds up to the total', async () => {
     // Found in a browser: a vehicle price of $41,500 sat above a total of
     // $42,450 with nothing on screen explaining the difference. The same defect

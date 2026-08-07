@@ -25,7 +25,7 @@
 //       shop the advisor who spots it is usually the one who telephones.
 
 import { useCallback, useEffect, useState } from 'react';
-import { ApiError, api, post, remove } from '../../shared/api';
+import { ApiError, api, openDocument, post, remove } from '../../shared/api';
 import type {
   RepairOrderDetail,
   RepairOrderStatus,
@@ -328,6 +328,25 @@ function Job({
       <p className="error" aria-live="polite">
         {error ?? ''}
       </p>
+
+      <div className="actions">
+        {/* Available before invoicing too: an advisor hands over a job sheet to
+            explain what is being done. The document says which it is. */}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setError(null);
+            void openDocument(`/documents/repair-orders/${job.id}`).catch((failure: unknown) =>
+              setError(
+                failure instanceof ApiError ? failure.message : 'The document could not be opened.',
+              ),
+            );
+          }}
+        >
+          {job.invoicedAt === null ? 'Print the job sheet' : 'Print the invoice'}
+        </button>
+      </div>
 
       <Moves job={job} busy={busy} note={note} onNote={setNote} onAct={act} />
 

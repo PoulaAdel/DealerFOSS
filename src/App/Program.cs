@@ -19,6 +19,7 @@ using DealerFOSS.Customers;
 using DealerFOSS.Data;
 using DealerFOSS.DataMigration;
 using DealerFOSS.Deals;
+using DealerFOSS.Documents;
 using DealerFOSS.Finance;
 using DealerFOSS.RepairOrders;
 using DealerFOSS.Identity;
@@ -86,6 +87,7 @@ if (tenancyEnabled)
     builder.Services.AddScoped<ILeads, LeadService>();
     builder.Services.AddScoped<IDeals, DealService>();
     builder.Services.AddScoped<IFinanceProducts, FinanceProductService>();
+    builder.Services.AddScoped<IDocuments, DocumentService>();
     builder.Services.AddScoped<IParts, PartsService>();
     builder.Services.AddScoped<IRepairOrders, RepairOrderService>();
     builder.Services.AddScoped<IAccounting, AccountingService>();
@@ -220,6 +222,7 @@ if (tenancyEnabled)
     app.MapRepairOrders();
     app.MapStaff();
     app.MapFinance();
+    app.MapDocuments();
     app.MapAccounting();
 }
 

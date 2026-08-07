@@ -1,10 +1,10 @@
 # Implementation Status
 
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
-Current milestone: **F&I products.** Warranties, GAP and cover are sold with a car, at a negotiated price, with their own gross (complete, with a screen)
-Last verified: 2026-08-06 · `dotnet build` 0 warnings/0 errors, `dotnet test` 452/452,
+Current milestone: **printing.** A customer is handed a vehicle order or a service invoice (complete, with a screen)
+Last verified: 2026-08-07 · `dotnet build` 0 warnings/0 errors, `dotnet test` 462/462,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 179/179, and `npm run build` all pass
+`npm run typecheck`, `npm test` 180/180, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -261,6 +261,20 @@ them is written.
 
   **Deliberately not included:** cancellations and pro-rata refunds, remitting to providers and reconciling with them, commission and pay plans, rate tables by term and mileage, e-contracting, and the compliance "menu" presentation. Also not included: a screen for managing the catalogue itself — products are added through the API today, and the menu on the deal is what got the screen.
 
+- **2026-08-07 — The customer is handed something.** A car could be delivered and a job invoiced and the person paying walked away with nothing. There is now a **vehicle order** and a **service invoice**, rendered server-side as complete standalone HTML with a print stylesheet, opened from the deal desk and the workshop.
+
+  **No PDF library was taken** (maintainer's decision, 2026-08-06). This is an AGPL project and `NuGetAudit` fails the build on a vulnerable package, so a rendering component would need to clear both a licence review and an advisory history. A printable page needs neither, and the browser's own print-to-PDF produces the customer's copy. `RenderedDocument` carries a content type and file name precisely so a PDF renderer can replace the output later without touching a single caller.
+
+  **The safeguard that justified the whole shape.** `DealDetail` carries the cost and gross of every F&I product; `RepairOrderDetail` carries the cost of every part. **None of it is rendered**, and `No_dealership_only_figure_reaches_a_customers_copy` reads the raw HTML — not a model — to prove it, because the risk is a field somebody adds later without thinking about who sees the document. Rehearsed: rendering the product cost instead of its price fails exactly that test.
+
+  **Documents own no data.** Everything is read through `IDeals`, `IRepairOrders`, `ICustomers`, and `IOrganization`, so the caller's permissions and rooftop scope are applied before anything is rendered — a document cannot show what the person asking could not already read. That is why the endpoint checks no permission of its own, and `Somebody_who_cannot_read_the_deal_cannot_print_it` is what proves that is sufficient rather than an omission.
+
+  **Three defects found while building it.** Negative money rendered as `$-3,000.00` instead of `-$3,000.00`, which reads as a typo rather than as money off — the sign now sits outside the symbol. A handler named `print()` silently resolved to `window.print`, which would have printed the application page instead of the document; the compiler caught it as an unused local. And the print button was first placed among the stage buttons, which disappear once a deal is delivered — exactly when somebody asks for another copy — so it moved to the panel header.
+
+  **Verified in a browser** on real data: the vehicle order reads 399 − 500 + 26,995 − 3,300 = **23,594**, matching its printed total, and the service invoice's 68.40 + 284.00 parts plus 180.00 labour reaches **532.40**. Also confirmed the design's premise: navigating straight to a document URL is refused for a missing tenant header, which is why `openDocument` fetches rather than using a link. Evidence: `dotnet test` 462/462 (was 452), `npm test` 180/180, `verify-e2e.ps1` PASS *(automated)*
+
+  **Deliberately not included:** letterheads and per-dealership branding, emailing anything, statutory finance documents, terms and conditions text, and signature capture. Named rather than hidden: the vehicle order says on its face that it is not a tax invoice, because it is not one.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -270,18 +284,17 @@ them is written.
 
 ## Next milestone
 
-**Outcome:** the customer is handed something. Nothing in this system prints.
+**Outcome:** a dealership can be set up without a developer.
 
-A car can be delivered and a repair order invoiced, and the person paying walks away with nothing at all. It is the most visible gap left, and unlike the connectors it is blocked on nobody.
+This is the quiet gate on everything else. Provisioning a tenant is a seeder run today, so nothing built above can go in front of a real dealer whatever its quality. The maintainer's answer (2026-08-06) is that it belongs in the **control-plane console**, alongside the listing and suspend/resume already there — a maintenance command was rejected because a hosted operator has no shell, and this must work for all three deployment targets.
 
-- **Included:** a deal summary and a service invoice, generated server-side as PDFs from the data already recorded, downloadable from the deal desk and the workshop screen.
-- **Explicitly excluded:** letterheads and per-dealership branding, emailing anything, statutory finance documents, and printing from the browser's own print dialogue (which cannot produce a stable document).
-- **Caution:** a document is a **snapshot of what was agreed**, not a live view. Regenerating last month's invoice must produce last month's figures — the frozen line costs and `DealHistory`'s amount-at-each-change already work this way; follow them rather than re-reading current state.
-- **Caution:** rendering a document needs a library. `NuGetAudit` fails the build on a vulnerable package, so check the licence and the advisory history before adding one — an AGPL project cannot take a component with an incompatible licence.
-- **Settled 2026-08-06:** the books have a deliberate beginning; nothing posts into an unopened month. Any new tenant-provisioning path must open the books, or the dealership's first sale is refused for a reason nobody will guess.
+- **Included:** creating a dealership from the console — its database, migrations, the chart of accounts, the first accounting period, and one manager who sets their own password with an enrolment code.
+- **Explicitly excluded:** deleting a dealership, moving one between servers, restoring one from backup into a new tenant, and choosing a database name by hand.
+- **Caution, and the one that will bite:** the new dealership's books must be **opened**. Nothing posts into a month that has not been opened, so a provisioning path that skips it produces a dealership whose first sale is refused for a reason nobody will guess.
+- **Caution:** creating the first user has to reuse the enrolment-code path, not invent a password. That flow already exists and putting a second one beside it would be the second place credentials are handled.
+- **Caution:** the connection string for the new tenant is written to the host catalog **encrypted**, and the control plane holds the keys. Do not add a way to read it back — `--repoint-tenants` exists precisely so nothing else needs to.
+- **Settled 2026-08-06:** documents are server-rendered HTML with a print stylesheet, not a PDF library. Keep the endpoint shape if that ever changes.
 - **Settled 2026-08-05:** a service advisor **may** authorize work they wrote up themselves. Not an oversight — most independents have one person doing both, and the control is that recording the customer's answer is a separate, permissioned, timestamped act. Do not "fix" it into the salesperson/approver split.
-
-**Also outstanding, and the quiet gate on everything:** provisioning a new dealership is still a developer's job. Nothing can go in front of a pilot without it, whatever else gets built.
 
 **Also outstanding, and cheap:** the API refuses a write whose anti-forgery token is missing, but no screen has yet had to recover from it. `ApiError.needsSignIn` covers the case and nothing acts on it — a write that fails this way should send the person to sign in again rather than showing them a raw refusal.
 

@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { ApiError, api, post } from '../../shared/api';
+import { ApiError, api, openDocument, post } from '../../shared/api';
 import { DealTerms } from './DealTerms';
 import { DealProducts } from './DealProducts';
 import { StartDeal } from './StartDeal';
@@ -147,6 +147,19 @@ function DealPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Not named `print`: that resolves to the global `window.print`, which silently
+  // prints the application page instead. The compiler caught it as an unused
+  // local, which is a lucky way to find out.
+  async function printOrder() {
+    setError(null);
+
+    try {
+      await openDocument(`/documents/deals/${deal.id}`);
+    } catch (failure) {
+      setError(failure instanceof ApiError ? failure.message : 'The document could not be opened.');
+    }
+  }
+
   async function move(status: DealStatus, note?: string) {
     setError(null);
     setBusy(true);
@@ -168,9 +181,17 @@ function DealPanel({
         <h2>
           {deal.customerName} <span className="muted">·</span> {deal.vehicle}
         </h2>
-        <button type="button" onClick={onClose}>
-          Close
-        </button>
+        <div className="actions">
+          {/* Here rather than with the stage buttons, which disappear once a deal
+              is delivered — and a delivered deal is exactly when somebody asks for
+              another copy of the paperwork. */}
+          <button type="button" onClick={() => void printOrder()}>
+            Print the order
+          </button>
+          <button type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
       </header>
 
       <p className="muted">
