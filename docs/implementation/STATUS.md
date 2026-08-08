@@ -329,20 +329,62 @@ them is written.
 
 | Owner | Item | Required evidence | Effect |
 |---|---|---|---|
-| Human | Backup and restore rehearsal | A timed restore producing a working system | I1 exit criterion cannot close |
 | Human | Delivery Phase 0 — pilot dealers, provider access, sandbox data | Signed access and representative extracts | I2 connector certification cannot start |
+| Human | Where backups are stored, and who holds the secret key copy | A named location off the server | An installation can be backed up but not survive losing the machine |
+| Human | A mail provider, and a WhatsApp/SMS gateway account | Credentials in an installation's configuration | Those two recovery methods stay switched off; the other three work regardless |
+
+**Closed 2026-08-07:** how somebody proves they own an account they cannot sign in
+to. Answered — [ADR-018](../adr/0018-account-recovery-methods.md).
+
+**Closed 2026-08-04:** backup and restore rehearsal. Listed here as an open human
+item for three days after it was done — see line 9 and the stage-1 checklist. The
+drill ran on LocalDB, three databases out and back, with `verify-e2e.ps1` passing
+against the restored copy.
+
+**Not blockers, and worth saying so:** install packaging and password reset are
+both mine to build. Neither waits on a pilot dealer. Only the connectors and
+single sign-on genuinely do — the first needs a real DMS to connect to, the
+second a real login provider, and a fake one would prove nothing.
 
 ## Next milestone
 
-**Outcome:** a dealership can be set up without a developer.
+**Outcome:** the application arrives as something an operator can install.
 
-This is the quiet gate on everything else. Provisioning a tenant is a seeder run today, so nothing built above can go in front of a real dealer whatever its quality. The maintainer's answer (2026-08-06) is that it belongs in the **control-plane console**, alongside the listing and suspend/resume already there — a maintenance command was rejected because a hosted operator has no shell, and this must work for all three deployment targets.
+`docs/OPERATING.md` tells an operator how to run an installation and there is
+nothing packaged for them to run. That is now the only remaining item that is
+neither built nor waiting on somebody else, and it is what stands between the
+product and a pilot.
 
-- **Included:** creating a dealership from the console — its database, migrations, the chart of accounts, the first accounting period, and one manager who sets their own password with an enrolment code.
-- **Explicitly excluded:** deleting a dealership, moving one between servers, restoring one from backup into a new tenant, and choosing a database name by hand.
-- **Caution, and the one that will bite:** the new dealership's books must be **opened**. Nothing posts into a month that has not been opened, so a provisioning path that skips it produces a dealership whose first sale is refused for a reason nobody will guess.
-- **Caution:** creating the first user has to reuse the enrolment-code path, not invent a password. That flow already exists and putting a second one beside it would be the second place credentials are handled.
-- **Caution:** the connection string for the new tenant is written to the host catalog **encrypted**, and the control plane holds the keys. Do not add a way to read it back — `--repoint-tenants` exists precisely so nothing else needs to.
+- **Included:** a container image, a Windows service package, and the runbook
+  updated to point at them rather than at `dotnet run`.
+- **Explicitly excluded:** an installer with a user interface, automatic updates,
+  and any hosted-service concern beyond running one installation.
+- **Caution:** the secret-protection key is what makes a backup restorable. The
+  packaging must make generating one an explicit first step that fails loudly,
+  not a default that quietly produces an installation nobody can restore.
+- **Caution:** `Program.cs` already refuses to start outside Development without
+  keys configured. Do not let a packaged default weaken that into a warning.
+
+**Then: account recovery.** Settled 2026-08-07 and written up as
+[ADR-018](../adr/0018-account-recovery-methods.md): one contract, five methods, and
+a privileged manager-issued code as the backstop. No longer blocked on a decision.
+
+- **Build the contract plus the two methods that need nothing first** — the
+  authenticator (TOTP is already enrolled) and passkeys (WebAuthn; the device does
+  the check and transmits nothing). Those two cover most people and add no
+  dependency on anything outside the installation.
+- **Email and WhatsApp/SMS ship in the same release but arrive switched off.** The
+  code is there; the provider is the operator's to supply, and an unconfigured
+  method is never offered. That is what makes "all five" deliverable without
+  waiting on an account somebody has to go and buy.
+- **Caution:** starting a recovery must answer identically whether or not the
+  address is known, or the endpoint becomes a way to list a dealership's staff.
+- **Caution:** WhatsApp/SMS needs a **verified** phone number on a staff record and
+  there is no such field. Adding one is part of that method, not a prerequisite for
+  the others.
+- **Caution:** the manager-issued code needs its own permission, not `Staff.Manage`.
+  Handing out account access is a different act from editing a staff record.
+
 - **Settled 2026-08-06:** documents are server-rendered HTML with a print stylesheet, not a PDF library. Keep the endpoint shape if that ever changes.
 - **Settled 2026-08-05:** a service advisor **may** authorize work they wrote up themselves. Not an oversight — most independents have one person doing both, and the control is that recording the customer's answer is a separate, permissioned, timestamped act. Do not "fix" it into the salesperson/approver split.
 

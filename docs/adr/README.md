@@ -23,6 +23,7 @@ Statuses are **Proposed**, **Accepted**, **Superseded**, or **Rejected**. A mate
 | [ADR-015](0015-sql-server-first-cross-platform.md) | SQL Server first, cross-platform application | Accepted |
 | [ADR-016](0016-immutable-business-ledgers.md) | Immutable business ledgers | Accepted |
 | [ADR-017](0017-three-projects-flat-features.md) | Three projects, flat features, walls only where a breach is expensive | Accepted |
+| [ADR-018](0018-account-recovery-methods.md) | Account recovery is a set of pluggable proofs, not one flow | Accepted |
 
 ## ADR file template
 

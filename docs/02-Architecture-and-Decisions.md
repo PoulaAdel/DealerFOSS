@@ -81,6 +81,14 @@ SQL Server 2022 is the supported v1 database. The application runs under IIS/Win
 
 Posted accounting entries, parts stock movements, compliance evidence, and audit records are append-only. Corrections use reversals or adjustment records. This prevents invisible history changes and makes reconciliation possible.
 
+### ADR-017 — Three projects, flat features, walls only where a breach is expensive — Accepted
+
+Supersedes ADR-002. `src/Core`, `src/Identity`, `src/App` and no others; a new capability is a flat folder, not a project. See [`adr/0017`](adr/0017-three-projects-flat-features.md).
+
+### ADR-018 — Account recovery is a set of pluggable proofs, not one flow — Accepted
+
+Somebody who cannot sign in proves the account is theirs through one of several configurable methods — authenticator, passkey, email, WhatsApp/SMS — with a privileged manager-issued code as the backstop. A method that is not configured is not offered. See [`adr/0018`](adr/0018-account-recovery-methods.md).
+
 ## 4. Technology stack
 
 Versions follow supported LTS/current stable releases and are pinned centrally. Upgrades require compatibility tests, not a new ADR unless the technology changes.
