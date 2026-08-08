@@ -10,6 +10,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ApiError, api } from '../../shared/api';
 import { inventoryStatuses, type InventoryStatus, type InventoryUnitSummary } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 /**
  * What the server will return at most, however many are asked for — it clamps
@@ -26,6 +29,10 @@ type Load =
   | { kind: 'failed'; message: string };
 
 export function InventoryPage() {
+  const { t } = useI18n();
+  const label = useEnumLabel();
+  const describe = useApiMessage();
+
   const [status, setStatus] = useState<InventoryStatus | ''>('');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
 
@@ -53,12 +60,9 @@ export function InventoryPage() {
         return;
       }
 
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'Could not load the stock list.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, [status, stockNumber]);
+  }, [status, stockNumber, describe]);
 
   useEffect(() => {
     void fetchUnits();
@@ -67,19 +71,19 @@ export function InventoryPage() {
   return (
     <>
       <header className="page__head">
-        <h1>Stock</h1>
+        <h1>{t('stock.title')}</h1>
 
         <div className="filter">
-          <label htmlFor="status">Status</label>
+          <label htmlFor="status">{t('stock.status')}</label>
           <select
             id="status"
             value={status}
             onChange={(e) => setStatus(e.target.value as InventoryStatus | '')}
           >
-            <option value="">All</option>
+            <option value="">{t('common.all')}</option>
             {inventoryStatuses.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {label('inventoryStatus', s)}
               </option>
             ))}
           </select>
@@ -88,9 +92,11 @@ export function InventoryPage() {
 
       {stockNumber === '' ? null : (
         <p className="notice" role="status">
-          Showing stock number <span className="mono">{stockNumber}</span> only.{' '}
+          {/* The stock number is a code the dealership assigns, so it reads left
+              to right even on an Arabic page. */}
+          {t('stock.onlyStockNumber', { stock: stockNumber })}{' '}
           <button type="button" className="link" onClick={() => setParams({})}>
-            Show everything
+            {t('stock.showEverything')}
           </button>
         </p>
       )}
@@ -101,19 +107,20 @@ export function InventoryPage() {
 }
 
 function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
+  const { t } = useI18n();
+
   switch (load.kind) {
     case 'loading':
       return (
         <p className="state" aria-live="polite">
-          Loading the stock list…
+          {t('stock.loading')}
         </p>
       );
 
     case 'denied':
       return (
         <p className="state" role="alert">
-          You do not have access to this location&rsquo;s stock. Ask a manager if
-          you think that is wrong.
+          {t('stock.denied')}
         </p>
       );
 
@@ -122,16 +129,14 @@ function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
         <div className="state" role="alert">
           <p>{load.message}</p>
           <button type="button" onClick={onRetry}>
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       );
 
     case 'ready':
       return load.units.length === 0 ? (
-        <p className="state">
-          Nothing here yet. Cars appear once they are taken into stock.
-        </p>
+        <p className="state">{t('stock.empty')}</p>
       ) : (
         <UnitTable units={load.units} />
       );
@@ -139,6 +144,9 @@ function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
 }
 
 function UnitTable({ units }: { units: InventoryUnitSummary[] }) {
+  const { t } = useI18n();
+  const label = useEnumLabel();
+
   // A full page means there are probably more, and we cannot know how many.
   // Saying "200 vehicles in stock" to somebody with 400 cars is a false
   // statement on a screen they are using to count their own stock.
@@ -148,29 +156,41 @@ function UnitTable({ units }: { units: InventoryUnitSummary[] }) {
     <div className="scroll">
       <table>
         <caption className="visually-hidden">
-          {/* "1 vehicles" is what a caption reads out when somebody arrives here
-              from a link that named one car — which is now a route this screen
-              genuinely has. */}
+          {/* A plural entry rather than `n === 1 ? 'vehicle' : 'vehicles'`.
+              Russian needs four forms of this sentence and Arabic six, and
+              somebody arriving from a link that named one car is exactly the
+              case that used to read "1 vehicles". */}
           {capped
-            ? `The first ${units.length} vehicles in stock. There may be more.`
-            : `${units.length} ${units.length === 1 ? 'vehicle' : 'vehicles'} in stock`}
+            ? t('stock.countCapped', { count: units.length })
+            : t('stock.count', { count: units.length })}
         </caption>
         <thead>
           <tr>
-            <th scope="col">Stock</th>
-            <th scope="col">Vehicle</th>
-            <th scope="col">VIN</th>
-            <th scope="col">Status</th>
+            <th scope="col">{t('stock.colStock')}</th>
+            <th scope="col">{t('stock.colVehicle')}</th>
+            <th scope="col">{t('stock.colVin')}</th>
+            <th scope="col">{t('stock.colStatus')}</th>
           </tr>
         </thead>
         <tbody>
           {units.map((unit) => (
             <tr key={unit.id}>
-              <td className="mono">{unit.stockNumber}</td>
+              {/* Stock numbers and VINs are codes, not prose: they read left to
+                  right whatever the page does, or the bidi algorithm reorders
+                  the groups and somebody reads out the wrong VIN. */}
+              <td className="mono" dir="ltr">
+                {unit.stockNumber}
+              </td>
               <td>{unit.vehicleDisplayName}</td>
-              <td className="mono vin">{unit.vin}</td>
+              <td className="mono vin" dir="ltr">
+                {unit.vin}
+              </td>
               <td>
-                <span className={`chip chip--${unit.status.toLowerCase()}`}>{unit.status}</span>
+                {/* The class still keys off the raw API value, so the colour
+                    does not depend on what language the page is in. */}
+                <span className={`chip chip--${unit.status.toLowerCase()}`}>
+                  {label('inventoryStatus', unit.status)}
+                </span>
               </td>
             </tr>
           ))}
@@ -178,10 +198,7 @@ function UnitTable({ units }: { units: InventoryUnitSummary[] }) {
       </table>
 
       {capped ? (
-        <p className="note note--footer">
-          Showing the first {units.length}. There may be more — narrow it with the
-          status filter until paging exists.
-        </p>
+        <p className="note note--footer">{t('stock.cappedNote', { count: units.length })}</p>
       ) : null}
     </div>
   );

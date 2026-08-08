@@ -22,6 +22,9 @@ import type {
   ImportMode,
   ImportRowView,
 } from '../../shared/contracts';
+import { useI18n, type MessageKey } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 /** How long to keep asking before giving up on a job. */
 const PollTimeoutMs = 120_000;
@@ -33,6 +36,9 @@ interface Loaded {
 }
 
 export function RecordsPage() {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [kind, setKind] = useState<ImportKind>('Customers');
   const [file, setFile] = useState<Loaded | null>(null);
 
@@ -63,7 +69,7 @@ export function RecordsPage() {
       setFile({ name: chosen.name, content: await readText(chosen) });
     } catch {
       setFile(null);
-      setError('That file could not be read. Is it a text CSV?');
+      setError(t('records.unreadableFile'));
     }
   }
 
@@ -96,12 +102,12 @@ export function RecordsPage() {
           );
         }
       } catch (failure) {
-        setError(messageFor(failure));
+        setError(describe(failure));
       } finally {
         setBusy(null);
       }
     },
-    [],
+    [describe],
   );
 
   async function exportKind(which: ImportKind) {
@@ -111,7 +117,7 @@ export function RecordsPage() {
     try {
       await download(`/migration/exports/${which}`, `${which.toLowerCase()}.csv`);
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
     } finally {
       setBusy(null);
     }
@@ -120,17 +126,14 @@ export function RecordsPage() {
   return (
     <>
       <header className="page__head">
-        <h1>Records</h1>
+        <h1>{t('records.title')}</h1>
       </header>
 
       <section className="panel">
-        <h2>Bring records in</h2>
-        <p>
-          A spreadsheet exported from your old system, saved as CSV. Nothing is
-          written until you have run it as a practice first.
-        </p>
+        <h2>{t('records.bringIn')}</h2>
+        <p>{t('records.bringInLede')}</p>
 
-        <label htmlFor="kind">What is in the file</label>
+        <label htmlFor="kind">{t('records.whatIsInIt')}</label>
         <select
           id="kind"
           value={kind}
@@ -141,11 +144,11 @@ export function RecordsPage() {
             setProblems([]);
           }}
         >
-          <option value="Customers">Customers</option>
-          <option value="Vehicles">Vehicles</option>
+          <option value="Customers">{t('enum.importKind.Customers')}</option>
+          <option value="Vehicles">{t('enum.importKind.Vehicles')}</option>
         </select>
 
-        <label htmlFor="file">The file</label>
+        <label htmlFor="file">{t('records.file')}</label>
         <input
           id="file"
           type="file"
@@ -163,7 +166,7 @@ export function RecordsPage() {
             disabled={file === null || busy !== null}
             onClick={() => file && void run('Trial', file, kind)}
           >
-            {busy === 'Trial' ? 'Trying it…' : 'Practice run'}
+            {busy === 'Trial' ? t('records.practising') : t('records.practice')}
           </button>
 
           <button
@@ -172,34 +175,27 @@ export function RecordsPage() {
             disabled={!mayApply || busy !== null}
             onClick={() => file && void run('Apply', file, kind)}
           >
-            {busy === 'Apply' ? 'Importing…' : 'Import for real'}
+            {busy === 'Apply' ? t('records.importing') : t('records.importForReal')}
           </button>
         </div>
 
         {file !== null && !mayApply && busy === null ? (
-          <p className="note">
-            Run the practice first. It changes nothing and tells you exactly what
-            the real one will do.
-          </p>
+          <p className="note">{t('records.practiseFirst')}</p>
         ) : null}
       </section>
 
       {job === null ? null : <Report job={job} problems={problems} />}
 
       <section className="panel">
-        <h2>Take records out</h2>
-        <p>
-          Downloads everything of that kind as a CSV. It is the same shape this
-          page accepts back, so you can move it anywhere — including into another
-          system entirely.
-        </p>
+        <h2>{t('records.takeOut')}</h2>
+        <p>{t('records.takeOutLede')}</p>
 
         <div className="actions">
           <button type="button" disabled={busy !== null} onClick={() => void exportKind('Customers')}>
-            Download customers
+            {t('records.downloadCustomers')}
           </button>
           <button type="button" disabled={busy !== null} onClick={() => void exportKind('Vehicles')}>
-            Download vehicles
+            {t('records.downloadVehicles')}
           </button>
         </div>
       </section>
@@ -208,58 +204,59 @@ export function RecordsPage() {
 }
 
 function Report({ job, problems }: { job: ImportJobView; problems: ImportRowView[] }) {
+  const { t } = useI18n();
+  const label = useEnumLabel();
   const practice = job.mode === 'Trial';
 
   if (job.status === 'Failed') {
     return (
       <section className="panel">
         <p className="verdict verdict--bad" role="alert">
-          That import could not be run. {job.failureReason ?? ''}
+          {t('records.couldNotRun')} {job.failureReason ?? ''}
         </p>
       </section>
     );
   }
 
+  // One catalogue sentence with the counts substituted in, rather than five
+  // fragments concatenated here. The old version read "Of 1 row(s)" — and
+  // "row(s)" is not a thing German, Russian or Arabic can be written in.
+  const summary: MessageKey = practice ? 'records.summaryPractice' : 'records.summaryReal';
+
   return (
     <section className="panel">
-      <h2>{practice ? 'What would happen' : 'What happened'}</h2>
+      <h2>{practice ? t('records.whatWouldHappen') : t('records.whatHappened')}</h2>
 
       <p
         className={`verdict ${job.rowsFailed > 0 ? 'verdict--bad' : 'verdict--ok'}`}
         role="status"
       >
-        {practice
-          ? `Of ${job.rowsTotal} row(s): ${job.rowsCreated} would be added, `
-            + `${job.rowsUpdated} already here, ${job.rowsSkipped} skipped, `
-            + `${job.rowsFailed} could not be read.`
-          : `Of ${job.rowsTotal} row(s): ${job.rowsCreated} added, `
-            + `${job.rowsUpdated} already here, ${job.rowsSkipped} skipped, `
-            + `${job.rowsFailed} refused.`}
+        {t(summary, {
+          count: job.rowsTotal,
+          created: job.rowsCreated,
+          updated: job.rowsUpdated,
+          skipped: job.rowsSkipped,
+          failed: job.rowsFailed,
+        })}
       </p>
 
-      {practice ? (
-        <p className="note">Nothing has been written. This was a practice run.</p>
-      ) : null}
+      {practice ? <p className="note">{t('records.nothingWritten')}</p> : null}
 
       {problems.length === 0 ? null : (
         <>
-          <h3>Rows to look at</h3>
-          <p className="note">
-            The line number is the one you see in your spreadsheet, and the row is
-            quoted exactly as it arrived. Fix the file and run it again — nothing
-            here edits what you sent.
-          </p>
+          <h3>{t('records.rowsToLookAt')}</h3>
+          <p className="note">{t('records.rowsToLookAtLede')}</p>
 
           <div className="scroll">
             <table>
               <caption className="visually-hidden">
-                {problems.length} rows needing attention
+                {t('records.problemCount', { count: problems.length })}
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Line</th>
-                  <th scope="col">What happened</th>
-                  <th scope="col">The row</th>
+                  <th scope="col">{t('records.colLine')}</th>
+                  <th scope="col">{t('records.colWhatHappened')}</th>
+                  <th scope="col">{t('records.colTheRow')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -268,11 +265,15 @@ function Report({ job, problems }: { job: ImportJobView; problems: ImportRowView
                     <td className="mono num">{row.rowNumber}</td>
                     <td>
                       <span className={`chip chip--${row.outcome.toLowerCase()}`}>
-                        {row.outcome}
+                        {label('importOutcome', row.outcome)}
                       </span>{' '}
                       {row.message}
                     </td>
-                    <td className="mono raw">{row.raw}</td>
+                    {/* The raw row is quoted exactly as the dealership's file
+                        had it — CSV, so left to right whatever the page does. */}
+                    <td className="mono raw" dir="ltr">
+                      {row.raw}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -315,6 +316,9 @@ async function waitFor(jobId: string): Promise<ImportJobView> {
     }
 
     if (Date.now() > deadline) {
+      // The code is what matters: `useApiMessage` maps it to the reader's
+      // language, so the English here is only ever a fallback for a catalogue
+      // that somehow lacks the key.
       throw new ApiError(
         0,
         'migration.timeout',
@@ -325,10 +329,4 @@ async function waitFor(jobId: string): Promise<ImportJobView> {
 
     await new Promise((resolve) => setTimeout(resolve, PollEveryMs));
   }
-}
-
-function messageFor(failure: unknown): string {
-  return failure instanceof ApiError
-    ? failure.message
-    : 'Something went wrong. Try again.';
 }

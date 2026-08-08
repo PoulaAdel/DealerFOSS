@@ -7,7 +7,7 @@
 //       once a deal is submitted. Both are the kind of thing that looks like a
 //       tidy-up and loses somebody's work.
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';

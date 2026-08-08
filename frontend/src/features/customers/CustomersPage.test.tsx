@@ -7,7 +7,7 @@
 //       history and their deals, and nobody notices until it matters. If that
 //       check is ever removed as friction, these tests are what says so.
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { CustomersPage } from './CustomersPage';

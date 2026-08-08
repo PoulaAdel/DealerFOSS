@@ -53,8 +53,21 @@ internal static class AuthEndpoints
         group.MapGet("/me", Me);
 
         group.MapPost("/mfa/enrol", EnrolMfaAsync);
-        group.MapPost("/mfa/confirm", ConfirmMfaAsync);
-        group.MapPost("/mfa/disable", DisableMfaAsync);
+
+        // Also rate limited, and for a reason the sign-in limiter does not
+        // cover. These two take a six-digit code and, unlike the sign-in
+        // challenge, there is no per-secret attempt counter behind them to die
+        // after five wrong answers — the challenge row that counts failures is
+        // only created by a password sign-in. Left unlimited, somebody holding a
+        // stolen cookie jar could walk the whole million codes at whatever rate
+        // the server would answer: `confirm` to bind an authenticator they
+        // control, `disable` to take the second factor off the account
+        // altogether. Both are persistence, not access, which is exactly the
+        // step worth making expensive.
+        group.MapPost("/mfa/confirm", ConfirmMfaAsync)
+            .RequireRateLimiting(RateLimits.Credentials);
+        group.MapPost("/mfa/disable", DisableMfaAsync)
+            .RequireRateLimiting(RateLimits.Credentials);
     }
 
     private static async Task<IResult> LoginAsync(

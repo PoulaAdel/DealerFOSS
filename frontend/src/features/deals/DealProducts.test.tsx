@@ -6,7 +6,7 @@
 //       read-only or sent the catalogue default instead, the recorded gross would
 //       be wrong on every discounted deal and nothing else would notice.
 
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DealProducts } from './DealProducts';

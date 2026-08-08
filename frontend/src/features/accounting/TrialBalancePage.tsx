@@ -8,6 +8,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../../shared/api';
 import type { TrialBalance } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 type Load =
   | { kind: 'loading' }
@@ -16,6 +19,8 @@ type Load =
   | { kind: 'failed'; message: string };
 
 export function TrialBalancePage() {
+  const { t } = useI18n();
+  const describe = useApiMessage();
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
 
   const fetchBalance = useCallback(async () => {
@@ -29,12 +34,9 @@ export function TrialBalancePage() {
         return;
       }
 
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'Could not load the balances.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, []);
+  }, [describe]);
 
   useEffect(() => {
     void fetchBalance();
@@ -43,7 +45,7 @@ export function TrialBalancePage() {
   return (
     <>
       <header className="page__head">
-        <h1>Trial balance</h1>
+        <h1>{t('trialBalance.title')}</h1>
       </header>
 
       <Body load={load} onRetry={fetchBalance} />
@@ -52,18 +54,20 @@ export function TrialBalancePage() {
 }
 
 function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
+  const { t } = useI18n();
+
   switch (load.kind) {
     case 'loading':
       return (
         <p className="state" aria-live="polite">
-          Adding it up…
+          {t('trialBalance.loading')}
         </p>
       );
 
     case 'denied':
       return (
         <p className="state" role="alert">
-          You do not have access to these figures.
+          {t('trialBalance.denied')}
         </p>
       );
 
@@ -72,16 +76,14 @@ function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
         <div className="state" role="alert">
           <p>{load.message}</p>
           <button type="button" onClick={onRetry}>
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       );
 
     case 'ready':
       return load.balance.accounts.length === 0 ? (
-        <p className="state">
-          Nothing posted yet. Entries appear here once a car has been delivered.
-        </p>
+        <p className="state">{t('trialBalance.empty')}</p>
       ) : (
         <Balances balance={load.balance} />
       );
@@ -89,54 +91,64 @@ function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
 }
 
 function Balances({ balance }: { balance: TrialBalance }) {
-  const money = new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: balance.currency || 'USD',
-  });
+  const { t, format } = useI18n();
+  const label = useEnumLabel();
+
+  // Grouping and the position of the currency symbol both follow the reader's
+  // language now: "$1,250.00" in English, "1 250,00 $US" in French, and the
+  // whole figure mirrored on an Arabic page.
+  const money = (amount: number) => format.money(amount, balance.currency || 'USD');
 
   return (
     <>
       <p className={balance.balances ? 'verdict verdict--ok' : 'verdict verdict--bad'} role="status">
         {balance.balances
-          ? `In balance — debits and credits both come to ${money.format(balance.totalDebits)}.`
-          : `Out of balance by ${money.format(Math.abs(balance.totalDebits - balance.totalCredits))}. Something was lost on the way in.`}
+          ? t('trialBalance.inBalance', { total: money(balance.totalDebits) })
+          : t('trialBalance.outOfBalance', {
+              difference: money(Math.abs(balance.totalDebits - balance.totalCredits)),
+            })}
       </p>
 
       <div className="scroll">
         <table>
           <thead>
             <tr>
-              <th scope="col">Code</th>
-              <th scope="col">Account</th>
-              <th scope="col">Kind</th>
+              <th scope="col">{t('trialBalance.colCode')}</th>
+              <th scope="col">{t('trialBalance.colAccount')}</th>
+              <th scope="col">{t('trialBalance.colKind')}</th>
               <th scope="col" className="num">
-                Debits
+                {t('trialBalance.colDebits')}
               </th>
               <th scope="col" className="num">
-                Credits
+                {t('trialBalance.colCredits')}
               </th>
               <th scope="col" className="num">
-                Balance
+                {t('trialBalance.colBalance')}
               </th>
             </tr>
           </thead>
           <tbody>
             {balance.accounts.map((account) => (
               <tr key={account.code}>
-                <td className="mono">{account.code}</td>
+                {/* The account code is a number in a chart of accounts, read
+                    left to right whatever the page direction. The account NAME
+                    is dealership data and is shown as they typed it. */}
+                <td className="mono" dir="ltr">
+                  {account.code}
+                </td>
                 <td>{account.name}</td>
-                <td className="muted">{account.kind}</td>
-                <td className="num mono">{money.format(account.debits)}</td>
-                <td className="num mono">{money.format(account.credits)}</td>
-                <td className="num mono strong">{money.format(account.balance)}</td>
+                <td className="muted">{label('accountKind', account.kind)}</td>
+                <td className="num mono">{money(account.debits)}</td>
+                <td className="num mono">{money(account.credits)}</td>
+                <td className="num mono strong">{money(account.balance)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={3}>Total</td>
-              <td className="num mono strong">{money.format(balance.totalDebits)}</td>
-              <td className="num mono strong">{money.format(balance.totalCredits)}</td>
+              <td colSpan={3}>{t('trialBalance.total')}</td>
+              <td className="num mono strong">{money(balance.totalDebits)}</td>
+              <td className="num mono strong">{money(balance.totalCredits)}</td>
               <td />
             </tr>
           </tfoot>

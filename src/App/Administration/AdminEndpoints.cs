@@ -47,7 +47,13 @@ internal static class AdminEndpoints
         group.MapGet("/me", Me);
 
         group.MapPost("/mfa/enrol", EnrolMfaAsync);
-        group.MapPost("/mfa/confirm", ConfirmMfaAsync);
+
+        // Limited for the same reason as the dealership's own confirm: it takes
+        // a guessable six-digit code and has no per-secret attempt counter
+        // behind it. An administrator's second factor is the one guarding every
+        // dealership in the installation.
+        group.MapPost("/mfa/confirm", ConfirmMfaAsync)
+            .RequireRateLimiting(RateLimits.Credentials);
 
         // Operating the installation: which dealerships exist, and whether each
         // is usable. Routing and lifecycle only — never their contents.

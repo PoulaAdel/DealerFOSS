@@ -18,6 +18,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
 import type { CustomerSummary, NewCustomer } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 /**
  * What the server will return at most, however many are asked for. The screen
@@ -43,6 +46,9 @@ type Adding =
 const empty: NewCustomer = { kind: 'Person', firstName: '', lastName: '', email: '', phone: '' };
 
 export function CustomersPage() {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [search, setSearch] = useState('');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
 
@@ -65,12 +71,9 @@ export function CustomersPage() {
         return;
       }
 
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'Could not load customers.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, []);
+  }, [describe]);
 
   useEffect(() => {
     void find('');
@@ -110,7 +113,7 @@ export function CustomersPage() {
 
       setAdding({ step: 'confirm', matches: [...found.values()] });
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
       setAdding({ step: 'form' });
     }
   }
@@ -132,7 +135,7 @@ export function CustomersPage() {
       setAdding({ step: 'closed' });
       await find(search);
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
       setAdding({ step: 'form' });
     }
   }
@@ -142,7 +145,7 @@ export function CustomersPage() {
   return (
     <>
       <header className="page__head">
-        <h1>Customers</h1>
+        <h1>{t('customers.title')}</h1>
 
         <form
           className="filter"
@@ -151,12 +154,12 @@ export function CustomersPage() {
             void find(search);
           }}
         >
-          <label htmlFor="search">Find someone</label>
+          <label htmlFor="search">{t('customers.find')}</label>
           <input
             id="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name, phone, or email"
+            placeholder={t('customers.findPlaceholder')}
             // Not type="search": the browser's clear button does not fire an
             // input event in every engine, so the list could disagree with the box.
             autoComplete="off"
@@ -167,7 +170,7 @@ export function CustomersPage() {
       {adding.step === 'closed' ? (
         <div className="actions actions--lead">
           <button type="button" className="primary" onClick={() => setAdding({ step: 'form' })}>
-            Add a customer
+            {t('customers.add')}
           </button>
         </div>
       ) : (
@@ -204,22 +207,21 @@ function AddPanel({
   onSaveAnyway: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
+
   if (adding.step === 'confirm') {
     return (
       <section className="panel">
-        <h2>Somebody like this is already here</h2>
-        <p role="alert">
-          Adding a second record for the same person splits their history — their
-          service, their deals, and their contact details stop agreeing. Check
-          whether one of these is them.
-        </p>
+        <h2>{t('customers.duplicateTitle')}</h2>
+        <p role="alert">{t('customers.duplicateLede')}</p>
 
         <ul className="matches">
           {adding.matches.map((match) => (
             <li key={match.id}>
               <span className="strong">{match.displayName}</span>{' '}
               <span className="muted">
-                {[match.primaryEmail, match.primaryPhone].filter(Boolean).join(' · ') || 'no contact details'}
+                {[match.primaryEmail, match.primaryPhone].filter(Boolean).join(' · ') ||
+                  t('customers.noContactDetails')}
               </span>
             </li>
           ))}
@@ -227,10 +229,10 @@ function AddPanel({
 
         <div className="actions">
           <button type="button" className="primary" onClick={onCancel}>
-            One of these is them
+            {t('customers.oneOfTheseIsThem')}
           </button>
           <button type="button" onClick={onSaveAnyway} disabled={busy}>
-            {busy ? 'Adding…' : 'None of these — add anyway'}
+            {busy ? t('customers.adding') : t('customers.addAnyway')}
           </button>
         </div>
       </section>
@@ -239,7 +241,7 @@ function AddPanel({
 
   return (
     <section className="panel">
-      <h2>Add a customer</h2>
+      <h2>{t('customers.add')}</h2>
 
       <form
         onSubmit={(e) => {
@@ -248,19 +250,19 @@ function AddPanel({
         }}
         noValidate
       >
-        <label htmlFor="customer-kind">Person or business</label>
+        <label htmlFor="customer-kind">{t('customers.kindLabel')}</label>
         <select
           id="customer-kind"
           value={draft.kind}
           onChange={(e) => onDraft({ ...draft, kind: e.target.value as NewCustomer['kind'] })}
         >
-          <option value="Person">Person</option>
-          <option value="Business">Business</option>
+          <option value="Person">{t('enum.customerKind.Person')}</option>
+          <option value="Business">{t('enum.customerKind.Business')}</option>
         </select>
 
         {draft.kind === 'Person' ? (
           <>
-            <label htmlFor="first-name">First name</label>
+            <label htmlFor="first-name">{t('customers.firstName')}</label>
             <input
               id="first-name"
               value={draft.firstName ?? ''}
@@ -270,7 +272,7 @@ function AddPanel({
         ) : null}
 
         <label htmlFor="last-name">
-          {draft.kind === 'Business' ? 'Business name' : 'Last name'}
+          {draft.kind === 'Business' ? t('customers.businessName') : t('customers.lastName')}
         </label>
         <input
           id="last-name"
@@ -279,7 +281,7 @@ function AddPanel({
           required
         />
 
-        <label htmlFor="email">Email</label>
+        <label htmlFor="email">{t('customers.email')}</label>
         <input
           id="email"
           type="email"
@@ -287,7 +289,7 @@ function AddPanel({
           onChange={(e) => onDraft({ ...draft, email: e.target.value })}
         />
 
-        <label htmlFor="phone">Phone</label>
+        <label htmlFor="phone">{t('customers.phone')}</label>
         <input
           id="phone"
           value={draft.phone ?? ''}
@@ -305,13 +307,13 @@ function AddPanel({
             disabled={busy || draft.lastName.trim() === ''}
           >
             {adding.step === 'checking'
-              ? 'Checking for duplicates…'
+              ? t('customers.checking')
               : adding.step === 'saving'
-                ? 'Adding…'
-                : 'Add'}
+                ? t('customers.adding')
+                : t('customers.submit')}
           </button>
           <button type="button" onClick={onCancel} disabled={busy}>
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </form>
@@ -320,19 +322,20 @@ function AddPanel({
 }
 
 function Results({ load, onRetry }: { load: Load; onRetry: () => void }) {
+  const { t } = useI18n();
+
   switch (load.kind) {
     case 'loading':
       return (
         <p className="state" aria-live="polite">
-          Looking…
+          {t('customers.looking')}
         </p>
       );
 
     case 'denied':
       return (
         <p className="state" role="alert">
-          You do not have access to customer records. Ask a manager if you think
-          that is wrong.
+          {t('customers.denied')}
         </p>
       );
 
@@ -341,14 +344,14 @@ function Results({ load, onRetry }: { load: Load; onRetry: () => void }) {
         <div className="state" role="alert">
           <p>{load.message}</p>
           <button type="button" onClick={onRetry}>
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       );
 
     case 'ready':
       return load.customers.length === 0 ? (
-        <p className="state">Nobody matches that.</p>
+        <p className="state">{t('customers.noMatches')}</p>
       ) : (
         <CustomerTable customers={load.customers} />
       );
@@ -356,6 +359,9 @@ function Results({ load, onRetry }: { load: Load; onRetry: () => void }) {
 }
 
 function CustomerTable({ customers }: { customers: CustomerSummary[] }) {
+  const { t } = useI18n();
+  const label = useEnumLabel();
+
   // A full page probably means there are more, and we cannot know how many.
   const capped = customers.length >= PageSize;
 
@@ -364,15 +370,15 @@ function CustomerTable({ customers }: { customers: CustomerSummary[] }) {
       <table>
         <caption className="visually-hidden">
           {capped
-            ? `The first ${customers.length} customers. There may be more.`
-            : `${customers.length} customers`}
+            ? t('customers.countCapped', { count: customers.length })
+            : t('customers.count', { count: customers.length })}
         </caption>
         <thead>
           <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Kind</th>
-            <th scope="col">Email</th>
-            <th scope="col">Phone</th>
+            <th scope="col">{t('customers.colName')}</th>
+            <th scope="col">{t('customers.colKind')}</th>
+            <th scope="col">{t('customers.colEmail')}</th>
+            <th scope="col">{t('customers.colPhone')}</th>
           </tr>
         </thead>
         <tbody>
@@ -380,10 +386,16 @@ function CustomerTable({ customers }: { customers: CustomerSummary[] }) {
             <tr key={customer.id}>
               <td>{customer.displayName}</td>
               <td>
-                <span className={`chip chip--${customer.kind.toLowerCase()}`}>{customer.kind}</span>
+                <span className={`chip chip--${customer.kind.toLowerCase()}`}>
+                  {label('customerKind', customer.kind)}
+                </span>
               </td>
-              <td>{customer.primaryEmail ?? <span className="muted">—</span>}</td>
-              <td className="mono">{customer.primaryPhone ?? <span className="muted">—</span>}</td>
+              {/* An email address and a phone number are both read left to
+                  right, whichever way the page runs. */}
+              <td dir="ltr">{customer.primaryEmail ?? <span className="muted">—</span>}</td>
+              <td className="mono" dir="ltr">
+                {customer.primaryPhone ?? <span className="muted">—</span>}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -391,14 +403,9 @@ function CustomerTable({ customers }: { customers: CustomerSummary[] }) {
 
       {capped ? (
         <p className="note note--footer">
-          Showing the first {customers.length}. There may be more — narrow the
-          search until paging exists.
+          {t('customers.cappedNote', { count: customers.length })}
         </p>
       ) : null}
     </div>
   );
-}
-
-function messageFor(failure: unknown): string {
-  return failure instanceof ApiError ? failure.message : 'Something went wrong. Try again.';
 }

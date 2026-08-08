@@ -11,7 +11,7 @@
 //       month honest afterwards. The server demands one too; this stops somebody
 //       discovering that only after clicking.
 
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';

@@ -5,13 +5,23 @@
 //       the only description of the bindings, and it is generated from the same
 //       table the shell binds — so a shortcut cannot be added without appearing
 //       here, and cannot be removed while still being advertised.
+//
+//       `says` is a message KEY, not a sentence. Holding the English here would
+//       have put one screen's worth of untranslated text inside a table that
+//       looks like configuration, which is exactly where it would have been
+//       missed — the key makes the omission a compile error instead.
+//
+//       The key names are NOT translated. "g d" is what is physically printed
+//       on the keyboard, and localising it to a mnemonic in another language
+//       would describe a key the reader does not have.
 
 import { useEffect, useRef } from 'react';
+import { useI18n, type MessageKey } from '../shared/i18n';
 
 export interface Shortcut {
   /** As useHotkeys binds it: "g d", "?", "[". */
   keys: string;
-  says: string;
+  says: MessageKey;
 }
 
 /**
@@ -19,28 +29,34 @@ export interface Shortcut {
  * into handlers; this panel turns them into instructions.
  */
 export const shortcuts: Shortcut[] = [
-  { keys: 'g d', says: 'Go to the dashboard' },
-  { keys: 'g s', says: 'Go to stock' },
-  { keys: 'g c', says: 'Go to customers' },
-  { keys: 'g e', says: 'Go to enquiries' },
-  { keys: 'g l', says: 'Go to deals' },
-  { keys: 'g w', says: 'Go to the workshop' },
-  { keys: 'g p', says: 'Go to parts' },
-  { keys: 'g b', says: 'Go to the books' },
-  { keys: '[', says: 'On the dashboard: the month before' },
-  { keys: ']', says: 'On the dashboard: the month after' },
-  { keys: 't', says: 'On the dashboard: back to this month' },
-  { keys: '?', says: 'Show this list' },
+  { keys: 'g d', says: 'shortcuts.goDashboard' },
+  { keys: 'g s', says: 'shortcuts.goStock' },
+  { keys: 'g c', says: 'shortcuts.goCustomers' },
+  { keys: 'g e', says: 'shortcuts.goLeads' },
+  { keys: 'g l', says: 'shortcuts.goDeals' },
+  { keys: 'g w', says: 'shortcuts.goWorkshop' },
+  { keys: 'g p', says: 'shortcuts.goParts' },
+  { keys: 'g b', says: 'shortcuts.goBooks' },
+  { keys: '[', says: 'shortcuts.monthBefore' },
+  { keys: ']', says: 'shortcuts.monthAfter' },
+  { keys: 't', says: 'shortcuts.thisMonth' },
+  { keys: '?', says: 'shortcuts.showList' },
 ];
 
-/** How a key is printed. "g d" is two keys pressed one after the other. */
-function Keys({ keys }: { keys: string }) {
+/**
+ * How a key is printed. "g d" is two keys pressed one after the other.
+ *
+ * `dir="ltr"` on the row: a key sequence is read left to right even on an
+ * Arabic page, the same way a phone number or a VIN is. Without it the two
+ * halves of "g d" swap and the panel teaches the wrong sequence.
+ */
+function Keys({ keys, space }: { keys: string; space: string }) {
   return (
-    <span>
+    <span dir="ltr">
       {keys.split(' ').map((key, index) => (
         <kbd key={key}>
           {index > 0 ? ' ' : ''}
-          {key === ' ' ? 'Space' : key}
+          {key === ' ' ? space : key}
         </kbd>
       ))}
     </span>
@@ -49,6 +65,7 @@ function Keys({ keys }: { keys: string }) {
 
 export function ShortcutsPanel({ onClose }: { onClose: () => void }) {
   const dialog = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   // Focus moves into the panel, so Escape and Tab do what somebody who never
   // touched the mouse expects. Without this the panel opens behind the keyboard
@@ -60,7 +77,7 @@ export function ShortcutsPanel({ onClose }: { onClose: () => void }) {
       className="sheet"
       role="dialog"
       aria-modal="true"
-      aria-label="Keyboard shortcuts"
+      aria-label={t('shortcuts.title')}
       tabIndex={-1}
       ref={dialog}
       onKeyDown={(event) => {
@@ -70,9 +87,9 @@ export function ShortcutsPanel({ onClose }: { onClose: () => void }) {
       }}
     >
       <div className="sheet__head">
-        <h2>Keyboard shortcuts</h2>
+        <h2>{t('shortcuts.title')}</h2>
         <button type="button" onClick={onClose}>
-          Close
+          {t('common.close')}
         </button>
       </div>
 
@@ -80,17 +97,14 @@ export function ShortcutsPanel({ onClose }: { onClose: () => void }) {
         {shortcuts.map((shortcut) => (
           <div key={shortcut.keys}>
             <dt>
-              <Keys keys={shortcut.keys} />
+              <Keys keys={shortcut.keys} space={t('shortcuts.space')} />
             </dt>
-            <dd>{shortcut.says}</dd>
+            <dd>{t(shortcut.says)}</dd>
           </div>
         ))}
       </dl>
 
-      <p className="note">
-        Shortcuts are ignored while you are typing in a field, so they never eat a
-        character you meant to write.
-      </p>
+      <p className="note">{t('shortcuts.note')}</p>
     </div>
   );
 }

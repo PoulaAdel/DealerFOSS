@@ -13,7 +13,7 @@
 //
 //       "moves month without leaving the page" is the whole claim of the screen.
 
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';

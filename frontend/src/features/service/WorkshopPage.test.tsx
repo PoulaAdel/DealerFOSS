@@ -7,7 +7,7 @@
 //       somebody still needs to ring about. A disabled button would be a second
 //       copy of the rule and a worse message.
 
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';

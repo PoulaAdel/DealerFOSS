@@ -31,23 +31,25 @@ internal static class DocumentEndpoints
 
     private static async Task<IResult> DealSummaryAsync(
         Guid dealId,
+        HttpContext context,
         IDocuments documents,
         CancellationToken cancellationToken)
     {
         var result = await documents.DealSummaryAsync(dealId, cancellationToken);
-        return Render(result);
+        return Render(context, result);
     }
 
     private static async Task<IResult> ServiceInvoiceAsync(
         Guid repairOrderId,
+        HttpContext context,
         IDocuments documents,
         CancellationToken cancellationToken)
     {
         var result = await documents.ServiceInvoiceAsync(repairOrderId, cancellationToken);
-        return Render(result);
+        return Render(context, result);
     }
 
-    private static IResult Render(Core.Result<RenderedDocument> result)
+    private static IResult Render(HttpContext context, Core.Result<RenderedDocument> result)
     {
         if (result.IsFailure)
         {
@@ -56,6 +58,26 @@ internal static class DocumentEndpoints
             return result.Error.ToProblem();
         }
 
+        // The filename the service works out was being computed and thrown away,
+        // so a saved document was named after its URL — a bare GUID for a deal,
+        // which is what the customer's copy would have been filed as.
+        //
+        // `inline`, not `attachment`: the browser prints it, which is the whole
+        // point. The name is only used if somebody chooses Save.
+        context.Response.Headers.ContentDisposition =
+            $"inline; filename=\"{SafeFileName(result.Value.FileName)}\"";
+
         return Results.Content(result.Value.Content, result.Value.ContentType);
+    }
+
+    /// <summary>
+    /// Keeps a repair-order number fit to appear inside a quoted header value.
+    /// A quote or a newline in there is header injection, and the number is
+    /// dealership-supplied text rather than something this code chose.
+    /// </summary>
+    private static string SafeFileName(string name)
+    {
+        var cleaned = new string([.. name.Where(c => !char.IsControl(c) && c is not ('"' or '\\'))]);
+        return cleaned.Length == 0 ? "document.html" : cleaned;
     }
 }

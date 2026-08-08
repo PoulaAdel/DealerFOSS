@@ -8,16 +8,24 @@
 //       changed under them.
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ApiError, post, setCurrentTenant } from '../../shared/api';
+import { currentTenant, post, setCurrentTenant } from '../../shared/api';
 import type { SignInResponse } from '../../shared/contracts';
 import { useSession } from '../../app/session';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 type Stage = { kind: 'credentials' } | { kind: 'code'; challengeToken: string };
 
 export function SignIn() {
   const { refresh } = useSession();
+  const { t } = useI18n();
+  const describe = useApiMessage();
 
-  const [tenant, setTenant] = useState('northgroup');
+  // The last dealer group this browser used, so a returning user does not
+  // retype it. Was hard-coded to `northgroup` — a name that exists only in the
+  // development seed, presented to every real installation as if it were
+  // theirs, and quietly training people to sign in to a group that is not.
+  const [tenant, setTenant] = useState(currentTenant);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -53,7 +61,7 @@ export function SignIn() {
 
       await refresh();
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -76,7 +84,7 @@ export function SignIn() {
 
       await refresh();
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
       setCode('');
       codeInput.current?.focus();
     } finally {
@@ -86,13 +94,13 @@ export function SignIn() {
 
   return (
     <main className="signin">
-      <h1>DealerFOSS</h1>
+      <h1>{t('app.name')}</h1>
 
       {stage.kind === 'credentials' ? (
         <form onSubmit={submitCredentials} noValidate>
-          <p className="signin__lede">Sign in to your dealership.</p>
+          <p className="signin__lede">{t('signIn.lede')}</p>
 
-          <label htmlFor="tenant">Dealer group</label>
+          <label htmlFor="tenant">{t('signIn.dealerGroup')}</label>
           <input
             id="tenant"
             name="tenant"
@@ -102,7 +110,7 @@ export function SignIn() {
             required
           />
 
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{t('signIn.email')}</label>
           <input
             id="email"
             name="email"
@@ -113,7 +121,7 @@ export function SignIn() {
             required
           />
 
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">{t('signIn.password')}</label>
           <input
             id="password"
             name="password"
@@ -127,17 +135,14 @@ export function SignIn() {
           <Error message={error} />
 
           <button type="submit" disabled={busy}>
-            {busy ? 'Signing in…' : 'Sign in'}
+            {busy ? t('signIn.submitting') : t('signIn.submit')}
           </button>
         </form>
       ) : (
         <form onSubmit={submitCode} noValidate>
-          <p className="signin__lede">
-            Enter the six-digit code from your authenticator app, or one of your
-            recovery codes.
-          </p>
+          <p className="signin__lede">{t('signIn.codeLede')}</p>
 
-          <label htmlFor="code">Code</label>
+          <label htmlFor="code">{t('signIn.code')}</label>
           <input
             id="code"
             name="code"
@@ -154,7 +159,7 @@ export function SignIn() {
           <Error message={error} />
 
           <button type="submit" disabled={busy}>
-            {busy ? 'Checking…' : 'Continue'}
+            {busy ? t('signIn.checking') : t('common.continue')}
           </button>
 
           <button
@@ -166,7 +171,7 @@ export function SignIn() {
               setCode('');
             }}
           >
-            Start again
+            {t('signIn.startAgain')}
           </button>
         </form>
       )}
@@ -182,12 +187,4 @@ function Error({ message }: { message: string | null }) {
       {message ?? ''}
     </p>
   );
-}
-
-function messageFor(failure: unknown): string {
-  if (failure instanceof ApiError) {
-    return failure.message;
-  }
-
-  return 'Something went wrong. Try again.';
 }

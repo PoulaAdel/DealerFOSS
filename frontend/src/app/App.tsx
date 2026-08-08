@@ -20,6 +20,7 @@ import {
 } from 'react-router';
 import { SessionProvider, useSession } from './session';
 import { AppearanceProvider } from '../shared/appearance';
+import { I18nProvider, useI18n } from '../shared/i18n';
 import { AppearanceControls } from './AppearanceControls';
 import { ShortcutsPanel } from './Shortcuts';
 import { useHotkeys } from '../shared/useHotkeys';
@@ -41,41 +42,46 @@ import { AdminApp } from './AdminApp';
 
 export function App() {
   return (
-    // Outside the router and both sessions: the theme applies to the sign-in
-    // screen and the administration console as much as to the shell, and a
-    // choice made on one must not be forgotten by the next.
-    <AppearanceProvider>
-      <Router>
-        <Routes>
-          {/* The split is above SessionProvider on purpose. An administrator has
-              no dealership, so asking /auth/me on their behalf would be a
-              meaningless question — and mounting both session contexts at once
-              would make it possible to write a screen that does not know which
-              of the two identities it is holding. */}
-          <Route path="/admin/*" element={<AdminApp />} />
-          <Route
-            path="*"
-            element={
-              <SessionProvider>
-                <AppRoutes />
-              </SessionProvider>
-            }
-          />
-        </Routes>
-      </Router>
-    </AppearanceProvider>
+    // Outside the router and both sessions: the theme and the language apply to
+    // the sign-in screen and the administration console as much as to the
+    // shell, and a choice made on one must not be forgotten by the next.
+    // Language is outermost because the sign-in screen has words on it before
+    // anybody has a session to have a preference attached to.
+    <I18nProvider>
+      <AppearanceProvider>
+        <Router>
+          <Routes>
+            {/* The split is above SessionProvider on purpose. An administrator
+                has no dealership, so asking /auth/me on their behalf would be a
+                meaningless question — and mounting both session contexts at
+                once would make it possible to write a screen that does not know
+                which of the two identities it is holding. */}
+            <Route path="/admin/*" element={<AdminApp />} />
+            <Route
+              path="*"
+              element={
+                <SessionProvider>
+                  <AppRoutes />
+                </SessionProvider>
+              }
+            />
+          </Routes>
+        </Router>
+      </AppearanceProvider>
+    </I18nProvider>
   );
 }
 
 function AppRoutes() {
   const { user } = useSession();
+  const { t } = useI18n();
 
   // Undefined means "still asking the server". Rendering the sign-in form here
   // would flash it at somebody who is already signed in.
   if (user === undefined) {
     return (
       <main className="state" aria-live="polite">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </main>
     );
   }
@@ -140,6 +146,7 @@ function AppRoutes() {
  */
 function Shell({ restricted = false }: { restricted?: boolean }) {
   const { tenant, signOut } = useSession();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [showingShortcuts, setShowingShortcuts] = useState(false);
 
@@ -166,30 +173,30 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
       {/* First thing in the tab order, so a keyboard user is not walked
           through the whole navigation on every page. */}
       <a className="skip" href="#main">
-        Skip to content
+        {t('shell.skipToContent')}
       </a>
 
       <header className="shell__bar">
-        <span className="shell__brand">DealerFOSS</span>
+        <span className="shell__brand">{t('app.name')}</span>
 
         {restricted ? null : (
-          <nav aria-label="Main">
-            <NavLink to="/dashboard">This month</NavLink>
-            <NavLink to="/customers">Customers</NavLink>
+          <nav aria-label={t('shell.mainNavigation')}>
+            <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink>
+            <NavLink to="/customers">{t('nav.customers')}</NavLink>
             {/* Ordered the way the work happens: an enquiry arrives, and some of
                 them become deals. */}
-            <NavLink to="/leads">Enquiries</NavLink>
-            <NavLink to="/deals">Deals</NavLink>
-            <NavLink to="/inventory">Stock</NavLink>
-            <NavLink to="/workshop">Workshop</NavLink>
-            <NavLink to="/parts">Parts</NavLink>
+            <NavLink to="/leads">{t('nav.leads')}</NavLink>
+            <NavLink to="/deals">{t('nav.deals')}</NavLink>
+            <NavLink to="/inventory">{t('nav.stock')}</NavLink>
+            <NavLink to="/workshop">{t('nav.workshop')}</NavLink>
+            <NavLink to="/parts">{t('nav.parts')}</NavLink>
             <NavLink to="/accounting" end>
-              Trial balance
+              {t('nav.trialBalance')}
             </NavLink>
-            <NavLink to="/accounting/periods">The books</NavLink>
-            <NavLink to="/records">Records</NavLink>
-            <NavLink to="/staff">People</NavLink>
-            <NavLink to="/security/second-factor">Two-step sign-in</NavLink>
+            <NavLink to="/accounting/periods">{t('nav.books')}</NavLink>
+            <NavLink to="/records">{t('nav.records')}</NavLink>
+            <NavLink to="/staff">{t('nav.staff')}</NavLink>
+            <NavLink to="/security/second-factor">{t('nav.secondFactor')}</NavLink>
           </nav>
         )}
 
@@ -200,14 +207,14 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
               type="button"
               className="link"
               onClick={() => setShowingShortcuts(true)}
-              title="Keyboard shortcuts ( ? )"
+              title={t('shell.shortcutsTitle')}
             >
-              Shortcuts
+              {t('shell.shortcuts')}
             </button>
           )}
           <span className="shell__tenant">{tenant}</span>
           <button type="button" onClick={() => void signOut()}>
-            Sign out
+            {t('shell.signOut')}
           </button>
         </div>
       </header>

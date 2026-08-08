@@ -1,0 +1,366 @@
+// ru — Russian.
+//
+// Edit: the vocabulary is what a Russian дилерский центр uses, not a dictionary
+//       rendering of the English. A lead is an *обращение* (the CRM word), the
+//       service department is *сервис* rather than "мастерская", and vehicle
+//       stock is *склад* — which means warehouse elsewhere but is the trade word
+//       for cars on the lot. Accounting follows РСБУ usage:
+//       *оборотно-сальдовая ведомость* is the trial balance.
+//
+//       Formal *вы*, lower case, as Russian business software writes it.
+//
+//       Russian has FOUR plural categories and they are not optional. `2 сделки`
+//       and `5 сделок` differ, and so do `21 сделка` and `22 сделки`. Every
+//       counted noun in this file is a plural entry, chosen by Intl.PluralRules.
+
+import type { Catalogue } from '../index';
+
+export const ru: Catalogue = {
+  'app.name': 'DealerFOSS',
+  'common.loading': 'Загрузка…',
+  'common.save': 'Сохранить',
+  'common.saving': 'Сохранение…',
+  'common.cancel': 'Отмена',
+  'common.close': 'Закрыть',
+  'common.retry': 'Повторить',
+  'common.search': 'Поиск',
+  'common.searching': 'Поиск…',
+  'common.none': 'Нет',
+  'common.all': 'Все',
+  'common.yes': 'Да',
+  'common.no': 'Нет',
+  'common.back': 'Назад',
+  'common.continue': 'Продолжить',
+  'common.unexpected': 'Что-то пошло не так. Попробуйте ещё раз.',
+  'common.notPermitted': 'У вас нет прав на просмотр этого раздела.',
+  'common.unreachable': 'Не удалось связаться с сервером. Он запущен?',
+
+  'error.network': 'Не удалось связаться с сервером. Он запущен?',
+  'error.invalidCredentials': 'Эта почта и пароль не подходят ни к одной учётной записи.',
+  'error.sessionRequired': 'Войдите, чтобы воспользоваться этим.',
+  'error.adminSessionRequired':
+    'Войдите как администратор, чтобы открыть консоль управления. Вход сотрудника дилерского центра туда не ведёт.',
+  'error.sessionInvalid': 'Ваш сеанс завершён. Войдите снова.',
+  'error.antiForgeryFailed':
+    'У этого браузера больше нет токена, подходящего к его сеансу. Войдите снова.',
+  'error.secondFactorRejected': 'Этот код не принят.',
+  'error.secondFactorRequired':
+    'Ваша роль требует двухэтапного входа. Настройте его, чтобы открыть остальную часть приложения.',
+  'error.mfaNotEnrolled': 'Для этой учётной записи двухэтапный вход не настроен.',
+  'error.mfaAlreadyOn': 'Для этой учётной записи двухэтапный вход уже включён.',
+  'error.notATenantCaller':
+    'Администратор не может действовать от имени сотрудника дилерского центра.',
+  'error.tenantRequired': 'Укажите, о какой дилерской группе идёт речь.',
+  'error.tenantNotFound': 'Активная дилерская группа с таким названием не найдена.',
+
+  'shell.skipToContent': 'Перейти к содержимому',
+  'shell.mainNavigation': 'Основное меню',
+  'shell.signOut': 'Выйти',
+  'shell.shortcuts': 'Горячие клавиши',
+  'shell.shortcutsTitle': 'Горячие клавиши ( ? )',
+  'shell.language': 'Язык',
+  'shell.appearance': 'Оформление',
+
+  'nav.dashboard': 'Этот месяц',
+  'nav.customers': 'Клиенты',
+  'nav.leads': 'Обращения',
+  'nav.deals': 'Сделки',
+  'nav.stock': 'Склад',
+  'nav.workshop': 'Сервис',
+  'nav.parts': 'Запчасти',
+  'nav.trialBalance': 'Ведомость',
+  'nav.books': 'Периоды',
+  'nav.records': 'Данные',
+  'nav.staff': 'Сотрудники',
+  'nav.secondFactor': 'Двухэтапный вход',
+
+  'appearance.auto': 'Авто',
+  'appearance.autoHint': 'Как на устройстве',
+  'appearance.light': 'Светлая',
+  'appearance.lightHint': 'Всегда светлая',
+  'appearance.dark': 'Тёмная',
+  'appearance.darkHint': 'Всегда тёмная',
+
+  'signIn.lede': 'Войдите в свой дилерский центр.',
+  'signIn.dealerGroup': 'Дилерская группа',
+  'signIn.email': 'Электронная почта',
+  'signIn.password': 'Пароль',
+  'signIn.submit': 'Войти',
+  'signIn.submitting': 'Вход…',
+  'signIn.codeLede':
+    'Введите шестизначный код из приложения-аутентификатора или один из резервных кодов.',
+  'signIn.code': 'Код',
+  'signIn.checking': 'Проверка…',
+  'signIn.startAgain': 'Начать заново',
+
+  'setPassword.title': 'Задайте пароль',
+  'setPassword.lede':
+    'Руководитель выдал вам код. Используйте его здесь один раз, чтобы выбрать пароль, который знаете только вы, — никто в дилерском центре не увидит, что вы выбрали.',
+  'setPassword.dealership': 'Дилерский центр',
+  'setPassword.email': 'Электронная почта',
+  'setPassword.code': 'Код',
+  'setPassword.password': 'Новый пароль',
+  'setPassword.passwordHint':
+    'Не менее 12 символов. Именно длина делает пароль трудным для подбора.',
+  'setPassword.again': 'Повторите новый пароль',
+  'setPassword.mismatch': 'Эти два пароля не совпадают.',
+  'setPassword.failed': 'Не получилось.',
+  'setPassword.submit': 'Задать пароль',
+  'setPassword.doneTitle': 'Всё готово',
+  'setPassword.doneLede': 'Войдите, указав адрес почты и только что выбранный пароль.',
+  'setPassword.toSignIn': 'Перейти ко входу',
+
+  'secondFactor.title': 'Двухэтапный вход',
+  'secondFactor.required':
+    'Для вашей роли дилерский центр требует двухэтапный вход. Пока вы его не настроите, это единственный доступный вам экран.',
+  'secondFactor.intro':
+    'После этого при входе, кроме пароля, будет запрашиваться шестизначный код из приложения на телефоне. Подойдут Google Authenticator, Authy и 1Password.',
+  'secondFactor.start': 'Начать',
+  'secondFactor.starting': 'Подготовка…',
+  'secondFactor.pointApp': 'Наведите приложение-аутентификатор на этот квадрат.',
+  'secondFactor.qrTitle': 'Отсканируйте это приложением-аутентификатором',
+  'secondFactor.cannotScan': 'Не удаётся отсканировать?',
+  'secondFactor.typeInstead': 'Тогда введите это в приложение вручную:',
+  'secondFactor.enterCode': 'Теперь введите показанный код',
+  'secondFactor.turnOn': 'Включить',
+  'secondFactor.checking': 'Проверка…',
+  'secondFactor.notYet':
+    'Во входе пока ничего не изменилось. Это вступит в силу только после того, как код выше будет принят.',
+  'secondFactor.onNow':
+    'Двухэтапный вход включён. Теперь после пароля у вас будут спрашивать код.',
+  'secondFactor.saveTitle': 'Сохраните их в надёжном месте',
+  'secondFactor.saveLede':
+    'Каждый работает один раз и только если вы потеряете телефон. Это единственный раз, когда они показываются.',
+  'secondFactor.recoveryCodes': 'Резервные коды',
+
+  'shortcuts.title': 'Горячие клавиши',
+  'shortcuts.space': 'Пробел',
+  'shortcuts.note':
+    'Пока вы пишете в поле, горячие клавиши не срабатывают — так они никогда не съедят символ, который вы набирали.',
+  'shortcuts.goDashboard': 'К сводке за месяц',
+  'shortcuts.goStock': 'К складу',
+  'shortcuts.goCustomers': 'К клиентам',
+  'shortcuts.goLeads': 'К обращениям',
+  'shortcuts.goDeals': 'К сделкам',
+  'shortcuts.goWorkshop': 'К сервису',
+  'shortcuts.goParts': 'К запчастям',
+  'shortcuts.goBooks': 'К учётным периодам',
+  'shortcuts.monthBefore': 'В сводке: предыдущий месяц',
+  'shortcuts.monthAfter': 'В сводке: следующий месяц',
+  'shortcuts.thisMonth': 'В сводке: вернуться к текущему месяцу',
+  'shortcuts.showList': 'Показать этот список',
+
+  // Отраслевые слова: «предпродажная подготовка» — это то, что в дилерском
+  // центре делают с автомобилем перед продажей, а машина, придержанная под
+  // сделку, «забронирована», а не «в ожидании».
+  'enum.inventoryStatus.Incoming': 'В пути',
+  'enum.inventoryStatus.Reconditioning': 'Предпродажная подготовка',
+  'enum.inventoryStatus.Available': 'Доступен',
+  'enum.inventoryStatus.OnHold': 'Забронирован',
+  'enum.inventoryStatus.Sold': 'Продан',
+  'enum.inventoryStatus.Removed': 'Снят',
+
+  'enum.leadStatus.New': 'Новое',
+  'enum.leadStatus.Working': 'В работе',
+  'enum.leadStatus.Appointment': 'Назначена встреча',
+  'enum.leadStatus.Won': 'Успешное',
+  'enum.leadStatus.Lost': 'Потеряно',
+
+  'enum.leadSource.WalkIn': 'Визит без записи',
+  'enum.leadSource.Phone': 'Телефон',
+  'enum.leadSource.Website': 'Сайт',
+  'enum.leadSource.Referral': 'Рекомендация',
+  'enum.leadSource.Marketplace': 'Площадка объявлений',
+  'enum.leadSource.Unknown': 'Неизвестно',
+
+  'enum.dealStatus.Draft': 'Черновик',
+  'enum.dealStatus.Submitted': 'На согласовании',
+  'enum.dealStatus.Approved': 'Согласована',
+  'enum.dealStatus.Delivered': 'Выдан автомобиль',
+  'enum.dealStatus.Lost': 'Потеряна',
+
+  'enum.chargeKind.VehiclePrice': 'Цена автомобиля',
+  'enum.chargeKind.Fee': 'Сбор',
+  'enum.chargeKind.Discount': 'Скидка',
+  'enum.chargeKind.Accessory': 'Аксессуар',
+
+  'enum.repairOrderStatus.Booked': 'Записан',
+  'enum.repairOrderStatus.InProgress': 'В работе',
+  'enum.repairOrderStatus.Completed': 'Выполнен',
+  'enum.repairOrderStatus.Invoiced': 'Выставлен счёт',
+  'enum.repairOrderStatus.Cancelled': 'Отменён',
+
+  'enum.serviceLineKind.Labour': 'Работы',
+  'enum.serviceLineKind.Part': 'Запчасть',
+  'enum.serviceLineKind.Sublet': 'Сторонние работы',
+
+  'enum.financeProductKind.Warranty': 'Гарантия',
+  'enum.financeProductKind.Gap': 'GAP',
+  'enum.financeProductKind.ServicePlan': 'Сервисный контракт',
+  'enum.financeProductKind.Protection': 'Защитное покрытие',
+  'enum.financeProductKind.Other': 'Прочее',
+
+  'enum.periodState.Open': 'Открыт',
+  'enum.periodState.Closed': 'Закрыт',
+
+  'enum.booksState.NotOpened': 'Не открыт',
+  'enum.booksState.Open': 'Открыт',
+  'enum.booksState.Closed': 'Закрыт',
+  'enum.booksState.Unknown': 'Неизвестно',
+
+  'enum.importKind.Customers': 'Клиенты',
+  'enum.importKind.Vehicles': 'Автомобили',
+
+  'enum.tenantStatus.Active': 'Активен',
+  'enum.tenantStatus.Suspended': 'Приостановлен',
+  'enum.tenantStatus.Provisioning': 'Создаётся',
+  'enum.tenantStatus.Archived': 'В архиве',
+
+  'stock.title': 'Автомобили в наличии',
+  'stock.status': 'Статус',
+  'stock.loading': 'Загрузка списка автомобилей…',
+  'stock.denied':
+    'У вас нет доступа к складу этой площадки. Если это ошибка, обратитесь к руководителю.',
+  'stock.failed': 'Не удалось загрузить список автомобилей.',
+  'stock.empty': 'Пока пусто. Автомобили появляются здесь после постановки на склад.',
+  'stock.onlyStockNumber': 'Показан только складской номер {stock}.',
+  'stock.showEverything': 'Показать всё',
+  'stock.colStock': 'Складской №',
+  'stock.colVehicle': 'Автомобиль',
+  'stock.colVin': 'VIN',
+  'stock.colStatus': 'Статус',
+  // Четыре формы: 1 машина, 3 машины, 11 машин, 22 машины.
+  'stock.count': {
+    one: '{count} машина в наличии',
+    few: '{count} машины в наличии',
+    many: '{count} машин в наличии',
+    other: '{count} машины в наличии',
+  },
+  'stock.countCapped': 'Первые {count} машин в наличии. Возможно, есть ещё.',
+  'stock.cappedNote':
+    'Показаны первые {count}. Возможно, есть ещё — сузьте выборку фильтром по статусу, пока нет постраничного вывода.',
+
+  'enum.accountKind.Asset': 'Актив',
+  'enum.accountKind.Liability': 'Обязательство',
+  'enum.accountKind.Equity': 'Капитал',
+  'enum.accountKind.Revenue': 'Доходы',
+  'enum.accountKind.Expense': 'Расходы',
+
+  'trialBalance.title': 'Оборотно-сальдовая ведомость',
+  'trialBalance.loading': 'Подсчёт…',
+  'trialBalance.denied': 'У вас нет доступа к этим цифрам.',
+  'trialBalance.failed': 'Не удалось загрузить сальдо.',
+  'trialBalance.empty':
+    'Проводок пока нет. Записи появятся здесь после выдачи первого автомобиля.',
+  'trialBalance.inBalance': 'Сходится — дебет и кредит равны {total}.',
+  'trialBalance.outOfBalance': 'Расхождение {difference}. Что-то потерялось при вводе.',
+  'trialBalance.colCode': 'Номер счёта',
+  'trialBalance.colAccount': 'Счёт',
+  'trialBalance.colKind': 'Вид',
+  'trialBalance.colDebits': 'Дебет',
+  'trialBalance.colCredits': 'Кредит',
+  'trialBalance.colBalance': 'Сальдо',
+  'trialBalance.total': 'Итого',
+
+  'enum.customerKind.Person': 'Физлицо',
+  'enum.customerKind.Business': 'Компания',
+
+  'customers.title': 'Клиенты',
+  'customers.find': 'Найти человека',
+  'customers.findPlaceholder': 'Имя, телефон или почта',
+  'customers.add': 'Добавить клиента',
+  'customers.looking': 'Идёт поиск…',
+  'customers.denied':
+    'У вас нет доступа к карточкам клиентов. Если это ошибка, обратитесь к руководителю.',
+  'customers.failed': 'Не удалось загрузить клиентов.',
+  'customers.noMatches': 'Никто не найден.',
+  'customers.colName': 'Имя',
+  'customers.colKind': 'Тип',
+  'customers.colEmail': 'Почта',
+  'customers.colPhone': 'Телефон',
+  'customers.count': {
+    one: '{count} клиент',
+    few: '{count} клиента',
+    many: '{count} клиентов',
+    other: '{count} клиента',
+  },
+  'customers.countCapped': 'Первые {count} клиентов. Возможно, есть ещё.',
+  'customers.cappedNote':
+    'Показаны первые {count}. Возможно, есть ещё — уточните запрос, пока нет постраничного вывода.',
+
+  'customers.kindLabel': 'Физлицо или компания',
+  'customers.firstName': 'Имя',
+  'customers.lastName': 'Фамилия',
+  'customers.businessName': 'Название компании',
+  'customers.email': 'Почта',
+  'customers.phone': 'Телефон',
+  'customers.submit': 'Добавить',
+  'customers.checking': 'Проверка на дубликаты…',
+  'customers.adding': 'Добавление…',
+
+  'customers.duplicateTitle': 'Похожий человек уже есть',
+  'customers.duplicateLede':
+    'Вторая карточка на того же человека разрывает его историю — обслуживание, сделки и контакты перестают сходиться. Проверьте, нет ли его среди этих.',
+  'customers.noContactDetails': 'контактов нет',
+  'customers.oneOfTheseIsThem': 'Это кто-то из них',
+  'customers.addAnyway': 'Никто из них — всё равно добавить',
+
+  'enum.importOutcome.Pending': 'В очереди',
+  'enum.importOutcome.Created': 'Добавлена',
+  'enum.importOutcome.Updated': 'Уже была',
+  'enum.importOutcome.Skipped': 'Пропущена',
+  'enum.importOutcome.Failed': 'Отклонена',
+
+  'records.title': 'Данные',
+  'records.bringIn': 'Загрузить данные',
+  'records.bringInLede':
+    'Таблица, выгруженная из прежней системы и сохранённая в CSV. Ничего не записывается, пока вы не выполните пробный прогон.',
+  'records.whatIsInIt': 'Что в файле',
+  'records.file': 'Файл',
+  'records.unreadableFile': 'Не удалось прочитать файл. Это текстовый CSV?',
+  'records.practice': 'Пробный прогон',
+  'records.practising': 'Идёт проверка…',
+  'records.importForReal': 'Загрузить по-настоящему',
+  'records.importing': 'Загрузка…',
+  'records.practiseFirst':
+    'Сначала выполните пробный прогон. Он ничего не меняет и показывает, что именно сделает настоящая загрузка.',
+
+  'records.takeOut': 'Выгрузить данные',
+  'records.takeOutLede':
+    'Скачивает все записи этого типа в CSV. Это тот же формат, который принимает эта страница, — данные можно перенести куда угодно, в том числе в другую систему.',
+  'records.downloadCustomers': 'Скачать клиентов',
+  'records.downloadVehicles': 'Скачать автомобили',
+
+  'records.couldNotRun': 'Эту загрузку не удалось выполнить.',
+  'records.whatWouldHappen': 'Что произошло бы',
+  'records.whatHappened': 'Что произошло',
+  'records.summaryPractice': {
+    one: 'Из {count} строки: {created} было бы добавлено, {updated} уже есть, {skipped} пропущено, {failed} не прочитано.',
+    few: 'Из {count} строк: {created} было бы добавлено, {updated} уже есть, {skipped} пропущено, {failed} не прочитано.',
+    many: 'Из {count} строк: {created} было бы добавлено, {updated} уже есть, {skipped} пропущено, {failed} не прочитано.',
+    other:
+      'Из {count} строк: {created} было бы добавлено, {updated} уже есть, {skipped} пропущено, {failed} не прочитано.',
+  },
+  'records.summaryReal': {
+    one: 'Из {count} строки: {created} добавлено, {updated} уже есть, {skipped} пропущено, {failed} отклонено.',
+    few: 'Из {count} строк: {created} добавлено, {updated} уже есть, {skipped} пропущено, {failed} отклонено.',
+    many: 'Из {count} строк: {created} добавлено, {updated} уже есть, {skipped} пропущено, {failed} отклонено.',
+    other:
+      'Из {count} строк: {created} добавлено, {updated} уже есть, {skipped} пропущено, {failed} отклонено.',
+  },
+  'records.nothingWritten': 'Ничего не записано. Это был пробный прогон.',
+  'records.rowsToLookAt': 'Строки, которые стоит посмотреть',
+  'records.rowsToLookAtLede':
+    'Номер строки — тот, который вы видите в своей таблице, а сама строка приведена ровно так, как пришла. Исправьте файл и запустите снова — здесь ничего не редактируется за вас.',
+  'records.problemCount': {
+    one: '{count} строка требует внимания',
+    few: '{count} строки требуют внимания',
+    many: '{count} строк требуют внимания',
+    other: '{count} строки требуют внимания',
+  },
+  'records.colLine': 'Строка',
+  'records.colWhatHappened': 'Что произошло',
+  'records.colTheRow': 'Содержимое строки',
+  'records.timeout':
+    'Загрузка идёт дольше обычного. Она продолжается — просто эта страница перестала ждать.',
+};

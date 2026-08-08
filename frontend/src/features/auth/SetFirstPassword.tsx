@@ -11,9 +11,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ApiError, currentTenant, post, setCurrentTenant } from '../../shared/api';
+import { useI18n } from '../../shared/i18n';
 
 export function SetFirstPassword() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [tenant, setTenant] = useState(currentTenant());
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -36,7 +38,10 @@ export function SetFirstPassword() {
       await post('/auth/enrol', { email: email.trim(), code: code.trim(), password });
       setDone(true);
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      // Deliberately NOT routed through useApiMessage. The server's refusal here
+      // is uniform on purpose — see the note at the top of this file — and the
+      // fallback has to stay just as uninformative.
+      setError(failure instanceof ApiError ? failure.message : t('setPassword.failed'));
     } finally {
       setBusy(false);
     }
@@ -46,10 +51,10 @@ export function SetFirstPassword() {
     return (
       <main className="state">
         <section className="panel">
-          <h1>You are set up</h1>
-          <p>Sign in with your email address and the password you just chose.</p>
+          <h1>{t('setPassword.doneTitle')}</h1>
+          <p>{t('setPassword.doneLede')}</p>
           <button type="button" className="primary" onClick={() => void navigate('/sign-in')}>
-            Go to sign in
+            {t('setPassword.toSignIn')}
           </button>
         </section>
       </main>
@@ -59,14 +64,11 @@ export function SetFirstPassword() {
   return (
     <main className="state">
       <section className="panel">
-        <h1>Set your password</h1>
-        <p className="note">
-          Your manager gave you a code. Use it once here to choose a password only
-          you know — nobody at the dealership can see what you pick.
-        </p>
+        <h1>{t('setPassword.title')}</h1>
+        <p className="note">{t('setPassword.lede')}</p>
 
         <div className="field">
-          <label htmlFor="enrol-tenant">Dealership</label>
+          <label htmlFor="enrol-tenant">{t('setPassword.dealership')}</label>
           <input
             id="enrol-tenant"
             value={tenant}
@@ -75,7 +77,7 @@ export function SetFirstPassword() {
         </div>
 
         <div className="field">
-          <label htmlFor="enrol-email">Email</label>
+          <label htmlFor="enrol-email">{t('setPassword.email')}</label>
           <input
             id="enrol-email"
             type="email"
@@ -85,7 +87,7 @@ export function SetFirstPassword() {
         </div>
 
         <div className="field">
-          <label htmlFor="enrol-code">Code</label>
+          <label htmlFor="enrol-code">{t('setPassword.code')}</label>
           <input
             id="enrol-code"
             value={code}
@@ -95,18 +97,18 @@ export function SetFirstPassword() {
         </div>
 
         <div className="field">
-          <label htmlFor="enrol-password">New password</label>
+          <label htmlFor="enrol-password">{t('setPassword.password')}</label>
           <input
             id="enrol-password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-          <p className="hint">At least 12 characters. Length is what makes one hard to guess.</p>
+          <p className="hint">{t('setPassword.passwordHint')}</p>
         </div>
 
         <div className="field">
-          <label htmlFor="enrol-again">New password again</label>
+          <label htmlFor="enrol-again">{t('setPassword.again')}</label>
           <input
             id="enrol-again"
             type="password"
@@ -116,7 +118,7 @@ export function SetFirstPassword() {
         </div>
 
         <p className="error" aria-live="polite">
-          {mismatch ? 'Those two do not match.' : (error ?? '')}
+          {mismatch ? t('setPassword.mismatch') : (error ?? '')}
         </p>
 
         <button
@@ -132,7 +134,7 @@ export function SetFirstPassword() {
           }
           onClick={() => void submit()}
         >
-          Set my password
+          {t('setPassword.submit')}
         </button>
       </section>
     </main>

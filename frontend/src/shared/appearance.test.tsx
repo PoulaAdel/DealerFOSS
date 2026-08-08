@@ -1,22 +1,29 @@
-// appearance.test — the theme and the direction actually reach the page.
+// appearance.test — the theme actually reaches the page.
 //
 // Use:  npm test
 // Edit: these assert on `<html>` rather than on a React tree, because that is
 //       where the setting genuinely lives — the whole design is that CSS does the
-//       work off two attributes. A test that only checked component state would
+//       work off an attribute. A test that only checked component state would
 //       pass with the stylesheet disconnected.
+//
+//       Direction is NOT tested here any more. It is a property of the chosen
+//       language rather than a setting of its own, and it is proven in
+//       i18n/i18n.test.tsx alongside the language that decides it.
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { AppearanceProvider, useAppearance } from './appearance';
 import { AppearanceControls } from '../app/AppearanceControls';
+import { I18nProvider } from './i18n';
 
 function renderControls() {
   return render(
-    <AppearanceProvider>
-      <AppearanceControls />
-    </AppearanceProvider>
+    <I18nProvider>
+      <AppearanceProvider>
+        <AppearanceControls />
+      </AppearanceProvider>
+    </I18nProvider>,
   );
 }
 
@@ -65,35 +72,6 @@ describe('light and dark', () => {
   });
 });
 
-describe('which way the page runs', () => {
-  it('starts left to right', () => {
-    renderControls();
-
-    expect(document.documentElement.getAttribute('dir')).toBe('ltr');
-  });
-
-  it('mirrors the whole page on request', async () => {
-    renderControls();
-
-    await userEvent.click(screen.getByRole('button', { name: 'RTL' }));
-
-    // Every layout rule is written with logical properties, so this one
-    // attribute is the entire mechanism.
-    expect(document.documentElement.getAttribute('dir')).toBe('rtl');
-    expect(localStorage.getItem('dfoss.direction')).toBe('rtl');
-  });
-
-  it('remembers that too', async () => {
-    renderControls();
-    await userEvent.click(screen.getByRole('button', { name: 'RTL' }));
-
-    cleanupPage();
-    renderControls();
-
-    expect(document.documentElement.getAttribute('dir')).toBe('rtl');
-  });
-});
-
 describe('using it outside the provider', () => {
   it('fails loudly rather than silently doing nothing', () => {
     function Orphan() {
@@ -109,9 +87,8 @@ describe('using it outside the provider', () => {
 
 /**
  * Wipes what the last render left on `<html>`, so a remount is genuinely a fresh
- * page rather than one still wearing the previous test's attributes.
+ * page rather than one still wearing the previous test's attribute.
  */
 function cleanupPage(): void {
   document.documentElement.removeAttribute('data-theme');
-  document.documentElement.removeAttribute('dir');
 }

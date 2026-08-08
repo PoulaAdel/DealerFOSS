@@ -8,7 +8,7 @@
 //       and a sold line's cost is frozen. That sentence is a safeguard, not
 //       decoration.
 
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';

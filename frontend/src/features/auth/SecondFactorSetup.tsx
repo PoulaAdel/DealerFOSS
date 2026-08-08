@@ -14,9 +14,11 @@
 
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { ApiError, post } from '../../shared/api';
+import { post } from '../../shared/api';
 import type { MfaEnrolment } from '../../shared/contracts';
 import { useSession } from '../../app/session';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 type Step =
   | { kind: 'intro' }
@@ -25,6 +27,8 @@ type Step =
 
 export function SecondFactorSetup() {
   const { user, refresh } = useSession();
+  const { t } = useI18n();
+  const describe = useApiMessage();
 
   const [step, setStep] = useState<Step>({ kind: 'intro' });
   const [code, setCode] = useState('');
@@ -43,7 +47,7 @@ export function SecondFactorSetup() {
         enrolment: await post<MfaEnrolment>('/auth/mfa/enrol', {}),
       });
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -67,7 +71,7 @@ export function SecondFactorSetup() {
       // sign-in — the whole point of the restricted session.
       await refresh();
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
       setCode('');
     } finally {
       setBusy(false);
@@ -77,28 +81,23 @@ export function SecondFactorSetup() {
   return (
     <>
       <header className="page__head">
-        <h1>Two-step sign-in</h1>
+        <h1>{t('secondFactor.title')}</h1>
       </header>
 
       {required && step.kind !== 'done' ? (
         <p className="state" role="alert">
-          Your dealership requires two-step sign-in for your role. Until you set
-          it up, this is the only screen you can use.
+          {t('secondFactor.required')}
         </p>
       ) : null}
 
       {step.kind === 'intro' ? (
         <section className="panel">
-          <p>
-            After this, signing in asks for a six-digit code from an app on your
-            phone as well as your password. Google Authenticator, Authy and
-            1Password all work.
-          </p>
+          <p>{t('secondFactor.intro')}</p>
 
           <Error message={error} />
 
           <button type="button" onClick={() => void begin()} disabled={busy}>
-            {busy ? 'Starting…' : 'Start'}
+            {busy ? t('secondFactor.starting') : t('secondFactor.start')}
           </button>
         </section>
       ) : null}
@@ -107,27 +106,33 @@ export function SecondFactorSetup() {
         <section className="panel">
           <ol className="steps">
             <li>
-              <p>Point your authenticator app at this square.</p>
+              <p>{t('secondFactor.pointApp')}</p>
 
               <QRCodeSVG
                 value={step.enrolment.enrolmentUri}
                 size={192}
                 // Announced rather than decorative: somebody who cannot see it
                 // needs to know the alternative below exists.
-                title="Scan this with your authenticator app"
+                title={t('secondFactor.qrTitle')}
                 includeMargin
               />
 
               <details>
-                <summary>Can’t scan it?</summary>
-                <p>Type this into the app by hand instead:</p>
-                <p className="mono secret">{step.enrolment.secret}</p>
+                <summary>{t('secondFactor.cannotScan')}</summary>
+                <p>{t('secondFactor.typeInstead')}</p>
+                {/* The secret is base32 and is typed into an app character by
+                    character, so it reads left to right even on an Arabic
+                    page. Without dir the bidi algorithm reorders the groups
+                    and somebody copies out a secret that does not work. */}
+                <p className="mono secret" dir="ltr">
+                  {step.enrolment.secret}
+                </p>
               </details>
             </li>
 
             <li>
               <form onSubmit={(e) => void confirm(e)} noValidate>
-                <label htmlFor="code">Now enter the code it shows</label>
+                <label htmlFor="code">{t('secondFactor.enterCode')}</label>
                 <input
                   id="code"
                   name="code"
@@ -143,33 +148,26 @@ export function SecondFactorSetup() {
                 <Error message={error} />
 
                 <button type="submit" disabled={busy}>
-                  {busy ? 'Checking…' : 'Turn it on'}
+                  {busy ? t('secondFactor.checking') : t('secondFactor.turnOn')}
                 </button>
               </form>
             </li>
           </ol>
 
-          <p className="note">
-            Nothing has changed about signing in yet. It only takes effect once
-            the code above is accepted.
-          </p>
+          <p className="note">{t('secondFactor.notYet')}</p>
         </section>
       ) : null}
 
       {step.kind === 'done' ? (
         <section className="panel">
-          <p role="status">
-            Two-step sign-in is on. From now on you will be asked for a code
-            after your password.
-          </p>
+          <p role="status">{t('secondFactor.onNow')}</p>
 
-          <h2>Save these somewhere safe</h2>
-          <p>
-            Each of these works once, and only if you lose your phone. This is
-            the only time they will ever be shown.
-          </p>
+          <h2>{t('secondFactor.saveTitle')}</h2>
+          <p>{t('secondFactor.saveLede')}</p>
 
-          <ul className="codes mono" aria-label="Recovery codes">
+          {/* Latin characters and digits, transcribed by hand. Same reason as
+              the enrolment secret above. */}
+          <ul className="codes mono" aria-label={t('secondFactor.recoveryCodes')} dir="ltr">
             {step.recoveryCodes.map((recoveryCode) => (
               <li key={recoveryCode}>{recoveryCode}</li>
             ))}
@@ -194,10 +192,4 @@ function Error({ message }: { message: string | null }) {
       {message ?? ''}
     </p>
   );
-}
-
-function messageFor(failure: unknown): string {
-  return failure instanceof ApiError
-    ? failure.message
-    : 'Something went wrong. Try again.';
 }

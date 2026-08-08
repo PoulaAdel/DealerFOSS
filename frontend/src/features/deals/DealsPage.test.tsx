@@ -9,7 +9,7 @@
 //       one. If these tests start asserting that a button is hidden from a
 //       particular person, the rule has been copied and the copies will drift.
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '../../test/render';
 import { MemoryRouter } from 'react-router';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';

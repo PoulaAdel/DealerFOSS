@@ -10,7 +10,7 @@
 //       already filters to the caller's lots, so a picker would promise access
 //       the server refuses.
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';

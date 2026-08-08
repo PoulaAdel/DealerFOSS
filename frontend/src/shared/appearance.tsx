@@ -1,10 +1,16 @@
-// appearance — light or dark, and which way the page runs.
+// appearance — light or dark.
 //
-// Use:  const { theme, setTheme, direction, setDirection } = useAppearance()
-// Edit: both settings are applied to <html> as attributes, not to a React tree.
+// Use:  const { theme, setTheme } = useAppearance()
+// Edit: the setting is applied to <html> as an attribute, not to a React tree.
 //       CSS then does the work, which is what makes the switch instant — there is
 //       no re-render, no reflow of a component tree, and no flash of the wrong
 //       theme on the next screen.
+//
+//       Which way the page RUNS is not here. Direction is a property of the
+//       chosen language and lives in shared/i18n — Arabic runs right to left and
+//       there is no such thing as wanting it not to. It used to be a separate
+//       toggle beside the theme, which let somebody select "Arabic, left to
+//       right": a broken layout with a switch in front of it.
 //
 //       The stored choice is applied at module load, BEFORE React mounts, so the
 //       first paint is already right. Doing it in an effect would paint light and
@@ -32,22 +38,13 @@ import {
 /** `system` follows the operating system and keeps following it as it changes. */
 export type ThemeChoice = 'system' | 'light' | 'dark';
 
-export type Direction = 'ltr' | 'rtl';
-
 const THEME_KEY = 'dfoss.theme';
-const DIRECTION_KEY = 'dfoss.direction';
 
 const THEMES: ThemeChoice[] = ['system', 'light', 'dark'];
-const DIRECTIONS: Direction[] = ['ltr', 'rtl'];
 
 function storedTheme(): ThemeChoice {
   const saved = localStorage.getItem(THEME_KEY);
   return THEMES.includes(saved as ThemeChoice) ? (saved as ThemeChoice) : 'system';
-}
-
-function storedDirection(): Direction {
-  const saved = localStorage.getItem(DIRECTION_KEY);
-  return DIRECTIONS.includes(saved as Direction) ? (saved as Direction) : 'ltr';
 }
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';
@@ -73,32 +70,23 @@ function applyTheme(theme: ThemeChoice): void {
   document.documentElement.setAttribute('data-theme', resolved);
 }
 
-function applyDirection(direction: Direction): void {
-  document.documentElement.setAttribute('dir', direction);
-}
-
 // Before React mounts. See the note at the top of the file.
 applyTheme(storedTheme());
-applyDirection(storedDirection());
 
 interface Appearance {
   theme: ThemeChoice;
   setTheme: (theme: ThemeChoice) => void;
-  direction: Direction;
-  setDirection: (direction: Direction) => void;
 }
 
 const AppearanceContext = createContext<Appearance | null>(null);
 
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeChoice>(storedTheme);
-  const [direction, setDirectionState] = useState<Direction>(storedDirection);
 
   // Runs on mount as well as on change, which is what makes the provider
   // authoritative: a test or a second tab that cleared storage gets the
-  // attributes put back rather than left at whatever the module-load call set.
+  // attribute put back rather than left at whatever the module-load call set.
   useEffect(() => applyTheme(theme), [theme]);
-  useEffect(() => applyDirection(direction), [direction]);
 
   // Following the machine has to mean following it as it changes — a laptop that
   // goes dark at dusk should take the app with it, without a reload.
@@ -122,15 +110,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     setThemeState(next);
   }, []);
 
-  const setDirection = useCallback((next: Direction) => {
-    localStorage.setItem(DIRECTION_KEY, next);
-    setDirectionState(next);
-  }, []);
-
-  const value = useMemo<Appearance>(
-    () => ({ theme, setTheme, direction, setDirection }),
-    [theme, setTheme, direction, setDirection],
-  );
+  const value = useMemo<Appearance>(() => ({ theme, setTheme }), [theme, setTheme]);
 
   return <AppearanceContext.Provider value={value}>{children}</AppearanceContext.Provider>;
 }

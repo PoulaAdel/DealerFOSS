@@ -11,7 +11,7 @@
 //       "shows the server's refusal rather than predicting it" — the screen must
 //       not grow its own copy of the scoping rule. Ask, then show the answer.
 
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';

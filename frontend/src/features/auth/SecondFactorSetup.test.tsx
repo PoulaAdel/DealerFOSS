@@ -7,7 +7,7 @@
 //       same screen able to try again. Both are what make it safe for a
 //       dealership to switch the requirement on.
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { App } from '../../app/App';
@@ -33,6 +33,9 @@ function renderAlone() {
     '/auth/mfa/confirm': { ok: true, body: { recoveryCodes } },
   });
 
+  // The language provider comes from test/render — every screen reads its words
+  // from it, so a mount without one is not a lighter test but a tree the
+  // application never builds.
   return render(
     <SessionProvider>
       <SecondFactorSetup />

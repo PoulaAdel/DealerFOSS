@@ -5,7 +5,7 @@
 //       happy path is not finished, and this file is what stops that claim being
 //       taken on trust.
 
-import { render, screen } from '@testing-library/react';
+import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';

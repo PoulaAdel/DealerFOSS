@@ -1,31 +1,40 @@
-// AppearanceControls — light or dark, and which way the page runs.
+// AppearanceControls — the theme, and the language the application speaks.
 //
 // Use:  rendered in the shell bar and in the administration console's.
-// Edit: both are segmented buttons rather than a toggle. A toggle can only say
-//       "dark: on or off", and the third state — follow the machine — is the one
-//       most people actually want. It also cannot say which of the two it is
-//       currently showing you, which is precisely what somebody looking at the
-//       control wants to know.
+// Edit: theme is a segmented control rather than a toggle. A toggle can only
+//       say "dark: on or off", and the third state — follow the machine — is
+//       the one most people actually want. It also cannot say which of the two
+//       it is currently showing you, which is precisely what somebody looking
+//       at the control wants to know.
+//
+//       Language is a <select> rather than five buttons: five segments do not
+//       fit the bar, and a select is the control every operating system already
+//       renders as a language picker. Each option names itself IN ITSELF —
+//       "العربية", not "Arabic" — because somebody who needs to switch to
+//       Arabic is, by definition, the person least able to find the word
+//       "Arabic" written in English.
+//
+//       There is no direction control any more. Direction follows the language
+//       (see shared/i18n), because "Arabic, left to right" is not a preference
+//       anybody holds.
 
-import { useAppearance, type Direction, type ThemeChoice } from '../shared/appearance';
+import { useAppearance, type ThemeChoice } from '../shared/appearance';
+import { LANGUAGES, useI18n, type LanguageCode } from '../shared/i18n';
+import type { MessageKey } from '../shared/i18n';
 
-const themes: { value: ThemeChoice; label: string; hint: string }[] = [
-  { value: 'system', label: 'Auto', hint: 'Follow this machine' },
-  { value: 'light', label: 'Light', hint: 'Always light' },
-  { value: 'dark', label: 'Dark', hint: 'Always dark' },
-];
-
-const directions: { value: Direction; label: string; hint: string }[] = [
-  { value: 'ltr', label: 'LTR', hint: 'Left to right' },
-  { value: 'rtl', label: 'RTL', hint: 'Right to left' },
+const themes: { value: ThemeChoice; label: MessageKey; hint: MessageKey }[] = [
+  { value: 'system', label: 'appearance.auto', hint: 'appearance.autoHint' },
+  { value: 'light', label: 'appearance.light', hint: 'appearance.lightHint' },
+  { value: 'dark', label: 'appearance.dark', hint: 'appearance.darkHint' },
 ];
 
 export function AppearanceControls() {
-  const { theme, setTheme, direction, setDirection } = useAppearance();
+  const { theme, setTheme } = useAppearance();
+  const { language, setLanguage, t } = useI18n();
 
   return (
     <div className="appearance">
-      <div className="switcher" role="group" aria-label="Appearance">
+      <div className="switcher" role="group" aria-label={t('shell.appearance')}>
         {themes.map((option) => (
           <button
             key={option.value}
@@ -34,27 +43,28 @@ export function AppearanceControls() {
             // and it is also what the stylesheet keys the highlight off — so the
             // two can never disagree.
             aria-pressed={theme === option.value}
-            title={option.hint}
+            title={t(option.hint)}
             onClick={() => setTheme(option.value)}
           >
-            {option.label}
+            {t(option.label)}
           </button>
         ))}
       </div>
 
-      <div className="switcher" role="group" aria-label="Text direction">
-        {directions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={direction === option.value}
-            title={option.hint}
-            onClick={() => setDirection(option.value)}
-          >
-            {option.label}
-          </button>
+      <select
+        className="language"
+        aria-label={t('shell.language')}
+        value={language.code}
+        onChange={(event) => setLanguage(event.target.value as LanguageCode)}
+      >
+        {LANGUAGES.map((option) => (
+          // `lang` on the option so a screen reader pronounces "Français" with a
+          // French voice rather than reading it as mangled English.
+          <option key={option.code} value={option.code} lang={option.code}>
+            {option.nativeName}
+          </option>
         ))}
-      </div>
+      </select>
     </div>
   );
 }

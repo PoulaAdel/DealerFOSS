@@ -7,7 +7,7 @@
 //       that lock ever comes off by accident, the mistake it prevents is one
 //       nobody can undo.
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { RecordsPage } from './RecordsPage';

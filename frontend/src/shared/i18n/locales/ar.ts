@@ -1,0 +1,384 @@
+// ar — Arabic. The one language here that reads right to left.
+//
+// Edit: three things make the difference between Arabic that reads naturally
+//       and Arabic that reads like a machine produced it.
+//
+//       PUNCTUATION IS ARABIC PUNCTUATION. The comma is ، not ',', the
+//       question mark is ؟ not '?', the semicolon is ؛. A Latin comma inside
+//       Arabic text sits on the wrong side of the baseline and breaks the line
+//       visually — it is the single most common tell of an untranslated string.
+//
+//       DIRECTION IS HANDLED BY THE LAYOUT, NOT BY THE TEXT. Nothing in this
+//       file contains a directional mark or a reordered sentence. `dir="rtl"`
+//       on <html> plus a stylesheet written in logical properties does the
+//       mirroring; the Unicode bidirectional algorithm handles the Latin
+//       fragments — a VIN, an email address, a price — that legitimately run
+//       left to right inside an Arabic sentence.
+//
+//       ARABIC HAS SIX PLURAL CATEGORIES: zero, one, two, few (3–10), many
+//       (11–99) and other. `سيارة واحدة`, `سيارتان`, `٣ سيارات`, `١١ سيارة`
+//       are four different forms of the same noun. Intl.PluralRules picks
+//       between them; the call site never counts.
+//
+//       Digits stay Western (0–9), set by the `ar` locale in languages.ts. Most
+//       Arabic business software shows Western digits, and a price list that
+//       mixes ٣ and 3 is harder to read rather than more authentic.
+
+import type { Catalogue } from '../index';
+
+export const ar: Catalogue = {
+  'app.name': 'DealerFOSS',
+  'common.loading': 'جارٍ التحميل…',
+  'common.save': 'حفظ',
+  'common.saving': 'جارٍ الحفظ…',
+  'common.cancel': 'إلغاء',
+  'common.close': 'إغلاق',
+  'common.retry': 'أعد المحاولة',
+  'common.search': 'بحث',
+  'common.searching': 'جارٍ البحث…',
+  'common.none': 'لا شيء',
+  'common.all': 'الكل',
+  'common.yes': 'نعم',
+  'common.no': 'لا',
+  'common.back': 'رجوع',
+  'common.continue': 'متابعة',
+  'common.unexpected': 'حدث خطأ ما. أعد المحاولة.',
+  'common.notPermitted': 'ليس لديك إذن لعرض هذا.',
+  'common.unreachable': 'تعذَّر الوصول إلى الخادم. هل هو قيد التشغيل؟',
+
+  'error.network': 'تعذَّر الوصول إلى الخادم. هل هو قيد التشغيل؟',
+  'error.invalidCredentials': 'لا يوجد حساب يطابق هذا البريد الإلكتروني وكلمة المرور.',
+  'error.sessionRequired': 'سجّل الدخول لاستخدام هذا.',
+  'error.adminSessionRequired':
+    'سجّل الدخول كمسؤول لاستخدام وحدة التحكم. تسجيل دخول الوكالة لا يصل إليها.',
+  'error.sessionInvalid': 'انتهت جلستك. سجّل الدخول من جديد.',
+  'error.antiForgeryFailed':
+    'لم يعد هذا المتصفح يحمل رمزًا مطابقًا لجلسته. سجّل الدخول من جديد.',
+  'error.secondFactorRejected': 'لم يُقبَل هذا الرمز.',
+  'error.secondFactorRequired':
+    'يتطلب دورك الوظيفي تسجيل الدخول بخطوتين. أعِدّه للوصول إلى بقية التطبيق.',
+  'error.mfaNotEnrolled': 'تسجيل الدخول بخطوتين غير مُعَدّ على هذا الحساب.',
+  'error.mfaAlreadyOn': 'تسجيل الدخول بخطوتين مُفعَّل بالفعل على هذا الحساب.',
+  'error.notATenantCaller': 'لا يمكن للمسؤول أن يتصرف بصفة مستخدم في الوكالة.',
+  'error.tenantRequired': 'حدِّد مجموعة الوكلاء المقصودة.',
+  'error.tenantNotFound': 'لا توجد مجموعة وكلاء نشطة بهذا الاسم.',
+
+  'shell.skipToContent': 'تخطَّ إلى المحتوى',
+  'shell.mainNavigation': 'التنقل الرئيسي',
+  'shell.signOut': 'تسجيل الخروج',
+  'shell.shortcuts': 'الاختصارات',
+  'shell.shortcutsTitle': 'اختصارات لوحة المفاتيح ( ؟ )',
+  'shell.language': 'اللغة',
+  'shell.appearance': 'المظهر',
+
+  'nav.dashboard': 'هذا الشهر',
+  'nav.customers': 'العملاء',
+  'nav.leads': 'الاستفسارات',
+  'nav.deals': 'الصفقات',
+  'nav.stock': 'المخزون',
+  'nav.workshop': 'الورشة',
+  'nav.parts': 'قطع الغيار',
+  'nav.trialBalance': 'ميزان المراجعة',
+  'nav.books': 'الدفاتر',
+  'nav.records': 'السجلات',
+  'nav.staff': 'الموظفون',
+  'nav.secondFactor': 'الدخول بخطوتين',
+
+  'appearance.auto': 'تلقائي',
+  'appearance.autoHint': 'اتّبع إعداد الجهاز',
+  'appearance.light': 'فاتح',
+  'appearance.lightHint': 'فاتح دائمًا',
+  'appearance.dark': 'داكن',
+  'appearance.darkHint': 'داكن دائمًا',
+
+  'signIn.lede': 'سجّل الدخول إلى وكالتك.',
+  'signIn.dealerGroup': 'مجموعة الوكلاء',
+  'signIn.email': 'البريد الإلكتروني',
+  'signIn.password': 'كلمة المرور',
+  'signIn.submit': 'تسجيل الدخول',
+  'signIn.submitting': 'جارٍ تسجيل الدخول…',
+  'signIn.codeLede':
+    'أدخل الرمز المكوَّن من ستة أرقام من تطبيق المصادقة، أو أحد رموز الاسترداد.',
+  'signIn.code': 'الرمز',
+  'signIn.checking': 'جارٍ التحقق…',
+  'signIn.startAgain': 'ابدأ من جديد',
+
+  'setPassword.title': 'عيِّن كلمة المرور',
+  'setPassword.lede':
+    'أعطاك مديرك رمزًا. استخدمه مرة واحدة هنا لاختيار كلمة مرور تعرفها أنت وحدك — لا أحد في الوكالة يستطيع رؤية ما تختاره.',
+  'setPassword.dealership': 'الوكالة',
+  'setPassword.email': 'البريد الإلكتروني',
+  'setPassword.code': 'الرمز',
+  'setPassword.password': 'كلمة المرور الجديدة',
+  'setPassword.passwordHint': '12 حرفًا على الأقل. الطول هو ما يجعل تخمينها صعبًا.',
+  'setPassword.again': 'أعد إدخال كلمة المرور الجديدة',
+  'setPassword.mismatch': 'الكلمتان غير متطابقتين.',
+  'setPassword.failed': 'لم ينجح ذلك.',
+  'setPassword.submit': 'عيِّن كلمة المرور',
+  'setPassword.doneTitle': 'تم إعداد حسابك',
+  'setPassword.doneLede': 'سجّل الدخول ببريدك الإلكتروني وكلمة المرور التي اخترتها للتو.',
+  'setPassword.toSignIn': 'انتقل إلى تسجيل الدخول',
+
+  'secondFactor.title': 'تسجيل الدخول بخطوتين',
+  'secondFactor.required':
+    'تشترط وكالتك تسجيل الدخول بخطوتين لدورك الوظيفي. وإلى أن تُعِدّه، هذه هي الشاشة الوحيدة المتاحة لك.',
+  'secondFactor.intro':
+    'بعد ذلك، سيطلب تسجيل الدخول رمزًا من ستة أرقام من تطبيق على هاتفك، إضافةً إلى كلمة المرور. تعمل تطبيقات Google Authenticator وAuthy و1Password جميعها.',
+  'secondFactor.start': 'ابدأ',
+  'secondFactor.starting': 'جارٍ التحضير…',
+  'secondFactor.pointApp': 'وجّه تطبيق المصادقة نحو هذا المربع.',
+  'secondFactor.qrTitle': 'امسح هذا بتطبيق المصادقة',
+  'secondFactor.cannotScan': 'تعذَّر المسح؟',
+  'secondFactor.typeInstead': 'أدخل هذا في التطبيق يدويًا بدلًا من ذلك:',
+  'secondFactor.enterCode': 'الآن أدخل الرمز الذي يعرضه',
+  'secondFactor.turnOn': 'تفعيل',
+  'secondFactor.checking': 'جارٍ التحقق…',
+  'secondFactor.notYet':
+    'لم يتغيَّر شيء في تسجيل الدخول بعد. لن يسري ذلك إلا بعد قبول الرمز أعلاه.',
+  'secondFactor.onNow':
+    'تسجيل الدخول بخطوتين مُفعَّل. من الآن فصاعدًا سيُطلب منك رمز بعد كلمة المرور.',
+  'secondFactor.saveTitle': 'احفظها في مكان آمن',
+  'secondFactor.saveLede':
+    'يعمل كل رمز مرة واحدة، وفقط إذا فقدت هاتفك. هذه هي المرة الوحيدة التي ستُعرض فيها.',
+  'secondFactor.recoveryCodes': 'رموز الاسترداد',
+
+  'shortcuts.title': 'اختصارات لوحة المفاتيح',
+  'shortcuts.space': 'مسافة',
+  'shortcuts.note':
+    'تُتجاهَل الاختصارات أثناء الكتابة في أي حقل، حتى لا تبتلع حرفًا قصدت كتابته.',
+  'shortcuts.goDashboard': 'الانتقال إلى ملخص الشهر',
+  'shortcuts.goStock': 'الانتقال إلى المخزون',
+  'shortcuts.goCustomers': 'الانتقال إلى العملاء',
+  'shortcuts.goLeads': 'الانتقال إلى الاستفسارات',
+  'shortcuts.goDeals': 'الانتقال إلى الصفقات',
+  'shortcuts.goWorkshop': 'الانتقال إلى الورشة',
+  'shortcuts.goParts': 'الانتقال إلى قطع الغيار',
+  'shortcuts.goBooks': 'الانتقال إلى الدفاتر',
+  'shortcuts.monthBefore': 'في ملخص الشهر: الشهر السابق',
+  'shortcuts.monthAfter': 'في ملخص الشهر: الشهر التالي',
+  'shortcuts.thisMonth': 'في ملخص الشهر: العودة إلى هذا الشهر',
+  'shortcuts.showList': 'عرض هذه القائمة',
+
+  // مفردات المهنة: «التجهيز» هو ما يُعمل بالسيارة المستعملة قبل بيعها، والسيارة
+  // المحجوزة لصفقة «محجوزة» لا «قيد الانتظار».
+  'enum.inventoryStatus.Incoming': 'في الطريق',
+  'enum.inventoryStatus.Reconditioning': 'قيد التجهيز',
+  'enum.inventoryStatus.Available': 'متاحة',
+  'enum.inventoryStatus.OnHold': 'محجوزة',
+  'enum.inventoryStatus.Sold': 'مباعة',
+  'enum.inventoryStatus.Removed': 'مسحوبة',
+
+  'enum.leadStatus.New': 'جديد',
+  'enum.leadStatus.Working': 'قيد المتابعة',
+  'enum.leadStatus.Appointment': 'موعد',
+  'enum.leadStatus.Won': 'ناجح',
+  'enum.leadStatus.Lost': 'خاسر',
+
+  'enum.leadSource.WalkIn': 'زيارة مباشرة',
+  'enum.leadSource.Phone': 'هاتف',
+  'enum.leadSource.Website': 'الموقع الإلكتروني',
+  'enum.leadSource.Referral': 'ترشيح',
+  'enum.leadSource.Marketplace': 'منصة إعلانات',
+  'enum.leadSource.Unknown': 'غير معروف',
+
+  'enum.dealStatus.Draft': 'مسودة',
+  'enum.dealStatus.Submitted': 'مُقدَّمة للاعتماد',
+  'enum.dealStatus.Approved': 'معتمدة',
+  'enum.dealStatus.Delivered': 'مُسلَّمة',
+  'enum.dealStatus.Lost': 'خاسرة',
+
+  'enum.chargeKind.VehiclePrice': 'سعر السيارة',
+  'enum.chargeKind.Fee': 'رسوم',
+  'enum.chargeKind.Discount': 'خصم',
+  'enum.chargeKind.Accessory': 'إكسسوار',
+
+  'enum.repairOrderStatus.Booked': 'محجوز',
+  'enum.repairOrderStatus.InProgress': 'قيد التنفيذ',
+  'enum.repairOrderStatus.Completed': 'مكتمل',
+  'enum.repairOrderStatus.Invoiced': 'صدرت فاتورته',
+  'enum.repairOrderStatus.Cancelled': 'ملغى',
+
+  'enum.serviceLineKind.Labour': 'أجور العمل',
+  'enum.serviceLineKind.Part': 'قطعة غيار',
+  'enum.serviceLineKind.Sublet': 'عمل خارجي',
+
+  'enum.financeProductKind.Warranty': 'ضمان',
+  'enum.financeProductKind.Gap': 'GAP',
+  'enum.financeProductKind.ServicePlan': 'عقد صيانة',
+  'enum.financeProductKind.Protection': 'حماية',
+  'enum.financeProductKind.Other': 'أخرى',
+
+  'enum.periodState.Open': 'مفتوحة',
+  'enum.periodState.Closed': 'مقفلة',
+
+  'enum.booksState.NotOpened': 'لم تُفتح',
+  'enum.booksState.Open': 'مفتوحة',
+  'enum.booksState.Closed': 'مقفلة',
+  'enum.booksState.Unknown': 'غير معروف',
+
+  'enum.importKind.Customers': 'العملاء',
+  'enum.importKind.Vehicles': 'السيارات',
+
+  'enum.tenantStatus.Active': 'نشطة',
+  'enum.tenantStatus.Suspended': 'موقوفة',
+  'enum.tenantStatus.Provisioning': 'قيد الإنشاء',
+  'enum.tenantStatus.Archived': 'مؤرشفة',
+
+  'stock.title': 'المخزون',
+  'stock.status': 'الحالة',
+  'stock.loading': 'جارٍ تحميل قائمة المخزون…',
+  'stock.denied':
+    'ليس لديك صلاحية الاطّلاع على مخزون هذا الفرع. راجع مديرك إن كنت ترى أن هذا غير صحيح.',
+  'stock.failed': 'تعذَّر تحميل قائمة المخزون.',
+  'stock.empty': 'لا شيء هنا بعد. تظهر السيارات بمجرد إدخالها إلى المخزون.',
+  'stock.onlyStockNumber': 'يُعرض رقم المخزون {stock} فقط.',
+  'stock.showEverything': 'عرض الكل',
+  'stock.colStock': 'رقم المخزون',
+  'stock.colVehicle': 'السيارة',
+  'stock.colVin': 'رقم الهيكل',
+  'stock.colStatus': 'الحالة',
+  // ست صيغ. لاحظ أن صيغتَي المفرد والمثنى لا تحملان الرقم: العربية تقول
+  // «سيارة واحدة» و«سيارتان»، لا «1 سيارة» و«2 سيارة».
+  'stock.count': {
+    zero: 'لا توجد سيارات في المخزون',
+    one: 'سيارة واحدة في المخزون',
+    two: 'سيارتان في المخزون',
+    few: '{count} سيارات في المخزون',
+    many: '{count} سيارة في المخزون',
+    other: '{count} سيارة في المخزون',
+  },
+  'stock.countCapped': 'أول {count} سيارة في المخزون. قد يكون هناك المزيد.',
+  'stock.cappedNote':
+    'يُعرض أول {count}. قد يكون هناك المزيد — ضيِّق النطاق بمرشِّح الحالة إلى أن يتوفَّر تقسيم الصفحات.',
+
+  'enum.accountKind.Asset': 'أصول',
+  'enum.accountKind.Liability': 'التزامات',
+  'enum.accountKind.Equity': 'حقوق الملكية',
+  'enum.accountKind.Revenue': 'إيرادات',
+  'enum.accountKind.Expense': 'مصروفات',
+
+  'trialBalance.title': 'ميزان المراجعة',
+  'trialBalance.loading': 'جارٍ الجمع…',
+  'trialBalance.denied': 'ليس لديك صلاحية الاطّلاع على هذه الأرقام.',
+  'trialBalance.failed': 'تعذَّر تحميل الأرصدة.',
+  'trialBalance.empty': 'لم تُرحَّل أي قيود بعد. تظهر القيود هنا بعد تسليم أول سيارة.',
+  'trialBalance.inBalance': 'متوازن — المدين والدائن كلاهما {total}.',
+  'trialBalance.outOfBalance': 'فرق قدره {difference}. ضاع شيء أثناء الإدخال.',
+  'trialBalance.colCode': 'رقم الحساب',
+  'trialBalance.colAccount': 'الحساب',
+  'trialBalance.colKind': 'النوع',
+  'trialBalance.colDebits': 'مدين',
+  'trialBalance.colCredits': 'دائن',
+  'trialBalance.colBalance': 'الرصيد',
+  'trialBalance.total': 'الإجمالي',
+
+  'enum.customerKind.Person': 'فرد',
+  'enum.customerKind.Business': 'شركة',
+
+  'customers.title': 'العملاء',
+  'customers.find': 'ابحث عن شخص',
+  'customers.findPlaceholder': 'الاسم أو الهاتف أو البريد',
+  'customers.add': 'إضافة عميل',
+  'customers.looking': 'جارٍ البحث…',
+  'customers.denied':
+    'ليس لديك صلاحية الاطّلاع على سجلات العملاء. راجع مديرك إن كنت ترى أن هذا غير صحيح.',
+  'customers.failed': 'تعذَّر تحميل العملاء.',
+  'customers.noMatches': 'لا أحد يطابق ذلك.',
+  'customers.colName': 'الاسم',
+  'customers.colKind': 'النوع',
+  'customers.colEmail': 'البريد الإلكتروني',
+  'customers.colPhone': 'الهاتف',
+  'customers.count': {
+    zero: 'لا يوجد عملاء',
+    one: 'عميل واحد',
+    two: 'عميلان',
+    few: '{count} عملاء',
+    many: '{count} عميلًا',
+    other: '{count} عميل',
+  },
+  'customers.countCapped': 'أول {count} عميل. قد يكون هناك المزيد.',
+  'customers.cappedNote':
+    'يُعرض أول {count}. قد يكون هناك المزيد — ضيِّق البحث إلى أن يتوفَّر تقسيم الصفحات.',
+
+  'customers.kindLabel': 'فرد أم شركة',
+  'customers.firstName': 'الاسم الأول',
+  'customers.lastName': 'اسم العائلة',
+  'customers.businessName': 'اسم الشركة',
+  'customers.email': 'البريد الإلكتروني',
+  'customers.phone': 'الهاتف',
+  'customers.submit': 'إضافة',
+  'customers.checking': 'جارٍ البحث عن تكرارات…',
+  'customers.adding': 'جارٍ الإضافة…',
+
+  'customers.duplicateTitle': 'يوجد بالفعل شخص مشابه',
+  'customers.duplicateLede':
+    'إنشاء سجل ثانٍ للشخص نفسه يُجزِّئ تاريخه — فتتوقف بيانات الصيانة والصفقات ووسائل الاتصال عن التطابق. تحقَّق مما إذا كان أحد هؤلاء هو المقصود.',
+  'customers.noContactDetails': 'لا توجد وسائل اتصال',
+  'customers.oneOfTheseIsThem': 'أحد هؤلاء هو المقصود',
+  'customers.addAnyway': 'لا أحد منهم — أضِف على أي حال',
+
+  'enum.importOutcome.Pending': 'قيد الانتظار',
+  'enum.importOutcome.Created': 'مُضافة',
+  'enum.importOutcome.Updated': 'موجودة مسبقًا',
+  'enum.importOutcome.Skipped': 'متجاوَزة',
+  'enum.importOutcome.Failed': 'مرفوضة',
+
+  'records.title': 'السجلات',
+  'records.bringIn': 'إدخال السجلات',
+  'records.bringInLede':
+    'جدول مُصدَّر من نظامك السابق ومحفوظ بصيغة CSV. لا يُكتب شيء قبل أن تُجري تشغيلًا تجريبيًا.',
+  'records.whatIsInIt': 'محتوى الملف',
+  'records.file': 'الملف',
+  'records.unreadableFile': 'تعذَّرت قراءة هذا الملف. هل هو ملف CSV نصي؟',
+  'records.practice': 'تشغيل تجريبي',
+  'records.practising': 'جارٍ التجربة…',
+  'records.importForReal': 'إدخال فعلي',
+  'records.importing': 'جارٍ الإدخال…',
+  'records.practiseFirst':
+    'أجرِ التشغيل التجريبي أولًا. إنه لا يغيّر شيئًا ويخبرك تمامًا بما سيفعله التشغيل الفعلي.',
+
+  'records.takeOut': 'إخراج السجلات',
+  'records.takeOutLede':
+    'يُنزِّل كل ما هو من هذا النوع بصيغة CSV. وهو النسق نفسه الذي تقبله هذه الصفحة مجددًا، فيمكنك نقل بياناتك إلى أي مكان، بما في ذلك نظام آخر تمامًا.',
+  'records.downloadCustomers': 'تنزيل العملاء',
+  'records.downloadVehicles': 'تنزيل السيارات',
+
+  'records.couldNotRun': 'تعذَّر تنفيذ عملية الإدخال هذه.',
+  'records.whatWouldHappen': 'ما الذي سيحدث',
+  'records.whatHappened': 'ما الذي حدث',
+  'records.summaryPractice': {
+    zero: 'لا توجد صفوف لقراءتها.',
+    one: 'من صف واحد: ستُضاف {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} تعذَّرت قراءتها.',
+    two: 'من صفين: ستُضاف {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} تعذَّرت قراءتها.',
+    few: 'من {count} صفوف: ستُضاف {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} تعذَّرت قراءتها.',
+    many: 'من {count} صفًا: ستُضاف {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} تعذَّرت قراءتها.',
+    other:
+      'من {count} صف: ستُضاف {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} تعذَّرت قراءتها.',
+  },
+  'records.summaryReal': {
+    zero: 'لا توجد صفوف لقراءتها.',
+    one: 'من صف واحد: أُضيفت {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} مرفوضة.',
+    two: 'من صفين: أُضيفت {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} مرفوضة.',
+    few: 'من {count} صفوف: أُضيفت {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} مرفوضة.',
+    many: 'من {count} صفًا: أُضيفت {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} مرفوضة.',
+    other:
+      'من {count} صف: أُضيفت {created}، و{updated} موجودة مسبقًا، و{skipped} متجاوَزة، و{failed} مرفوضة.',
+  },
+  'records.nothingWritten': 'لم يُكتب شيء. كان ذلك تشغيلًا تجريبيًا.',
+  'records.rowsToLookAt': 'صفوف تحتاج إلى مراجعة',
+  'records.rowsToLookAtLede':
+    'رقم السطر هو الرقم الذي تراه في جدولك، والصف مقتبس تمامًا كما ورد. صحِّح الملف وأعد التشغيل — لا شيء هنا يعدّل ما أرسلته.',
+  'records.problemCount': {
+    zero: 'لا توجد صفوف تحتاج إلى مراجعة',
+    one: 'صف واحد يحتاج إلى مراجعة',
+    two: 'صفان يحتاجان إلى مراجعة',
+    few: '{count} صفوف تحتاج إلى مراجعة',
+    many: '{count} صفًا تحتاج إلى مراجعة',
+    other: '{count} صف يحتاج إلى مراجعة',
+  },
+  'records.colLine': 'السطر',
+  'records.colWhatHappened': 'ما الذي حدث',
+  'records.colTheRow': 'الصف',
+  'records.timeout':
+    'يستغرق هذا الإدخال وقتًا أطول من المتوقع. ما زال قيد التنفيذ — هذه الصفحة فقط توقّفت عن الانتظار.',
+};
