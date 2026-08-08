@@ -13,6 +13,7 @@ import type { SignInResponse } from '../../shared/contracts';
 import { useSession } from '../../app/session';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { AppearanceControls } from '../../app/AppearanceControls';
 
 type Stage = { kind: 'credentials' } | { kind: 'code'; challengeToken: string };
 
@@ -94,6 +95,15 @@ export function SignIn() {
 
   return (
     <main className="signin">
+      {/* The language picker belongs HERE, not only in the signed-in shell.
+          Somebody who reads only Arabic meets this screen first, and putting
+          the only way to change language behind a successful sign-in asks them
+          to read English to find out how to stop reading English. The theme
+          rides along for the same reason it does everywhere else. */}
+      <div className="signin__appearance">
+        <AppearanceControls />
+      </div>
+
       <h1>{t('app.name')}</h1>
 
       {stage.kind === 'credentials' ? (

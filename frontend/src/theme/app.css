@@ -189,6 +189,15 @@ textarea {
   border-radius: 14px;
 }
 
+/* Theme and language, above the form. `inline-end` rather than `right`, so it
+   sits in the far corner whichever way the page runs — which is the whole
+   reason this control is on the sign-in screen at all. */
+.signin__appearance {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-end: 12px;
+}
+
 .signin__lede {
   margin: 8px 0 4px;
   color: var(--ink-3);
