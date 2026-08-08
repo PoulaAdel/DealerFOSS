@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+
+# DealerFOSS — packaged from an already-published folder.
+#
+# The context is the PUBLISHED OUTPUT, not the repository:
+#   & .\deploy\publish.ps1 -Output artifacts/app
+#   docker build -f deploy/Dockerfile.prebuilt -t dealerfoss:local artifacts/app
+#
+# Use this when bandwidth is the constraint. deploy/Dockerfile builds everything
+# from source inside the image, which is the right default — but it needs the
+# .NET SDK image (~380 MB) and the Node image (~230 MB) on top of the runtime.
+# This one needs the runtime alone, so it downloads roughly a third as much.
+#
+# Edit: it copies a folder somebody else produced, which is exactly the shape of
+#       hazard deploy/Dockerfile exists to avoid — a package with an empty
+#       wwwroot starts, answers health, serves the API, and shows a blank page.
+#       The guarantee is kept by checking for the shell here as well. publish.ps1
+#       refuses to produce a folder without one; this refuses to package one.
+#       Two independent checks, because the failure is silent.
+#
+#       The trade-off that is NOT recovered: the source-built image is
+#       reproducible from a commit alone. This one is only as trustworthy as the
+#       folder handed to it. Use deploy/Dockerfile for anything published.
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
+WORKDIR /app
+
+USER $APP_UID
+
+COPY . ./
+
+# The same assertion deploy/Dockerfile makes, at the only point this file can
+# still make it. A build that reaches here with no shell is a blank page nobody
+# will notice until it is in front of a dealer.
+RUN test -f /app/wwwroot/index.html && test -f /app/DealerFOSS.App.dll
+
+ENV ASPNETCORE_ENVIRONMENT=Production \
+    ASPNETCORE_URLS=http://+:8080
+
+EXPOSE 8080
+
+# Liveness only. Readiness needs the database, and a container reporting
+# unhealthy because SQL Server is still starting is one an orchestrator will
+# keep killing and restarting for no reason.
+HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
+    CMD ["/bin/sh", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health/live HTTP/1.0\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q 200"]
+
+ENTRYPOINT ["dotnet", "DealerFOSS.App.dll"]

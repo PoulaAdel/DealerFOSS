@@ -16,7 +16,8 @@ machine stays clean and every contributor gets the same versions.
 |---|---|
 | `docker-compose.yml` | **development** dependencies — SQL, the Node toolchain, optional Redis and a telemetry collector |
 | `docker-compose.app.yml` | **running the product** — the application and its database, built from source |
-| `Dockerfile` | the application image, frontend and all |
+| `Dockerfile` | the application image, frontend and all, built from source |
+| `Dockerfile.prebuilt` | the same image from an already-published folder — a third of the download, for when bandwidth is the constraint |
 | `.env.example` | copy to `.env` for `docker-compose.app.yml`; it has no defaults on purpose |
 | `publish.ps1` | builds the frontend and publishes the application into one folder |
 | `install-service.ps1` | registers that folder as a Windows service, and removes it again |

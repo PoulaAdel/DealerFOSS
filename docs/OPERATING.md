@@ -80,6 +80,38 @@ installation started without a key is one whose backups cannot be restored.
 docker compose -f deploy/docker-compose.app.yml up -d --build
 ```
 
+> **On a slow connection, pull the base images first.** BuildKit runs the
+> frontend and backend stages in parallel, so a first build downloads roughly
+> 250 MB of base images *while* npm is fetching packages, and npm loses. Pulling
+> them serially first removes the contention entirely:
+>
+> ```bash
+> docker pull mcr.microsoft.com/dotnet/sdk:10.0-noble
+> ```
+> ```bash
+> docker pull mcr.microsoft.com/dotnet/aspnet:10.0-noble
+> ```
+> ```bash
+> docker pull node:22-alpine
+> ```
+>
+> Only the first build pays this. The Dockerfile retries five times and caches
+> both the npm and NuGet downloads outside the image, so a build interrupted
+> half way resumes rather than restarting.
+>
+> If that is still too much, build from an already-published folder instead — it
+> needs the runtime image only, roughly a third of the download:
+>
+> ```powershell
+> & .\deploy\publish.ps1 -Output artifacts/app
+> ```
+> ```bash
+> docker build -f deploy/Dockerfile.prebuilt -t dealerfoss:local artifacts/app
+> ```
+>
+> Use the source-built image for anything you publish: it is reproducible from a
+> commit, and the prebuilt one is only as trustworthy as the folder handed to it.
+
 It comes up on `http://localhost:8080`. The database is on the compose network and
 is **not** published to the host — attach a tool by adding a `ports:` mapping
 temporarily, and take it away again.
