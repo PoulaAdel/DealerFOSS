@@ -325,6 +325,28 @@ them is written.
 
   **Deliberately not included:** a per-rooftop breakdown side by side (the query takes one rooftop, so a group asks once per location), salesperson and advisor league tables, and anything daily.
 
+- **2026-08-08 — Something an operator can actually install.** The runbook told somebody how to run an installation and there was nothing packaged for them to run. There are now two packages, and **the application serves its own web interface**, so an installation is one thing rather than an application plus a web server plus a proxy configuration.
+
+  **A Linux container** — `deploy/Dockerfile`, built from source in three stages so the runtime image carries neither Node nor the SDK. The frontend is built *inside* the image rather than expected to exist beforehand, because an image that assumed it would sometimes be an image with an empty `wwwroot`: it starts, answers health, serves the API, and shows a blank page. `deploy/docker-compose.app.yml` runs it with SQL Server; every secret in it has no default, so compose fails loudly rather than starting an installation whose backups cannot be restored.
+
+  **A Windows service** — `deploy/publish.ps1` builds the frontend, copies it into `wwwroot`, publishes, and refuses to produce a package whose `wwwroot` is empty. `deploy/install-service.ps1` registers it, sets restart-on-failure, and writes the connection string and key into **the service's own registry entry** rather than machine-wide: `setx /M` would make the key that decrypts every dealership's connection string readable by every process on the box. `UseWindowsService` and an explicit content root were both needed — without the first the SCM never sees "running" and `sc start` times out on a service that is actually up; without the second the service looks for `appsettings.json` and `wwwroot` in whatever directory the SCM chose.
+
+  **Three defects found by running it rather than by reading it.**
+
+  - **`deploy/new-key.ps1` did not work, and neither did the README snippet it replaced.** `[RandomNumberGenerator]::Fill` takes a `Span<byte>` and exists only on .NET Core 2.1+; Windows PowerShell 5.1 runs on .NET Framework and does not have it. **The documented first step of an installation had never worked on the documented shell** — it died with "does not contain a method named 'Fill'", which says nothing about keys.
+  - **`docs/OPERATING.md` named the wrong variable.** `Secrets__ActiveKeyId`; the application reads `Secrets__CurrentKeyId`. Following the runbook exactly produced a refusal to start with a message about plaintext connection strings and no visible connection to the typo.
+  - **`publish.ps1` failed on its first run for a reason that had nothing to do with publishing.** Windows PowerShell 5.1 turns *any* stderr output from a native command into a terminating error while `$ErrorActionPreference` is `Stop` — and `npm ci` prints a deprecation notice on a completely successful install. The script now judges native commands by their exit code.
+
+  **Two routing traps, one of them rehearsed.** A matched endpoint beats static files: routing runs first, so the JSON identity document at `/` won over `index.html` and an operator opening the site for the first time was shown `{"name":"DealerFOSS"…}`. `UseDefaultFiles` does not fix that — it is the same collision — so the route is simply not mapped when there is a frontend to serve. And the shell fallback matches any path without a dot in it, which every mistyped API route is: **rehearsed by removing the `/api` guard, after which a signed-in caller asking for `/api/v1/organisation` got the application shell and HTTP 200.** A client then parses HTML looking for JSON and nothing reports an error. Both are now covered by `PackagedShellTests`.
+
+  **Also caught:** `index.html` reached the browser with no cache header at all, because the middleware and the fallback endpoint are two different ways of sending the same file and each carries its own options. They now share one object. A cached shell points at asset filenames that no longer exist, which presents as a white page after an upgrade.
+
+  **Verified by driving the published binary in a browser** with no dev server running anywhere: it signs in, shows the dashboard, and a deep link to `/accounting/periods` survives a real page load. Also verified it refuses to start without a key, and that a Production installation pointed at a Development-seeded catalog fails with a clear message — there is no upgrade path between them, and the symptom table now says so. Evidence: `dotnet test` 516/516 (was 509), `npm test` 215/215, `verify-e2e.ps1` PASS, `publish.ps1` produces a 22 MB folder that runs *(automated)*
+
+  **One unrelated fix on the way past:** `npm audit` turned up a new high advisory in `nanoid` (via `vite` → `postcss`). Lockfile bumped 3.3.16 → 3.3.18; the audit gate is clean again.
+
+  **Deliberately not included:** an installer with a user interface, automatic updates, a signed package, systemd units, Kubernetes manifests, and anything hosted-specific.
+
 ## Active risks and blockers
 
 | Owner | Item | Required evidence | Effect |
@@ -348,24 +370,7 @@ second a real login provider, and a fake one would prove nothing.
 
 ## Next milestone
 
-**Outcome:** the application arrives as something an operator can install.
-
-`docs/OPERATING.md` tells an operator how to run an installation and there is
-nothing packaged for them to run. That is now the only remaining item that is
-neither built nor waiting on somebody else, and it is what stands between the
-product and a pilot.
-
-- **Included:** a container image, a Windows service package, and the runbook
-  updated to point at them rather than at `dotnet run`.
-- **Explicitly excluded:** an installer with a user interface, automatic updates,
-  and any hosted-service concern beyond running one installation.
-- **Caution:** the secret-protection key is what makes a backup restorable. The
-  packaging must make generating one an explicit first step that fails loudly,
-  not a default that quietly produces an installation nobody can restore.
-- **Caution:** `Program.cs` already refuses to start outside Development without
-  keys configured. Do not let a packaged default weaken that into a warning.
-
-**Then: account recovery.** Settled 2026-08-07 and written up as
+**Outcome:** account recovery. Settled 2026-08-07 and written up as
 [ADR-018](../adr/0018-account-recovery-methods.md): one contract, five methods, and
 a privileged manager-issued code as the backstop. No longer blocked on a decision.
 

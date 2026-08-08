@@ -49,7 +49,11 @@ and service profit against last month, how many cars went out, and how old the
 unsold stock is. Every figure on it is read out of the accounts rather than added
 up a second time, so it cannot drift away from the books.
 
-**About 66% of the first release. Four of the eight stages are finished and three
+**And it is now something you can install.** A Linux container or a Windows
+service — one thing either way, because the application serves its own screens.
+There is no separate web server to set up.
+
+**About 69% of the first release. Four of the eight stages are finished and three
 more are under way.**
 
 ---
@@ -68,7 +72,7 @@ months of focused work.
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, warranties, paperwork. | **Done** |
 | 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Half** — the workshop and parts stock are built. Finance applications to lenders and a booking diary are not |
 | 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | **Done** — balances, month-end, staff admin, an operator console, setting up a new dealership, and a dashboard for the month |
-| 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | **Started** — backups are rehearsed; the rest is not |
+| 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | **Half** — backups are rehearsed and there are two installable packages. Security testing, performance work and training are not |
 | 8 | Live pilot | Two dealerships running on it for 60 days. | Not started |
 
 ---
@@ -453,18 +457,18 @@ months of focused work.
 
 ## Next
 
-**Something you can actually install.**
+**A forgotten password.**
 
-Every part of the product now has a screen, and a dealership can be created from
-the operator console. What is missing is the box it arrives in: there is a
-runbook telling an operator how to run it, and nothing packaged for them to run.
-That is a container image and a Windows service, so the runbook has something to
-point at.
+A new starter sets their own with a one-time code, but somebody who forgets theirs
+in week two has nowhere to go. It is the gap most likely to be hit by a real
+pilot.
 
-**Then: a forgotten password.** A new starter sets their own with a one-time code,
-but somebody who forgets theirs in week two has nowhere to go. It is the gap most
-likely to be hit by a real pilot, and it needs a way to prove the person asking
-owns the account — a different job with different safeguards.
+Per your decision it will not be one method but several, and a dealership turns on
+whichever it can support: their authenticator app, a passkey or fingerprint, an
+emailed link, a WhatsApp or text message — and a manager handing out a one-time
+code as the last resort. The first two need nothing from you and will be built
+first. The email and message options ship at the same time but arrive switched
+off, because they need an account somebody has to go and buy.
 
 After that the honest list is short and mostly waiting on you: connectors to a
 real DMS, and a pilot to point them at.

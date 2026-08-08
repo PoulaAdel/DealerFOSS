@@ -6,6 +6,24 @@ machine stays clean and every contributor gets the same versions.
 
 **You need:** the .NET 10 SDK, and Docker Desktop. That is the whole list.
 
+> **Running an installation, rather than developing on one, is a different
+> document.** [`docs/OPERATING.md`](../docs/OPERATING.md) covers that. This page
+> is for contributors.
+
+## What is in this folder
+
+| File | For |
+|---|---|
+| `docker-compose.yml` | **development** dependencies — SQL, the Node toolchain, optional Redis and a telemetry collector |
+| `docker-compose.app.yml` | **running the product** — the application and its database, built from source |
+| `Dockerfile` | the application image, frontend and all |
+| `.env.example` | copy to `.env` for `docker-compose.app.yml`; it has no defaults on purpose |
+| `publish.ps1` | builds the frontend and publishes the application into one folder |
+| `install-service.ps1` | registers that folder as a Windows service, and removes it again |
+| `new-key.ps1` | generates a secret-protection key |
+| `backup.ps1`, `restore.ps1` | the backup drill |
+| `verify-e2e.ps1` | the end-to-end proof |
+
 ---
 
 ## The short version
@@ -247,10 +265,20 @@ found.
 Generate a key:
 
 ```powershell
-$b = New-Object byte[] 32
-[System.Security.Cryptography.RandomNumberGenerator]::Fill($b)
-[Convert]::ToBase64String($b)
+& .\deploy\new-key.ps1
 ```
+
+It prints the key id and the key, and the warning that matters next to them.
+`-Format env` gives the two environment variables ready to paste; `-Format json`
+gives an `appsettings` fragment.
+
+> This used to be a three-line snippet here using
+> `[RandomNumberGenerator]::Fill($b)`. That method takes a `Span<byte>` and exists
+> only on .NET Core 2.1 and later — **it is not present in Windows PowerShell
+> 5.1**, which runs on .NET Framework. The documented first step of an
+> installation therefore failed on the most likely shell, with an error about a
+> missing method rather than anything to do with keys. The script uses
+> `RandomNumberGenerator.Create()` and `GetBytes()`, which work on both.
 
 Then supply it. Configuration keys map to environment variables by replacing `:`
 with `__`, which is how you avoid putting a key in a file on the two targets where

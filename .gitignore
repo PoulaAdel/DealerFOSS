@@ -12,6 +12,11 @@ node_modules/
 frontend/dist/
 frontend/.vite/
 
+# The built frontend, copied here by deploy/publish.ps1 so the application can
+# serve it. A build output, not a source — committing it would mean two copies
+# of the same page and one of them stale.
+src/App/wwwroot/
+
 # Test / coverage
 [Tt]est[Rr]esult*/
 coverage/

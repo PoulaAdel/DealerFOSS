@@ -1,0 +1,75 @@
+# A running DealerFOSS installation: the application and its database.
+#
+# This is NOT docker-compose.yml. That one provides a development machine's
+# dependencies; this one runs the product.
+#
+#   Build and start:  docker compose -f deploy/docker-compose.app.yml up -d --build
+#   Watch it start:   docker compose -f deploy/docker-compose.app.yml logs -f app
+#   Stop:             docker compose -f deploy/docker-compose.app.yml down
+#   Stop and erase:   docker compose -f deploy/docker-compose.app.yml down -v
+#
+# Before the first start, create deploy/.env from deploy/.env.example and put a
+# real key in it — the application refuses to start without one, on purpose.
+# Generate it with:  & .\deploy\new-key.ps1 -Format env
+#
+# See deploy/README.md for what each of these creates and how to undo it.
+
+name: dealerfoss
+
+services:
+  app:
+    build:
+      # The repository root, because the image builds the frontend from source.
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: dealerfoss:local
+    container_name: dealerfoss-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+
+      # "db" is the service below, on the compose network. Encrypt=False because
+      # the traffic never leaves that network; put a certificate on SQL Server
+      # and turn this on if the database is anywhere else.
+      ConnectionStrings__HostCatalog: >-
+        Server=db;Database=DealerFOSS_Host;User Id=sa;Password=${SQL_SA_PASSWORD:?set SQL_SA_PASSWORD in deploy/.env};
+        TrustServerCertificate=True;Encrypt=False
+
+      # The key that decrypts every dealership's connection string. No default,
+      # deliberately: compose fails loudly here rather than starting an
+      # installation whose backups cannot be restored.
+      Secrets__CurrentKeyId: ${SECRETS_KEY_ID:?set SECRETS_KEY_ID in deploy/.env}
+      Secrets__Keys__${SECRETS_KEY_ID}: ${SECRETS_KEY:?set SECRETS_KEY in deploy/.env - generate one with deploy/new-key.ps1}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: dealerfoss-app-db
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: ${SQL_EDITION:-Developer}
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD:?set SQL_SA_PASSWORD in deploy/.env}
+    volumes:
+      # A named volume, not a bind mount. See the note in docker-compose.yml:
+      # mounting /var/opt/mssql onto a Windows path kills the engine inside
+      # SQLPAL with a message that reads like host incompatibility and is not.
+      - dealerfoss-app-db:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+    # Not published. The database is reachable from the application and from
+    # nothing else; add a ports mapping temporarily if you need to attach a tool,
+    # and take it away again.
+
+volumes:
+  dealerfoss-app-db:

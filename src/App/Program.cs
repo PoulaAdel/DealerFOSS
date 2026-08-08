@@ -10,6 +10,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using DealerFOSS.Accounting;
 using DealerFOSS.Administration;
@@ -36,7 +37,36 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+// A Windows service starts in whatever directory the service control manager
+// chose — typically system32 — not in the folder holding the executable. So
+// appsettings.json and wwwroot are both looked for in the wrong place and
+// neither is found: the service starts, serves the API from defaults, and shows
+// a blank page.
+//
+// This has to be passed at construction. Assigning builder.Environment
+// afterwards is too late — the configuration sources have already been bound
+// against the original content root.
+//
+// Gated on actually being a service, so a `dotnet run`, the container, and the
+// test host keep the content root each of them expects. Null means "work it out
+// as usual".
+var serviceContentRoot = WindowsServiceHelpers.IsWindowsService()
+    ? AppContext.BaseDirectory
+    : null;
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = serviceContentRoot,
+});
+
+// Lets the service control manager start and stop this process properly. Without
+// it an installed service never reports "running" and `sc start` times out after
+// thirty seconds — with the application actually up and serving, which makes for
+// a confusing half hour for whoever installed it.
+//
+// A no-op when the process is not running under the SCM.
+builder.Host.UseWindowsService(options => options.ServiceName = "DealerFOSS");
 
 // --- Structured logging (doc 02 stack: Serilog) ---
 builder.Host.UseSerilog((context, configuration) => configuration
@@ -236,6 +266,53 @@ app.UseSerilogRequestLogging();
 // being busy.
 app.UseRateLimiter();
 
+// --- the application itself ---
+//
+// The built frontend is served from wwwroot when it is there. It is not there in
+// a bare checkout — in development the Vite dev server serves it and proxies
+// /api here — so this is guarded rather than assumed. `dotnet run` on a fresh
+// clone must still start and serve the API.
+//
+// Being served by the application, rather than by a separate web server, is what
+// makes an installation ONE thing to install. It is also what keeps the session
+// cookie working without configuration: the cookie is SameSite=Strict, so the
+// page and the API have to be the same origin or the browser silently drops it.
+var shellFile = Path.Combine(app.Environment.WebRootPath ?? string.Empty, "index.html");
+var shellIsPublished = !string.IsNullOrEmpty(app.Environment.WebRootPath) && File.Exists(shellFile);
+
+// One options object, used by BOTH the static-file middleware and the shell
+// fallback below. They are two different ways of sending the same files, and each
+// carries its own copy of these options — so a policy set on only one of them
+// applies to some requests and not others.
+//
+// That is not hypothetical: index.html reached the browser with no cache header
+// at all until this was shared, because "/" is served by the fallback ENDPOINT
+// rather than by the middleware. Routing runs first, selects the endpoint, and
+// UseStaticFiles then stands aside for it.
+var staticFiles = new StaticFileOptions
+{
+    OnPrepareResponse = served =>
+    {
+        // Vite fingerprints everything under /assets, so a changed file has a
+        // changed name and caching it for a year is safe. index.html must never
+        // be cached: it is the file that names the current fingerprints, and a
+        // stale copy points a browser at assets that no longer exist — which
+        // presents as a white page after an upgrade, fixed by a hard refresh
+        // nobody knows to perform.
+        var path = served.Context.Request.Path.Value ?? string.Empty;
+
+        served.Context.Response.Headers.CacheControl =
+            path.StartsWith("/assets/", StringComparison.Ordinal)
+                ? "public, max-age=31536000, immutable"
+                : "no-store";
+    },
+};
+
+if (shellIsPublished)
+{
+    app.UseStaticFiles(staticFiles);
+}
+
 if (tenancyEnabled)
 {
     // Order matters: the tenant is resolved first, then the caller within it,
@@ -258,12 +335,24 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = registration => registration.Tags.Contains("ready"),
 });
 
-app.MapGet("/", () => Results.Ok(new
+// The identity document, for a bare API installation with no frontend built.
+//
+// Guarded, because it and the shell fallback both answer "/" and this one wins:
+// routing runs before the static-file middleware, and once an endpoint is
+// selected UseStaticFiles stands aside for it. Unguarded, an operator opening
+// http://their-server:8080 for the first time is shown `{"name":"DealerFOSS"…}`
+// and reasonably concludes the install is broken. UseDefaultFiles does not fix
+// that — it is the same collision — so the route simply is not mapped when there
+// is a frontend to serve instead.
+if (!shellIsPublished)
 {
-    name = "DealerFOSS",
-    description = "Open-source Dealer Management System",
-    status = "ok",
-}));
+    app.MapGet("/", () => Results.Ok(new
+    {
+        name = "DealerFOSS",
+        description = "Open-source Dealer Management System",
+        status = "ok",
+    }));
+}
 
 if (tenancyEnabled)
 {
@@ -284,6 +373,30 @@ if (tenancyEnabled)
     app.MapDocuments();
     app.MapAccounting();
     app.MapReporting();
+}
+
+if (shellIsPublished)
+{
+    // An unknown API route is a 404, not the application shell. Without this the
+    // catch-all below would answer /api/v1/typo with a page and a 200, and a
+    // caller would parse HTML looking for JSON — the kind of failure that costs
+    // an afternoon because nothing reports an error.
+    // Rehearsed 2026-08-07: with this line removed, a signed-in caller asking for
+    // /api/v1/organisation gets the application shell and HTTP 200. The
+    // MapFallbackToFile below matches any path without a dot in it, which every
+    // mistyped API route is.
+    app.MapFallback("/api/{**path}", () => Results.NotFound());
+
+    // Everything else is the frontend's own routing. /dashboard and /inventory
+    // are not server routes; the browser asks for them on a reload and has to be
+    // handed the shell. This also answers "/", which is why the JSON identity
+    // route above is guarded.
+    //
+    // The default route pattern here is {*path:nonfile} — it deliberately does
+    // NOT match a path containing a dot, so a request for an asset that no longer
+    // exists fails as a missing script rather than returning HTML where
+    // JavaScript was expected.
+    app.MapFallbackToFile("index.html", staticFiles);
 }
 
 // Development-only sample data (doc 08 §8), gated behind an explicit flag.

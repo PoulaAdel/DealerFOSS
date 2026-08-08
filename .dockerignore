@@ -1,0 +1,33 @@
+# What must never reach the build context.
+#
+# The first two entries are the ones that matter: node_modules is hundreds of
+# megabytes of platform-specific binaries that the image rebuilds anyway, and
+# appsettings.Development.json holds a real connection string.
+
+**/node_modules
+**/appsettings.Development.json
+**/appsettings.*.local.json
+**/*.env
+
+**/bin
+**/obj
+**/dist
+**/.vite
+artifacts/
+src/App/wwwroot/
+
+.git
+.github
+.vs
+.idea
+.vscode
+
+local/
+docs/
+tests/
+deploy/.data/
+**/TestResults
+**/coverage
+
+*.md
+!README.md
