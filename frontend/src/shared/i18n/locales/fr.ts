@@ -171,8 +171,8 @@ export const fr: Catalogue = {
   'enum.leadSource.Phone': 'Téléphone',
   'enum.leadSource.Website': 'Site web',
   'enum.leadSource.Referral': 'Recommandation',
-  'enum.leadSource.Marketplace': 'Place de marché',
-  'enum.leadSource.Unknown': 'Inconnue',
+  'enum.leadSource.Marketplace': 'Annonce en ligne',
+  'enum.leadSource.Unknown': 'Non renseignée',
 
   'enum.dealStatus.Draft': 'Brouillon',
   'enum.dealStatus.Submitted': 'Soumise',
@@ -350,4 +350,116 @@ export const fr: Catalogue = {
   'records.colTheRow': 'La ligne',
   'records.timeout':
     'Cet import prend plus de temps que prévu. Il est toujours en cours — c’est simplement cette page qui a cessé d’attendre.',
+
+  'periods.title': 'Les comptes',
+  'periods.loading': 'Chargement des comptes…',
+  'periods.denied': 'Vous n’avez pas accès à la comptabilité.',
+  'periods.failed': 'Impossible de lire les comptes.',
+  'periods.actionFailed': 'Cela n’a pas fonctionné.',
+  'periods.lede':
+    'Rien ne peut être comptabilisé dans un mois tant que ses comptes ne sont pas ouverts, ni dans un mois clôturé. La clôture est un acte que vous effectuez lorsque les travaux de fin de mois sont terminés — aucune date ne la déclenche à votre place.',
+  'periods.none': 'Aucun mois n’est encore ouvert. Rien ne peut être comptabilisé avant.',
+
+  'periods.openAMonth': 'Ouvrir un mois',
+  'periods.openLede':
+    'Tant qu’un mois n’est pas ouvert, rien qui y soit daté ne peut être comptabilisé — une vente ou une facture d’atelier sera refusée. L’ouverture est délibérée, afin que les comptes commencent à une date que vous avez choisie plutôt qu’à celle déduite de la première saisie venue.',
+  'periods.year': 'Année',
+  'periods.month': 'Mois',
+  'periods.openIt': 'Ouvrir',
+
+  'periods.reopenTitle': 'Rouvrir {month} ?',
+  'periods.reopenLede':
+    'Ce mois est clôturé et ses chiffres ont peut-être déjà été communiqués. Sa réouverture est consignée avec votre motif, afin que quiconque le consultera plus tard sache ce qui s’est passé et pourquoi.',
+  'periods.reopenWhy': 'Pourquoi le rouvrir ?',
+  'periods.reopenPlaceholder': 'Une facture fournisseur est arrivée le 4',
+  'periods.reopenIt': 'Rouvrir',
+  'periods.leaveClosed': 'Le laisser clôturé',
+  'periods.reopen': 'Rouvrir',
+
+  'periods.closeIt': 'Clôturer',
+  'periods.confirmClose':
+    'Clôturer {month} ? Plus rien ne pourra y être comptabilisé tant qu’il ne sera pas rouvert.',
+
+  'periods.caption': 'Tous les mois des comptes, du plus récent au plus ancien.',
+  'periods.colMonth': 'Mois',
+  'periods.colCutoff': 'Date d’arrêté',
+  'periods.colEntries': 'Écritures',
+  'periods.colState': 'État',
+
+  'periods.historyTitle': 'Ce qui est arrivé aux comptes',
+  'periods.wasOpened': '{month} ouvert',
+  'periods.wasClosed': '{month} clôturé',
+  'periods.wasReopened': '{month} rouvert',
+
+  'leads.title': 'Demandes',
+  'leads.show': 'Afficher',
+  'leads.stillChasing': 'En cours de suivi',
+  'leads.everything': 'Tout',
+  'leads.onlyMine': 'Seulement les miennes',
+  'leads.take': 'Enregistrer une demande',
+  'leads.loading': 'Chargement des demandes…',
+  'leads.denied':
+    'Vous n’avez pas accès aux demandes de ce site. Demandez à un responsable si cela vous semble anormal.',
+  'leads.failed': 'Impossible de charger les demandes.',
+  'leads.openFailed': 'Impossible d’ouvrir cette demande.',
+  'leads.empty':
+    'Aucune demande ici. Il y en a une dès que quelqu’un appelle ou se présente sur le parc.',
+
+  'leads.colCustomer': 'Client',
+  'leads.colAskedAbout': 'Véhicule demandé',
+  'leads.colCameFrom': 'Origine',
+  'leads.colDays': 'Jours',
+  'leads.colChasedBy': 'Suivi par',
+  'leads.colStage': 'Étape',
+  'leads.nothingSpecific': 'Rien de précis',
+  'leads.nobodyYet': 'Personne pour l’instant',
+  'leads.you': 'Vous',
+  'leads.somebodyElse': 'Quelqu’un d’autre',
+  'leads.count': { one: '{count} demande', other: '{count} demandes' },
+  'leads.countCapped': 'Les {count} premières demandes. Il peut y en avoir d’autres.',
+  'leads.cappedNote':
+    'Affichage des {count} premières. Il peut y en avoir d’autres — affinez avec les filtres en attendant la pagination.',
+
+  'leads.cameIn': 'reçue le {date}',
+  'leads.unclaimed': 'Personne ne s’en occupe encore.',
+  'leads.yoursToChase': 'C’est vous qui suivez celle-ci.',
+  'leads.theirsToChase': 'C’est {name} qui suit celle-ci.',
+  'leads.putBack': 'La remettre dans le pot commun',
+  'leads.iWillChase': 'Je m’en occupe',
+  'leads.takeItOver': 'La reprendre',
+  'leads.handTo': 'Confier à',
+  'leads.chooseColleague': 'Choisir un collègue',
+  'leads.buildTheDeal': 'Créer la vente',
+  'leads.whatHappened': 'Historique',
+  'leads.finished':
+    'Cette demande est terminée. Si le client revient plus tard, cela en ouvre une nouvelle.',
+  'leads.note': 'Note (conservée au dossier)',
+  'leads.notePlaceholder': 'Message laissé · passe samedi · a acheté ailleurs',
+  'leads.reopenedHere':
+    'Une demande perdue qui revient est rouverte ici plutôt que ressaisie, afin que la première tentative reste dans l’historique.',
+
+  'leads.moveReopen': 'La rouvrir',
+  'leads.moveStartChasing': 'Commencer le suivi',
+  'leads.moveAppointment': 'Le client vient',
+  'leads.moveWon': 'Le client achète',
+  'leads.moveLost': 'Marquer comme perdue',
+
+  'leads.captureTitle': 'Enregistrer une demande',
+  'leads.findCustomer': 'Trouver le client',
+  'leads.whoIsAsking': 'Qui demande',
+  'leads.chooseSomebody': 'Choisir une personne…',
+  'leads.searchAboveNote':
+    'Cherchez ci-dessus pour la trouver. Une demande doit être rattachée à quelqu’un : si la personne est nouvelle, créez-la d’abord sur la page Clients.',
+  'leads.whichLocation': 'Quel site',
+  'leads.chooseLocation': 'Choisir un site…',
+  'leads.onlyLocation':
+    'Cette demande est rattachée à {name} ({code}), le seul site où vous travaillez.',
+  'leads.howTheyReachedUs': 'Comment le client nous a contactés',
+  'leads.carAskedAbout': 'Véhicule demandé (facultatif)',
+  'leads.whatTheySaid': 'Ce que le client a dit',
+  'leads.whatTheySaidPlaceholder': 'Budget, reprise, échéance souhaitée…',
+  'leads.save': 'Enregistrer la demande',
+  'leads.locationsFailed': 'Impossible de charger vos sites.',
+  'leads.lookupFailed': 'Impossible d’effectuer cette recherche.',
+  'leads.saveFailed': 'Cette demande n’a pas pu être enregistrée.',
 };

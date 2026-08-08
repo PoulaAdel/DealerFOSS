@@ -172,8 +172,8 @@ export const de: Catalogue = {
   'enum.leadSource.Phone': 'Telefon',
   'enum.leadSource.Website': 'Website',
   'enum.leadSource.Referral': 'Empfehlung',
-  'enum.leadSource.Marketplace': 'Marktplatz',
-  'enum.leadSource.Unknown': 'Unbekannt',
+  'enum.leadSource.Marketplace': 'Online-Anzeige',
+  'enum.leadSource.Unknown': 'Nicht erfasst',
 
   'enum.dealStatus.Draft': 'Entwurf',
   'enum.dealStatus.Submitted': 'Eingereicht',
@@ -351,4 +351,117 @@ export const de: Catalogue = {
   'records.colTheRow': 'Die Zeile',
   'records.timeout':
     'Dieser Import dauert länger als erwartet. Er läuft weiterhin — nur diese Seite hat aufgehört zu warten.',
+
+  'periods.title': 'Die Bücher',
+  'periods.loading': 'Die Bücher werden geladen…',
+  'periods.denied': 'Sie haben keinen Zugriff auf die Buchhaltung.',
+  'periods.failed': 'Die Bücher konnten nicht gelesen werden.',
+  'periods.actionFailed': 'Das hat nicht funktioniert.',
+  'periods.lede':
+    'In einen Monat kann nichts gebucht werden, solange seine Bücher nicht eröffnet sind, und in einen abgeschlossenen Monat auch nicht. Der Abschluss ist etwas, das Sie vornehmen, wenn die Monatsabschlussarbeiten fertig sind — es gibt kein Datum, das ihn für Sie erledigt.',
+  'periods.none':
+    'Es ist noch kein Monat eröffnet. Bevor Sie einen eröffnen, kann nichts gebucht werden.',
+
+  'periods.openAMonth': 'Monat eröffnen',
+  'periods.openLede':
+    'Solange ein Monat nicht eröffnet ist, kann nichts mit diesem Datum gebucht werden — ein Verkauf oder eine Werkstattrechnung wird abgelehnt. Die Eröffnung erfolgt bewusst, damit die Bücher einen Anfang haben, den Sie gewählt haben, und nicht einen, der aus der ersten Eingabe abgeleitet wurde.',
+  'periods.year': 'Jahr',
+  'periods.month': 'Monat',
+  'periods.openIt': 'Eröffnen',
+
+  'periods.reopenTitle': '{month} wieder öffnen?',
+  'periods.reopenLede':
+    'Dieser Monat ist abgeschlossen, und seine Zahlen wurden möglicherweise bereits gemeldet. Das Wiederöffnen wird mit Ihrer Begründung beim Monat festgehalten, damit später jeder nachvollziehen kann, was geschehen ist und warum.',
+  'periods.reopenWhy': 'Warum wird er wieder geöffnet?',
+  'periods.reopenPlaceholder': 'Eine Lieferantenrechnung kam am 4.',
+  'periods.reopenIt': 'Wieder öffnen',
+  'periods.leaveClosed': 'Abgeschlossen lassen',
+  'periods.reopen': 'Wieder öffnen',
+
+  'periods.closeIt': 'Abschließen',
+  'periods.confirmClose':
+    '{month} abschließen? Es kann nichts mehr hineingebucht werden, bis er wieder geöffnet wird.',
+
+  'periods.caption': 'Alle Monate der Bücher, neueste zuerst.',
+  'periods.colMonth': 'Monat',
+  'periods.colCutoff': 'Stichtag',
+  'periods.colEntries': 'Buchungen',
+  'periods.colState': 'Zustand',
+
+  'periods.historyTitle': 'Was mit den Büchern geschehen ist',
+  'periods.wasOpened': '{month} eröffnet',
+  'periods.wasClosed': '{month} abgeschlossen',
+  'periods.wasReopened': '{month} wieder geöffnet',
+
+  'leads.title': 'Anfragen',
+  'leads.show': 'Anzeigen',
+  'leads.stillChasing': 'Noch in Bearbeitung',
+  'leads.everything': 'Alle',
+  'leads.onlyMine': 'Nur meine',
+  'leads.take': 'Anfrage aufnehmen',
+  'leads.loading': 'Anfragen werden geladen…',
+  'leads.denied':
+    'Sie haben keinen Zugriff auf die Anfragen dieses Standorts. Fragen Sie eine Führungskraft, falls das nicht stimmen sollte.',
+  'leads.failed': 'Die Anfragen konnten nicht geladen werden.',
+  'leads.openFailed': 'Diese Anfrage konnte nicht geöffnet werden.',
+  'leads.empty':
+    'Hier gibt es keine Anfragen. Eine entsteht, sobald jemand anruft oder auf den Hof kommt.',
+
+  'leads.colCustomer': 'Kunde',
+  'leads.colAskedAbout': 'Gefragt nach',
+  'leads.colCameFrom': 'Herkunft',
+  'leads.colDays': 'Tage',
+  'leads.colChasedBy': 'Betreut von',
+  'leads.colStage': 'Stand',
+  'leads.nothingSpecific': 'Nichts Bestimmtes',
+  'leads.nobodyYet': 'Noch niemand',
+  'leads.you': 'Sie',
+  'leads.somebodyElse': 'Jemand anderes',
+  'leads.count': { one: '{count} Anfrage', other: '{count} Anfragen' },
+  'leads.countCapped': 'Die ersten {count} Anfragen. Es können mehr sein.',
+  'leads.cappedNote':
+    'Es werden die ersten {count} angezeigt. Es können mehr sein — grenzen Sie es mit den Filtern ein, bis es eine Seitenblätterung gibt.',
+
+  'leads.cameIn': 'eingegangen am {date}',
+  'leads.unclaimed': 'Das hat noch niemand übernommen.',
+  'leads.yoursToChase': 'Sie betreuen diese Anfrage.',
+  'leads.theirsToChase': '{name} betreut diese Anfrage.',
+  'leads.putBack': 'Zurück in den Pool geben',
+  'leads.iWillChase': 'Ich übernehme das',
+  'leads.takeItOver': 'Übernehmen',
+  'leads.handTo': 'Übergeben an',
+  'leads.chooseColleague': 'Kollegin oder Kollegen wählen',
+  'leads.buildTheDeal': 'Verkauf anlegen',
+  'leads.whatHappened': 'Verlauf',
+  'leads.finished':
+    'Diese Anfrage ist abgeschlossen. Meldet sich der Kunde später erneut, beginnt eine neue.',
+  'leads.note': 'Notiz (kommt in den Verlauf)',
+  'leads.notePlaceholder': 'Nachricht hinterlassen · kommt Samstag · anderswo gekauft',
+  'leads.reopenedHere':
+    'Eine verlorene Anfrage, die zurückkommt, wird hier wieder geöffnet statt neu erfasst — so bleibt der erste Anlauf Teil der Geschichte.',
+
+  'leads.moveReopen': 'Wieder öffnen',
+  'leads.moveStartChasing': 'Bearbeitung beginnen',
+  'leads.moveAppointment': 'Kunde kommt vorbei',
+  'leads.moveWon': 'Kunde kauft',
+  'leads.moveLost': 'Als verloren markieren',
+
+  'leads.captureTitle': 'Anfrage aufnehmen',
+  'leads.findCustomer': 'Kunden suchen',
+  'leads.whoIsAsking': 'Wer fragt',
+  'leads.chooseSomebody': 'Jemanden wählen…',
+  'leads.searchAboveNote':
+    'Suchen Sie oben nach der Person. Eine Anfrage muss jemandem gehören — ist die Person neu, legen Sie sie zuerst auf der Kundenseite an.',
+  'leads.whichLocation': 'Welcher Standort',
+  'leads.chooseLocation': 'Standort wählen…',
+  'leads.onlyLocation':
+    'Diese Anfrage gehört zu {name} ({code}), dem einzigen Standort, an dem Sie arbeiten.',
+  'leads.howTheyReachedUs': 'Wie der Kunde uns erreicht hat',
+  'leads.carAskedAbout': 'Gefragtes Fahrzeug (optional)',
+  'leads.whatTheySaid': 'Was der Kunde gesagt hat',
+  'leads.whatTheySaidPlaceholder': 'Budget, Inzahlungnahme, bis wann benötigt…',
+  'leads.save': 'Anfrage speichern',
+  'leads.locationsFailed': 'Ihre Standorte konnten nicht geladen werden.',
+  'leads.lookupFailed': 'Das konnte nicht nachgeschlagen werden.',
+  'leads.saveFailed': 'Diese Anfrage konnte nicht gespeichert werden.',
 };

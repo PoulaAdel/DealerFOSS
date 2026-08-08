@@ -216,8 +216,11 @@ export interface LeadSummary {
 }
 
 export interface LeadHistoryEntry {
-  fromStatus: string | null;
-  toStatus: string;
+  // Typed as the status union rather than `string`. The API only ever sends a
+  // LeadStatus here, RepairOrderHistoryEntry below already says so, and a bare
+  // `string` meant nothing could translate it without an unchecked cast.
+  fromStatus: LeadStatus | null;
+  toStatus: LeadStatus;
   occurredAt: string;
   note: string | null;
 }
@@ -519,8 +522,9 @@ export interface TradeInView {
 }
 
 export interface DealHistoryEntry {
-  fromStatus: string | null;
-  toStatus: string;
+  // See the note on LeadHistoryEntry: the API sends a DealStatus.
+  fromStatus: DealStatus | null;
+  toStatus: DealStatus;
   occurredAt: string;
   changedByUserId: string | null;
   note: string | null;

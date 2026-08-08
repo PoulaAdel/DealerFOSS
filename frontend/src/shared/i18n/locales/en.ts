@@ -179,8 +179,8 @@ export const en = {
   'enum.leadSource.Phone': 'Phone',
   'enum.leadSource.Website': 'Website',
   'enum.leadSource.Referral': 'Referral',
-  'enum.leadSource.Marketplace': 'Marketplace',
-  'enum.leadSource.Unknown': 'Unknown',
+  'enum.leadSource.Marketplace': 'Marketplace listing',
+  'enum.leadSource.Unknown': 'Not recorded',
 
   'enum.dealStatus.Draft': 'Draft',
   'enum.dealStatus.Submitted': 'Submitted',
@@ -362,4 +362,120 @@ export const en = {
   'records.colTheRow': 'The row',
   'records.timeout':
     'That import is taking longer than expected. It is still running — this page just stopped waiting.',
+
+  // --- The books ------------------------------------------------------------
+  'periods.title': 'The books',
+  'periods.loading': 'Loading the books…',
+  'periods.denied': 'You do not have access to the accounts.',
+  'periods.failed': 'The books could not be read.',
+  'periods.actionFailed': 'That did not work.',
+  'periods.lede':
+    'Nothing can be posted into a month until its books are open, and nothing can be posted into one that has been closed. Closing is something you do when the month-end work is finished — there is no date that does it for you.',
+  'periods.none': 'No months are open yet. Nothing can be posted until you open one.',
+
+  'periods.openAMonth': 'Open a month',
+  'periods.openLede':
+    'Until a month is open, nothing dated in it can be posted — a sale or a service invoice will be refused. Opening it is deliberate so the books have a start you chose rather than one inferred from the first thing anybody typed.',
+  'periods.year': 'Year',
+  'periods.month': 'Month',
+  'periods.openIt': 'Open it',
+
+  'periods.reopenTitle': 'Reopen {month}?',
+  'periods.reopenLede':
+    'This month has been closed, and its figures may already have been reported. Reopening it is recorded against the month with your reason, so anybody looking later can see what happened and why.',
+  'periods.reopenWhy': 'Why is it being reopened?',
+  'periods.reopenPlaceholder': 'A supplier invoice arrived on the 4th',
+  'periods.reopenIt': 'Reopen it',
+  'periods.leaveClosed': 'Leave it closed',
+  'periods.reopen': 'Reopen',
+
+  'periods.closeIt': 'Close it',
+  'periods.confirmClose':
+    'Close {month}? Nothing more can be posted into it until it is reopened.',
+
+  'periods.caption': 'Every month of the books, newest first.',
+  'periods.colMonth': 'Month',
+  'periods.colCutoff': 'Cutoff',
+  'periods.colEntries': 'Entries',
+  'periods.colState': 'State',
+
+  'periods.historyTitle': 'What has happened to the books',
+  'periods.wasOpened': '{month} opened',
+  'periods.wasClosed': '{month} closed',
+  'periods.wasReopened': '{month} reopened',
+
+  // --- Enquiries ------------------------------------------------------------
+  'leads.title': 'Enquiries',
+  'leads.show': 'Show',
+  'leads.stillChasing': 'Still being chased',
+  'leads.everything': 'Everything',
+  'leads.onlyMine': 'Only mine',
+  'leads.take': 'Take an enquiry',
+  'leads.loading': 'Loading the enquiries…',
+  'leads.denied':
+    'You do not have access to enquiries at this location. Ask a manager if you think that is wrong.',
+  'leads.failed': 'Could not load the enquiries.',
+  'leads.openFailed': 'Could not open that enquiry.',
+  'leads.empty':
+    'No enquiries here. One starts the moment somebody rings up or walks onto the lot.',
+
+  'leads.colCustomer': 'Customer',
+  'leads.colAskedAbout': 'Asked about',
+  'leads.colCameFrom': 'Came from',
+  'leads.colDays': 'Days',
+  'leads.colChasedBy': 'Chased by',
+  'leads.colStage': 'Stage',
+  'leads.nothingSpecific': 'Nothing specific',
+  'leads.nobodyYet': 'Nobody yet',
+  'leads.you': 'You',
+  'leads.somebodyElse': 'Somebody else',
+  'leads.count': { one: '{count} enquiry', other: '{count} enquiries' },
+  'leads.countCapped': 'The first {count} enquiries. There may be more.',
+  'leads.cappedNote':
+    'Showing the first {count}. There may be more — narrow it with the filters until paging exists.',
+
+  'leads.cameIn': 'came in {date}',
+  'leads.unclaimed': 'Nobody has picked this up yet.',
+  'leads.yoursToChase': 'You are chasing this one.',
+  'leads.theirsToChase': '{name} is chasing this one.',
+  'leads.putBack': 'Put it back in the pool',
+  'leads.iWillChase': 'I will chase this',
+  'leads.takeItOver': 'Take it over',
+  'leads.handTo': 'Hand to',
+  'leads.chooseColleague': 'Choose a colleague',
+  'leads.buildTheDeal': 'Build the deal',
+  'leads.whatHappened': 'What happened',
+  'leads.finished':
+    'This enquiry is finished. A customer who comes back later starts a new one.',
+  'leads.note': 'Note (goes on the record)',
+  'leads.notePlaceholder': 'Left a voicemail · coming in Saturday · bought elsewhere',
+  'leads.reopenedHere':
+    'A lost enquiry that comes back is reopened here rather than retyped, so the first attempt stays part of the story.',
+
+  // The move as a person would say it. `reopen` is the same transition as
+  // `startChasing` seen from a lost enquiry, and reads differently on purpose.
+  'leads.moveReopen': 'Reopen it',
+  'leads.moveStartChasing': 'Start chasing',
+  'leads.moveAppointment': 'They are coming in',
+  'leads.moveWon': 'They are buying',
+  'leads.moveLost': 'Mark it lost',
+
+  'leads.captureTitle': 'Take an enquiry',
+  'leads.findCustomer': 'Find the customer',
+  'leads.whoIsAsking': 'Who is asking',
+  'leads.chooseSomebody': 'Choose somebody…',
+  'leads.searchAboveNote':
+    'Search above to find them. An enquiry has to belong to somebody, so add them on the customers page first if they are new.',
+  'leads.whichLocation': 'Which location',
+  'leads.chooseLocation': 'Choose a location…',
+  'leads.onlyLocation':
+    'This enquiry belongs to {name} ({code}), the only location you work at.',
+  'leads.howTheyReachedUs': 'How they reached us',
+  'leads.carAskedAbout': 'Car they asked about (optional)',
+  'leads.whatTheySaid': 'What they said',
+  'leads.whatTheySaidPlaceholder': 'Budget, trade-in, when they need it by…',
+  'leads.save': 'Save the enquiry',
+  'leads.locationsFailed': 'Could not load your locations.',
+  'leads.lookupFailed': 'Could not look that up.',
+  'leads.saveFailed': 'That enquiry could not be saved.',
 } as const;

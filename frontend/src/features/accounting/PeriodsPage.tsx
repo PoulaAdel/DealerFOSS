@@ -19,6 +19,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
 import type { AccountingPeriodView } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 type Load =
   | { kind: 'loading' }
@@ -26,14 +28,15 @@ type Load =
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
-const monthName = (year: number, month: number) =>
-  new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(undefined, {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-
 export function PeriodsPage() {
+  const { t, format } = useI18n();
+  const describe = useApiMessage();
+
+  // "August 2026" in the reader's language, built in UTC so a period is not
+  // shown as the month before to somebody west of Greenwich — the month is a
+  // fact about the books, not an instant in their day.
+  const monthName = (year: number, month: number) => format.monthAndYear(year, month);
+
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,12 +55,9 @@ export function PeriodsPage() {
         return;
       }
 
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'The books could not be read.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, []);
+  }, [describe]);
 
   useEffect(() => {
     void find();
@@ -73,21 +73,21 @@ export function PeriodsPage() {
     } catch (failure) {
       // Closing needs one permission and reopening another, and the server is
       // the one that knows which this caller holds.
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
   }
 
   if (load.kind === 'loading') {
-    return <p>Loading the books…</p>;
+    return <p>{t('periods.loading')}</p>;
   }
 
   if (load.kind === 'denied') {
     return (
       <section className="page">
-        <h1>The books</h1>
-        <p className="note">You do not have access to the accounts.</p>
+        <h1>{t('periods.title')}</h1>
+        <p className="note">{t('periods.denied')}</p>
       </section>
     );
   }
@@ -95,10 +95,10 @@ export function PeriodsPage() {
   if (load.kind === 'failed') {
     return (
       <section className="page">
-        <h1>The books</h1>
+        <h1>{t('periods.title')}</h1>
         <p className="error">{load.message}</p>
         <button type="button" onClick={() => void find()}>
-          Try again
+          {t('common.retry')}
         </button>
       </section>
     );
@@ -109,25 +109,21 @@ export function PeriodsPage() {
   return (
     <section className="page">
       <header className="page__head">
-        <h1>The books</h1>
+        <h1>{t('periods.title')}</h1>
         {opening ? null : (
           <button type="button" className="primary" onClick={() => setOpening(true)}>
-            Open a month
+            {t('periods.openAMonth')}
           </button>
         )}
       </header>
 
-      <p className="note">
-        Nothing can be posted into a month until its books are open, and nothing
-        can be posted into one that has been closed. Closing is something you do
-        when the month-end work is finished — there is no date that does it for
-        you.
-      </p>
+      <p className="note">{t('periods.lede')}</p>
 
       {opening ? (
         <OpenMonth
           suggested={next}
           busy={busy}
+          monthName={monthName}
           onCancel={() => setOpening(false)}
           onOpen={(year, month) =>
             void act(async () => {
@@ -140,19 +136,17 @@ export function PeriodsPage() {
 
       {reopening === null ? null : (
         <section className="panel panel--warn">
-          <h2>Reopen {monthName(reopening.year, reopening.month)}?</h2>
-          <p className="note">
-            This month has been closed, and its figures may already have been
-            reported. Reopening it is recorded against the month with your reason,
-            so anybody looking later can see what happened and why.
-          </p>
+          <h2>
+            {t('periods.reopenTitle', { month: monthName(reopening.year, reopening.month) })}
+          </h2>
+          <p className="note">{t('periods.reopenLede')}</p>
 
           <div className="field">
-            <label htmlFor="reopen-reason">Why is it being reopened?</label>
+            <label htmlFor="reopen-reason">{t('periods.reopenWhy')}</label>
             <input
               id="reopen-reason"
               value={reason}
-              placeholder="A supplier invoice arrived on the 4th"
+              placeholder={t('periods.reopenPlaceholder')}
               onChange={(event) => setReason(event.target.value)}
             />
           </div>
@@ -173,7 +167,7 @@ export function PeriodsPage() {
                 })
               }
             >
-              Reopen it
+              {t('periods.reopenIt')}
             </button>
             <button
               type="button"
@@ -182,7 +176,7 @@ export function PeriodsPage() {
                 setReason('');
               }}
             >
-              Leave it closed
+              {t('periods.leaveClosed')}
             </button>
           </div>
         </section>
@@ -193,23 +187,19 @@ export function PeriodsPage() {
       </p>
 
       {load.periods.length === 0 ? (
-        <p className="note">
-          No months are open yet. Nothing can be posted until you open one.
-        </p>
+        <p className="note">{t('periods.none')}</p>
       ) : (
         <div className="scroll">
           <table className="table">
-            <caption className="visually-hidden">
-              Every month of the books, newest first.
-            </caption>
+            <caption className="visually-hidden">{t('periods.caption')}</caption>
             <thead>
               <tr>
-                <th scope="col">Month</th>
-                <th scope="col">Cutoff</th>
+                <th scope="col">{t('periods.colMonth')}</th>
+                <th scope="col">{t('periods.colCutoff')}</th>
                 <th scope="col" className="num">
-                  Entries
+                  {t('periods.colEntries')}
                 </th>
-                <th scope="col">State</th>
+                <th scope="col">{t('periods.colState')}</th>
                 <th scope="col">&nbsp;</th>
               </tr>
             </thead>
@@ -217,13 +207,13 @@ export function PeriodsPage() {
               {load.periods.map((period) => (
                 <tr key={period.id}>
                   <td>{monthName(period.year, period.month)}</td>
-                  <td>{new Date(period.endsOn).toLocaleDateString()}</td>
-                  <td className="num">{period.entries}</td>
+                  <td>{format.date(period.endsOn)}</td>
+                  <td className="num">{format.number(period.entries)}</td>
                   <td>
                     {period.state === 'Open' ? (
-                      <span className="chip chip--won">Open</span>
+                      <span className="chip chip--won">{t('enum.periodState.Open')}</span>
                     ) : (
-                      <span className="chip chip--lost">Closed</span>
+                      <span className="chip chip--lost">{t('enum.periodState.Closed')}</span>
                     )}
                   </td>
                   <td>
@@ -236,7 +226,9 @@ export function PeriodsPage() {
                           // same reasoning as suspending a dealership.
                           if (
                             window.confirm(
-                              `Close ${monthName(period.year, period.month)}? Nothing more can be posted into it until it is reopened.`,
+                              t('periods.confirmClose', {
+                                month: monthName(period.year, period.month),
+                              }),
                             )
                           ) {
                             void act(() =>
@@ -247,11 +239,11 @@ export function PeriodsPage() {
                           }
                         }}
                       >
-                        Close it
+                        {t('periods.closeIt')}
                       </button>
                     ) : (
                       <button type="button" disabled={busy} onClick={() => setReopening(period)}>
-                        Reopen
+                        {t('periods.reopen')}
                       </button>
                     )}
                   </td>
@@ -264,7 +256,7 @@ export function PeriodsPage() {
 
       {load.periods.some((p) => p.history.length > 1) ? (
         <>
-          <h2>What has happened to the books</h2>
+          <h2>{t('periods.historyTitle')}</h2>
           <ol className="history">
             {load.periods
               .flatMap((period) =>
@@ -277,16 +269,22 @@ export function PeriodsPage() {
               .slice(0, 20)
               .map(({ period, entry }, index) => (
                 <li key={`${period.id}-${entry.occurredAt}-${index}`}>
+                  {/* The month and the verb are one catalogue sentence rather
+                      than a name with a word appended. German puts the verb
+                      last and Arabic puts it first; neither can be built by
+                      concatenating in English order. */}
                   <span className="strong">
-                    {monthName(period.year, period.month)}{' '}
-                    {entry.toState === 'Closed'
-                      ? 'closed'
-                      : entry.fromState === null
-                        ? 'opened'
-                        : 'reopened'}
+                    {t(
+                      entry.toState === 'Closed'
+                        ? 'periods.wasClosed'
+                        : entry.fromState === null
+                          ? 'periods.wasOpened'
+                          : 'periods.wasReopened',
+                      { month: monthName(period.year, period.month) },
+                    )}
                   </span>{' '}
                   <span className="muted">
-                    {new Date(entry.occurredAt).toLocaleString()}
+                    {format.dateTime(entry.occurredAt)}
                     {entry.note === null ? '' : ` — ${entry.note}`}
                   </span>
                 </li>
@@ -317,30 +315,28 @@ function nextUnopened(periods: AccountingPeriodView[]): { year: number; month: n
 function OpenMonth({
   suggested,
   busy,
+  monthName,
   onCancel,
   onOpen,
 }: {
   suggested: { year: number; month: number };
   busy: boolean;
+  monthName: (year: number, month: number) => string;
   onCancel: () => void;
   onOpen: (year: number, month: number) => void;
 }) {
+  const { t } = useI18n();
   const [year, setYear] = useState(String(suggested.year));
   const [month, setMonth] = useState(String(suggested.month));
 
   return (
     <section className="panel">
-      <h2>Open a month</h2>
-      <p className="note">
-        Until a month is open, nothing dated in it can be posted — a sale or a
-        service invoice will be refused. Opening it is deliberate so the books
-        have a start you chose rather than one inferred from the first thing
-        anybody typed.
-      </p>
+      <h2>{t('periods.openAMonth')}</h2>
+      <p className="note">{t('periods.openLede')}</p>
 
       <div className="row">
         <div className="field">
-          <label htmlFor="open-year">Year</label>
+          <label htmlFor="open-year">{t('periods.year')}</label>
           <input
             id="open-year"
             inputMode="numeric"
@@ -350,7 +346,7 @@ function OpenMonth({
         </div>
 
         <div className="field">
-          <label htmlFor="open-month">Month</label>
+          <label htmlFor="open-month">{t('periods.month')}</label>
           <select id="open-month" value={month} onChange={(event) => setMonth(event.target.value)}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
@@ -368,10 +364,10 @@ function OpenMonth({
           disabled={busy || year.trim() === ''}
           onClick={() => onOpen(Number(year), Number(month))}
         >
-          Open it
+          {t('periods.openIt')}
         </button>
         <button type="button" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </section>

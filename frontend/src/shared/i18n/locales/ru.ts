@@ -171,7 +171,7 @@ export const ru: Catalogue = {
   'enum.leadSource.Website': 'Сайт',
   'enum.leadSource.Referral': 'Рекомендация',
   'enum.leadSource.Marketplace': 'Площадка объявлений',
-  'enum.leadSource.Unknown': 'Неизвестно',
+  'enum.leadSource.Unknown': 'Не указан',
 
   'enum.dealStatus.Draft': 'Черновик',
   'enum.dealStatus.Submitted': 'На согласовании',
@@ -363,4 +363,121 @@ export const ru: Catalogue = {
   'records.colTheRow': 'Содержимое строки',
   'records.timeout':
     'Загрузка идёт дольше обычного. Она продолжается — просто эта страница перестала ждать.',
+
+  'periods.title': 'Учётные периоды',
+  'periods.loading': 'Загрузка периодов…',
+  'periods.denied': 'У вас нет доступа к бухгалтерии.',
+  'periods.failed': 'Не удалось прочитать учётные периоды.',
+  'periods.actionFailed': 'Не получилось.',
+  'periods.lede':
+    'Ничего нельзя провести в месяц, пока он не открыт, и ничего нельзя провести в уже закрытый. Закрытие — это действие, которое вы выполняете по завершении работ по закрытию месяца; никакая дата не сделает этого за вас.',
+  'periods.none': 'Ни один месяц ещё не открыт. Пока вы не откроете, провести ничего нельзя.',
+
+  'periods.openAMonth': 'Открыть месяц',
+  'periods.openLede':
+    'Пока месяц не открыт, ничего с датой внутри него провести нельзя — продажа или счёт сервиса будут отклонены. Открытие делается осознанно, чтобы у учёта было начало, выбранное вами, а не выведенное из первой попавшейся записи.',
+  'periods.year': 'Год',
+  'periods.month': 'Месяц',
+  'periods.openIt': 'Открыть',
+
+  'periods.reopenTitle': 'Открыть {month} заново?',
+  'periods.reopenLede':
+    'Этот месяц закрыт, и его цифры, возможно, уже переданы в отчётность. Повторное открытие фиксируется вместе с вашей причиной, чтобы позже любой мог увидеть, что произошло и почему.',
+  'periods.reopenWhy': 'Почему его открывают заново?',
+  'periods.reopenPlaceholder': 'Счёт от поставщика пришёл 4-го числа',
+  'periods.reopenIt': 'Открыть заново',
+  'periods.leaveClosed': 'Оставить закрытым',
+  'periods.reopen': 'Открыть заново',
+
+  'periods.closeIt': 'Закрыть',
+  'periods.confirmClose':
+    'Закрыть {month}? Больше ничего нельзя будет туда провести, пока месяц не откроют заново.',
+
+  'periods.caption': 'Все месяцы учёта, начиная с последнего.',
+  'periods.colMonth': 'Месяц',
+  'periods.colCutoff': 'Дата отсечения',
+  'periods.colEntries': 'Проводок',
+  'periods.colState': 'Состояние',
+
+  'periods.historyTitle': 'Что происходило с учётом',
+  'periods.wasOpened': '{month} — открыт',
+  'periods.wasClosed': '{month} — закрыт',
+  'periods.wasReopened': '{month} — открыт заново',
+
+  'leads.title': 'Обращения',
+  'leads.show': 'Показывать',
+  'leads.stillChasing': 'В работе',
+  'leads.everything': 'Все',
+  'leads.onlyMine': 'Только мои',
+  'leads.take': 'Принять обращение',
+  'leads.loading': 'Загрузка обращений…',
+  'leads.denied':
+    'У вас нет доступа к обращениям этой площадки. Если это ошибка, обратитесь к руководителю.',
+  'leads.failed': 'Не удалось загрузить обращения.',
+  'leads.openFailed': 'Не удалось открыть это обращение.',
+  'leads.empty':
+    'Обращений нет. Обращение появляется, как только кто-то звонит или приходит в салон.',
+
+  'leads.colCustomer': 'Клиент',
+  'leads.colAskedAbout': 'Интересовал',
+  'leads.colCameFrom': 'Источник',
+  'leads.colDays': 'Дней',
+  'leads.colChasedBy': 'Ведёт',
+  'leads.colStage': 'Этап',
+  'leads.nothingSpecific': 'Ничего конкретного',
+  'leads.nobodyYet': 'Пока никто',
+  'leads.you': 'Вы',
+  'leads.somebodyElse': 'Кто-то другой',
+  'leads.count': {
+    one: '{count} обращение',
+    few: '{count} обращения',
+    many: '{count} обращений',
+    other: '{count} обращения',
+  },
+  'leads.countCapped': 'Первые {count} обращений. Возможно, есть ещё.',
+  'leads.cappedNote':
+    'Показаны первые {count}. Возможно, есть ещё — уточните фильтрами, пока нет постраничного вывода.',
+
+  'leads.cameIn': 'поступило {date}',
+  'leads.unclaimed': 'Пока никто не взял его в работу.',
+  'leads.yoursToChase': 'Это обращение ведёте вы.',
+  'leads.theirsToChase': 'Это обращение ведёт {name}.',
+  'leads.putBack': 'Вернуть в общий список',
+  'leads.iWillChase': 'Возьму себе',
+  'leads.takeItOver': 'Перехватить',
+  'leads.handTo': 'Передать',
+  'leads.chooseColleague': 'Выберите коллегу',
+  'leads.buildTheDeal': 'Создать сделку',
+  'leads.whatHappened': 'Что происходило',
+  'leads.finished':
+    'Это обращение завершено. Если клиент вернётся позже, начнётся новое.',
+  'leads.note': 'Заметка (останется в истории)',
+  'leads.notePlaceholder': 'Оставил сообщение · приедет в субботу · купил в другом месте',
+  'leads.reopenedHere':
+    'Потерянное обращение, по которому клиент вернулся, открывается заново здесь, а не заводится повторно, — так первая попытка остаётся частью истории.',
+
+  'leads.moveReopen': 'Открыть заново',
+  'leads.moveStartChasing': 'Взять в работу',
+  'leads.moveAppointment': 'Клиент приедет',
+  'leads.moveWon': 'Клиент покупает',
+  'leads.moveLost': 'Отметить как потерянное',
+
+  'leads.captureTitle': 'Принять обращение',
+  'leads.findCustomer': 'Найти клиента',
+  'leads.whoIsAsking': 'Кто обращается',
+  'leads.chooseSomebody': 'Выберите человека…',
+  'leads.searchAboveNote':
+    'Найдите его через поиск выше. Обращение должно быть привязано к человеку: если клиент новый, сначала заведите его на странице «Клиенты».',
+  'leads.whichLocation': 'Какая площадка',
+  'leads.chooseLocation': 'Выберите площадку…',
+  'leads.onlyLocation':
+    'Это обращение относится к площадке {name} ({code}) — единственной, где вы работаете.',
+  'leads.howTheyReachedUs': 'Как клиент с нами связался',
+  'leads.carAskedAbout': 'Интересующий автомобиль (необязательно)',
+  'leads.whatTheySaid': 'Что сказал клиент',
+  'leads.whatTheySaidPlaceholder': 'Бюджет, трейд-ин, к какому сроку нужен…',
+  'leads.save': 'Сохранить обращение',
+  'leads.locationsFailed': 'Не удалось загрузить ваши площадки.',
+  'leads.lookupFailed': 'Не удалось выполнить поиск.',
+  'leads.saveFailed': 'Не удалось сохранить обращение.',
 };

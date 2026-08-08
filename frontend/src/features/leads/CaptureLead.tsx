@@ -11,8 +11,11 @@
 //       the server will refuse.
 
 import { useEffect, useState } from 'react';
-import { ApiError, api, post } from '../../shared/api';
+import { api, post } from '../../shared/api';
 import { leadSources } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 import type {
   CustomerSummary,
   InventoryUnitSummary,
@@ -28,6 +31,10 @@ export function CaptureLead({
   onCaptured: (lead: LeadDetail) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
+  const label = useEnumLabel();
+  const describe = useApiMessage();
+
   const [rooftops, setRooftops] = useState<RooftopSummary[]>([]);
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [units, setUnits] = useState<InventoryUnitSummary[]>([]);
@@ -53,7 +60,7 @@ export function CaptureLead({
           setRooftopId(mine[0]!.id);
         }
       } catch (failure) {
-        setError(failure instanceof ApiError ? failure.message : 'Could not load your locations.');
+        setError(describe(failure));
       }
 
       try {
@@ -81,7 +88,7 @@ export function CaptureLead({
 
       setCustomers(await api<CustomerSummary[]>(`/customers${query}`));
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'Could not look that up.');
+      setError(describe(failure));
     }
   }
 
@@ -103,7 +110,7 @@ export function CaptureLead({
         }),
       );
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That enquiry could not be saved.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -113,7 +120,7 @@ export function CaptureLead({
 
   return (
     <section className="panel">
-      <h2>Take an enquiry</h2>
+      <h2>{t('leads.captureTitle')}</h2>
 
       <form
         onSubmit={(e) => {
@@ -121,19 +128,19 @@ export function CaptureLead({
           void findCustomers(search);
         }}
       >
-        <label htmlFor="enquirer-search">Find the customer</label>
+        <label htmlFor="enquirer-search">{t('leads.findCustomer')}</label>
         <input
           id="enquirer-search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Name, phone, or email"
+          placeholder={t('customers.findPlaceholder')}
           autoComplete="off"
         />
       </form>
 
-      <label htmlFor="enquirer">Who is asking</label>
+      <label htmlFor="enquirer">{t('leads.whoIsAsking')}</label>
       <select id="enquirer" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-        <option value="">Choose somebody…</option>
+        <option value="">{t('leads.chooseSomebody')}</option>
         {customers.map((customer) => (
           <option key={customer.id} value={customer.id}>
             {customer.displayName}
@@ -142,18 +149,13 @@ export function CaptureLead({
         ))}
       </select>
 
-      {customers.length === 0 ? (
-        <p className="note">
-          Search above to find them. An enquiry has to belong to somebody, so add
-          them on the customers page first if they are new.
-        </p>
-      ) : null}
+      {customers.length === 0 ? <p className="note">{t('leads.searchAboveNote')}</p> : null}
 
       {single === undefined ? (
         <>
-          <label htmlFor="lead-rooftop">Which location</label>
+          <label htmlFor="lead-rooftop">{t('leads.whichLocation')}</label>
           <select id="lead-rooftop" value={rooftopId} onChange={(e) => setRooftopId(e.target.value)}>
-            <option value="">Choose a location…</option>
+            <option value="">{t('leads.chooseLocation')}</option>
             {rooftops.map((rooftop) => (
               <option key={rooftop.id} value={rooftop.id}>
                 {rooftop.name} · {rooftop.code}
@@ -163,12 +165,11 @@ export function CaptureLead({
         </>
       ) : (
         <p className="note">
-          This enquiry belongs to {single.name} ({single.code}), the only location
-          you work at.
+          {t('leads.onlyLocation', { name: single.name, code: single.code })}
         </p>
       )}
 
-      <label htmlFor="lead-source">How they reached us</label>
+      <label htmlFor="lead-source">{t('leads.howTheyReachedUs')}</label>
       <select
         id="lead-source"
         value={source}
@@ -176,14 +177,14 @@ export function CaptureLead({
       >
         {leadSources.map((option) => (
           <option key={option} value={option}>
-            {sourceLabel(option)}
+            {label('leadSource', option)}
           </option>
         ))}
       </select>
 
-      <label htmlFor="lead-vehicle">Car they asked about (optional)</label>
+      <label htmlFor="lead-vehicle">{t('leads.carAskedAbout')}</label>
       <select id="lead-vehicle" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-        <option value="">Nothing specific</option>
+        <option value="">{t('leads.nothingSpecific')}</option>
         {units.map((unit) => (
           <option key={unit.id} value={unit.id}>
             {unit.stockNumber} · {unit.vehicleDisplayName}
@@ -191,13 +192,13 @@ export function CaptureLead({
         ))}
       </select>
 
-      <label htmlFor="lead-enquiry">What they said</label>
+      <label htmlFor="lead-enquiry">{t('leads.whatTheySaid')}</label>
       <textarea
         id="lead-enquiry"
         rows={3}
         value={enquiry}
         onChange={(e) => setEnquiry(e.target.value)}
-        placeholder="Budget, trade-in, when they need it by…"
+        placeholder={t('leads.whatTheySaidPlaceholder')}
       />
 
       <p className="error" aria-live="polite">
@@ -211,26 +212,12 @@ export function CaptureLead({
           disabled={busy || customerId === '' || rooftopId === ''}
           onClick={() => void capture()}
         >
-          {busy ? 'Saving…' : 'Save the enquiry'}
+          {busy ? t('common.saving') : t('leads.save')}
         </button>
         <button type="button" onClick={onCancel} disabled={busy}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </section>
   );
-}
-
-/** Enum names are for the wire. People read "Walk-in". */
-export function sourceLabel(source: LeadSource): string {
-  switch (source) {
-    case 'WalkIn':
-      return 'Walk-in';
-    case 'Marketplace':
-      return 'Marketplace listing';
-    case 'Unknown':
-      return 'Not recorded';
-    default:
-      return source;
-  }
 }

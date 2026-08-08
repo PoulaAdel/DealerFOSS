@@ -17,8 +17,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ApiError, api, post } from '../../shared/api';
 import { useSession } from '../../app/session';
-import { CaptureLead, sourceLabel } from './CaptureLead';
+import { CaptureLead } from './CaptureLead';
 import type { LeadDetail, LeadStatus, LeadSummary, StaffMember } from '../../shared/contracts';
+import { useI18n, type MessageKey } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 const PageSize = 50;
 
@@ -30,6 +33,9 @@ type Load =
 
 export function LeadsPage() {
   const { user } = useSession();
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [openOnly, setOpenOnly] = useState(true);
   const [mineOnly, setMineOnly] = useState(false);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
@@ -59,12 +65,9 @@ export function LeadsPage() {
         return;
       }
 
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'Could not load the enquiries.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, []);
+  }, [describe]);
 
   useEffect(() => {
     void find(query);
@@ -74,27 +77,24 @@ export function LeadsPage() {
     try {
       setSelected(await api<LeadDetail>(`/leads/${leadId}`));
     } catch (failure) {
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'Could not open that enquiry.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
   }
 
   return (
     <>
       <header className="page__head">
-        <h1>Enquiries</h1>
+        <h1>{t('leads.title')}</h1>
 
         <div className="filter">
-          <label htmlFor="open-leads">Show</label>
+          <label htmlFor="open-leads">{t('leads.show')}</label>
           <select
             id="open-leads"
             value={openOnly ? 'open' : 'all'}
             onChange={(e) => setOpenOnly(e.target.value === 'open')}
           >
-            <option value="open">Still being chased</option>
-            <option value="all">Everything</option>
+            <option value="open">{t('leads.stillChasing')}</option>
+            <option value="all">{t('leads.everything')}</option>
           </select>
 
           <label htmlFor="mine-only" className="check">
@@ -104,7 +104,7 @@ export function LeadsPage() {
               checked={mineOnly}
               onChange={(e) => setMineOnly(e.target.checked)}
             />
-            Only mine
+            {t('leads.onlyMine')}
           </label>
         </div>
       </header>
@@ -121,7 +121,7 @@ export function LeadsPage() {
       ) : (
         <div className="actions actions--lead">
           <button type="button" className="primary" onClick={() => setCapturing(true)}>
-            Take an enquiry
+            {t('leads.take')}
           </button>
         </div>
       )}
@@ -157,6 +157,10 @@ function LeadPanel({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
+  const { t, format } = useI18n();
+  const label = useEnumLabel();
+  const describe = useApiMessage();
+
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -171,7 +175,7 @@ function LeadPanel({
     } catch (failure) {
       // The server's refusal is the honest one: it knows who is asking and which
       // rule they hit. Anything invented here would be a guess.
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -203,34 +207,36 @@ function LeadPanel({
           )}
         </h2>
         <button type="button" onClick={onClose}>
-          Close
+          {t('common.close')}
         </button>
       </header>
 
       <p className="muted">
-        <span className={`chip chip--${lead.status.toLowerCase()}`}>{lead.status}</span>{' '}
-        · {sourceLabel(lead.source)} · came in{' '}
-        {new Date(lead.capturedAt).toLocaleDateString()}
+        <span className={`chip chip--${lead.status.toLowerCase()}`}>
+          {label('leadStatus', lead.status)}
+        </span>{' '}
+        · {label('leadSource', lead.source)} ·{' '}
+        {t('leads.cameIn', { date: format.date(lead.capturedAt) })}
       </p>
 
       {lead.enquiry === null ? null : <blockquote className="enquiry">{lead.enquiry}</blockquote>}
 
       <p className="note">
         {lead.assignedToUserId === null
-          ? 'Nobody has picked this up yet.'
+          ? t('leads.unclaimed')
           : mine
-            ? 'You are chasing this one.'
-            : `${lead.assignedTo ?? 'Somebody else'} is chasing this one.`}
+            ? t('leads.yoursToChase')
+            : t('leads.theirsToChase', { name: lead.assignedTo ?? t('leads.somebodyElse') })}
       </p>
 
       <div className="actions">
         {mine ? (
           <button type="button" disabled={busy} onClick={() => void assign(null)}>
-            Put it back in the pool
+            {t('leads.putBack')}
           </button>
         ) : (
           <button type="button" disabled={busy || me === null} onClick={() => void assign(me)}>
-            {lead.assignedToUserId === null ? 'I will chase this' : 'Take it over'}
+            {lead.assignedToUserId === null ? t('leads.iWillChase') : t('leads.takeItOver')}
           </button>
         )}
 
@@ -259,18 +265,18 @@ function LeadPanel({
               navigate(`/deals?leadId=${lead.id}&customerId=${lead.customerId}`)
             }
           >
-            Build the deal
+            {t('leads.buildTheDeal')}
           </button>
         </div>
       ) : null}
 
-      <h3>What happened</h3>
+      <h3>{t('leads.whatHappened')}</h3>
       <ol className="history">
         {[...lead.history].reverse().map((entry, index) => (
           <li key={`${entry.toStatus}-${entry.occurredAt}-${index}`}>
-            <span className="strong">{entry.toStatus}</span>{' '}
+            <span className="strong">{label('leadStatus', entry.toStatus)}</span>{' '}
             <span className="muted">
-              {new Date(entry.occurredAt).toLocaleString()}
+              {format.dateTime(entry.occurredAt)}
               {entry.note === null ? '' : ` — ${entry.note}`}
             </span>
           </li>
@@ -304,6 +310,7 @@ function HandOver({
   exclude: string | null;
   onHandOver: (userId: string) => void;
 }) {
+  const { t } = useI18n();
   const [colleagues, setColleagues] = useState<StaffMember[] | null>(null);
 
   useEffect(() => {
@@ -348,7 +355,7 @@ function HandOver({
     // here would be "Hand to" plus every option — so the control had no usable
     // name, and a test querying for one silently matched nothing.
     <div className="handover">
-      <label htmlFor="hand-to">Hand to</label>
+      <label htmlFor="hand-to">{t('leads.handTo')}</label>
       <select
         id="hand-to"
         disabled={busy}
@@ -359,7 +366,7 @@ function HandOver({
           }
         }}
       >
-        <option value="">Choose a colleague</option>
+        <option value="">{t('leads.chooseColleague')}</option>
         {options.map((person) => (
           <option key={person.id} value={person.id}>
             {person.displayName}
@@ -379,22 +386,20 @@ function Moves({
   onNote: (value: string) => void;
   onMove: (status: LeadStatus) => void;
 }) {
+  const { t } = useI18n();
+
   if (lead.availableMoves.length === 0) {
-    return (
-      <p className="note">
-        This enquiry is finished. A customer who comes back later starts a new one.
-      </p>
-    );
+    return <p className="note">{t('leads.finished')}</p>;
   }
 
   return (
     <>
-      <label htmlFor="lead-note">Note (goes on the record)</label>
+      <label htmlFor="lead-note">{t('leads.note')}</label>
       <input
         id="lead-note"
         value={note}
         onChange={(e) => onNote(e.target.value)}
-        placeholder="Left a voicemail · coming in Saturday · bought elsewhere"
+        placeholder={t('leads.notePlaceholder')}
         autoComplete="off"
       />
 
@@ -407,34 +412,34 @@ function Moves({
             disabled={busy}
             onClick={() => onMove(status)}
           >
-            {moveLabel(lead.status, status)}
+            {t(moveKey(lead.status, status))}
           </button>
         ))}
       </div>
 
-      {lead.status === 'Lost' ? (
-        <p className="note">
-          A lost enquiry that comes back is reopened here rather than retyped, so
-          the first attempt stays part of the story.
-        </p>
-      ) : null}
+      {lead.status === 'Lost' ? <p className="note">{t('leads.reopenedHere')}</p> : null}
     </>
   );
 }
 
-/** The move as a person would say it, given where the lead is now. */
-function moveLabel(from: LeadStatus, to: LeadStatus): string {
+/**
+ * The move as a person would say it, given where the lead is now.
+ *
+ * A key rather than a sentence, and still keyed off BOTH ends of the transition:
+ * moving to Working reads "start chasing" from New and "reopen it" from Lost,
+ * which is the one place the wording depends on where you came from. The set of
+ * moves offered still comes from the server; this only names them.
+ */
+function moveKey(from: LeadStatus, to: LeadStatus): MessageKey {
   switch (to) {
     case 'Working':
-      return from === 'Lost' ? 'Reopen it' : 'Start chasing';
+      return from === 'Lost' ? 'leads.moveReopen' : 'leads.moveStartChasing';
     case 'Appointment':
-      return 'They are coming in';
+      return 'leads.moveAppointment';
     case 'Won':
-      return 'They are buying';
-    case 'Lost':
-      return 'Mark it lost';
+      return 'leads.moveWon';
     default:
-      return to;
+      return 'leads.moveLost';
   }
 }
 
@@ -446,19 +451,20 @@ function Body({
   onRetry: () => void;
   onOpen: (id: string) => void;
 }) {
+  const { t } = useI18n();
+
   switch (load.kind) {
     case 'loading':
       return (
         <p className="state" aria-live="polite">
-          Loading the enquiries…
+          {t('leads.loading')}
         </p>
       );
 
     case 'denied':
       return (
         <p className="state" role="alert">
-          You do not have access to enquiries at this location. Ask a manager if
-          you think that is wrong.
+          {t('leads.denied')}
         </p>
       );
 
@@ -467,17 +473,14 @@ function Body({
         <div className="state" role="alert">
           <p>{load.message}</p>
           <button type="button" onClick={onRetry}>
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       );
 
     case 'ready':
       return load.leads.length === 0 ? (
-        <p className="state">
-          No enquiries here. One starts the moment somebody rings up or walks onto
-          the lot.
-        </p>
+        <p className="state">{t('leads.empty')}</p>
       ) : (
         <LeadTable leads={load.leads} me={me} onOpen={onOpen} />
       );
@@ -491,6 +494,8 @@ function LeadTable({
   me: string | null;
   onOpen: (id: string) => void;
 }) {
+  const { t, format } = useI18n();
+  const label = useEnumLabel();
   const capped = leads.length >= PageSize;
 
   return (
@@ -498,17 +503,19 @@ function LeadTable({
       <table>
         <caption className="visually-hidden">
           {capped
-            ? `The first ${leads.length} enquiries. There may be more.`
-            : `${leads.length} enquiries`}
+            ? t('leads.countCapped', { count: leads.length })
+            : t('leads.count', { count: leads.length })}
         </caption>
         <thead>
           <tr>
-            <th scope="col">Customer</th>
-            <th scope="col">Asked about</th>
-            <th scope="col">Came from</th>
-            <th scope="col" className="num">Days</th>
-            <th scope="col">Chased by</th>
-            <th scope="col">Stage</th>
+            <th scope="col">{t('leads.colCustomer')}</th>
+            <th scope="col">{t('leads.colAskedAbout')}</th>
+            <th scope="col">{t('leads.colCameFrom')}</th>
+            <th scope="col" className="num">
+              {t('leads.colDays')}
+            </th>
+            <th scope="col">{t('leads.colChasedBy')}</th>
+            <th scope="col">{t('leads.colStage')}</th>
           </tr>
         </thead>
         <tbody>
@@ -519,18 +526,20 @@ function LeadTable({
                   {lead.customerName}
                 </button>
               </td>
-              <td>{lead.vehicleOfInterest ?? 'Nothing specific'}</td>
-              <td>{sourceLabel(lead.source)}</td>
-              <td className="num">{lead.daysOpen}</td>
+              <td>{lead.vehicleOfInterest ?? t('leads.nothingSpecific')}</td>
+              <td>{label('leadSource', lead.source)}</td>
+              <td className="num">{format.number(lead.daysOpen)}</td>
               <td>
                 {lead.assignedToUserId === null
-                  ? 'Nobody yet'
+                  ? t('leads.nobodyYet')
                   : me !== null && lead.assignedToUserId === me
-                    ? 'You'
-                    : (lead.assignedTo ?? 'Somebody else')}
+                    ? t('leads.you')
+                    : (lead.assignedTo ?? t('leads.somebodyElse'))}
               </td>
               <td>
-                <span className={`chip chip--${lead.status.toLowerCase()}`}>{lead.status}</span>
+                <span className={`chip chip--${lead.status.toLowerCase()}`}>
+                  {label('leadStatus', lead.status)}
+                </span>
               </td>
             </tr>
           ))}
@@ -538,10 +547,7 @@ function LeadTable({
       </table>
 
       {capped ? (
-        <p className="note note--footer">
-          Showing the first {leads.length}. There may be more — narrow it with the
-          filters until paging exists.
-        </p>
+        <p className="note note--footer">{t('leads.cappedNote', { count: leads.length })}</p>
       ) : null}
     </div>
   );
