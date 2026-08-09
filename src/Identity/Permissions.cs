@@ -144,6 +144,22 @@ public static class Permissions
     public const string StaffManage = "Staff.Manage";
 
     /// <summary>
+    /// Handing somebody a code that lets them set a NEW password on an account
+    /// that already has one.
+    ///
+    /// Deliberately not part of <see cref="StaffManage"/> (ADR-018). Adding a
+    /// starter and stopping a leaver are administrative acts; issuing a reset is
+    /// handing over the ability to sign in AS an existing person, including a
+    /// person more privileged than the issuer. Somebody trusted to fix a rota is
+    /// not automatically trusted with that, and folding the two together would
+    /// make the distinction unexpressible.
+    ///
+    /// Organization-wide, for the same reason stopping an account is: signing in
+    /// is not a per-rooftop thing, so neither is taking it over.
+    /// </summary>
+    public const string StaffResetPassword = "Staff.ResetPassword";
+
+    /// <summary>
     /// Changing the security rules the organization applies to its own staff —
     /// today, which roles must hold a second factor. Held organization-wide by
     /// design: a rule about the whole dealership is not set from one lot.
@@ -193,6 +209,7 @@ public static class Permissions
         AccountingReverse,
         StaffRead,
         StaffManage,
+        StaffResetPassword,
         PartsRead,
         PartsManage,
         AccountingClosePeriod,

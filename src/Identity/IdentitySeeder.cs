@@ -112,6 +112,12 @@ public static class IdentitySeeder
             // out group-level access; a rooftop-scoped holder could do neither.
             Permissions.StaffRead,
             Permissions.StaffManage,
+            // The backstop when somebody has lost both their phone and their
+            // password (ADR-018). Seeded onto the manager because on a fresh
+            // installation there is nobody else to hold it — but it is its own
+            // permission, so a dealership that wants resets held by fewer people
+            // than rotas can already arrange that without a code change.
+            Permissions.StaffResetPassword,
             // The manager holds these organization-wide, which is what lets them
             // add to the catalogue and set the costing method. A rooftop-scoped
             // holder can book stock in and nothing else.

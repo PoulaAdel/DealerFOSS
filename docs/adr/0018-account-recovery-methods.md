@@ -1,7 +1,19 @@
 # ADR-018 — Account recovery is a set of pluggable proofs, not one flow
 
 Date: 2026-08-07
-Status: Accepted
+Status: Accepted — **built 2026-08-09** for the two methods that need nothing
+external (authenticator app, manager-issued code). Email and text message are
+declared by the contract and report `false`, exactly as "a method that is not
+configured is never offered" requires. Passkey/WebAuthn is deferred: it needs a
+dependency with a licence review and an advisory history, which is a decision of
+the same kind this document already made twice.
+
+One thing the build settled that this document left open. **Recovery is a single
+call** — email, proof and the new password together — rather than prove-then-
+redeem. The intermediate ticket a two-step flow needs would be a second
+credential that has to be stored, expired, transported and invalidated, and is
+worth stealing. Nothing needs to survive between the two requests, so nothing
+does.
 Supersedes: —
 
 ## Context

@@ -127,6 +127,21 @@ public sealed class BoundaryTests
             // this surface never hands out a reusable credential.
             "IStaffDirectory", "StaffMember", "StaffAssignment", "StaffRole",
             "NewStaffMember", "StaffEnrolmentCode", "StaffErrors", "StaffName",
+            // Added deliberately, and it is a security decision rather than a
+            // convenience: this is the only unauthenticated surface that can
+            // change a password, so widening Identity for it deserves the same
+            // scrutiny as the sign-in door itself (ADR-018).
+            //
+            // Note what it CANNOT do, because that is what makes it safe to
+            // export. It cannot tell a caller whether an account exists — the
+            // methods it offers are a property of the installation and take no
+            // email, and every failure is one indistinguishable error. It issues
+            // no session and returns no token, so a successful reset still leaves
+            // the caller having to sign in. It cannot mint the manager-issued
+            // code; that stays behind Staff.ResetPassword on IStaffDirectory. And
+            // it cannot reach an account that never had a password, which is
+            // enrolment's job and has its own preconditions.
+            "IAccountRecovery", "RecoveryMethods", "RecoveryErrors",
         };
 
         // Migration classes are generated artifacts and are public by design;

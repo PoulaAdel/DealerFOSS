@@ -38,6 +38,7 @@ import { WorkshopPage } from '../features/service/WorkshopPage';
 import { PartsPage } from '../features/parts/PartsPage';
 import { PeriodsPage } from '../features/accounting/PeriodsPage';
 import { SetFirstPassword } from '../features/auth/SetFirstPassword';
+import { RecoverPassword } from '../features/auth/RecoverPassword';
 import { AdminApp } from './AdminApp';
 
 export function App() {
@@ -96,6 +97,9 @@ function AppRoutes() {
           sign-in rather than behind the session.
         */}
         <Route path="/set-password" element={<SetFirstPassword />} />
+        {/* Anonymous by necessity, like /set-password: not having a session is
+            the state this screen exists to fix. */}
+        <Route path="/recover" element={<RecoverPassword />} />
         <Route path="*" element={<Navigate to="/sign-in" replace />} />
       </Routes>
     );

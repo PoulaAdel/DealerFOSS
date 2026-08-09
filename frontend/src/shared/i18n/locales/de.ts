@@ -836,6 +836,43 @@ export const de: Catalogue = {
   'workshop.assignedElsewhere':
     'Jemandem zugewiesen, der nicht auf Ihrer Mitarbeiterliste steht — die Person arbeitet möglicherweise an einem anderen Standort.',
 
+  // --- Wieder Zugang zum Konto bekommen ----------------------------------------
+  'recover.link': 'Ich habe mein Passwort vergessen',
+  'recover.title': 'Wieder hineinkommen',
+  'recover.lede':
+    'Wählen Sie, womit Sie nachweisen können, dass es Ihr Konto ist. In jedem Fall vergeben Sie hier direkt ein neues Passwort.',
+  'recover.withAuthenticator': 'Meine Authenticator-App verwenden',
+  'recover.withAuthenticatorHint':
+    'Für alle mit Zwei-Schritt-Anmeldung. Ein Code aus der App oder einer der Wiederherstellungscodes, die Sie aufbewahrt haben.',
+  'recover.withCode': 'Einen Code von der Leitung verwenden',
+  'recover.withCodeHint':
+    'Lassen Sie sich im Bildschirm „Personal“ einen ausstellen. Er wird Ihnen vorgelesen und gilt vier Stunden.',
+  'recover.email': 'E-Mail',
+  'recover.codeFromApp': 'Code aus Ihrer Authenticator-App',
+  'recover.codeFromManager': 'Der Code, den Sie erhalten haben',
+  'recover.newPassword': 'Neues Passwort',
+  'recover.newPasswordAgain': 'Neues Passwort wiederholen',
+  'recover.mismatch': 'Die beiden stimmen nicht überein.',
+  'recover.submit': 'Passwort festlegen',
+  'recover.working': 'Wird gespeichert…',
+  'recover.doneTitle': 'Erledigt',
+  'recover.doneLede':
+    'Ihr Passwort ist geändert, und alle angemeldeten Geräte wurden abgemeldet. Melden Sie sich mit dem neuen an.',
+  'recover.toSignIn': 'Zur Anmeldung',
+  'recover.back': 'Anderen Weg wählen',
+  'recover.noMethods':
+    'Diese Installation kann ein Konto nicht selbst wiederherstellen. Bitten Sie die Leitung, Sie neu einzurichten.',
+
+  'staff.resetTitle': 'Passwort zurücksetzen',
+  'staff.reset': 'Zurücksetzcode ausstellen',
+  'staff.resetting': 'Wird ausgestellt…',
+  'staff.resetNote':
+    'Damit kann sich die Person wieder als sie selbst anmelden. Lesen Sie den Code vor — er wird einmal angezeigt und gilt vier Stunden.',
+  'staff.resetWarning':
+    'Sie geben die Möglichkeit weiter, sich als diese Person anzumelden. Vergewissern Sie sich, dass Sie wirklich mit ihr sprechen.',
+  'staff.resetIssued': 'Am {when} wurde ein Zurücksetzcode ausgestellt und noch nicht verwendet.',
+  'staff.resetDone': 'Ich habe ihn vorgelesen',
+
   // --- Das Werkstattbuch ------------------------------------------------------
   // Erwartete Fahrzeuge, die noch nicht da sind. „Termin“, nie „Zeitfenster“:
   // Eine Werkstatt bucht einen Vormittag, keine vierzig Minuten.

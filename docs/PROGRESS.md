@@ -327,6 +327,33 @@ months of focused work.
   532 of service" tells a manager nothing
 - **A job can be given to a named technician**
 
+### Getting back in
+
+Somebody who forgot their password used to have nowhere to go. Now there are two
+ways, and a dealership needs neither an email server nor anything bought in.
+
+- **With their authenticator app.** Anybody set up with two-step sign-in can get
+  back in on their own — a code from the app, or one of the recovery codes they
+  saved when they set it up. No manager involved, because the commonest case is
+  somebody who has their phone and has simply forgotten a password
+- **With a code from a manager**, for somebody who has lost the phone as well.
+  Read out across the desk, good for four hours, works once
+- **Issuing one is its own permission.** Not folded into managing staff: adding a
+  starter is admin, but handing over the ability to sign in *as* an existing
+  colleague — possibly a more senior one — is a different act. A dealership that
+  wants resets held by fewer people than rotas can already arrange that
+- **The screen never says whether an address exists.** A wrong code and an
+  unknown email give the same answer, word for word. Otherwise the page becomes a
+  way for a stranger to find out who works there and who is easiest to target
+- **Resetting signs out every device.** Somebody recovering an account may be
+  recovering it *from* someone
+- **The dealership can see a reset was handed out**, on the person's own record,
+  until it is used or expires — not buried in a log
+
+Not there yet: a passkey or fingerprint, and the email and text-message routes,
+which are designed and switched off because they need an account you would have
+to buy.
+
 ### Cars that have not arrived yet
 
 The workshop used to start when a car was physically at the counter. It can now
@@ -500,17 +527,19 @@ but sends nobody a reminder, because there is no way to send a message yet.
 - **Reports beyond the month.** There is a dashboard for the current month and a
   trial balance. There is nothing for a quarter or a year, no comparison between
   locations side by side, and no league table by salesperson or advisor
-- **Reading the dashboard in another language.** The page mirrors itself for
-  right-to-left reading and switches between light and dark, but every word in it
-  is still English
+- ~~Reading the dashboard in another language~~ — built. Every screen in the
+  product, the dashboard included, now reads in whichever of the five languages
+  you pick. What is still English: the server's own refusal messages about a
+  *record* ("a deal's terms are frozen once it is submitted"), and the printed
+  paperwork a customer takes away
 - A way to add a second person who runs the servers. There is one, created when
   the system is set up, and no way to add another yet — nor to get back in if
-  they lose their phone
-- **Resetting a forgotten password.** A new starter sets their own with a
-  one-time code, but somebody who forgets theirs later has nowhere to go. That
-  needs a way to prove the person asking really owns the account, which is a
-  different job with different safeguards — so it is refused outright rather than
-  quietly becoming that feature
+  they lose their phone. **Dealership staff can now recover an account; whoever
+  runs the installation still cannot**, and that gap is deliberate for now:
+  there is nobody above them to hand out a code, so it needs a different answer
+- ~~Resetting a forgotten password~~ — **built, 9 Aug.** See "Getting back in"
+  above. Two ways, neither needing anything bought in. A passkey, an emailed
+  link and a text message are still to come
 - Cancelling an import once it has started, or watching its progress while it
   runs — it reports when it finishes
 - Moving anything beyond customers and cars. Enquiries, deals and the books have
@@ -521,21 +550,15 @@ but sends nobody a reminder, because there is no way to send a message yet.
 
 ## Next
 
-**A forgotten password.**
+**~~A forgotten password~~ — built, 9 Aug.** See "Getting back in" above. Two of
+the five methods you chose are live: the authenticator app, and a manager handing
+out a code. Email and text message are wired into the design and switched off,
+because they need an account somebody has to go and buy. A passkey or fingerprint
+is the one still to come; it needs an outside library, which is a decision worth
+making deliberately rather than in passing.
 
-A new starter sets their own with a one-time code, but somebody who forgets theirs
-in week two has nowhere to go. It is the gap most likely to be hit by a real
-pilot.
-
-Per your decision it will not be one method but several, and a dealership turns on
-whichever it can support: their authenticator app, a passkey or fingerprint, an
-emailed link, a WhatsApp or text message — and a manager handing out a one-time
-code as the last resort. The first two need nothing from you and will be built
-first. The email and message options ship at the same time but arrive switched
-off, because they need an account somebody has to go and buy.
-
-After that the honest list is short and mostly waiting on you: connectors to a
-real DMS, and a pilot to point them at.
+The honest list is now short and mostly waiting on you: connectors to a real DMS,
+and a pilot to point them at.
 
 Signing in with an existing company login stays parked: it cannot be honestly
 built or tested without a real login provider to test against, and a fake one

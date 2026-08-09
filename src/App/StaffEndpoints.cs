@@ -44,6 +44,10 @@ internal static class StaffEndpoints
         group.MapGet("/{userId:guid}", GetAsync);
         group.MapPost("", AddAsync);
         group.MapPost("/{userId:guid}/enrolment", IssueEnrolmentAsync);
+
+        // Its own permission, not Staff.Manage — see Permissions.StaffResetPassword.
+        group.MapPost("/{userId:guid}/recovery", IssueRecoveryAsync);
+
         group.MapPost("/{userId:guid}/assignments", AssignAsync);
         group.MapDelete("/{userId:guid}/assignments/{assignmentId:guid}", UnassignAsync);
         group.MapPost("/{userId:guid}/active", SetActiveAsync);
@@ -51,6 +55,22 @@ internal static class StaffEndpoints
         // Deliberately outside the group: no session, no permission, no tenant
         // user. Only a valid one-time code gets anything done here.
         app.MapPost("/api/v1/auth/enrol", RedeemAsync)
+            .WithTags("Staff")
+            .RequireRateLimiting(RateLimits.Credentials);
+
+        // The three recovery routes, all anonymous for the same reason and all
+        // rate limited with the other credential endpoints (ADR-018). Reading
+        // the offered methods is limited too: it is anonymous and uncached, so
+        // leaving it open is a free way to make the server work.
+        app.MapGet("/api/v1/auth/recover", OfferedAsync)
+            .WithTags("Staff")
+            .RequireRateLimiting(RateLimits.Credentials);
+
+        app.MapPost("/api/v1/auth/recover/authenticator", RecoverWithAuthenticatorAsync)
+            .WithTags("Staff")
+            .RequireRateLimiting(RateLimits.Credentials);
+
+        app.MapPost("/api/v1/auth/recover/code", RecoverWithIssuedCodeAsync)
             .WithTags("Staff")
             .RequireRateLimiting(RateLimits.Credentials);
     }
@@ -272,6 +292,68 @@ internal static class StaffEndpoints
     }
 
     /// <summary>
+    /// Mints the backstop code. Behind <c>Staff.ResetPassword</c> rather than
+    /// <c>Staff.Manage</c>, because handing somebody the ability to sign in as an
+    /// existing colleague is not the same act as fixing a rota.
+    /// </summary>
+    private static async Task<IResult> IssueRecoveryAsync(
+        Guid userId,
+        ICurrentUser currentUser,
+        IAccessDirectory access,
+        IStaffDirectory staff,
+        CancellationToken cancellationToken)
+    {
+        var scope = await access.GetAuthorizedScopeAsync(
+            currentUser.Id, Permissions.StaffResetPassword, cancellationToken);
+
+        // Organization-wide, like stopping an account: signing in is not a
+        // per-rooftop thing, so neither is taking it over.
+        if (!scope.IsOrganizationWide)
+        {
+            return ResetRefused.ToProblem();
+        }
+
+        var result = await staff.IssueRecoveryCodeAsync(userId, currentUser.Id, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <summary>
+    /// What this installation can offer somebody who is locked out. Takes no
+    /// email and says nothing about any account — see IAccountRecovery.
+    /// </summary>
+    private static IResult OfferedAsync(IAccountRecovery recovery) => Results.Ok(recovery.Offered);
+
+    /// <summary>
+    /// Anonymous by necessity: the caller cannot sign in, which is the problem.
+    /// The authenticator code is the only thing authorizing this.
+    /// </summary>
+    private static async Task<IResult> RecoverWithAuthenticatorAsync(
+        RecoverRequest request,
+        IAccountRecovery recovery,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await recovery.ResetWithAuthenticatorAsync(
+            request.Email, request.Code, request.Password, cancellationToken);
+
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> RecoverWithIssuedCodeAsync(
+        RecoverRequest request,
+        IAccountRecovery recovery,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await recovery.ResetWithIssuedCodeAsync(
+            request.Email, request.Code, request.Password, cancellationToken);
+
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
+    }
+
+    /// <summary>
     /// Whether this colleague's access touches anything the caller can see. An
     /// organization-wide person is visible to everyone, because they really can
     /// reach every caller's rooftop.
@@ -301,6 +383,16 @@ internal static class StaffEndpoints
         "staff.organization_scope_required",
         "This needs organization-wide permission. Access covering one location is not enough.");
 
+    /// <summary>
+    /// Named apart from the general refusal because the answer is different:
+    /// somebody may well be able to manage staff and still not be allowed to
+    /// hand out a password reset, and a generic message would send them looking
+    /// for the wrong permission.
+    /// </summary>
+    private static Error ResetRefused { get; } = Error.Forbidden(
+        "staff.reset_forbidden",
+        "Issuing a password reset needs the Staff.ResetPassword permission, organization-wide. Managing staff is not enough on its own.");
+
     private static Error RooftopRefused { get; } = Error.Forbidden(
         "staff.rooftop_forbidden",
         "You can only change access at a location you manage.");
@@ -313,3 +405,9 @@ internal sealed record SetActiveRequest(bool Active);
 
 /// <summary>Redeem a one-time code and set a password. No session involved.</summary>
 internal sealed record EnrolRequest(string Email, string Code, string Password);
+
+/// <summary>
+/// Everything a reset needs, in one request. There is deliberately no separate
+/// "prove" step issuing a ticket — see IAccountRecovery for why.
+/// </summary>
+internal sealed record RecoverRequest(string Email, string Code, string Password);

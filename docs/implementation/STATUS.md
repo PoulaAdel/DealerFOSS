@@ -3,11 +3,11 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the service diary** (complete). Every one of the 25 screens
+Current milestone: **account recovery** (complete). Every one of the 25 screens
 now reads from the translation catalogue
-Last verified: 2026-08-09 · `dotnet build` 0 warnings/0 errors, `dotnet test` 546/546,
+Last verified: 2026-08-09 · `dotnet build` 0 warnings/0 errors, `dotnet test` 559/559,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 236/236, and `npm run build` all pass
+`npm run typecheck`, `npm test` 245/245, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -459,3 +459,23 @@ a privileged manager-issued code as the backstop. No longer blocked on a decisio
   Evidence: `dotnet build` 0/0, `dotnet test` **546/546** (was 523), `verify-e2e.ps1` **PASS**, `npm audit` clean, `npm run typecheck` clean, `npm test` **236/236** (was 226), `npm run build` ok.
 
   **Named rather than hidden.** The diary loads a *workshop*, not a technician or a ramp — "who is free at eleven" is a different model and is not answered. It knows who is expected tomorrow and messages nobody, because no communications channel exists yet. Unchanged from the previous entry: the API's record-level refusals are still English, and printed documents are still English with `lang="en"`.
+
+- **2026-08-09 — A forgotten password has an answer.** The gap named as most likely to be hit in a pilot's second week. Two of ADR-018's five methods are built — the two that need nothing external — and the other three are declared by the contract rather than left to be discovered.
+
+  **Resetting is a SINGLE CALL.** Email, proof and the new password arrive together; the password changes or nothing does. The familiar shape — prove, receive a ticket, redeem the ticket — needs a second credential that exists between two requests, has to be stored, expired, transported and invalidated, and is worth stealing. Nothing here needs to survive between two requests, so nothing does. ADR-018 has been amended to record that.
+
+  **What is offered is a property of the INSTALLATION, never of an account.** `GET /auth/recover` takes no email and returns the same body whichever one is appended, which a test asserts. Answering per-account would say whether an address exists and whether it has an authenticator — a map of who is easiest to attack. Every failure is one indistinguishable `recovery.refused`, and the unknown-account path still runs the password hasher so absence is not detectable by timing. **Rehearsed:** giving the unknown-account branch its own error code failed exactly the enumeration test.
+
+  **Issuing the manager backstop is its own permission.** `Staff.ResetPassword`, organization-wide, deliberately not folded into `Staff.Manage` — adding a starter is administration, but handing somebody the ability to sign in *as* an existing colleague, possibly a more privileged one, is a different act. Seeded onto Manager because on a fresh installation there is nobody else, but a dealership wanting resets held by fewer people than rotas can already arrange that without a code change. The issue is visible on the staff record until it is used or expires, not only in the audit trail.
+
+  **A successful reset ends every session the account had**, because somebody recovering an account may be recovering it *from* someone.
+
+  **Identity's sealed surface was widened, which is a security decision and is recorded as one.** `IAccountRecovery`, `RecoveryMethods` and `RecoveryErrors` are now public, with the reasoning and — more importantly — what the surface *cannot* do written into `BoundaryTests` beside them: it cannot say whether an account exists, it issues no session so a reset cannot be chained into being signed in, it cannot mint the manager code, and it cannot touch an account that never had a password.
+
+  **Named honestly rather than overstated.** A `Purpose` column now separates enrolment codes from reset codes, and the header comment originally claimed it was load-bearing. It is not, yet: a rehearsal removing the filter from *both* paths failed no test, because the opposite preconditions on `PasswordHash` already separate them completely. The column stays — that separation is two checks happening to agree, and the day either is relaxed it becomes the thing that stops a starter's code opening a reset — but the comments and the test now say what they actually prove.
+
+  **A defect in the generated migration was corrected by hand.** EF scaffolded `defaultValue: ""` for the new non-nullable `Purpose` column, which matches neither enum name — every enrolment code outstanding at upgrade time would have silently stopped working, leaving a starter holding a dead code. Now defaults to `Enrolment`, with the reason in the migration.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **559/559** (was 546), `verify-e2e.ps1` **PASS**, `npm audit` clean, `npm run typecheck` clean, `npm test` **245/245** (was 236), `npm run build` ok. Walked in a real browser in English and Arabic: every field pinned `dir="ltr"`, the page mirroring, no horizontal scroll.
+
+  **Still missing, and named.** A passkey or fingerprint — it needs a WebAuthn dependency, which is a licence-and-advisory decision of the same kind ADR-018 and ADR-019 already made twice, not something to slip in. Email and text message need an account somebody buys, and report `false` rather than being offered and failing. And **whoever runs the installation still cannot recover their own account**: there is nobody above them to issue a code, so it needs a different answer entirely.

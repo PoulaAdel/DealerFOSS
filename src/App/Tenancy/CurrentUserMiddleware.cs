@@ -44,6 +44,14 @@ public sealed class CurrentUserMiddleware(RequestDelegate next)
         // Setting a first password. The caller cannot possibly have a session —
         // not having one is the state this endpoint exists to fix.
         "/api/v1/auth/enrol",
+        // Recovering a forgotten one, for exactly the same reason (ADR-018).
+        // Neither is unprotected: each demands a single-use proof the caller
+        // could only hold legitimately — a live code from their authenticator, or
+        // a hashed, expiring code a manager issued — and both are rate limited
+        // with the other credential endpoints.
+        "/api/v1/auth/recover",
+        "/api/v1/auth/recover/authenticator",
+        "/api/v1/auth/recover/code",
     ];
 
     /// <summary>

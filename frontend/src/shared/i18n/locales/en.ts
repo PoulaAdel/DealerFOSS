@@ -858,6 +858,47 @@ export const en = {
   'workshop.assignedElsewhere':
     'Assigned to somebody who is not on your staff list — they may work at another location.',
 
+  // --- Getting back into an account -----------------------------------------
+  // Read by somebody locked out and probably annoyed. Every sentence says what
+  // to do next; none of them speculates about what went wrong, because the
+  // server deliberately does not say (ADR-018).
+  'recover.link': 'I have forgotten my password',
+  'recover.title': 'Get back in',
+  'recover.lede':
+    'Choose how you can prove the account is yours. Whichever you use, you set a new password here and now.',
+  'recover.withAuthenticator': 'Use my authenticator app',
+  'recover.withAuthenticatorHint':
+    'For anybody set up with two-step sign-in. A code from the app, or one of the recovery codes you saved.',
+  'recover.withCode': 'Use a code from my manager',
+  'recover.withCodeHint':
+    'Ask a manager to issue one from the People screen. They read it out; it lasts four hours.',
+  'recover.email': 'Email',
+  'recover.codeFromApp': 'Code from your authenticator app',
+  'recover.codeFromManager': 'The code your manager gave you',
+  'recover.newPassword': 'New password',
+  'recover.newPasswordAgain': 'New password again',
+  'recover.mismatch': 'Those two do not match.',
+  'recover.submit': 'Set my password',
+  'recover.working': 'Setting it…',
+  'recover.doneTitle': 'That is done',
+  'recover.doneLede':
+    'Your password is changed and every device that was signed in has been signed out. Sign in again with the new one.',
+  'recover.toSignIn': 'Go to sign in',
+  'recover.back': 'Choose a different way',
+  'recover.noMethods':
+    'This installation has no way to recover an account on its own. Ask a manager to set you up again.',
+
+  // --- Handing out a reset (the People screen) ------------------------------
+  'staff.resetTitle': 'Reset their password',
+  'staff.reset': 'Issue a reset code',
+  'staff.resetting': 'Issuing…',
+  'staff.resetNote':
+    'This lets them sign in as themselves again. Read the code out — it is shown once and lasts four hours.',
+  'staff.resetWarning':
+    'You are handing over the ability to sign in as this person. Be sure it is them you are talking to.',
+  'staff.resetIssued': 'A reset code was issued {when} and has not been used yet.',
+  'staff.resetDone': 'I have read it out',
+
   // --- The service diary ----------------------------------------------------
   // Cars expected but not here yet. "Booking" throughout, never "appointment
   // slot" — a workshop books a car in for a morning, not for a 40-minute window.

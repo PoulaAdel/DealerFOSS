@@ -24,9 +24,23 @@
 import { render as testingLibraryRender, type RenderOptions } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { I18nProvider } from '../shared/i18n';
+import { AppearanceProvider } from '../shared/appearance';
 
+/**
+ * The two the shell mounts above the router. Appearance joined i18n here when a
+ * third screen — password recovery — started carrying the appearance and
+ * language controls, which are on every screen a signed-out person can reach.
+ *
+ * `appearance.test.tsx` still proves `useAppearance` throws outside its
+ * provider; that test imports the raw `render` deliberately, so this wrapper
+ * cannot hide the design rule it asserts.
+ */
 function Providers({ children }: { children: ReactNode }) {
-  return <I18nProvider>{children}</I18nProvider>;
+  return (
+    <I18nProvider>
+      <AppearanceProvider>{children}</AppearanceProvider>
+    </I18nProvider>
+  );
 }
 
 /**

@@ -22,6 +22,19 @@ export interface CurrentUser {
   mustEnrolSecondFactor: boolean;
 }
 
+/**
+ * What this installation can offer somebody who is locked out. Deliberately not
+ * per-account: asking about a specific email would answer whether that person
+ * works here and whether they have an authenticator, which is a map of who is
+ * easiest to attack. See ADR-018.
+ */
+export interface RecoveryMethods {
+  authenticator: boolean;
+  issuedCode: boolean;
+  email: boolean;
+  textMessage: boolean;
+}
+
 /** What an authenticator app needs, returned once and never again. */
 export interface MfaEnrolment {
   secret: string;
@@ -497,6 +510,12 @@ export interface StaffMember {
   canSignIn: boolean;
   /** True for a starter who has not redeemed a code — a different state from a leaver. */
   awaitingEnrolment: boolean;
+  /**
+   * When a reset code was handed out and is still live, or null. On the record
+   * so a dealership can SEE that somebody gave out access, not only in the audit
+   * trail.
+   */
+  recoveryIssuedAt: string | null;
   assignments: StaffAssignment[];
 }
 

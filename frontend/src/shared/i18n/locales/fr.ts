@@ -833,6 +833,44 @@ export const fr: Catalogue = {
   'workshop.assignedElsewhere':
     'Attribué à quelqu’un qui ne figure pas dans votre liste de personnel — cette personne travaille peut-être sur un autre site.',
 
+  // --- Retrouver l’accès à son compte ---------------------------------------------
+  'recover.link': 'J’ai oublié mon mot de passe',
+  'recover.title': 'Retrouver l’accès',
+  'recover.lede':
+    'Choisissez comment prouver que ce compte est le vôtre. Quelle que soit la méthode, vous définissez ici même un nouveau mot de passe.',
+  'recover.withAuthenticator': 'Utiliser mon application d’authentification',
+  'recover.withAuthenticatorHint':
+    'Pour toute personne ayant la connexion en deux étapes. Un code de l’application, ou l’un des codes de secours que vous avez conservés.',
+  'recover.withCode': 'Utiliser un code de mon responsable',
+  'recover.withCodeHint':
+    'Demandez à un responsable de vous en délivrer un depuis l’écran Personnel. Il vous le lit ; il est valable quatre heures.',
+  'recover.email': 'E-mail',
+  'recover.codeFromApp': 'Code de votre application d’authentification',
+  'recover.codeFromManager': 'Le code que votre responsable vous a donné',
+  'recover.newPassword': 'Nouveau mot de passe',
+  'recover.newPasswordAgain': 'Confirmez le nouveau mot de passe',
+  'recover.mismatch': 'Ces deux mots de passe ne correspondent pas.',
+  'recover.submit': 'Définir mon mot de passe',
+  'recover.working': 'Enregistrement…',
+  'recover.doneTitle': 'C’est fait',
+  'recover.doneLede':
+    'Votre mot de passe est modifié et tous les appareils connectés ont été déconnectés. Reconnectez-vous avec le nouveau.',
+  'recover.toSignIn': 'Aller à la connexion',
+  'recover.back': 'Choisir une autre méthode',
+  'recover.noMethods':
+    'Cette installation ne permet pas de récupérer un compte par elle-même. Demandez à un responsable de vous recréer un accès.',
+
+  'staff.resetTitle': 'Réinitialiser son mot de passe',
+  'staff.reset': 'Délivrer un code de réinitialisation',
+  'staff.resetting': 'Délivrance…',
+  'staff.resetNote':
+    'Ceci lui permet de se reconnecter en tant que lui-même. Lisez-lui le code — il n’est affiché qu’une fois et vaut quatre heures.',
+  'staff.resetWarning':
+    'Vous transmettez la capacité de se connecter en tant que cette personne. Assurez-vous que c’est bien à elle que vous parlez.',
+  'staff.resetIssued':
+    'Un code de réinitialisation a été délivré {when} et n’a pas encore été utilisé.',
+  'staff.resetDone': 'Je le lui ai lu',
+
   // --- Le carnet de l’atelier ---------------------------------------------------
   // Les voitures attendues, pas encore arrivées. « Rendez-vous », jamais
   // « créneau » : un atelier réserve une matinée, pas quarante minutes.

@@ -8,6 +8,7 @@
 //       changed under them.
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { currentTenant, post, setCurrentTenant } from '../../shared/api';
 import type { SignInResponse } from '../../shared/contracts';
 import { useSession } from '../../app/session';
@@ -147,6 +148,14 @@ export function SignIn() {
           <button type="submit" disabled={busy}>
             {busy ? t('signIn.submitting') : t('signIn.submit')}
           </button>
+
+          {/* On the credentials step only. Somebody who has already answered
+              their password correctly and is being asked for a code has not
+              forgotten it — offering the reset there invites them down a much
+              longer road than the one they need. */}
+          <p className="note">
+            <Link to="/recover">{t('recover.link')}</Link>
+          </p>
         </form>
       ) : (
         <form onSubmit={submitCode} noValidate>

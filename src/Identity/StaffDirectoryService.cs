@@ -195,7 +195,10 @@ internal sealed class StaffDirectoryService(
         // become the one found. Closing that here is cheaper than remembering it
         // the day a password-reset feature lands.
         var outstanding = await _db.StaffEnrolments
-            .Where(e => e.UserId == userId && e.ConsumedAt == null)
+            .Where(e =>
+                e.UserId == userId &&
+                e.ConsumedAt == null &&
+                e.Purpose == EnrolmentPurpose.Enrolment)
             .ToListAsync(cancellationToken);
 
         foreach (var old in outstanding)
@@ -214,6 +217,65 @@ internal sealed class StaffDirectoryService(
             cancellationToken);
 
         return Result.Success(new StaffEnrolmentCode(code, now.Add(StaffEnrolment.Lifetime)));
+    }
+
+    public async Task<Result<StaffEnrolmentCode>> IssueRecoveryCodeAsync(
+        Guid userId,
+        Guid actingUserId,
+        CancellationToken cancellationToken)
+    {
+        var user = await _db.Users.SingleOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user is null)
+        {
+            return Result.Failure<StaffEnrolmentCode>(StaffErrors.NotFound);
+        }
+
+        // The mirror of the check in IssueEnrolmentCodeAsync. There is nothing to
+        // recover on an account that never had a password, and issuing one here
+        // would be enrolment performed under a permission meant for something
+        // else.
+        if (user.PasswordHash is null)
+        {
+            return Result.Failure<StaffEnrolmentCode>(StaffErrors.NothingToRecover);
+        }
+
+        var now = _clock.UtcNow;
+
+        // One live reset code per account, for the same reason as enrolment: two
+        // doubles the guessing surface and a mislaid one is reissued, not kept as
+        // a spare. Only recovery codes are superseded — a starter's outstanding
+        // enrolment code is a different credential for a different purpose and is
+        // none of this method's business.
+        var outstanding = await _db.StaffEnrolments
+            .Where(e =>
+                e.UserId == userId &&
+                e.ConsumedAt == null &&
+                e.Purpose == EnrolmentPurpose.Recovery)
+            .ToListAsync(cancellationToken);
+
+        foreach (var old in outstanding)
+        {
+            old.Supersede(now);
+        }
+
+        var (code, hash) = StaffEnrolment.NewCode();
+
+        _db.StaffEnrolments.Add(new StaffEnrolment(
+            Guid.NewGuid(), userId, hash, actingUserId, now, EnrolmentPurpose.Recovery));
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // Named as a reset rather than folded in with enrolment: this one handed
+        // somebody the ability to sign in as an existing person, and the trail
+        // should say so in those words.
+        await _audit.RecordAsync(
+            new AuditEntry(
+                actingUserId, "Staff.RecoveryCodeIssued", AuditOutcome.Allowed, "User", userId.ToString(), null,
+                $"Password reset code issued for '{user.DisplayName}'.", null, null),
+            cancellationToken);
+
+        return Result.Success(new StaffEnrolmentCode(code, now.Add(StaffEnrolment.RecoveryLifetime)));
     }
 
     public async Task<Result> RedeemEnrolmentCodeAsync(
@@ -242,8 +304,16 @@ internal sealed class StaffDirectoryService(
                 "A password needs at least 12 characters. Length is what makes one hard to guess."));
         }
 
+        // Purpose is part of the query, not a check afterwards: a reset code must
+        // be INVISIBLE here, not merely rejected. Defence in depth — a rehearsal
+        // on 2026-08-09 confirmed no test fails without it, because the
+        // PasswordHash check above already excludes every account that could hold
+        // one. It stays for the reason AccountRecoveryService's header gives.
         var enrolment = await _db.StaffEnrolments
-            .Where(e => e.UserId == user.Id && e.ConsumedAt == null)
+            .Where(e =>
+                e.UserId == user.Id &&
+                e.ConsumedAt == null &&
+                e.Purpose == EnrolmentPurpose.Enrolment)
             .OrderByDescending(e => e.IssuedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -434,6 +504,24 @@ internal sealed class StaffDirectoryService(
             .AsNoTracking()
             .ToDictionaryAsync(r => r.Id, r => r.Name, cancellationToken);
 
+        // Reset codes still outstanding, so the screen can show that somebody
+        // handed out access rather than leaving it only in the audit trail.
+        // Expired and spent codes drop out, because what a manager needs to see
+        // is what is live right now.
+        var now = _clock.UtcNow;
+        var ids = users.Select(u => u.Id).ToList();
+
+        var liveRecoveries = await _db.StaffEnrolments
+            .AsNoTracking()
+            .Where(e =>
+                ids.Contains(e.UserId) &&
+                e.Purpose == EnrolmentPurpose.Recovery &&
+                e.ConsumedAt == null &&
+                e.ExpiresAt > now)
+            .GroupBy(e => e.UserId)
+            .Select(g => new { UserId = g.Key, IssuedAt = g.Max(e => e.IssuedAt) })
+            .ToDictionaryAsync(x => x.UserId, x => x.IssuedAt, cancellationToken);
+
         return users
             .Select(u => new StaffMember(
                 u.Id,
@@ -443,6 +531,9 @@ internal sealed class StaffDirectoryService(
                 u.MfaEnabled,
                 u.CanSignIn,
                 AwaitingEnrolment: u.PasswordHash is null,
+                RecoveryIssuedAt: liveRecoveries.TryGetValue(u.Id, out var issued)
+                    ? issued
+                    : null,
                 u.Assignments
                     .Select(a => new StaffAssignment(
                         a.Id,

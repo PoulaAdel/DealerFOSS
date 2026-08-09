@@ -17,10 +17,39 @@ using System.Text;
 
 namespace DealerFOSS.Identity;
 
+/// <summary>
+/// What a one-time code is FOR. The two are stored in one table because ADR-018
+/// requires every proof to be created in one place on one set of terms — but they
+/// are never interchangeable, and the purpose is what makes that enforceable.
+/// </summary>
+/// <remarks>
+/// Without this, a code issued to a brand-new starter would also open the reset
+/// path, and vice versa. The two have different preconditions — enrolment demands
+/// the account has NO password, recovery demands it has one — so a code crossing
+/// between them would bypass whichever check it skipped.
+/// </remarks>
+internal enum EnrolmentPurpose
+{
+    /// <summary>A starter setting their first password.</summary>
+    Enrolment = 0,
+
+    /// <summary>Somebody who has one and cannot remember it.</summary>
+    Recovery = 1,
+}
+
 internal sealed class StaffEnrolment
 {
     /// <summary>Long enough to walk to a computer, short enough not to be a spare key.</summary>
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
+
+    /// <summary>
+    /// A reset code dies sooner than an enrolment code. A starter's code is
+    /// handed over as part of a day-one conversation that may not reach a
+    /// computer until the afternoon; a reset is issued because somebody is
+    /// standing there unable to work, and a code still live tomorrow is a spare
+    /// key to an account that already has a history behind it.
+    /// </summary>
+    public static readonly TimeSpan RecoveryLifetime = TimeSpan.FromHours(4);
 
     /// <summary>
     /// Wrong attempts tolerated before the code dies. The code itself is long
@@ -46,18 +75,28 @@ internal sealed class StaffEnrolment
     /// <summary>Who handed it over. The audit trail names them; this is the row's own copy.</summary>
     public Guid IssuedByUserId { get; private set; }
 
+    /// <summary>Whether this code sets a first password or replaces a forgotten one.</summary>
+    public EnrolmentPurpose Purpose { get; private set; }
+
     private StaffEnrolment()
     {
     }
 
-    public StaffEnrolment(Guid id, Guid userId, string codeHash, Guid issuedByUserId, DateTimeOffset now)
+    public StaffEnrolment(
+        Guid id,
+        Guid userId,
+        string codeHash,
+        Guid issuedByUserId,
+        DateTimeOffset now,
+        EnrolmentPurpose purpose = EnrolmentPurpose.Enrolment)
     {
         Id = id;
         UserId = userId;
         CodeHash = codeHash;
         IssuedByUserId = issuedByUserId;
+        Purpose = purpose;
         IssuedAt = now;
-        ExpiresAt = now.Add(Lifetime);
+        ExpiresAt = now.Add(purpose == EnrolmentPurpose.Recovery ? RecoveryLifetime : Lifetime);
     }
 
     public bool IsUsableAt(DateTimeOffset now) =>

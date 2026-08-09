@@ -1249,3 +1249,18 @@ abbr[title] {
 .panel--diary .panel__head > .muted {
   font-size: 0.85rem;
 }
+
+/* A note that is a caution rather than an aside — an outstanding password reset
+   is the case it exists for. Carries a border on the INLINE START edge, so it
+   moves to the right-hand side when the page mirrors. */
+.note--warn {
+  padding: 8px 12px;
+  border-inline-start: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+:root[dir='rtl'] .note--warn {
+  border-radius: 6px 0 0 6px;
+}

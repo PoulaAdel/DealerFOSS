@@ -79,6 +79,28 @@ public interface IStaffDirectory
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Mints a single-use code for somebody who ALREADY has a password and has
+    /// forgotten it — the backstop of ADR-018, for a person who has lost their
+    /// phone as well.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="IssueEnrolmentCodeAsync"/> in three ways that all
+    /// matter. It needs <c>Staff.ResetPassword</c>, not <c>Staff.Manage</c>:
+    /// handing over the ability to sign in as an existing person — possibly one
+    /// more privileged than the issuer — is not the same act as fixing a rota. It
+    /// requires the account to HAVE a password, where enrolment requires it not
+    /// to. And the code it mints is marked for recovery, so it cannot be redeemed
+    /// down the enrolment path and skip that check.
+    ///
+    /// The issue is visible on the staff record, not only in the audit trail: a
+    /// dealership must be able to see that somebody handed out access.
+    /// </remarks>
+    Task<Result<StaffEnrolmentCode>> IssueRecoveryCodeAsync(
+        Guid userId,
+        Guid actingUserId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Exchanges a code for a password. Reached by somebody who cannot sign in
     /// yet, so it takes the email rather than a session — and answers identically
     /// whether the email is unknown, the code is wrong, or the code has expired,
@@ -146,6 +168,14 @@ public sealed record StaffMember(
 
     /// <summary>True when they have never held a credential — a starter, not a leaver.</summary>
     bool AwaitingEnrolment,
+
+    /// <summary>
+    /// When a reset code was last handed out for this account and is still live,
+    /// or null. On the record rather than only in the audit trail, because a
+    /// dealership must be able to SEE that somebody handed out access without
+    /// going looking for it (ADR-018).
+    /// </summary>
+    DateTimeOffset? RecoveryIssuedAt,
     IReadOnlyList<StaffAssignment> Assignments);
 
 /// <summary>
@@ -211,7 +241,17 @@ public static class StaffErrors
 
     public static Error AlreadyEnrolled { get; } = Error.Conflict(
         "staff.already_enrolled",
-        "That account already has a password. Somebody who has forgotten theirs needs a reset, which does not exist yet.");
+        "That account already has a password. Somebody who has forgotten theirs needs a reset code instead.");
+
+    /// <summary>
+    /// The mirror of <see cref="AlreadyEnrolled"/>. Nothing to recover on an
+    /// account that never had a password — that person needs a starter code, and
+    /// quietly issuing one here would be enrolment under a permission meant for
+    /// something else.
+    /// </summary>
+    public static Error NothingToRecover { get; } = Error.Conflict(
+        "staff.nothing_to_recover",
+        "That account has never had a password. Issue a starter code instead.");
 
     public static Error CannotStopYourself { get; } = Error.Validation(
         "staff.cannot_stop_yourself",

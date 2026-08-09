@@ -28,6 +28,7 @@ const working: StaffMember = {
   hasSecondFactor: true,
   canSignIn: true,
   awaitingEnrolment: false,
+  recoveryIssuedAt: null,
   assignments: [
     {
       id: 'a1',
@@ -47,6 +48,7 @@ const starter: StaffMember = {
   hasSecondFactor: false,
   canSignIn: false,
   awaitingEnrolment: true,
+  recoveryIssuedAt: null,
   assignments: [],
 };
 
@@ -57,6 +59,7 @@ const leaver: StaffMember = {
   displayName: 'Chris Blake',
   isActive: false,
   awaitingEnrolment: false,
+  recoveryIssuedAt: null,
 };
 
 const roles: StaffRole[] = [

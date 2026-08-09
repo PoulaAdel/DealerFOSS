@@ -46,6 +46,13 @@ public sealed class AntiForgeryMiddleware(RequestDelegate next)
         // so nothing to have issued a token. The code is the credential, and it
         // is single-use, hashed, and expires.
         "/api/v1/auth/enrol",
+        // Recovering a forgotten password, for the identical reason. The proof —
+        // an authenticator code, or a manager-issued one — is the credential, and
+        // a CSRF token cannot exist for a caller with no session to have minted
+        // it. Note what this exemption does NOT weaken: a successful recovery
+        // issues no session, so nothing here can be chained into being signed in.
+        "/api/v1/auth/recover/authenticator",
+        "/api/v1/auth/recover/code",
     ];
 
     private readonly RequestDelegate _next = next;

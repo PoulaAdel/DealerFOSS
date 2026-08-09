@@ -84,9 +84,16 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
             builder.Property(x => x.Id).ValueGeneratedNever();
             builder.Property(x => x.CodeHash).HasMaxLength(64).IsRequired();
 
-            // The redemption path finds the live code for one account, and the
-            // cleanup path finds expired ones.
-            builder.HasIndex(x => new { x.UserId, x.ConsumedAt });
+            // Stored as its name. A reset code and a starter code are the same
+            // shape and must never be confused, so this column is worth being
+            // readable in the database rather than an integer somebody has to
+            // look up.
+            builder.Property(x => x.Purpose).HasConversion<string>().HasMaxLength(20);
+
+            // Both redemption paths find the live code for one account AND its
+            // purpose — a query missing the purpose would find the other kind.
+            // The cleanup path finds expired ones.
+            builder.HasIndex(x => new { x.UserId, x.Purpose, x.ConsumedAt });
             builder.HasIndex(x => x.ExpiresAt);
         });
 

@@ -481,6 +481,26 @@ function Person({
           </button>
         ) : null}
 
+        {/* The backstop of ADR-018, and only for somebody who HAS a password —
+            a starter needs the enrolment code above, which is a different act
+            with different preconditions. Offered here rather than hidden behind
+            a permission check in the browser: the server holds
+            Staff.ResetPassword and its refusal names the permission, which is
+            more useful than a button that is silently absent. */}
+        {!person.awaitingEnrolment && person.isActive ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              void act(async () =>
+                onIssued(await post<StaffEnrolmentCode>(`/staff/${person.id}/recovery`, {})),
+              )
+            }
+          >
+            {t('staff.reset')}
+          </button>
+        ) : null}
+
         <button
           type="button"
           disabled={busy}
@@ -491,6 +511,16 @@ function Person({
           {person.isActive ? t('staff.stopAccount') : t('staff.letThemBackIn')}
         </button>
       </div>
+
+      {/* Visible on the record, not only in the audit trail: a dealership must
+          be able to see that somebody handed out access without going looking
+          for it (ADR-018). It disappears when the code is used or expires,
+          because what matters is what is live right now. */}
+      {person.recoveryIssuedAt === null ? null : (
+        <p className="note note--warn" role="status">
+          {t('staff.resetIssued', { when: format.dateTime(person.recoveryIssuedAt) })}
+        </p>
+      )}
 
       {person.isActive ? <p className="note">{t('staff.stoppingNote')}</p> : null}
     </section>
