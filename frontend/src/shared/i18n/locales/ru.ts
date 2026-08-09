@@ -864,6 +864,55 @@ export const ru: Catalogue = {
   'workshop.assignedElsewhere':
     'Назначен сотруднику, которого нет в вашем списке, — возможно, он работает на другой площадке.',
 
+  // --- Журнал записи в сервис ---------------------------------------------------
+  // Машины, которых ждут, но которых ещё нет. «Запись», а не «слот»: сервис
+  // записывает на утро, а не на сорок минут.
+  'enum.appointmentStatus.Scheduled': 'Ожидается',
+  'enum.appointmentStatus.Arrived': 'Приехала',
+  'enum.appointmentStatus.NoShow': 'Не приехала',
+  'enum.appointmentStatus.Cancelled': 'Отменена',
+
+  'diary.title': 'Ожидаются',
+  'diary.loading': 'Загрузка журнала записи…',
+  'diary.empty': 'Записей нет. Журнал пуст.',
+  'diary.count': {
+    one: 'ожидается {count} машина',
+    few: 'ожидаются {count} машины',
+    many: 'ожидается {count} машин',
+    other: 'ожидается {count} машины',
+  },
+  'diary.dayLoad': {
+    one: '{count} машина, {hours} ч работы',
+    few: '{count} машины, {hours} ч работы',
+    many: '{count} машин, {hours} ч работы',
+    other: '{count} машины, {hours} ч работы',
+  },
+  'diary.unestimated': 'Без оценки',
+  'diary.colWhen': 'Когда',
+  'diary.colCustomer': 'Клиент',
+  'diary.colVehicle': 'Машина',
+  'diary.colReason': 'По какому поводу',
+  'diary.colHours': 'Оценка',
+  'diary.colWhat': 'Что дальше',
+  'diary.itsHere': 'Машина здесь',
+  'diary.arriving': 'Открываем заказ-наряд…',
+  'diary.didNotCome': 'Не приехала',
+  'diary.becameJob': 'Заказ-наряд {number}',
+
+  'diary.book': 'Записать машину',
+  'diary.bookTitle': 'Записать машину',
+  'diary.customer': 'Клиент',
+  'diary.vehicle': 'Машина',
+  'diary.when': 'Когда',
+  'diary.hours': 'Ожидаемые часы работы',
+  'diary.hoursHint': 'Оставьте пустым, если оценки ещё нет.',
+  'diary.reason': 'С чем приезжает машина',
+  'diary.reasonPlaceholder': 'Годовое ТО',
+  'diary.take': 'Записать',
+  'diary.taking': 'Записываем…',
+  'diary.pickCustomer': 'Выберите клиента',
+  'diary.pickVehicle': 'Выберите машину',
+
   // --- Консоль управления установкой ------------------------------------------
   // Словарь намеренно отличается от дилерского: тот, кто читает эти экраны,
   // обслуживает установку. «Дилер» здесь — учётная запись на сервере, а не

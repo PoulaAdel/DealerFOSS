@@ -880,6 +880,59 @@ export const ar: Catalogue = {
   'workshop.assignedElsewhere':
     'مُسنَد إلى شخص ليس في قائمة موظفيك — ربما يعمل في فرع آخر.',
 
+  // --- دفتر مواعيد الورشة ---------------------------------------------------------
+  // السيارات المنتظرة التي لم تصل بعد. «حجز» لا «فترة زمنية»: الورشة تحجز
+  // صباحًا كاملًا، لا أربعين دقيقة.
+  'enum.appointmentStatus.Scheduled': 'منتظرة',
+  'enum.appointmentStatus.Arrived': 'وصلت',
+  'enum.appointmentStatus.NoShow': 'لم تحضر',
+  'enum.appointmentStatus.Cancelled': 'أُلغي',
+
+  'diary.title': 'قادمة',
+  'diary.loading': 'جارٍ تحميل دفتر المواعيد…',
+  'diary.empty': 'لا حجوزات. الدفتر خالٍ.',
+  'diary.count': {
+    zero: 'لا سيارات منتظرة',
+    one: 'سيارة واحدة منتظرة',
+    two: 'سيارتان منتظرتان',
+    few: '{count} سيارات منتظرة',
+    many: '{count} سيارة منتظرة',
+    other: '{count} سيارة منتظرة',
+  },
+  'diary.dayLoad': {
+    zero: 'لا سيارات، {hours} ساعة عمل',
+    one: 'سيارة واحدة، {hours} ساعة عمل',
+    two: 'سيارتان، {hours} ساعة عمل',
+    few: '{count} سيارات، {hours} ساعة عمل',
+    many: '{count} سيارة، {hours} ساعة عمل',
+    other: '{count} سيارة، {hours} ساعة عمل',
+  },
+  'diary.unestimated': 'بلا تقدير',
+  'diary.colWhen': 'متى',
+  'diary.colCustomer': 'العميل',
+  'diary.colVehicle': 'السيارة',
+  'diary.colReason': 'لماذا',
+  'diary.colHours': 'التقدير',
+  'diary.colWhat': 'ماذا الآن',
+  'diary.itsHere': 'وصلت',
+  'diary.arriving': 'جارٍ فتح أمر الشغل…',
+  'diary.didNotCome': 'لم تحضر',
+  'diary.becameJob': 'أمر الشغل {number}',
+
+  'diary.book': 'حجز سيارة',
+  'diary.bookTitle': 'حجز سيارة',
+  'diary.customer': 'العميل',
+  'diary.vehicle': 'السيارة',
+  'diary.when': 'متى',
+  'diary.hours': 'ساعات العمل المتوقعة',
+  'diary.hoursHint': 'اتركه فارغًا إن لم يقدّرها أحد بعد.',
+  'diary.reason': 'سبب إحضار السيارة',
+  'diary.reasonPlaceholder': 'الصيانة السنوية',
+  'diary.take': 'احجز',
+  'diary.taking': 'جارٍ الحجز…',
+  'diary.pickCustomer': 'اختر عميلًا',
+  'diary.pickVehicle': 'اختر سيارة',
+
   // --- وحدة تحكّم إدارة التثبيت -------------------------------------------------
   // مفردات مختلفة عن مفردات الوكالة عن قصد: من يقرأ هذه الشاشات يُشغّل التثبيت
   // نفسه. و«الوكالة» هنا حساب على خادم، لا معرض فيه سيارات.

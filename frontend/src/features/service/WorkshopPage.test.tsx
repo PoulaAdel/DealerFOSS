@@ -101,13 +101,19 @@ function renderWorkshop() {
 
 const noStaff = { ok: true as const, body: [] };
 
+// The screen now carries the diary above the job list. These tests are about the
+// jobs, so the diary answers "nothing booked in" — arranged rather than left
+// unmocked, because an unarranged path throws and every test here would quietly
+// render an error panel instead. The diary has its own file.
+const noDiary = { ok: true as const, body: { appointments: [], load: [] } };
+
 async function openJob() {
   await userEvent.click(await screen.findByRole('button', { name: 'RO-1001' }));
 }
 
 describe('the workshop list', () => {
   it('shows the jobs in the workshop', async () => {
-    mockApi({ '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
+    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
     renderWorkshop();
 
     expect(await screen.findByRole('button', { name: 'RO-1001' })).toBeVisible();
@@ -117,6 +123,7 @@ describe('the workshop list', () => {
 
   it('leads with the calls somebody owes, because each one blocks an invoice', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 2 })] },
       '/staff': noStaff,
     });
@@ -128,7 +135,7 @@ describe('the workshop list', () => {
   });
 
   it('says nothing about calls when there are none to make', async () => {
-    mockApi({ '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
+    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
     renderWorkshop();
     await screen.findByRole('button', { name: 'RO-1001' });
 
@@ -136,7 +143,7 @@ describe('the workshop list', () => {
   });
 
   it('defaults to jobs still open', async () => {
-    mockApi({ '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
+    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
     renderWorkshop();
     await screen.findByRole('button', { name: 'RO-1001' });
 
@@ -145,6 +152,7 @@ describe('the workshop list', () => {
 
   it('says plainly when the caller may not see this workshop', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders': { ok: false, status: 403, code: 'service.forbidden', detail: 'No.' },
       '/staff': noStaff,
     });
@@ -155,6 +163,7 @@ describe('the workshop list', () => {
 
   it('offers a way back from a failure', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders': { ok: false, status: 500, code: 'server', detail: 'It fell over.' },
       '/staff': noStaff,
     });
@@ -164,7 +173,7 @@ describe('the workshop list', () => {
   });
 
   it('keeps the wide table scrolling inside its own box', async () => {
-    mockApi({ '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
+    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
     const { container } = renderWorkshop();
     await screen.findByRole('button', { name: 'RO-1001' });
 
@@ -175,6 +184,7 @@ describe('the workshop list', () => {
 describe('one job', () => {
   it('splits labour from parts, because one total tells a manager nothing', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': {
         ok: true,
         body: detail({ labourTotal: 180, partsTotal: 284, amountDue: 464 }),
@@ -193,6 +203,7 @@ describe('one job', () => {
 
   it('shows declined work at nothing rather than at what it would have cost', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': {
         ok: true,
         body: detail({
@@ -211,6 +222,7 @@ describe('one job', () => {
 
   it('offers only the moves the server says are legal', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail({ availableMoves: ['Completed', 'Cancelled'] }) },
       '/repair-orders': { ok: true, body: [summary()] },
       '/staff': noStaff,
@@ -225,6 +237,7 @@ describe('one job', () => {
 
   it('offers nothing on a finished job', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': {
         ok: true,
         body: detail({ status: 'Invoiced', availableMoves: [], invoicedAt: '2026-08-04T10:00:00Z' }),
@@ -240,6 +253,7 @@ describe('one job', () => {
 
   it('hides the write-up form once the work is frozen', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': {
         ok: true,
         body: detail({ status: 'Completed', linesAreOpen: false, availableMoves: ['Invoiced'] }),
@@ -265,6 +279,7 @@ describe('work nobody has agreed to', () => {
 
   it('marks it as nobody having asked', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: unanswered },
       '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 1 })] },
       '/staff': noStaff,
@@ -277,6 +292,7 @@ describe('work nobody has agreed to', () => {
 
   it('records how the answer was obtained, not just the answer', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: unanswered },
       '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 1 })] },
       '/repair-orders/ro1/lines/l2/answer': { ok: true, body: detail() },
@@ -301,6 +317,7 @@ describe('work nobody has agreed to', () => {
 
   it('treats "they said no" as a real answer rather than a deletion', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: unanswered },
       '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 1 })] },
       '/repair-orders/ro1/lines/l2/answer': { ok: true, body: detail() },
@@ -323,6 +340,7 @@ describe('work nobody has agreed to', () => {
     // and recording what the customer said are different acts, and the server's
     // AnswerLine deliberately has no LinesAreOpen check.
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': {
         ok: true,
         body: detail({
@@ -349,6 +367,7 @@ describe('work nobody has agreed to', () => {
     // about; a greyed-out button would say less and would be a second copy of the
     // rule. Predicting the answer here is the mistake this test exists to stop.
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': {
         ok: true,
         body: detail({
@@ -395,6 +414,7 @@ describe('who is doing the work', () => {
 
   it('offers colleagues by name', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail() },
       '/repair-orders': { ok: true, body: [summary()] },
       '/staff': { ok: true, body: [technician] },
@@ -407,6 +427,7 @@ describe('who is doing the work', () => {
 
   it('draws no picker when the caller may not read the staff list', async () => {
     mockApi({
+      '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail() },
       '/repair-orders': { ok: true, body: [summary()] },
       '/staff': { ok: false, status: 403, code: 'staff.read_forbidden', detail: 'No.' },

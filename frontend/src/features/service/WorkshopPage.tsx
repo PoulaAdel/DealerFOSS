@@ -26,6 +26,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, openDocument, post, remove } from '../../shared/api';
+import { DiaryPanel } from './DiaryPanel';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import type {
@@ -178,6 +179,16 @@ export function WorkshopPage() {
           {t('workshop.openOnly')}
         </label>
       </header>
+
+      {/* What is coming, above what is here. A service manager's day is both
+          halves at once, and putting the diary behind a second route would make
+          somebody hold half the answer in their head. */}
+      <DiaryPanel
+        onArrived={(job) => {
+          setSelected(job);
+          void find(openOnly);
+        }}
+      />
 
       {waiting.length === 0 ? null : (
         <section className="panel panel--waiting">

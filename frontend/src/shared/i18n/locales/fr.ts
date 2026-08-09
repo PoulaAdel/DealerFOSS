@@ -833,6 +833,52 @@ export const fr: Catalogue = {
   'workshop.assignedElsewhere':
     'Attribué à quelqu’un qui ne figure pas dans votre liste de personnel — cette personne travaille peut-être sur un autre site.',
 
+  // --- Le carnet de l’atelier ---------------------------------------------------
+  // Les voitures attendues, pas encore arrivées. « Rendez-vous », jamais
+  // « créneau » : un atelier réserve une matinée, pas quarante minutes.
+  'enum.appointmentStatus.Scheduled': 'Attendue',
+  'enum.appointmentStatus.Arrived': 'Arrivée',
+  'enum.appointmentStatus.NoShow': 'Non venue',
+  'enum.appointmentStatus.Cancelled': 'Annulé',
+
+  'diary.title': 'À venir',
+  'diary.loading': 'Chargement du carnet…',
+  'diary.empty': 'Rien de réservé. Le carnet est vide.',
+  'diary.count': {
+    one: '{count} voiture attendue',
+    other: '{count} voitures attendues',
+  },
+  'diary.dayLoad': {
+    one: '{count} voiture, {hours} h de travail',
+    other: '{count} voitures, {hours} h de travail',
+  },
+  'diary.unestimated': 'Non estimé',
+  'diary.colWhen': 'Quand',
+  'diary.colCustomer': 'Client',
+  'diary.colVehicle': 'Véhicule',
+  'diary.colReason': 'Motif',
+  // « Est. » se lirait comme le verbe « est » dans une en-tête de colonne.
+  'diary.colHours': 'Estim.',
+  'diary.colWhat': 'Et maintenant',
+  'diary.itsHere': 'Elle est là',
+  'diary.arriving': 'Ouverture de l’ordre…',
+  'diary.didNotCome': 'Non venue',
+  'diary.becameJob': 'Ordre {number}',
+
+  'diary.book': 'Réserver une voiture',
+  'diary.bookTitle': 'Réserver une voiture',
+  'diary.customer': 'Client',
+  'diary.vehicle': 'Voiture',
+  'diary.when': 'Quand',
+  'diary.hours': 'Heures de travail prévues',
+  'diary.hoursHint': 'Laissez vide si personne ne l’a encore estimé.',
+  'diary.reason': 'Motif de la visite',
+  'diary.reasonPlaceholder': 'Révision annuelle',
+  'diary.take': 'Réserver',
+  'diary.taking': 'Réservation…',
+  'diary.pickCustomer': 'Choisissez un client',
+  'diary.pickVehicle': 'Choisissez une voiture',
+
   // --- La console d’administration --------------------------------------------
   // Vocabulaire volontairement distinct de celui de la concession : qui lit ces
   // écrans exploite l’installation. « Concession » désigne ici un compte sur un

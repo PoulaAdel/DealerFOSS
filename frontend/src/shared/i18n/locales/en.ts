@@ -858,6 +858,51 @@ export const en = {
   'workshop.assignedElsewhere':
     'Assigned to somebody who is not on your staff list — they may work at another location.',
 
+  // --- The service diary ----------------------------------------------------
+  // Cars expected but not here yet. "Booking" throughout, never "appointment
+  // slot" — a workshop books a car in for a morning, not for a 40-minute window.
+  'enum.appointmentStatus.Scheduled': 'Expected',
+  'enum.appointmentStatus.Arrived': 'Arrived',
+  'enum.appointmentStatus.NoShow': 'Did not come',
+  'enum.appointmentStatus.Cancelled': 'Cancelled',
+
+  'diary.title': 'Coming in',
+  'diary.loading': 'Loading the diary…',
+  'diary.empty': 'Nothing booked in. The diary is clear.',
+  'diary.count': {
+    one: '{count} car expected',
+    other: '{count} cars expected',
+  },
+  'diary.dayLoad': {
+    one: '{count} car, {hours} h of work',
+    other: '{count} cars, {hours} h of work',
+  },
+  'diary.unestimated': 'Not estimated',
+  'diary.colWhen': 'When',
+  'diary.colCustomer': 'Customer',
+  'diary.colVehicle': 'Vehicle',
+  'diary.colReason': 'What for',
+  'diary.colHours': 'Est.',
+  'diary.colWhat': 'What now',
+  'diary.itsHere': 'It’s here',
+  'diary.arriving': 'Opening the job…',
+  'diary.didNotCome': 'Did not come',
+  'diary.becameJob': 'Job {number}',
+
+  'diary.book': 'Book a car in',
+  'diary.bookTitle': 'Book a car in',
+  'diary.customer': 'Customer',
+  'diary.vehicle': 'Car',
+  'diary.when': 'When',
+  'diary.hours': 'Hours of work expected',
+  'diary.hoursHint': 'Leave blank if nobody has estimated it yet.',
+  'diary.reason': 'What they are bringing it in for',
+  'diary.reasonPlaceholder': 'Annual service',
+  'diary.take': 'Book it',
+  'diary.taking': 'Booking…',
+  'diary.pickCustomer': 'Choose a customer',
+  'diary.pickVehicle': 'Choose a car',
+
   // --- The control-plane console --------------------------------------------
   // A separate vocabulary from the dealership's, deliberately. Whoever reads
   // these screens runs the installation: they never see a car, and "dealership"

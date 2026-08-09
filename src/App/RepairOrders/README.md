@@ -1,10 +1,12 @@
 # RepairOrders — the workshop
 
-A car comes in, somebody works on it, the customer pays. This capability owns the
-`service` schema and nothing else.
+A car is expected, it comes in, somebody works on it, the customer pays. This
+capability owns the `service` schema and nothing else.
 
 ## What it does
 
+- **Takes a booking** for a car that is not here yet, and records what each day
+  is committed to. See "The diary" below.
 - **Books a car in** against a customer and *their own vehicle* — not a unit in
   stock. A customer's car is not on anybody's lot, and modelling service against
   inventory would make the capability unusable the day after the warranty runs
@@ -52,6 +54,40 @@ was obtained — not that two different people must perform it.
 The seeded `Technician` role holds `Service.Write` and not `Service.Authorize`,
 which is what makes the split testable rather than a claim in this file.
 
+## The diary
+
+A booking is **a promise that a car will arrive**, and it is deliberately not a
+repair order with an earlier date on it.
+
+```
+Scheduled ──► Arrived      (opens the job, and records which one)
+    │
+    ├───────► NoShow       (silence)
+    └───────► Cancelled    (the customer told us)
+```
+
+**A promise becomes a job exactly once.** Arriving is refused the second time,
+naming the job that already exists. This is what makes "Appointment → RO
+reconciles to its source" true rather than asserted: the arrival opens the repair
+order and links it **inside one transaction**, so there can never be an arrival
+with no job or a job the diary has lost. Removing that transaction has been
+rehearsed — it leaves two repair orders against one car.
+
+**A car that never came is recorded, not deleted.** NoShow and Cancelled are kept
+apart because one is silence and the other is the customer ringing, and the
+difference is exactly what tells a manager who to remind the day before.
+
+**Capacity is reported, not enforced.** The diary returns each day's committed
+hours alongside the bookings, and refuses nothing. Real shops overbook on
+purpose; a diary that refused at eight hours would be worked around within a week
+by booking everything as an estimate of zero, which would make the figure
+useless. An arrived car stops counting — its hours belong to its job, and
+counting both would show the shop as twice as busy as it is.
+
+Booking takes `Service.Write`, the same right that opens a job. Arriving a car
+*is* opening a job, so a weaker booking permission would be a route to a stronger
+one.
+
 ## Statuses
 
 ```
@@ -79,15 +115,24 @@ is worse than one that says where it stops:
   and therefore no efficiency or productivity reporting.
 - **No warranty claims**, no internal jobs, and no split-pay across customer,
   warranty, and internal on the same job.
-- **No appointments or workshop loading.** A job is booked in when the car is
-  there.
+- **No technician-level scheduling.** The diary loads a *workshop*, not a person
+  or a ramp. "Which technician is free at eleven" is a different model and is not
+  answered here.
+- **No reminders.** The diary knows who is expected tomorrow and sends nobody a
+  message about it; there is no communications channel yet (roadmap I5 lists one
+  as provider-neutral, and none is built).
 - **No multi-line invoice document**, and no printing.
-- **No screen** — the API is complete and nothing drives it yet.
 
 ## Files
 
 | File | Job |
 |---|---|
+| `Appointment.cs` | a promise, and the rule that it becomes one job |
+| `AppointmentStatus.cs` | the four states, and which of them count against a day |
+| `IAppointments.cs` | what other capabilities may call, and the diary's shape |
+| `AppointmentService.cs` | scope, permissions, and the arrival transaction |
+| `AppointmentTables.cs` | how a booking is stored |
+| `AppointmentEndpoints.cs` | the HTTP surface for the diary |
 | `RepairOrder.cs` | the rules: what may be added when, and what blocks an invoice |
 | `ServiceLine.cs` | one piece of work, and its authorization state |
 | `RepairOrderStatus.cs` | the statuses, the legal moves, and the two line enums |

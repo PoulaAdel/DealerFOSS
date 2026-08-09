@@ -37,6 +37,22 @@ export interface CustomerSummary {
   primaryPhone: string | null;
 }
 
+/**
+ * Enough to identify a car in a list. A customer's own car, which is not the
+ * same thing as a unit in stock — see InventoryUnit for that.
+ */
+export interface VehicleSummary {
+  id: string;
+  vin: string;
+  displayName: string;
+  modelYear: number;
+  make: string;
+  model: string;
+  trim: string | null;
+  /** A car recorded without a valid VIN, which the workshop is allowed to do. */
+  hasVinException: boolean;
+}
+
 /** What a caller supplies to create a customer. Mirrors NewCustomer. */
 export interface NewCustomer {
   kind: 'Person' | 'Business';
@@ -370,6 +386,52 @@ export interface RepairOrderSummary {
   /** Phone calls the advisor owes. Every one of them blocks an invoice. */
   linesAwaitingAnswer: number;
   openedAt: string;
+}
+
+/** Where a booking got to. Only Scheduled can still be moved or arrived. */
+export type AppointmentStatus = 'Scheduled' | 'Arrived' | 'NoShow' | 'Cancelled';
+
+export interface AppointmentView {
+  id: string;
+  rooftopId: string;
+  scheduledFor: string;
+  /** Workshop time, not a slot length. Null means nobody estimated. */
+  estimatedHours: number | null;
+  status: AppointmentStatus;
+  customerId: string;
+  customerName: string;
+  vehicleId: string;
+  vehicle: string;
+  reason: string;
+  advisorUserId: string | null;
+  /** The job this became. The only link between the diary and the workshop. */
+  repairOrderId: string | null;
+  repairOrderNumber: string | null;
+  arrivedAt: string | null;
+  outcome: string | null;
+  isOpen: boolean;
+}
+
+/**
+ * One day's commitment. `bookedHours` counts only cars still expected — once one
+ * arrives its hours belong to the job, and counting both would show a workshop
+ * as twice as busy as it is.
+ */
+export interface DiaryDay {
+  date: string;
+  expected: number;
+  bookedHours: number;
+}
+
+export interface Diary {
+  appointments: AppointmentView[];
+  load: DiaryDay[];
+}
+
+/** Both halves, because the screen that marks a car in then wants the job. */
+export interface ArrivalResult {
+  appointment: AppointmentView;
+  repairOrder: RepairOrderDetail;
 }
 
 export interface ServiceLineView {

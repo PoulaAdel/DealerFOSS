@@ -222,6 +222,7 @@ public static class DevelopmentSeeder
         await SeedLeadsAsync(tenantDb, clock);
         await SeedDealsAsync(tenantDb, clock);
         await SeedRepairOrdersAsync(tenantDb, clock);
+        await SeedAppointmentsAsync(tenantDb, clock);
 
         var record = await hostCatalog.Tenants.SingleOrDefaultAsync(t => t.Slug == slug);
         if (record is null)
@@ -417,6 +418,54 @@ public static class DevelopmentSeeder
             null, null, 284.00m, now.AddHours(-4), null);
 
         db.RepairOrders.AddRange(booked, underWay);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// A few cars expected but not yet here, so the diary has a shape on a fresh
+    /// clone. Dated forward from now rather than fixed, because a booking in the
+    /// past is refused — and a seed that only worked in August would be a puzzle
+    /// for whoever cloned this in September.
+    /// </summary>
+    private static async Task SeedAppointmentsAsync(TenantDb db, IClock clock)
+    {
+        if (await db.Appointments.AnyAsync())
+        {
+            return;
+        }
+
+        var rooftop = await db.Rooftops.OrderBy(r => r.Code).Select(r => r.Id).FirstOrDefaultAsync();
+        var customers = await db.Customers.OrderBy(c => c.LastName).Select(c => c.Id).Take(2).ToListAsync();
+        var vehicles = await db.Vehicles.OrderBy(v => v.Vin).Select(v => v.Id).Take(2).ToListAsync();
+
+        if (rooftop == default || customers.Count == 0 || vehicles.Count == 0)
+        {
+            return;
+        }
+
+        var now = clock.UtcNow;
+        var tomorrow = now.Date.AddDays(1);
+
+        // Two on one morning, so the day carries 4.5 hours and the load figure
+        // has something to say.
+        var first = Appointment.Book(
+            Guid.NewGuid(), rooftop, customers[0], vehicles[0],
+            new DateTimeOffset(tomorrow.AddHours(9), TimeSpan.Zero),
+            "Annual service.", now, estimatedHours: 2m);
+
+        var second = Appointment.Book(
+            Guid.NewGuid(), rooftop, customers[^1], vehicles[^1],
+            new DateTimeOffset(tomorrow.AddHours(11), TimeSpan.Zero),
+            "Judders under braking above 50.", now, estimatedHours: 2.5m);
+
+        // Nobody estimated this one, which is honest and different from
+        // estimating zero — the screen shows it as unestimated.
+        var later = Appointment.Book(
+            Guid.NewGuid(), rooftop, customers[0], vehicles[^1],
+            new DateTimeOffset(tomorrow.AddDays(3).AddHours(8).AddMinutes(30), TimeSpan.Zero),
+            "Air conditioning not cold.", now);
+
+        db.Appointments.AddRange(first, second, later);
         await db.SaveChangesAsync();
     }
 

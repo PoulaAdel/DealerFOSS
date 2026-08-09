@@ -836,6 +836,51 @@ export const de: Catalogue = {
   'workshop.assignedElsewhere':
     'Jemandem zugewiesen, der nicht auf Ihrer Mitarbeiterliste steht — die Person arbeitet möglicherweise an einem anderen Standort.',
 
+  // --- Das Werkstattbuch ------------------------------------------------------
+  // Erwartete Fahrzeuge, die noch nicht da sind. „Termin“, nie „Zeitfenster“:
+  // Eine Werkstatt bucht einen Vormittag, keine vierzig Minuten.
+  'enum.appointmentStatus.Scheduled': 'Erwartet',
+  'enum.appointmentStatus.Arrived': 'Angekommen',
+  'enum.appointmentStatus.NoShow': 'Nicht gekommen',
+  'enum.appointmentStatus.Cancelled': 'Abgesagt',
+
+  'diary.title': 'Erwartet',
+  'diary.loading': 'Werkstattbuch wird geladen…',
+  'diary.empty': 'Nichts gebucht. Das Werkstattbuch ist leer.',
+  'diary.count': {
+    one: '{count} Fahrzeug erwartet',
+    other: '{count} Fahrzeuge erwartet',
+  },
+  'diary.dayLoad': {
+    one: '{count} Fahrzeug, {hours} Std. Arbeit',
+    other: '{count} Fahrzeuge, {hours} Std. Arbeit',
+  },
+  'diary.unestimated': 'Nicht geschätzt',
+  'diary.colWhen': 'Wann',
+  'diary.colCustomer': 'Kunde',
+  'diary.colVehicle': 'Fahrzeug',
+  'diary.colReason': 'Wofür',
+  'diary.colHours': 'Schätz.',
+  'diary.colWhat': 'Was nun',
+  'diary.itsHere': 'Ist da',
+  'diary.arriving': 'Auftrag wird angelegt…',
+  'diary.didNotCome': 'Nicht gekommen',
+  'diary.becameJob': 'Auftrag {number}',
+
+  'diary.book': 'Fahrzeug einbuchen',
+  'diary.bookTitle': 'Fahrzeug einbuchen',
+  'diary.customer': 'Kunde',
+  'diary.vehicle': 'Fahrzeug',
+  'diary.when': 'Wann',
+  'diary.hours': 'Erwartete Arbeitsstunden',
+  'diary.hoursHint': 'Leer lassen, wenn es noch niemand geschätzt hat.',
+  'diary.reason': 'Weshalb das Fahrzeug kommt',
+  'diary.reasonPlaceholder': 'Jahresinspektion',
+  'diary.take': 'Buchen',
+  'diary.taking': 'Wird gebucht…',
+  'diary.pickCustomer': 'Kunde wählen',
+  'diary.pickVehicle': 'Fahrzeug wählen',
+
   // --- Die Verwaltungskonsole -------------------------------------------------
   // Bewusst ein anderes Vokabular als das des Autohauses: Wer diese Bildschirme
   // liest, betreibt die Installation. „Autohaus“ heißt hier ein Konto auf einem
