@@ -148,6 +148,13 @@ and re-locks when the file or kind changes. That is the kind of rule that gets
 "simplified" away by somebody who reads it as friction — `RecordsPage.test.tsx`
 is what makes removing it fail loudly.
 
+**A screen is five bands, in order of urgency.** Head, what needs a person now,
+the next thing in place, the record list, the selected record inline. Selecting a
+row is never a second route — the operator keeps their filter and their place.
+[ADR-020](../docs/adr/0020-screen-shape-and-interface-standards.md) has the shape,
+the rules a band obeys, and an honest list of which interface standards this build
+meets, meets partly, and does not meet yet.
+
 **Every screen renders every state.** Loading, empty, permission-denied, failure,
 and retry. A screen that only handles the happy path is not finished.
 `InventoryPage` is the
