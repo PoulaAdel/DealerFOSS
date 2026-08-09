@@ -106,10 +106,13 @@ reason: a bill that can be edited quietly is not a bill.
 Named rather than hidden, because a service module that pretends to be complete
 is worse than one that says where it stops:
 
-- **No parts inventory.** A part on a job is a description and a price. Nothing
-  is reserved, ordered, or relieved from stock — so the ledger records service
-  **revenue** and no cost, and **gross profit on service does not exist yet**.
-  Inventing a cost figure would be worse than the gap.
+- ~~No parts inventory~~ — built, and this entry is kept struck through rather
+  than deleted because it was wrong for weeks after it stopped being true. A line
+  may name a catalogue part, and invoicing issues it from stock at cost inside
+  the same transaction as the ledger posting, so **service does have a
+  gross-profit figure**. A line with no `partId` is still legitimate — a one-off
+  item bought for a single job never enters the catalogue — and that line simply
+  carries no cost.
 - **No estimate versus actual.** One set of numbers, which is what is billed.
 - **No labour operation catalogue**, no flat-rate times, no technician clocking,
   and therefore no efficiency or productivity reporting.

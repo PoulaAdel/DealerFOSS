@@ -1,10 +1,13 @@
 # Implementation Status
 
-Current phase: **I0 complete → I1 complete except OIDC, which is blocked**
-Current milestone: **security hardening and the operator runbook** (complete). Dashboards are the one remaining item of the three requested and are **not started**
-Last verified: 2026-08-07 · `dotnet build` 0 warnings/0 errors, `dotnet test` 483/483,
+Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
+has since run ahead into I3, I4 and I5 rather than down the phase list — the
+per-phase exit criteria below are the honest record of which parts are done
+Current milestone: **the service diary** (complete). Every one of the 25 screens
+now reads from the translation catalogue
+Last verified: 2026-08-09 · `dotnet build` 0 warnings/0 errors, `dotnet test` 546/546,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 182/182, and `npm run build` all pass
+`npm run typecheck`, `npm test` 236/236, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which

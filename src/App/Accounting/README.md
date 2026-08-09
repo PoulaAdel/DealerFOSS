@@ -81,10 +81,10 @@ roles express rather than the code.
   sale in ledger terms before calling it, so neither side has to learn the other's
   vocabulary.
 
-## The closing period, decided but not yet enforced
+## The closing period
 
-**Answered by the maintainer, 2026-08-06.** This supersedes an earlier assumed
-rule, and the difference is not cosmetic — see the warning below.
+**Answered by the maintainer, 2026-08-06, and built since.** This supersedes an
+earlier assumed rule, and the difference is not cosmetic — see the warning below.
 
 - **The cutoff is the calendar month end**, the 30th or the 31st. That is the
   line transactions fall on one side or the other of.
@@ -109,14 +109,14 @@ being closed — that is what the window is for. What happens to a transaction
 dated inside a month that is **already locked** is a separate policy decision and
 is not yet settled.
 
-**None of this is enforced yet.** Nothing currently stops an entry posting into a
-month somebody already reported on. The decision is recorded here so the period
-model is designed once, correctly — journal rows are immutable, so a period
-column cannot be backfilled onto them later.
+**This is enforced.** A period is a row with a state, closing is an operation
+somebody performs, and a posting into a closed month is refused with
+`accounting.period_closed` until it is reopened on the record. `verify-e2e.ps1`
+proves it end to end. The design note above is kept rather than deleted because
+it is *why* the model is a state and not a date comparison, and that reasoning
+would otherwise be re-derived wrongly the next time somebody touches it.
 
 ## Not built yet — and this list matters
-
-- **Accounting periods, closing, and locking**, as above.
 - ~~A trial balance~~ — built. `GET /api/v1/accounting/balances` totals every
   account over a period, states each balance on the account's normal side, and
   reports whether the two columns agree. Rooftop-scoped like everything else: a
@@ -127,6 +127,11 @@ column cannot be backfilled onto them later.
 - **Tax.** No sales tax, registration, or title fees.
 - **Floor-plan payoff** on the dealership's own inventory.
 - **A configurable chart of accounts**, account administration, or manual journals.
-- **Service, parts, and payroll** postings.
+- ~~Service and parts postings~~ — built. Invoicing a repair order posts labour,
+  parts and sublet revenue, and the parts come off the shelf at cost in the same
+  transaction, so service carries a gross-profit figure rather than revenue with
+  no cost against it.
+- **Payroll** postings.
 
-Until those exist this is an honest record of vehicle sales, not a set of books.
+Until those exist this is an honest record of vehicle sales and workshop
+invoices, not a full set of books.

@@ -99,6 +99,7 @@ real server is an integration test and belongs in `tests/Integration`.
 |---|---|
 | `src/app/` | routing, the two shells, and who is signed in to each |
 | `src/features/` | one folder per screen area, mirroring the backend capabilities |
+| `src/features/service/` | the workshop, and the diary of cars still to come, on one screen |
 | `src/shared/` | the two API clients and the response shapes |
 | `src/shared/i18n/` | every visible string, in five languages, and the direction that follows the language |
 | `src/test/` | the fetch stub every component test shares |
@@ -198,12 +199,16 @@ appears, and status shown as a word rather than only a colour.
 
 ## Not built yet
 
-Customers, vehicles, leads, deals, and the ledger all have working APIs and no
-screens. `InventoryPage` is the pattern to copy.
+**Vehicles** have a working API and no screen of their own. A customer's car can
+be chosen when booking one in, and that is the only place the list surfaces —
+there is nowhere to correct a VIN or see a car's history. (This entry used to say
+the same of customers, leads, deals and the ledger; all four have had screens for
+some time and the sentence was stale. `InventoryPage` is still the pattern to
+copy.)
 
 A refused anti-forgery check is detected (`ApiError.needsSignIn`) and acted on
 nowhere: such a write shows the raw refusal instead of sending the person to sign
-in again.
+in again. Only `api.test.ts` reads the flag.
 
 Also missing: an OpenAPI-generated client (`src/shared/contracts.ts` is
 hand-written and must be changed alongside the server — it had already drifted

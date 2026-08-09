@@ -32,10 +32,12 @@ confirm.
 is chased, and becomes a deal on a specific car with the two linked.
 
 **And the dealership no longer stops when the customer drives away.** A car can
-be booked into the workshop, worked on, and invoiced — with parts coming off the
-shelf at cost, so the department has a real profit figure — and work nobody
-agreed to pay for cannot reach the bill. The month can be closed and locked. The
-customer is handed a printed order or invoice.
+be booked in days before it arrives — the workshop can see what each day is
+already committed to — and when it turns up, one click opens the job. It is then
+worked on and invoiced, with parts coming off the shelf at cost so the department
+has a real profit figure, and work nobody agreed to pay for cannot reach the
+bill. The month can be closed and locked. The customer is handed a printed order
+or invoice.
 
 **Every one of those has a screen.** There is no part of the system left that
 only a developer can reach.
@@ -72,8 +74,12 @@ vehicle description, note and part number. And a handful of detailed error
 messages from the server are still English; those are named in the engineering
 notes and closing it is a change to the server rather than to the screens.
 
-**About 69% of the first release. Four of the eight stages are finished and three
+**About 72% of the first release. Four of the eight stages are finished and three
 more are under way.**
+
+It moved from 69% because the service lane went from half-built to three-quarters
+— the booking diary was one of the two things stage 5 was missing. Only finance
+applications to lenders remain, and those need a lender to test against.
 
 The languages did not move that number, and it would be dishonest if they had.
 It measures how much of the *plan* exists, and speaking five languages was never
@@ -94,7 +100,7 @@ months of focused work.
 | 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Half** — in and out both work, with a screen. Keeping in step with another live system does not exist |
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Done** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, warranties, paperwork. | **Done** |
-| 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Half** — the workshop and parts stock are built. Finance applications to lenders and a booking diary are not |
+| 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Three quarters** — the workshop, parts stock and the booking diary are built. Finance applications to lenders are not, and need a lender to test against |
 | 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | **Done** — balances, month-end, staff admin, an operator console, setting up a new dealership, and a dashboard for the month |
 | 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | **Half** — backups are rehearsed and there are two installable packages. Security testing, performance work and training are not |
 | 8 | Live pilot | Two dealerships running on it for 60 days. | Not started |
@@ -321,6 +327,36 @@ months of focused work.
   532 of service" tells a manager nothing
 - **A job can be given to a named technician**
 
+### Cars that have not arrived yet
+
+The workshop used to start when a car was physically at the counter. It can now
+take a booking days ahead, on the same screen as the jobs already on the ramps —
+because "what have I got today" is both halves of that question at once.
+
+- **One click turns a booking into a job.** When the car turns up you press
+  "It's here", and the job opens with the customer, the car and what they said
+  already on it. Behind that, the booking and the job are written together or
+  not at all — so the diary can never show a car that arrived with no job
+  against it, nor lose track of one it opened
+- **A car cannot be booked in twice.** Press it again and you are told which job
+  already exists, because a second job means one visit billed twice. This is the
+  one rule the whole diary is built around
+- **Each day shows what it is already committed to** — how many cars and how many
+  hours of work. That is the only question a diary is ever really asked
+- **A full day still takes the booking.** Workshops overbook deliberately: jobs
+  come in under estimate and cars get collected late. The screen shows you the
+  load and lets you decide. A system that refused would be worked around inside
+  a week by booking everything as "no estimate", which would make the figure
+  worthless
+- **A car that never came is kept, not deleted** — and "they rang to cancel" is
+  recorded separately from "nobody rang at all". The second one is how you know
+  who to ring the day before next time
+- **Nobody estimated it** shows as exactly that, rather than as zero hours
+
+Not there yet: the diary loads a *workshop*, not a person or a ramp — "who is
+free at eleven" is a different question. And it knows who is expected tomorrow
+but sends nobody a reminder, because there is no way to send a message yet.
+
 ### What gets sold with the car
 
 - **Warranties, GAP and cover are sold on the deal**, each with its own price,
@@ -454,9 +490,13 @@ months of focused work.
 - Taxes and registration fees calculated by jurisdiction
 - **Signed** paperwork. A vehicle order and a service invoice both print; nothing
   captures a signature
-- Appointments as real diary entries, or automatic follow-up reminders
+- Automatic follow-up reminders — the workshop knows who is expected tomorrow
+  and there is still no way to send anybody a message
 - Photos of a vehicle
-- Booking a service in advance, or planning who is working on what tomorrow
+- Planning **who** is working on what tomorrow. A service booking now exists and
+  loads the workshop as a whole, but not a named technician or a particular ramp
+- An enquiry marked "Appointment" is still only a status on that enquiry; it does
+  not put anything in the service diary, which is a different department's book
 - **Reports beyond the month.** There is a dashboard for the current month and a
   trial balance. There is nothing for a quarter or a year, no comparison between
   locations side by side, and no league table by salesperson or advisor
