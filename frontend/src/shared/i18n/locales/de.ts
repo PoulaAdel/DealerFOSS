@@ -873,6 +873,12 @@ export const de: Catalogue = {
   'staff.resetIssued': 'Am {when} wurde ein Zurücksetzcode ausgestellt und noch nicht verwendet.',
   'staff.resetDone': 'Ich habe ihn vorgelesen',
 
+  // The signal band on the deal desk: approvals somebody is blocking.
+  'deals.awaitingTitle': 'Wartet auf eine Freigabe',
+  'deals.awaitingNote': {
+    one: '{count} Verkauf ist von niemandem freigegeben und kann bis dahin nicht ausgeliefert werden.',
+    other: '{count} Verkäufe sind von niemandem freigegeben und können bis dahin nicht ausgeliefert werden.',
+  },
   // Changing a value where it is written. See shared/InlineEdit.tsx.
   'inline.changeThis': '{label}: {value}. Zum Ändern drücken.',
   'inline.saved': 'Gespeichert',

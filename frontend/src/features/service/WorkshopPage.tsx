@@ -191,7 +191,7 @@ export function WorkshopPage() {
       />
 
       {waiting.length === 0 ? null : (
-        <section className="panel panel--waiting">
+        <section className="panel panel--signal">
           <h2>{t('workshop.waitingTitle')}</h2>
           {/* One plural entry rather than a hand-written singular/plural pair:
               the second half of the sentence changes with the count too ("it

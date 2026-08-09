@@ -901,6 +901,14 @@ export const ru: Catalogue = {
   'staff.resetIssued': 'Код сброса выдан {when} и пока не использован.',
   'staff.resetDone': 'Я продиктовал код',
 
+  // The signal band on the deal desk: approvals somebody is blocking.
+  'deals.awaitingTitle': 'Ждут руководителя',
+  'deals.awaitingNote': {
+    one: '{count} сделка никем не согласована и до этого не может быть выдана.',
+    few: '{count} сделки никем не согласованы и до этого не могут быть выданы.',
+    many: '{count} сделок никем не согласованы и до этого не могут быть выданы.',
+    other: '{count} сделки никем не согласованы и до этого не могут быть выданы.',
+  },
   // Changing a value where it is written. See shared/InlineEdit.tsx.
   'inline.changeThis': '{label}: {value}. Нажмите, чтобы изменить.',
   'inline.saved': 'Сохранено',

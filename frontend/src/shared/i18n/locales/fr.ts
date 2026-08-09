@@ -871,6 +871,12 @@ export const fr: Catalogue = {
     'Un code de réinitialisation a été délivré {when} et n’a pas encore été utilisé.',
   'staff.resetDone': 'Je le lui ai lu',
 
+  // The signal band on the deal desk: approvals somebody is blocking.
+  'deals.awaitingTitle': 'En attente d’un responsable',
+  'deals.awaitingNote': {
+    one: '{count} vente n’est validée par personne et ne peut pas être livrée tant qu’elle ne l’est pas.',
+    other: '{count} ventes ne sont validées par personne et ne peuvent pas être livrées tant qu’elles ne le sont pas.',
+  },
   // Changing a value where it is written. See shared/InlineEdit.tsx.
   'inline.changeThis': '{label} : {value}. Appuyez pour le modifier.',
   'inline.saved': 'Enregistré',

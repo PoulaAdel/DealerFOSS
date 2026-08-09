@@ -1371,3 +1371,57 @@ td a,
   inline-size: 18px;
   block-size: 18px;
 }
+
+/* --- The signal band ------------------------------------------------------
+   ADR-020's second band: what needs a person NOW. It was written into the
+   workshop as `.panel--waiting` with no rules behind it at all, so the most
+   important element on the busiest screen has been rendering as an ordinary
+   panel. Renamed to `.panel--signal` because it is a shape other screens use
+   too, not a workshop detail.
+
+   It earns its emphasis by DISAPPEARING when empty. A permanently present
+   "nothing needs attention" trains people to stop looking at this spot, which
+   is the one place they must not stop looking. */
+
+.panel--signal {
+  max-width: none;
+  margin-block-end: 20px;
+  border-inline-start: 4px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+.panel--signal > h2 {
+  margin-block-start: 0;
+}
+
+/* Each row is one thing somebody owes: a call, an approval. Not a table —
+   these are actions, and a table invites reading rather than doing. */
+.calls {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calls > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* A button that reads as a link, because it navigates within the screen rather
+   than performing the action itself. */
+.calls .link {
+  min-block-size: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -174,6 +174,29 @@ describe('the service diary', () => {
     expect(JSON.parse(String(sent?.init?.body))).toMatchObject({ estimatedHours: 4 });
   });
 
+  it('says it saved, and the confirmation survives the refresh', async () => {
+    mockApi({
+      '/appointments?openOnly=true&limit=100': { ok: true, body: diary() },
+      '/appointments/a1/reschedule': { ok: true, status: 204 },
+    });
+
+    render(<DiaryPanel onArrived={() => {}} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Est\..*change it/i }));
+
+    const box = screen.getByRole('textbox', { name: 'Est.' });
+    await userEvent.clear(box);
+    await userEvent.type(box, '4{Enter}');
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Saved');
+
+    // HONEST LIMIT: this asserts the confirmation appears, and nothing more.
+    // The bug it was written after — the re-read blanking the table, unmounting
+    // the row and taking the acknowledgement with it — does NOT fail this test,
+    // because the stub answers instantly and loading/ready land in one React
+    // batch. Rehearsed 2026-08-09. That defect was found in a browser and only a
+    // browser can find it; the quiet refresh in DiaryPanel says the same.
+  });
+
   it('keeps the booking’s time when only the hours change', async () => {
     mockApi({
       '/appointments?openOnly=true&limit=100': { ok: true, body: diary() },

@@ -36,7 +36,7 @@ export function DealsPage() {
   // records which enquiry produced it, so this is a real link rather than a
   // convenience: without it the two halves of the same sale sit in the system
   // unaware of each other.
-  const { t } = useI18n();
+  const { t, format } = useI18n();
   const describe = useApiMessage();
 
   const [params, setParams] = useSearchParams();
@@ -77,6 +77,12 @@ export function DealsPage() {
       setLoad({ kind: 'failed', message: describe(failure) });
     }
   }
+
+  // Submitted and not yet signed off. The server decides who may approve; this
+  // is only the list of what is blocked, and it is drawn from the summary
+  // already on screen rather than fetched again.
+  const awaitingApproval =
+    load.kind === 'ready' ? load.deals.filter((deal) => deal.status === 'Submitted') : [];
 
   return (
     <>
@@ -119,6 +125,38 @@ export function DealsPage() {
             {t('deals.start')}
           </button>
         </div>
+      )}
+
+      {/* ADR-020's signal band: what needs a person NOW, above the list of
+          everything. A submitted deal is a car somebody has sold and cannot
+          hand over, and the manager who has to sign it off has no other way to
+          know it is sitting there. Drawn from the summary already loaded, so it
+          costs no extra request — and it disappears when the queue is empty,
+          because a permanent "nothing to approve" teaches people to stop
+          looking at this spot. */}
+      {awaitingApproval.length === 0 ? null : (
+        <section className="panel panel--signal">
+          <h2>{t('deals.awaitingTitle')}</h2>
+          <p className="note">
+            {t('deals.awaitingNote', { count: awaitingApproval.length })}
+          </p>
+          <ul className="calls">
+            {awaitingApproval.map((deal) => (
+              <li key={deal.id}>
+                {/* Led by the stock number, as the workshop's band is led by
+                    the job number. It names the specific car — which is what a
+                    manager asks about — and keeps this control distinct from
+                    the customer-name button on the row below. */}
+                <button type="button" className="link" onClick={() => void open(deal.id)}>
+                  <span dir="ltr">{deal.stockNumber}</span> — {deal.customerName}
+                </button>{' '}
+                <span className="muted">
+                  {deal.vehicle} · {format.money(deal.amountDue, deal.currency)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {selected === null ? null : (
@@ -299,7 +337,9 @@ function DealPanel({
       <Actions deal={deal} busy={busy} onMove={(status, note) => void move(status, note)} />
 
       <h3>{t('deals.whatHappened')}</h3>
-      <ol className="history">
+      {/* Named, so it is distinguishable from the other lists on the screen —
+          by a screen-reader user moving between landmarks as much as by a test. */}
+      <ol className="history" aria-label={t('deals.whatHappened')}>
         {[...deal.history].reverse().map((entry, index) => (
           <li key={`${entry.toStatus}-${entry.occurredAt}-${index}`}>
             <span className="strong">{label('dealStatus', entry.toStatus)}</span>{' '}

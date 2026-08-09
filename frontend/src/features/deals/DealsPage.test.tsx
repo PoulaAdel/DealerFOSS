@@ -68,6 +68,39 @@ async function openDeal() {
 }
 
 describe('the deal desk', () => {
+  it('leads with the deals a manager is blocking', async () => {
+    mockApi({
+      '/deals': {
+        ok: true,
+        body: [
+          { ...summary, id: 'd1', status: 'Submitted' },
+          { ...summary, id: 'd2', status: 'Draft' },
+        ],
+      },
+    });
+
+    renderDeals();
+
+    // A submitted deal is a car somebody has sold and cannot hand over. The
+    // manager who has to sign it off has no other way to know it is waiting.
+    const band = await screen.findByRole('heading', { name: 'Waiting for a manager' });
+    expect(band).toBeVisible();
+    expect(screen.getByText(/1 deal is signed off by nobody yet/)).toBeVisible();
+
+    // Only the submitted one. A draft is not blocked on anybody.
+    expect(screen.getByRole('button', { name: /NAG-1042 — Marisol Alvarez/ })).toBeVisible();
+  });
+
+  it('says nothing at all when no deal is waiting', async () => {
+    mockApi({ '/deals': { ok: true, body: [{ ...summary, status: 'Draft' }] } });
+    renderDeals();
+    await screen.findByRole('button', { name: 'Marisol Alvarez' });
+
+    // A permanent "nothing to approve" teaches people to stop reading the one
+    // spot they must not stop reading.
+    expect(screen.queryByRole('heading', { name: 'Waiting for a manager' })).not.toBeInTheDocument();
+  });
+
   it('lists what is being worked', async () => {
     mockApi({ '/deals': { ok: true, body: [summary] } });
     renderDeals();
@@ -405,7 +438,9 @@ describe('one deal', () => {
     renderDeals();
     await openDeal();
 
-    const history = await screen.findByRole('list');
+    // By name: the screen now carries a signal band with its own list, and
+    // "the only list on the page" stopped being a safe way to find this one.
+    const history = await screen.findByRole('list', { name: 'What happened' });
     const entries = within(history).getAllByRole('listitem');
     expect(entries[0]).toHaveTextContent('Submitted');
     expect(entries[0]).toHaveTextContent('Priced up.');

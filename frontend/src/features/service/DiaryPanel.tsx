@@ -53,8 +53,23 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
   const [error, setError] = useState<string | null>(null);
   const [booking, setBooking] = useState(false);
 
-  const find = useCallback(async () => {
-    setLoad({ kind: 'loading' });
+  /**
+   * `quiet` re-reads without blanking the table.
+   *
+   * Not cosmetic. A full loading state unmounts the rows, which destroys the
+   * state of anything living in them — including the "Saved" confirmation an
+   * inline edit had just put on screen, so the one acknowledgement that the
+   * change took never appeared at all.
+   *
+   * Found in a BROWSER, and only there: with the fetch stub answering
+   * instantly, loading and ready land in one React batch and the row never
+   * unmounts long enough to lose anything. Rehearsed 2026-08-09 — removing this
+   * guard fails no test. jsdom cannot see this class of bug at all.
+   */
+  const find = useCallback(async (quiet = false) => {
+    if (!quiet) {
+      setLoad({ kind: 'loading' });
+    }
 
     try {
       // Only what is still expected. A diary showing last month's no-shows above
@@ -113,8 +128,9 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
 
     // The day's load is computed by the server, so it has to be re-read rather
     // than adjusted here — a browser doing that arithmetic would be a second
-    // copy of the rule about which bookings count.
-    await find();
+    // copy of the rule about which bookings count. Quietly, so the row survives
+    // and can say it saved.
+    await find(true);
   }
 
   async function didNotCome(appointment: AppointmentView) {

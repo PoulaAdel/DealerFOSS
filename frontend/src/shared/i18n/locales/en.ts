@@ -899,6 +899,12 @@ export const en = {
   'staff.resetIssued': 'A reset code was issued {when} and has not been used yet.',
   'staff.resetDone': 'I have read it out',
 
+  // The signal band on the deal desk: approvals somebody is blocking.
+  'deals.awaitingTitle': 'Waiting for a manager',
+  'deals.awaitingNote': {
+    one: '{count} deal is signed off by nobody yet, and cannot be delivered until it is.',
+    other: '{count} deals are signed off by nobody yet, and cannot be delivered until they are.',
+  },
   // Changing a value where it is written. See shared/InlineEdit.tsx.
   'inline.changeThis': '{label}: {value}. Press to change it.',
   'inline.saved': 'Saved',

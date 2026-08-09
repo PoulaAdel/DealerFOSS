@@ -88,10 +88,22 @@ steps is a form that is asking for things it does not need.
 
 **Held in part.**
 
-6. **Zero-jump consolidation.** The workshop is the reference: the diary of cars
-   still to come sits above the jobs on the ramps, and marking a car in opens
-   its job in one click without leaving the screen. The deal desk is close.
-   Other screens are single-purpose lists and have not been consolidated.
+6. **Zero-jump consolidation.** Checked properly on 2026-08-09, and the picture
+   was better than assumed in one way and worse in another.
+
+   Better: **no screen puts a record behind a route.** Every route is an area,
+   and every detail is already an inline band — the rule was being followed by
+   imitation before it was written down.
+
+   Worse: **the signal band existed on exactly one screen, and had no CSS.**
+   `.panel--waiting` was written into the workshop with no rules behind it, so
+   the most important element on the busiest screen was rendering as an ordinary
+   panel. It is now `.panel--signal`, styled, and the deal desk has one: deals
+   submitted and not signed off, drawn from the summary already loaded, gone
+   when the queue is empty.
+
+   Still to do: a signal band for enquiries nobody has touched, and detail bands
+   on stock and customers, which are read-only lists today.
 7. **Smart defaults.** Present where somebody thought of it — the short name
    suggested from a dealership's name, the workshop inferred rather than asked
    for, the last dealer group remembered at sign-in. Not systematic, and nothing

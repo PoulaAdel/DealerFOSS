@@ -917,6 +917,16 @@ export const ar: Catalogue = {
   'staff.resetIssued': 'صدر رمز إعادة تعيين في {when} ولم يُستخدم بعد.',
   'staff.resetDone': 'قرأته عليه',
 
+  // The signal band on the deal desk: approvals somebody is blocking.
+  'deals.awaitingTitle': 'بانتظار المدير',
+  'deals.awaitingNote': {
+    zero: 'لا صفقات بانتظار الاعتماد.',
+    one: 'صفقة واحدة لم يعتمدها أحد بعد، ولا يمكن تسليمها قبل ذلك.',
+    two: 'صفقتان لم يعتمدهما أحد بعد، ولا يمكن تسليمهما قبل ذلك.',
+    few: '{count} صفقات لم يعتمدها أحد بعد، ولا يمكن تسليمها قبل ذلك.',
+    many: '{count} صفقة لم يعتمدها أحد بعد، ولا يمكن تسليمها قبل ذلك.',
+    other: '{count} صفقة لم يعتمدها أحد بعد، ولا يمكن تسليمها قبل ذلك.',
+  },
   // Changing a value where it is written. See shared/InlineEdit.tsx.
   'inline.changeThis': '{label}: {value}. اضغط لتغييره.',
   'inline.saved': 'حُفظ',

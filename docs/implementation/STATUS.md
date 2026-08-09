@@ -3,11 +3,11 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **account recovery** (complete). Every one of the 25 screens
+Current milestone: **the interface standards** (complete). Every one of the 25 screens
 now reads from the translation catalogue
 Last verified: 2026-08-09 · `dotnet build` 0 warnings/0 errors, `dotnet test` 559/559,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 245/245, and `npm run build` all pass
+`npm run typecheck`, `npm test` 255/255, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -479,3 +479,19 @@ a privileged manager-issued code as the backstop. No longer blocked on a decisio
   Evidence: `dotnet build` 0/0, `dotnet test` **559/559** (was 546), `verify-e2e.ps1` **PASS**, `npm audit` clean, `npm run typecheck` clean, `npm test` **245/245** (was 236), `npm run build` ok. Walked in a real browser in English and Arabic: every field pinned `dir="ltr"`, the page mirroring, no horizontal scroll.
 
   **Still missing, and named.** A passkey or fingerprint — it needs a WebAuthn dependency, which is a licence-and-advisory decision of the same kind ADR-018 and ADR-019 already made twice, not something to slip in. Email and text message need an account somebody buys, and report `false` rather than being offered and failing. And **whoever runs the installation still cannot recover their own account**: there is nobody above them to issue a code, so it needs a different answer entirely.
+
+- **2026-08-09 — The interface standards, and the band nobody could see.** ADR-020's eleven standards go from five held to eight, and the two that moved were closed by *measuring* rather than by inspection.
+
+  **Instant search** on Customers and Parts. The debounce is the small half; the part that made this more than two lines is that the superseded request is **aborted**. Without it a slow reply for "f" lands after the right answer for "focus" and overwrites it, and the screen sits there confidently showing the wrong list — debouncing alone only makes that rarer, which is worse than leaving it obvious. Two prerequisites had to be fixed first: the api client turned an aborted fetch into "could not reach the server" (a red error on every keystroke), and the test stub ignored cancellation and answered instantly, so it could not tell code that cancels from code that does not. **Rehearsed:** removing the AbortController fails the race test.
+
+  **Inline editing**, in `shared/InlineEdit.tsx`, first used on the diary's estimate — the most repeated edit in a service diary and the one that stops being kept current the moment it needs a form, which then makes the day's load a lie. The idle state is a **button**, not a div with an `onClick`; that single choice is the difference between inline editing and a mouse-only feature.
+
+  **A measured AA pass** at 320px and 640px (1280 at 200%), both directions, all nine screens. Reflow, resize, keyboard reach and focus visibility pass. Target size found **five real failures** — including the inline-edit value I had just written at 22px wide — all floored at 24px and re-measured clean.
+
+  **Consolidation, checked rather than assumed.** Better than expected in one way: **no screen puts a record behind a route**; every route is an area and every detail is already an inline band. Worse in another: the **signal band existed on one screen and had no CSS at all**. `.panel--waiting` had been written into the workshop with no rules behind it, so the most important element on the busiest screen was rendering as an ordinary panel. Now `.panel--signal`, styled, and the deal desk has one: deals submitted and not signed off, drawn from data already loaded, gone when the queue is empty.
+
+  **Three measurements were wrong before they were right, and all three were caught before being believed.** The target-size sweep first ran against pages that had not rendered — every screen reported clean because every screen was empty. The focus-ring check reported all 24 controls as failing, which was programmatic `.focus()` not triggering `:focus-visible`. And a browser found a defect jsdom cannot see: re-reading the diary after an inline save blanked the table, unmounting the row and taking the "Saved" confirmation with it before anybody could read it — **rehearsed, and no test fails without the fix**, because the stub answers instantly and both states land in one React batch. The test says so in place of pretending to guard it.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **559/559**, `verify-e2e.ps1` **PASS**, `npm audit` clean, `npm run typecheck` clean, `npm test` **255/255** (was 245), `npm run build` ok.
+
+  **Still open on the interface**: a signal band for untouched enquiries, detail bands on stock and customers, quick-action toolbars, systematic smart defaults, and a motion vocabulary for autosave and background sync — which do not exist as behaviours yet, so inventing their animation would be decoration.
