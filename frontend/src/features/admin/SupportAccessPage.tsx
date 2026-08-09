@@ -13,8 +13,10 @@
 //       administrator's. That is why the two clients are separate; see adminApi.
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { ApiError, adminApi, adminPost } from '../../shared/adminApi';
+import { adminApi, adminPost } from '../../shared/adminApi';
 import type { GrantedSupportAccess, SupportAccessRecord, TenantRow } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 type Load =
   | { kind: 'loading' }
@@ -22,6 +24,9 @@ type Load =
   | { kind: 'failed'; message: string };
 
 export function SupportAccessPage() {
+  const { t, format } = useI18n();
+  const describe = useApiMessage();
+
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [tenants, setTenants] = useState<TenantRow[]>([]);
 
@@ -35,12 +40,9 @@ export function SupportAccessPage() {
     try {
       setLoad({ kind: 'ready', grants: await adminApi<SupportAccessRecord[]>('/support-access') });
     } catch (failure) {
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'Could not load the record.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, []);
+  }, [describe]);
 
   useEffect(() => {
     void fetchGrants();
@@ -60,17 +62,13 @@ export function SupportAccessPage() {
 
     try {
       setOpened(
-        await adminPost<GrantedSupportAccess>(
-          '/support-access',
-          { reason, minutes: 60 },
-          tenant,
-        ),
+        await adminPost<GrantedSupportAccess>('/support-access', { reason, minutes: 60 }, tenant),
       );
 
       setReason('');
       await fetchGrants();
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -85,7 +83,7 @@ export function SupportAccessPage() {
       setOpened(null);
       await fetchGrants();
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -94,36 +92,34 @@ export function SupportAccessPage() {
   return (
     <>
       <header className="page__head">
-        <h1>Support access</h1>
+        <h1>{t('admin.supportAccess')}</h1>
       </header>
 
       <section className="panel">
-        <h2>Enter a dealership</h2>
-        <p>
-          You will be able to read their records and change nothing, for an hour
-          at most. They see this in their own log, with your name and the reason
-          you give here.
-        </p>
+        <h2>{t('admin.supportEnter')}</h2>
+        <p>{t('admin.supportLede')}</p>
 
         <form onSubmit={(e) => void open(e)} noValidate>
-          <label htmlFor="support-tenant">Dealership</label>
+          <label htmlFor="support-tenant">{t('admin.supportDealership')}</label>
+          {/* The dealership key, not its name — lowercase ASCII either way. */}
           <input
             id="support-tenant"
             name="tenant"
             list="support-tenants"
             value={tenant}
             onChange={(e) => setTenant(e.target.value)}
+            dir="ltr"
             required
           />
           <datalist id="support-tenants">
-            {tenants.map((t) => (
-              <option key={t.slug} value={t.slug}>
-                {t.name}
+            {tenants.map((candidate) => (
+              <option key={candidate.slug} value={candidate.slug}>
+                {candidate.name}
               </option>
             ))}
           </datalist>
 
-          <label htmlFor="support-reason">Why you need to go in</label>
+          <label htmlFor="support-reason">{t('admin.supportReason')}</label>
           <textarea
             id="support-reason"
             name="reason"
@@ -132,35 +128,34 @@ export function SupportAccessPage() {
             onChange={(e) => setReason(e.target.value)}
             required
           />
-          <p className="note">
-            This is recorded permanently, in their log as well as ours. Write
-            what you would be willing to have them read.
-          </p>
+          <p className="note">{t('admin.supportReasonNote')}</p>
 
           <p className="error" aria-live="polite">
             {error ?? ''}
           </p>
 
           <button type="submit" disabled={busy || reason.trim() === '' || tenant.trim() === ''}>
-            {busy ? 'Opening…' : 'Open access'}
+            {busy ? t('admin.supportOpening') : t('admin.supportOpen')}
           </button>
         </form>
 
         {opened === null ? null : (
           <p className="verdict verdict--ok" role="status">
-            You are in {opened.tenant} until{' '}
-            {new Date(opened.expiresAt).toLocaleTimeString()}. Open the
-            dealership’s screens in this browser to look; close the visit below
-            when you are done.
+            {/* format.time, not toLocaleTimeString: the latter follows the
+                operating system, and the reader chose a language here. */}
+            {t('admin.supportOpened', {
+              tenant: opened.tenant,
+              time: format.time(opened.expiresAt),
+            })}
           </p>
         )}
       </section>
 
-      <h2>The record</h2>
+      <h2>{t('admin.supportRecord')}</h2>
 
       {load.kind === 'loading' ? (
         <p className="state" aria-live="polite">
-          Loading the record…
+          {t('admin.supportLoading')}
         </p>
       ) : null}
 
@@ -168,47 +163,51 @@ export function SupportAccessPage() {
         <div className="state" role="alert">
           <p>{load.message}</p>
           <button type="button" onClick={() => void fetchGrants()}>
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       ) : null}
 
       {load.kind === 'ready' && load.grants.length === 0 ? (
-        <p className="state">Nobody has been into a dealership yet.</p>
+        <p className="state">{t('admin.supportEmpty')}</p>
       ) : null}
 
       {load.kind === 'ready' && load.grants.length > 0 ? (
         <div className="scroll">
           <table>
             <caption className="visually-hidden">
-              {load.grants.length} support visits, newest first
+              {t('admin.supportCaption', { count: load.grants.length })}
             </caption>
             <thead>
               <tr>
-                <th scope="col">Dealership</th>
-                <th scope="col">Who</th>
-                <th scope="col">Why</th>
-                <th scope="col">Opened</th>
-                <th scope="col">State</th>
+                <th scope="col">{t('admin.supportDealership')}</th>
+                <th scope="col">{t('admin.supportColWho')}</th>
+                <th scope="col">{t('admin.supportColWhy')}</th>
+                <th scope="col">{t('admin.supportColOpened')}</th>
+                <th scope="col">{t('admin.supportColState')}</th>
               </tr>
             </thead>
             <tbody>
               {load.grants.map((grant) => (
                 <tr key={grant.id}>
-                  <td className="mono">{grant.tenantSlug}</td>
-                  <td>{grant.administratorEmail}</td>
+                  <td className="mono" dir="ltr">
+                    {grant.tenantSlug}
+                  </td>
+                  <td dir="ltr">{grant.administratorEmail}</td>
+                  {/* Whoever typed the reason typed it in their own language.
+                      It is a record, so it is printed exactly as stored. */}
                   <td>{grant.reason}</td>
-                  <td>{new Date(grant.grantedAt).toLocaleString()}</td>
+                  <td>{format.dateTime(grant.grantedAt)}</td>
                   <td>
                     {grant.isActive ? (
                       <button type="button" disabled={busy} onClick={() => void end(grant)}>
-                        Close now
+                        {t('admin.supportCloseNow')}
                       </button>
                     ) : (
                       <span className="muted">
                         {grant.endedAt === null
-                          ? 'Expired'
-                          : `Closed ${new Date(grant.endedAt).toLocaleString()}`}
+                          ? t('admin.supportExpired')
+                          : t('admin.supportClosed', { date: format.dateTime(grant.endedAt) })}
                       </span>
                     )}
                   </td>

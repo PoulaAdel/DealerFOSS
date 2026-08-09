@@ -212,6 +212,10 @@ describe('the catalogues', () => {
       ['dash.colStatus', 'the same word in German'],
       ['workshop.miles', 'the same word in French'],
       ['workshop.colDetail', 'the same word in German'],
+      ['admin.badge', 'the same word in French'],
+      ['admin.colName', 'the same word in German'],
+      ['admin.colStatus', 'the same word in German'],
+      ['admin.colSchema', 'the same word in German'],
     ]);
 
     for (const [name, catalogue] of Object.entries(catalogues)) {

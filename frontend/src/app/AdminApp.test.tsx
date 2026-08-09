@@ -107,8 +107,11 @@ describe('the administration console', () => {
 
     await userEvent.type(screen.getByLabelText('Dealership name'), 'New Motors');
     await userEvent.type(screen.getByLabelText('Location code'), 'MAIN');
-    await userEvent.type(screen.getByLabelText("Manager's name"), 'Dana Reed');
-    await userEvent.type(screen.getByLabelText("Manager's email"), 'manager@newmotors.local');
+    // Typographic apostrophe: the label now comes from the catalogue, where a
+    // single-quoted string cannot carry a bare ' and every other apostrophe in
+    // the file is written the same way.
+    await userEvent.type(screen.getByLabelText('Manager’s name'), 'Dana Reed');
+    await userEvent.type(screen.getByLabelText('Manager’s email'), 'manager@newmotors.local');
     await userEvent.click(screen.getByRole('button', { name: 'Set it up' }));
 
     expect(await screen.findByText('ABCD-EFGH-JKLM')).toBeVisible();
@@ -286,5 +289,33 @@ describe('the administration console', () => {
     expect(screen.getByText('root@control.local')).toBeVisible();
     // The dealership's own navigation must be nowhere near this screen.
     expect(screen.queryByRole('link', { name: 'Stock' })).not.toBeInTheDocument();
+  });
+
+  it('speaks the reader’s language, and turns round for Arabic', async () => {
+    atAdmin();
+    mockApi({
+      '/admin/me': { ok: true, body: administrator },
+      '/admin/tenants': { ok: true, body: tenants },
+    });
+
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Dealerships' });
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'ar');
+
+    // The console was the last thing still in English. Its own vocabulary, its
+    // navigation, and the status chip a tenant row draws all have to move.
+    expect(await screen.findByRole('heading', { name: 'الوكالات' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'وصول الدعم' })).toBeVisible();
+    expect(screen.getByText('موقوفة')).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Dealerships' })).not.toBeInTheDocument();
+
+    // And the whole page mirrors, because direction is a property of the
+    // language rather than a setting beside it.
+    expect(document.documentElement.getAttribute('dir')).toBe('rtl');
+
+    // A dealership key travels in an HTTP header and must not be reordered by
+    // the bidirectional algorithm on its way past a reader's eyes.
+    expect(screen.getByText('northgroup')).toHaveAttribute('dir', 'ltr');
   });
 });

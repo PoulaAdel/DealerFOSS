@@ -106,6 +106,8 @@ export interface Formats {
   date: (value: string | number | Date) => string;
   /** A date and time, for an audit trail. */
   dateTime: (value: string | number | Date) => string;
+  /** A time of day on its own — "16:35" / "4:35 PM" — for "until when". */
+  time: (value: string | number | Date) => string;
   /** "August 2026", for a period heading. */
   monthAndYear: (year: number, month: number) => string;
   /** Joins a list the way the language does: "a, b and c" / "a، b وc". */
@@ -214,6 +216,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       minute: '2-digit',
     });
 
+    // Whether this reads "16:35" or "4:35 PM" is the locale's business, not
+    // ours — which is exactly why toLocaleTimeString() was wrong here: it asks
+    // the operating system, and the reader chose a language in the application.
+    const timeFormat = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
+
     const monthFormat = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' });
     const listFormat = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
 
@@ -234,6 +241,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       number: (value, options) => new Intl.NumberFormat(locale, options).format(value),
       date: (value) => dateFormat.format(new Date(value)),
       dateTime: (value) => dateTimeFormat.format(new Date(value)),
+      time: (value) => timeFormat.format(new Date(value)),
       // Built in UTC so a period labelled August is not shown as July to
       // somebody west of Greenwich — the month is a fact about the books, not
       // an instant in the reader's day.

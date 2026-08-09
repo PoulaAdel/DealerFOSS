@@ -8,11 +8,16 @@
 //       session that can reach enrolment and nothing else.
 
 import { useState, type FormEvent } from 'react';
-import { ApiError, adminPost } from '../../shared/adminApi';
+import { adminPost } from '../../shared/adminApi';
 import { useAdminSession } from '../../app/adminSession';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { AppearanceControls } from '../../app/AppearanceControls';
 
 export function AdminSignIn() {
   const { refresh } = useAdminSession();
+  const { t } = useI18n();
+  const describe = useApiMessage();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +41,7 @@ export function AdminSignIn() {
 
       await refresh();
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'Something went wrong. Try again.');
+      setError(describe(failure));
       setCode('');
     } finally {
       setBusy(false);
@@ -48,16 +53,21 @@ export function AdminSignIn() {
     // screens are near-identical, which is worst at exactly the moment somebody
     // is typing a password: they cannot tell which door they are at.
     <main className="signin signin--admin">
+      {/* Same reason as the dealership's sign-in: the language control has to be
+          reachable BEFORE anybody signs in, or somebody who reads only Arabic
+          has to read English to find out how to stop reading English. */}
+      <div className="signin__appearance">
+        <AppearanceControls />
+      </div>
+
       <h1>
-        DealerFOSS <span className="shell__badge">Administration</span>
+        {t('app.name')} <span className="shell__badge">{t('admin.badge')}</span>
       </h1>
 
       <form onSubmit={(e) => void submit(e)} noValidate>
-        <p className="signin__lede">
-          This signs you in to the installation, not to a dealership.
-        </p>
+        <p className="signin__lede">{t('admin.signInLede')}</p>
 
-        <label htmlFor="admin-email">Email</label>
+        <label htmlFor="admin-email">{t('signIn.email')}</label>
         <input
           id="admin-email"
           name="email"
@@ -65,10 +75,11 @@ export function AdminSignIn() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="username"
+          dir="ltr"
           required
         />
 
-        <label htmlFor="admin-password">Password</label>
+        <label htmlFor="admin-password">{t('signIn.password')}</label>
         <input
           id="admin-password"
           name="password"
@@ -76,10 +87,11 @@ export function AdminSignIn() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
+          dir="ltr"
           required
         />
 
-        <label htmlFor="admin-code">Code from your authenticator app</label>
+        <label htmlFor="admin-code">{t('admin.signInCode')}</label>
         <input
           id="admin-code"
           name="code"
@@ -87,15 +99,16 @@ export function AdminSignIn() {
           onChange={(e) => setCode(e.target.value)}
           inputMode="numeric"
           autoComplete="one-time-code"
+          dir="ltr"
         />
-        <p className="note">Leave blank only if you have not set one up yet.</p>
+        <p className="note">{t('admin.signInCodeNote')}</p>
 
         <p className="error" aria-live="polite">
           {error ?? ''}
         </p>
 
         <button type="submit" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? t('signIn.submitting') : t('signIn.submit')}
         </button>
       </form>
     </main>

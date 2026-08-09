@@ -879,4 +879,100 @@ export const ar: Catalogue = {
   'workshop.jobFinished': 'انتهى أمر الشغل هذا.',
   'workshop.assignedElsewhere':
     'مُسنَد إلى شخص ليس في قائمة موظفيك — ربما يعمل في فرع آخر.',
+
+  // --- وحدة تحكّم إدارة التثبيت -------------------------------------------------
+  // مفردات مختلفة عن مفردات الوكالة عن قصد: من يقرأ هذه الشاشات يُشغّل التثبيت
+  // نفسه. و«الوكالة» هنا حساب على خادم، لا معرض فيه سيارات.
+  'admin.badge': 'الإدارة',
+  'admin.navDealerships': 'الوكالات',
+  'admin.navSupportAccess': 'وصول الدعم',
+
+  'admin.signInLede': 'هذا تسجيل دخول إلى التثبيت، لا إلى وكالة.',
+  'admin.signInCode': 'الرمز من تطبيق المصادقة',
+  'admin.signInCodeNote': 'اتركه فارغًا فقط إن لم تكن قد أعددت تطبيقًا بعد.',
+
+  'admin.secondFactorTitle': 'أعدّ عامل التحقق الثاني',
+  'admin.secondFactorRequired':
+    'حسابات المسؤولين يجب أن يكون لها عامل ثانٍ. وإلى أن تُعدّه، هذه هي الشاشة الوحيدة المتاحة لك.',
+  'admin.secondFactorIntro':
+    'هذا الحساب يستطيع الدخول إلى أي وكالة على هذا التثبيت، فكلمة المرور وحدها لا تكفي لحمايته.',
+  'admin.noRecoveryCodes':
+    'لا توجد رموز استرداد لحساب المسؤول. إن فقدت هذا الهاتف، فلا بدّ لشخص لديه وصول إلى قاعدة البيانات أن يُلغي العامل نيابةً عنك.',
+
+  'admin.dealerships': 'الوكالات',
+  'admin.setUpDealership': 'إنشاء وكالة',
+  // «إيقاف» لا «تعليق»: حالة الوكالة تُكتب «موقوفة»، وكلمتان لحالة واحدة
+  // تُقرأان كأنهما حالتان مختلفتان.
+  'admin.suspendConfirm':
+    'هل توقف {name}؟ سيُسجَّل خروج جميع من فيها فورًا ولن يتمكنوا من العمل حتى تُستأنف.',
+  'admin.dealershipReady': '{name} جاهزة',
+  'admin.firstManager':
+    'أول مدير لديهم هو {email}. اقرأ له هذا الرمز — به يختار كلمة مروره بنفسه في شاشة تسجيل الدخول.',
+  'admin.codeShownOnce': 'هذه هي المرة الوحيدة التي يمكن عرضه فيها.',
+  'admin.codeShownOnceWhy':
+    'لا يُحفظ منه إلا نسخة مُعمّاة، فلا سبيل إلى استرجاعه — وإن ضاع، يمكن إصدار رمز جديد للمدير من شاشة «الموظفون» الخاصة بالوكالة نفسها. الدفاتر مفتوحة، فبإمكانهم مباشرة العمل فورًا.',
+  'admin.passedItOn': 'سلّمته',
+  'admin.loadingDealerships': 'جارٍ تحميل قائمة الوكالات…',
+  'admin.noDealerships': 'لا توجد وكالات على هذا التثبيت بعد. أنشئ الأولى من الأعلى.',
+  'admin.dealershipsCaption': {
+    zero: 'لا توجد وكالات على هذا التثبيت',
+    one: 'وكالة واحدة على هذا التثبيت',
+    two: 'وكالتان على هذا التثبيت',
+    few: '{count} وكالات على هذا التثبيت',
+    many: '{count} وكالة على هذا التثبيت',
+    other: '{count} وكالة على هذا التثبيت',
+  },
+  'admin.colName': 'الاسم',
+  'admin.colKey': 'المفتاح',
+  'admin.colStatus': 'الحالة',
+  'admin.colSchema': 'المخطط',
+  'admin.colInService': 'قيد الخدمة',
+  'admin.resume': 'استئناف',
+  'admin.suspend': 'إيقاف',
+
+  'admin.setUpNote':
+    'ينشئ هذا قاعدة بياناتهم، ويفتح دفاترهم لهذا الشهر، وينشئ مديرًا واحدًا يضيف بعده بقية الموظفين. لن ترى كلمة مرورهم ولن تختارها أبدًا.',
+  'admin.dealershipName': 'اسم الوكالة',
+  'admin.shortName': 'الاسم المختصر',
+  'admin.shortNameHint':
+    'حروف لاتينية صغيرة وأرقام وشرطات. يكتبه موظفوهم عند تسجيل الدخول، ولا يمكن تغييره بعد ذلك.',
+  'admin.firstLocation': 'الفرع الأول',
+  'admin.firstLocationPlaceholder': 'الفرع الرئيسي',
+  'admin.locationCode': 'رمز الفرع',
+  'admin.managerName': 'اسم المدير',
+  'admin.managerEmail': 'بريد المدير',
+  'admin.setItUp': 'أنشئها',
+  'admin.settingItUp': 'جارٍ الإنشاء…',
+  'admin.notCreated': 'لم تُنشأ الوكالة.',
+
+  'admin.supportAccess': 'وصول الدعم',
+  'admin.supportEnter': 'الدخول إلى وكالة',
+  'admin.supportLede':
+    'ستتمكن من قراءة سجلاتهم دون تغيير أي شيء، لساعة واحدة على الأكثر. وسيظهر ذلك في سجلّهم هم، باسمك وبالسبب الذي تكتبه هنا.',
+  'admin.supportDealership': 'الوكالة',
+  'admin.supportReason': 'سبب حاجتك إلى الدخول',
+  'admin.supportReasonNote':
+    'يُسجَّل هذا بشكل دائم، في سجلّهم كما في سجلّنا. اكتب ما ترضى أن يقرأوه.',
+  'admin.supportOpen': 'افتح الوصول',
+  'admin.supportOpening': 'جارٍ الفتح…',
+  'admin.supportOpened':
+    'أنت داخل {tenant} حتى {time}. افتح شاشات الوكالة في هذا المتصفح للاطلاع؛ وأغلق الزيارة أدناه عند الانتهاء.',
+  'admin.supportRecord': 'السجل',
+  'admin.supportLoading': 'جارٍ تحميل السجل…',
+  'admin.supportEmpty': 'لم يدخل أحد إلى أي وكالة بعد.',
+  'admin.supportCaption': {
+    zero: 'لا توجد زيارات دعم',
+    one: 'زيارة دعم واحدة',
+    two: 'زيارتا دعم',
+    few: '{count} زيارات دعم، الأحدث أولًا',
+    many: '{count} زيارة دعم، الأحدث أولًا',
+    other: '{count} زيارة دعم، الأحدث أولًا',
+  },
+  'admin.supportColWho': 'من',
+  'admin.supportColWhy': 'السبب',
+  'admin.supportColOpened': 'فُتحت',
+  'admin.supportColState': 'الحالة',
+  'admin.supportCloseNow': 'أغلقها الآن',
+  'admin.supportExpired': 'انتهت',
+  'admin.supportClosed': 'أُغلقت في {date}',
 };

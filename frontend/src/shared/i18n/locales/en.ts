@@ -857,4 +857,92 @@ export const en = {
   'workshop.jobFinished': 'This job is finished.',
   'workshop.assignedElsewhere':
     'Assigned to somebody who is not on your staff list — they may work at another location.',
+
+  // --- The control-plane console --------------------------------------------
+  // A separate vocabulary from the dealership's, deliberately. Whoever reads
+  // these screens runs the installation: they never see a car, and "dealership"
+  // here means an account on a server rather than a place with a forecourt.
+  // Translators — keep that distance. See AdminApp.tsx.
+  'admin.badge': 'Administration',
+  'admin.navDealerships': 'Dealerships',
+  'admin.navSupportAccess': 'Support access',
+
+  'admin.signInLede': 'This signs you in to the installation, not to a dealership.',
+  'admin.signInCode': 'Code from your authenticator app',
+  'admin.signInCodeNote': 'Leave blank only if you have not set one up yet.',
+
+  'admin.secondFactorTitle': 'Set up your second factor',
+  'admin.secondFactorRequired':
+    'Administrator accounts must have one. Until you set it up, this is the only screen you can use.',
+  'admin.secondFactorIntro':
+    'This account can enter any dealership on this installation, so a password on its own is not enough to hold it.',
+  'admin.noRecoveryCodes':
+    'There are no recovery codes for an administrator account. If you lose this phone, someone with database access has to clear it for you.',
+
+  'admin.dealerships': 'Dealerships',
+  'admin.setUpDealership': 'Set up a dealership',
+  'admin.suspendConfirm':
+    'Suspend {name}? Everyone there is signed out of the system immediately and cannot work until it is resumed.',
+  'admin.dealershipReady': '{name} is ready',
+  'admin.firstManager':
+    'Their first manager is {email}. Read this code out to them — they set their own password with it at the sign-in screen.',
+  'admin.codeShownOnce': 'This is the only time it can be shown.',
+  'admin.codeShownOnceWhy':
+    'Only a scrambled copy is kept, so it cannot be looked up again — if it goes astray, the manager can be issued a new one from the dealership’s own People screen. The books are open, so they can trade straight away.',
+  'admin.passedItOn': 'I have passed it on',
+  'admin.loadingDealerships': 'Loading the dealership list…',
+  'admin.noDealerships': 'No dealerships on this installation yet. Set the first one up above.',
+  'admin.dealershipsCaption': {
+    one: '{count} dealership on this installation',
+    other: '{count} dealerships on this installation',
+  },
+  'admin.colName': 'Name',
+  'admin.colKey': 'Key',
+  'admin.colStatus': 'Status',
+  'admin.colSchema': 'Schema',
+  'admin.colInService': 'In service',
+  'admin.resume': 'Resume',
+  'admin.suspend': 'Suspend',
+
+  'admin.setUpNote':
+    'This creates their database, opens their books for this month, and creates one manager who then adds everybody else. You will never see or choose their password.',
+  'admin.dealershipName': 'Dealership name',
+  'admin.shortName': 'Short name',
+  'admin.shortNameHint':
+    'Lowercase letters, digits and hyphens. Their staff type this to sign in, and it cannot be changed afterwards.',
+  'admin.firstLocation': 'First location',
+  'admin.firstLocationPlaceholder': 'Main site',
+  'admin.locationCode': 'Location code',
+  'admin.managerName': 'Manager’s name',
+  'admin.managerEmail': 'Manager’s email',
+  'admin.setItUp': 'Set it up',
+  'admin.settingItUp': 'Setting it up…',
+  'admin.notCreated': 'The dealership was not created.',
+
+  'admin.supportAccess': 'Support access',
+  'admin.supportEnter': 'Enter a dealership',
+  'admin.supportLede':
+    'You will be able to read their records and change nothing, for an hour at most. They see this in their own log, with your name and the reason you give here.',
+  'admin.supportDealership': 'Dealership',
+  'admin.supportReason': 'Why you need to go in',
+  'admin.supportReasonNote':
+    'This is recorded permanently, in their log as well as ours. Write what you would be willing to have them read.',
+  'admin.supportOpen': 'Open access',
+  'admin.supportOpening': 'Opening…',
+  'admin.supportOpened':
+    'You are in {tenant} until {time}. Open the dealership’s screens in this browser to look; close the visit below when you are done.',
+  'admin.supportRecord': 'The record',
+  'admin.supportLoading': 'Loading the record…',
+  'admin.supportEmpty': 'Nobody has been into a dealership yet.',
+  'admin.supportCaption': {
+    one: '{count} support visit',
+    other: '{count} support visits, newest first',
+  },
+  'admin.supportColWho': 'Who',
+  'admin.supportColWhy': 'Why',
+  'admin.supportColOpened': 'Opened',
+  'admin.supportColState': 'State',
+  'admin.supportCloseNow': 'Close now',
+  'admin.supportExpired': 'Expired',
+  'admin.supportClosed': 'Closed {date}',
 } as const;

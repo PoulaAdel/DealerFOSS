@@ -10,8 +10,12 @@
 //       do exactly what a properly authorized request tells it to.
 
 import { useCallback, useEffect, useState } from 'react';
-import { ApiError, adminApi, adminPost } from '../../shared/adminApi';
+import { adminApi, adminPost } from '../../shared/adminApi';
 import type { ProvisionedTenant, TenantRow } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { Emphasised } from '../../shared/i18n/Emphasised';
 
 type Load =
   | { kind: 'loading' }
@@ -19,6 +23,10 @@ type Load =
   | { kind: 'failed'; message: string };
 
 export function TenantsPage() {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+  const label = useEnumLabel();
+
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [working, setWorking] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -30,13 +38,9 @@ export function TenantsPage() {
     try {
       setLoad({ kind: 'ready', tenants: await adminApi<TenantRow[]>('/tenants') });
     } catch (failure) {
-      setLoad({
-        kind: 'failed',
-        message:
-          failure instanceof ApiError ? failure.message : 'Could not load the dealership list.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, []);
+  }, [describe]);
 
   useEffect(() => {
     void fetchTenants();
@@ -45,10 +49,7 @@ export function TenantsPage() {
   async function setStatus(tenant: TenantRow, status: 'Active' | 'Suspended') {
     if (
       status === 'Suspended' &&
-      !window.confirm(
-        `Suspend ${tenant.name}? Everyone there is signed out of the system ` +
-          `immediately and cannot work until it is resumed.`,
-      )
+      !window.confirm(t('admin.suspendConfirm', { name: tenant.name }))
     ) {
       return;
     }
@@ -59,10 +60,7 @@ export function TenantsPage() {
       await adminPost(`/tenants/${encodeURIComponent(tenant.slug)}/status`, { status });
       await fetchTenants();
     } catch (failure) {
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'That did not work.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     } finally {
       setWorking(null);
     }
@@ -71,31 +69,34 @@ export function TenantsPage() {
   return (
     <>
       <header className="page__head">
-        <h1>Dealerships</h1>
+        <h1>{t('admin.dealerships')}</h1>
         {creating ? null : (
           <button type="button" className="primary" onClick={() => setCreating(true)}>
-            Set up a dealership
+            {t('admin.setUpDealership')}
           </button>
         )}
       </header>
 
       {provisioned === null ? null : (
         <section className="panel panel--code" aria-live="polite">
-          <h2>{provisioned.name} is ready</h2>
+          <h2>{t('admin.dealershipReady', { name: provisioned.name })}</h2>
+          {/* The email is picked out of the FINISHED sentence rather than
+              assembled around a <strong> in JSX — German and Arabic both move
+              it, and the emphasis has to follow it there. */}
           <p>
-            Their first manager is <strong>{provisioned.managerEmail}</strong>. Read
-            this code out to them — they set their own password with it at the
-            sign-in screen.
+            <Emphasised
+              sentence={t('admin.firstManager', { email: provisioned.managerEmail })}
+              value={provisioned.managerEmail}
+            />
           </p>
-          <p className="code">{provisioned.enrolmentCode}</p>
+          <p className="code" dir="ltr">
+            {provisioned.enrolmentCode}
+          </p>
           <p className="note">
-            <strong>This is the only time it can be shown.</strong> Only a scrambled
-            copy is kept, so it cannot be looked up again — if it goes astray, the
-            manager can be issued a new one from the dealership's own People
-            screen. The books are open, so they can trade straight away.
+            <strong>{t('admin.codeShownOnce')}</strong> {t('admin.codeShownOnceWhy')}
           </p>
           <button type="button" onClick={() => setProvisioned(null)}>
-            I have passed it on
+            {t('admin.passedItOn')}
           </button>
         </section>
       )}
@@ -113,7 +114,7 @@ export function TenantsPage() {
 
       {load.kind === 'loading' ? (
         <p className="state" aria-live="polite">
-          Loading the dealership list…
+          {t('admin.loadingDealerships')}
         </p>
       ) : null}
 
@@ -121,44 +122,49 @@ export function TenantsPage() {
         <div className="state" role="alert">
           <p>{load.message}</p>
           <button type="button" onClick={() => void fetchTenants()}>
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       ) : null}
 
       {load.kind === 'ready' && load.tenants.length === 0 ? (
-        <p className="state">
-          No dealerships on this installation yet. Creating one is still a
-          developer’s job.
-        </p>
+        <p className="state">{t('admin.noDealerships')}</p>
       ) : null}
 
       {load.kind === 'ready' && load.tenants.length > 0 ? (
         <div className="scroll">
           <table>
             <caption className="visually-hidden">
-              {load.tenants.length} dealerships on this installation
+              {t('admin.dealershipsCaption', { count: load.tenants.length })}
             </caption>
             <thead>
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Key</th>
-                <th scope="col">Status</th>
-                <th scope="col">Schema</th>
-                <th scope="col">In service</th>
+                <th scope="col">{t('admin.colName')}</th>
+                <th scope="col">{t('admin.colKey')}</th>
+                <th scope="col">{t('admin.colStatus')}</th>
+                <th scope="col">{t('admin.colSchema')}</th>
+                <th scope="col">{t('admin.colInService')}</th>
               </tr>
             </thead>
             <tbody>
               {load.tenants.map((tenant) => (
                 <tr key={tenant.slug}>
                   <td>{tenant.name}</td>
-                  <td className="mono">{tenant.slug}</td>
+                  {/* The key travels in a header on every request and the schema
+                      version is a dotted number. Both are codes, not prose. */}
+                  <td className="mono" dir="ltr">
+                    {tenant.slug}
+                  </td>
                   <td>
+                    {/* The class keys off the raw value, the word the reader
+                        sees comes from the catalogue. */}
                     <span className={`chip chip--${tenant.status.toLowerCase()}`}>
-                      {tenant.status}
+                      {label('tenantStatus', tenant.status)}
                     </span>
                   </td>
-                  <td className="mono">{tenant.databaseVersion}</td>
+                  <td className="mono" dir="ltr">
+                    {tenant.databaseVersion}
+                  </td>
                   <td>
                     {tenant.status === 'Suspended' ? (
                       <button
@@ -166,7 +172,7 @@ export function TenantsPage() {
                         disabled={working === tenant.slug}
                         onClick={() => void setStatus(tenant, 'Active')}
                       >
-                        Resume
+                        {t('admin.resume')}
                       </button>
                     ) : (
                       <button
@@ -174,7 +180,7 @@ export function TenantsPage() {
                         disabled={working === tenant.slug}
                         onClick={() => void setStatus(tenant, 'Suspended')}
                       >
-                        Suspend
+                        {t('admin.suspend')}
                       </button>
                     )}
                   </td>
@@ -207,6 +213,9 @@ function CreateTenant({
   onCancel: () => void;
   onCreated: (result: ProvisionedTenant) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [rooftopName, setRooftopName] = useState('');
@@ -243,7 +252,7 @@ function CreateTenant({
         }),
       );
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'The dealership was not created.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -258,57 +267,53 @@ function CreateTenant({
 
   return (
     <section className="panel">
-      <h2>Set up a dealership</h2>
-      <p className="note">
-        This creates their database, opens their books for this month, and creates
-        one manager who then adds everybody else. You will never see or choose
-        their password.
-      </p>
+      <h2>{t('admin.setUpDealership')}</h2>
+      <p className="note">{t('admin.setUpNote')}</p>
 
       <div className="field">
-        <label htmlFor="tenant-name">Dealership name</label>
+        <label htmlFor="tenant-name">{t('admin.dealershipName')}</label>
         <input id="tenant-name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
 
       <div className="field">
-        <label htmlFor="tenant-slug">Short name</label>
+        <label htmlFor="tenant-slug">{t('admin.shortName')}</label>
+        {/* Lowercase ASCII by rule, and it becomes part of a database name. */}
         <input
           id="tenant-slug"
           value={slug}
           placeholder={suggested}
           onChange={(e) => setSlug(e.target.value)}
+          dir="ltr"
         />
-        <p className="hint">
-          Lowercase letters, digits and hyphens. Their staff type this to sign in,
-          and it cannot be changed afterwards.
-        </p>
+        <p className="hint">{t('admin.shortNameHint')}</p>
       </div>
 
       <div className="row">
         <div className="field field--grow">
-          <label htmlFor="tenant-rooftop">First location</label>
+          <label htmlFor="tenant-rooftop">{t('admin.firstLocation')}</label>
           <input
             id="tenant-rooftop"
             value={rooftopName}
-            placeholder={name.trim() === '' ? 'Main site' : name.trim()}
+            placeholder={name.trim() === '' ? t('admin.firstLocationPlaceholder') : name.trim()}
             onChange={(e) => setRooftopName(e.target.value)}
           />
         </div>
 
         <div className="field">
-          <label htmlFor="tenant-code">Location code</label>
+          <label htmlFor="tenant-code">{t('admin.locationCode')}</label>
           <input
             id="tenant-code"
             value={rooftopCode}
             placeholder="MAIN"
             onChange={(e) => setRooftopCode(e.target.value)}
+            dir="ltr"
           />
         </div>
       </div>
 
       <div className="row">
         <div className="field field--grow">
-          <label htmlFor="tenant-manager">Manager's name</label>
+          <label htmlFor="tenant-manager">{t('admin.managerName')}</label>
           <input
             id="tenant-manager"
             value={managerName}
@@ -317,12 +322,13 @@ function CreateTenant({
         </div>
 
         <div className="field field--grow">
-          <label htmlFor="tenant-email">Manager's email</label>
+          <label htmlFor="tenant-email">{t('admin.managerEmail')}</label>
           <input
             id="tenant-email"
             type="email"
             value={managerEmail}
             onChange={(e) => setManagerEmail(e.target.value)}
+            dir="ltr"
           />
         </div>
       </div>
@@ -332,11 +338,16 @@ function CreateTenant({
       </p>
 
       <div className="actions">
-        <button type="button" className="primary" disabled={busy || !ready} onClick={() => void submit()}>
-          {busy ? 'Setting it up…' : 'Set it up'}
+        <button
+          type="button"
+          className="primary"
+          disabled={busy || !ready}
+          onClick={() => void submit()}
+        >
+          {busy ? t('admin.settingItUp') : t('admin.setItUp')}
         </button>
         <button type="button" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </section>

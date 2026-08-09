@@ -14,14 +14,18 @@
 
 import { useState, type FormEvent } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { ApiError, adminPost } from '../../shared/adminApi';
+import { adminPost } from '../../shared/adminApi';
 import type { MfaEnrolment } from '../../shared/contracts';
 import { useAdminSession } from '../../app/adminSession';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 type Step = { kind: 'intro' } | { kind: 'scan'; enrolment: MfaEnrolment };
 
 export function AdminSecondFactorSetup() {
   const { refresh } = useAdminSession();
+  const { t } = useI18n();
+  const describe = useApiMessage();
 
   const [step, setStep] = useState<Step>({ kind: 'intro' });
   const [code, setCode] = useState('');
@@ -35,7 +39,7 @@ export function AdminSecondFactorSetup() {
     try {
       setStep({ kind: 'scan', enrolment: await adminPost<MfaEnrolment>('/mfa/enrol', {}) });
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -52,7 +56,7 @@ export function AdminSecondFactorSetup() {
       // of the console without a second sign-in.
       await refresh();
     } catch (failure) {
-      setError(messageFor(failure));
+      setError(describe(failure));
       setCode('');
     } finally {
       setBusy(false);
@@ -62,52 +66,55 @@ export function AdminSecondFactorSetup() {
   return (
     <>
       <header className="page__head">
-        <h1>Set up your second factor</h1>
+        <h1>{t('admin.secondFactorTitle')}</h1>
       </header>
 
       <p className="state" role="alert">
-        Administrator accounts must have one. Until you set it up, this is the
-        only screen you can use.
+        {t('admin.secondFactorRequired')}
       </p>
 
       {step.kind === 'intro' ? (
         <section className="panel">
-          <p>
-            This account can enter any dealership on this installation, so a
-            password on its own is not enough to hold it.
-          </p>
+          <p>{t('admin.secondFactorIntro')}</p>
 
           <p className="error" aria-live="polite">
             {error ?? ''}
           </p>
 
           <button type="button" onClick={() => void begin()} disabled={busy}>
-            {busy ? 'Starting…' : 'Start'}
+            {busy ? t('secondFactor.starting') : t('secondFactor.start')}
           </button>
         </section>
       ) : (
         <section className="panel">
           <ol className="steps">
             <li>
-              <p>Point your authenticator app at this square.</p>
+              <p>{t('secondFactor.pointApp')}</p>
 
               <QRCodeSVG
                 value={step.enrolment.enrolmentUri}
                 size={192}
-                title="Scan this with your authenticator app"
+                title={t('secondFactor.qrTitle')}
                 includeMargin
               />
 
               <details>
-                <summary>Can’t scan it?</summary>
-                <p>Type this into the app by hand instead:</p>
-                <p className="mono secret">{step.enrolment.secret}</p>
+                <summary>{t('secondFactor.cannotScan')}</summary>
+                <p>{t('secondFactor.typeInstead')}</p>
+                {/* Base32, typed into an app character by character. Inside an
+                    Arabic page the bidirectional algorithm would reorder its
+                    groups, and somebody copies out a secret that does not
+                    work — then cannot sign in to the account that runs the
+                    whole installation. */}
+                <p className="mono secret" dir="ltr">
+                  {step.enrolment.secret}
+                </p>
               </details>
             </li>
 
             <li>
               <form onSubmit={(e) => void confirm(e)} noValidate>
-                <label htmlFor="admin-setup-code">Now enter the code it shows</label>
+                <label htmlFor="admin-setup-code">{t('secondFactor.enterCode')}</label>
                 <input
                   id="admin-setup-code"
                   name="code"
@@ -115,6 +122,7 @@ export function AdminSecondFactorSetup() {
                   onChange={(e) => setCode(e.target.value)}
                   inputMode="numeric"
                   autoComplete="one-time-code"
+                  dir="ltr"
                   autoFocus
                   required
                 />
@@ -124,22 +132,15 @@ export function AdminSecondFactorSetup() {
                 </p>
 
                 <button type="submit" disabled={busy}>
-                  {busy ? 'Checking…' : 'Turn it on'}
+                  {busy ? t('secondFactor.checking') : t('secondFactor.turnOn')}
                 </button>
               </form>
             </li>
           </ol>
 
-          <p className="note">
-            There are no recovery codes for an administrator account. If you lose
-            this phone, someone with database access has to clear it for you.
-          </p>
+          <p className="note">{t('admin.noRecoveryCodes')}</p>
         </section>
       )}
     </>
   );
-}
-
-function messageFor(failure: unknown): string {
-  return failure instanceof ApiError ? failure.message : 'Something went wrong. Try again.';
 }

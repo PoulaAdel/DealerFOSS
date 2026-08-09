@@ -835,4 +835,94 @@ export const de: Catalogue = {
   'workshop.jobFinished': 'Dieser Auftrag ist abgeschlossen.',
   'workshop.assignedElsewhere':
     'Jemandem zugewiesen, der nicht auf Ihrer Mitarbeiterliste steht — die Person arbeitet möglicherweise an einem anderen Standort.',
+
+  // --- Die Verwaltungskonsole -------------------------------------------------
+  // Bewusst ein anderes Vokabular als das des Autohauses: Wer diese Bildschirme
+  // liest, betreibt die Installation. „Autohaus“ heißt hier ein Konto auf einem
+  // Server, nicht ein Ort mit Ausstellungsfläche.
+  'admin.badge': 'Verwaltung',
+  'admin.navDealerships': 'Autohäuser',
+  'admin.navSupportAccess': 'Support-Zugriff',
+
+  'admin.signInLede': 'Damit melden Sie sich an der Installation an, nicht an einem Autohaus.',
+  'admin.signInCode': 'Code aus Ihrer Authenticator-App',
+  'admin.signInCodeNote': 'Nur leer lassen, wenn Sie noch keine eingerichtet haben.',
+
+  'admin.secondFactorTitle': 'Zweiten Faktor einrichten',
+  'admin.secondFactorRequired':
+    'Administratorkonten müssen einen haben. Bis Sie ihn einrichten, ist dies der einzige Bildschirm, den Sie nutzen können.',
+  'admin.secondFactorIntro':
+    'Dieses Konto kann jedes Autohaus dieser Installation betreten — ein Passwort allein genügt nicht, um es zu schützen.',
+  'admin.noRecoveryCodes':
+    'Für ein Administratorkonto gibt es keine Wiederherstellungscodes. Wenn Sie dieses Telefon verlieren, muss jemand mit Datenbankzugriff den Faktor für Sie zurücksetzen.',
+
+  'admin.dealerships': 'Autohäuser',
+  'admin.setUpDealership': 'Autohaus einrichten',
+  // "Aussetzen", nicht "Sperren": der Status heißt "Ausgesetzt", und zwei Wörter
+  // für einen Zustand lesen sich wie zwei verschiedene Zustände.
+  'admin.suspendConfirm':
+    '{name} aussetzen? Alle dort werden sofort abgemeldet und können nicht arbeiten, bis der Zugang wieder aufgenommen wird.',
+  'admin.dealershipReady': '{name} ist bereit',
+  'admin.firstManager':
+    'Die erste Leitung dort ist {email}. Lesen Sie ihr diesen Code vor — damit vergibt sie im Anmeldebildschirm ihr eigenes Passwort.',
+  'admin.codeShownOnce': 'Nur dieses eine Mal kann er angezeigt werden.',
+  'admin.codeShownOnceWhy':
+    'Gespeichert wird nur eine verschlüsselte Kopie, er lässt sich also nicht erneut nachschlagen — geht er verloren, kann der Leitung im Bildschirm „Personal“ des Autohauses ein neuer ausgestellt werden. Die Bücher sind offen, es kann sofort gearbeitet werden.',
+  'admin.passedItOn': 'Ich habe ihn weitergegeben',
+  'admin.loadingDealerships': 'Liste der Autohäuser wird geladen…',
+  'admin.noDealerships':
+    'Noch keine Autohäuser auf dieser Installation. Richten Sie oben das erste ein.',
+  'admin.dealershipsCaption': {
+    one: '{count} Autohaus auf dieser Installation',
+    other: '{count} Autohäuser auf dieser Installation',
+  },
+  'admin.colName': 'Name',
+  'admin.colKey': 'Schlüssel',
+  'admin.colStatus': 'Status',
+  'admin.colSchema': 'Schema',
+  'admin.colInService': 'In Betrieb',
+  'admin.resume': 'Fortsetzen',
+  'admin.suspend': 'Aussetzen',
+
+  'admin.setUpNote':
+    'Dies legt ihre Datenbank an, eröffnet ihre Bücher für diesen Monat und erstellt eine Leitung, die anschließend alle anderen hinzufügt. Sie werden ihr Passwort nie sehen und nie wählen.',
+  'admin.dealershipName': 'Name des Autohauses',
+  'admin.shortName': 'Kurzname',
+  'admin.shortNameHint':
+    'Kleinbuchstaben, Ziffern und Bindestriche. Ihre Mitarbeitenden tippen ihn beim Anmelden ein, und er lässt sich danach nicht mehr ändern.',
+  'admin.firstLocation': 'Erster Standort',
+  'admin.firstLocationPlaceholder': 'Hauptstandort',
+  'admin.locationCode': 'Standortcode',
+  'admin.managerName': 'Name der Leitung',
+  'admin.managerEmail': 'E-Mail der Leitung',
+  'admin.setItUp': 'Einrichten',
+  'admin.settingItUp': 'Wird eingerichtet…',
+  'admin.notCreated': 'Das Autohaus wurde nicht angelegt.',
+
+  'admin.supportAccess': 'Support-Zugriff',
+  'admin.supportEnter': 'Ein Autohaus betreten',
+  'admin.supportLede':
+    'Sie können ihre Daten lesen und nichts ändern, höchstens eine Stunde lang. Es erscheint in ihrem eigenen Protokoll, mit Ihrem Namen und dem Grund, den Sie hier angeben.',
+  'admin.supportDealership': 'Autohaus',
+  'admin.supportReason': 'Warum Sie hinein müssen',
+  'admin.supportReasonNote':
+    'Dies wird dauerhaft aufgezeichnet, in ihrem Protokoll ebenso wie in unserem. Schreiben Sie, was Sie sie auch lesen lassen würden.',
+  'admin.supportOpen': 'Zugriff öffnen',
+  'admin.supportOpening': 'Wird geöffnet…',
+  'admin.supportOpened':
+    'Sie sind bis {time} in {tenant}. Öffnen Sie die Bildschirme des Autohauses in diesem Browser, um nachzusehen; schließen Sie den Besuch unten, wenn Sie fertig sind.',
+  'admin.supportRecord': 'Das Protokoll',
+  'admin.supportLoading': 'Protokoll wird geladen…',
+  'admin.supportEmpty': 'Noch niemand war in einem Autohaus.',
+  'admin.supportCaption': {
+    one: '{count} Support-Besuch',
+    other: '{count} Support-Besuche, neueste zuerst',
+  },
+  'admin.supportColWho': 'Wer',
+  'admin.supportColWhy': 'Grund',
+  'admin.supportColOpened': 'Geöffnet',
+  'admin.supportColState': 'Zustand',
+  'admin.supportCloseNow': 'Jetzt schließen',
+  'admin.supportExpired': 'Abgelaufen',
+  'admin.supportClosed': 'Geschlossen {date}',
 };

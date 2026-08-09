@@ -8,6 +8,7 @@
 //       about which of the two they are looking at.
 
 import { NavLink, Navigate, Outlet, Route, Routes } from 'react-router';
+import { useI18n } from '../shared/i18n';
 import { AdminSessionProvider, useAdminSession } from './adminSession';
 import { AdminSignIn } from '../features/admin/AdminSignIn';
 import { AdminSecondFactorSetup } from '../features/admin/AdminSecondFactorSetup';
@@ -25,11 +26,12 @@ export function AdminApp() {
 
 function AdminRoutes() {
   const { administrator } = useAdminSession();
+  const { t } = useI18n();
 
   if (administrator === undefined) {
     return (
       <main className="state" aria-live="polite">
-        <p>Loading…</p>
+        <p>{t('common.loading')}</p>
       </main>
     );
   }
@@ -64,30 +66,35 @@ function AdminRoutes() {
 
 function AdminShell({ restricted = false }: { restricted?: boolean }) {
   const { administrator, signOut } = useAdminSession();
+  const { t } = useI18n();
 
   return (
     <div className="shell shell--admin">
       <a className="skip" href="#main">
-        Skip to content
+        {t('shell.skipToContent')}
       </a>
 
       <header className="shell__bar">
         <span className="shell__brand">
-          DealerFOSS <span className="shell__badge">Administration</span>
+          {t('app.name')} <span className="shell__badge">{t('admin.badge')}</span>
         </span>
 
         {restricted ? null : (
-          <nav aria-label="Main">
-            <NavLink to="tenants">Dealerships</NavLink>
-            <NavLink to="support-access">Support access</NavLink>
+          <nav aria-label={t('shell.mainNavigation')}>
+            <NavLink to="tenants">{t('admin.navDealerships')}</NavLink>
+            <NavLink to="support-access">{t('admin.navSupportAccess')}</NavLink>
           </nav>
         )}
 
         <div className="shell__right">
           <AppearanceControls />
-          <span className="shell__tenant">{administrator?.email}</span>
+          {/* An email address is a record, and its parts read left to right even
+              inside a mirrored bar. */}
+          <span className="shell__tenant" dir="ltr">
+            {administrator?.email}
+          </span>
           <button type="button" onClick={() => void signOut()}>
-            Sign out
+            {t('shell.signOut')}
           </button>
         </div>
       </header>

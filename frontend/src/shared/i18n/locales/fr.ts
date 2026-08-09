@@ -832,4 +832,91 @@ export const fr: Catalogue = {
   'workshop.jobFinished': 'Cet ordre de réparation est terminé.',
   'workshop.assignedElsewhere':
     'Attribué à quelqu’un qui ne figure pas dans votre liste de personnel — cette personne travaille peut-être sur un autre site.',
+
+  // --- La console d’administration --------------------------------------------
+  // Vocabulaire volontairement distinct de celui de la concession : qui lit ces
+  // écrans exploite l’installation. « Concession » désigne ici un compte sur un
+  // serveur, pas un lieu avec un parc d’exposition.
+  'admin.badge': 'Administration',
+  'admin.navDealerships': 'Concessions',
+  'admin.navSupportAccess': 'Accès support',
+
+  'admin.signInLede': 'Vous vous connectez à l’installation, pas à une concession.',
+  'admin.signInCode': 'Code de votre application d’authentification',
+  'admin.signInCodeNote': 'Ne le laissez vide que si vous n’en avez pas encore configuré.',
+
+  'admin.secondFactorTitle': 'Configurez votre second facteur',
+  'admin.secondFactorRequired':
+    'Les comptes administrateur doivent en avoir un. Tant que ce n’est pas fait, cet écran est le seul que vous puissiez utiliser.',
+  'admin.secondFactorIntro':
+    'Ce compte peut entrer dans n’importe quelle concession de cette installation : un mot de passe seul ne suffit pas à le protéger.',
+  'admin.noRecoveryCodes':
+    'Il n’existe pas de codes de secours pour un compte administrateur. Si vous perdez ce téléphone, quelqu’un ayant accès à la base de données devra le réinitialiser pour vous.',
+
+  'admin.dealerships': 'Concessions',
+  'admin.setUpDealership': 'Créer une concession',
+  'admin.suspendConfirm':
+    'Suspendre {name} ? Tout le monde y est déconnecté immédiatement et ne peut plus travailler tant que l’accès n’est pas rétabli.',
+  'admin.dealershipReady': '{name} est prête',
+  'admin.firstManager':
+    'Leur premier responsable est {email}. Lisez-lui ce code à voix haute — il définira lui-même son mot de passe avec, sur l’écran de connexion.',
+  'admin.codeShownOnce': 'C’est la seule fois où ce code peut être affiché.',
+  'admin.codeShownOnceWhy':
+    'Seule une copie chiffrée est conservée : il est donc impossible de le retrouver. S’il s’égare, un nouveau code peut être délivré au responsable depuis l’écran Personnel de la concession elle-même. Les comptes sont ouverts, l’activité peut démarrer immédiatement.',
+  'admin.passedItOn': 'Je l’ai transmis',
+  'admin.loadingDealerships': 'Chargement de la liste des concessions…',
+  'admin.noDealerships': 'Aucune concession sur cette installation. Créez la première ci-dessus.',
+  'admin.dealershipsCaption': {
+    one: '{count} concession sur cette installation',
+    other: '{count} concessions sur cette installation',
+  },
+  'admin.colName': 'Nom',
+  'admin.colKey': 'Clé',
+  'admin.colStatus': 'Statut',
+  'admin.colSchema': 'Schéma',
+  'admin.colInService': 'En service',
+  'admin.resume': 'Réactiver',
+  'admin.suspend': 'Suspendre',
+
+  'admin.setUpNote':
+    'Ceci crée leur base de données, ouvre leur exercice pour le mois en cours et crée un responsable qui ajoutera ensuite tout le monde. Vous ne verrez ni ne choisirez jamais leur mot de passe.',
+  'admin.dealershipName': 'Nom de la concession',
+  'admin.shortName': 'Nom court',
+  'admin.shortNameHint':
+    'Lettres minuscules, chiffres et traits d’union. Leur personnel le saisit pour se connecter, et il ne peut plus être modifié ensuite.',
+  'admin.firstLocation': 'Premier site',
+  'admin.firstLocationPlaceholder': 'Site principal',
+  'admin.locationCode': 'Code du site',
+  'admin.managerName': 'Nom du responsable',
+  'admin.managerEmail': 'E-mail du responsable',
+  'admin.setItUp': 'Créer',
+  'admin.settingItUp': 'Création…',
+  'admin.notCreated': 'La concession n’a pas été créée.',
+
+  'admin.supportAccess': 'Accès support',
+  'admin.supportEnter': 'Entrer dans une concession',
+  'admin.supportLede':
+    'Vous pourrez lire leurs données sans rien modifier, pendant une heure au maximum. Cela apparaît dans leur propre journal, avec votre nom et le motif que vous indiquez ici.',
+  'admin.supportDealership': 'Concession',
+  'admin.supportReason': 'Pourquoi vous devez y entrer',
+  'admin.supportReasonNote':
+    'Ceci est enregistré définitivement, dans leur journal comme dans le nôtre. Écrivez ce que vous accepteriez de leur voir lire.',
+  'admin.supportOpen': 'Ouvrir l’accès',
+  'admin.supportOpening': 'Ouverture…',
+  'admin.supportOpened':
+    'Vous êtes dans {tenant} jusqu’à {time}. Ouvrez les écrans de la concession dans ce navigateur pour consulter ; fermez la visite ci-dessous lorsque vous avez terminé.',
+  'admin.supportRecord': 'Le journal',
+  'admin.supportLoading': 'Chargement du journal…',
+  'admin.supportEmpty': 'Personne n’est encore entré dans une concession.',
+  'admin.supportCaption': {
+    one: '{count} visite de support',
+    other: '{count} visites de support, de la plus récente à la plus ancienne',
+  },
+  'admin.supportColWho': 'Qui',
+  'admin.supportColWhy': 'Motif',
+  'admin.supportColOpened': 'Ouverte le',
+  'admin.supportColState': 'État',
+  'admin.supportCloseNow': 'Fermer maintenant',
+  'admin.supportExpired': 'Expirée',
+  'admin.supportClosed': 'Fermée le {date}',
 };
