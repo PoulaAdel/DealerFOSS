@@ -741,4 +741,95 @@ export const fr: Catalogue = {
     'Aucune date d’acquisition n’a été enregistrée : le décompte part de la date de saisie.',
   'dash.estimatedAgeNote':
     '* décompté depuis la saisie du véhicule, faute de date d’acquisition enregistrée.',
+
+  'workshop.title': 'Atelier',
+  'workshop.loading': 'Chargement de l’atelier…',
+  'workshop.denied':
+    'Vous n’avez pas accès à l’atelier de ce site. Demandez à un responsable si cela vous semble anormal.',
+  'workshop.failed': 'Impossible de lire la liste de l’atelier.',
+  'workshop.actionFailed': 'Cela n’a pas fonctionné.',
+  'workshop.openOnly': 'Uniquement les OR en cours',
+  'workshop.nothingOpen': 'Rien à l’atelier pour le moment.',
+  'workshop.empty': 'Aucun ordre de réparation ici.',
+  'workshop.caption': 'Les ordres de réparation des sites que vous couvrez.',
+  'workshop.colJob': 'OR',
+  'workshop.colCustomer': 'Client',
+  'workshop.colVehicle': 'Véhicule',
+  'workshop.colCameInFor': 'Motif d’entrée',
+  'workshop.colWaiting': 'En attente',
+  'workshop.colDue': 'Montant dû',
+  'workshop.colStage': 'Étape',
+
+  'workshop.waitingTitle': 'En attente du client',
+  'workshop.waitingNote': {
+    one: 'Un ordre de réparation comporte des travaux que personne n’a encore acceptés. Il ne peut pas être facturé tant que quelqu’un n’a pas appelé.',
+    other:
+      '{count} ordres de réparation comportent des travaux que personne n’a encore acceptés. Aucun ne peut être facturé tant que quelqu’un n’a pas appelé.',
+  },
+  'workshop.toAskAbout': {
+    one: '{count} travail à faire valider',
+    other: '{count} travaux à faire valider',
+  },
+  'workshop.pendingNote': {
+    one: 'Un travail est en attente de l’accord du client. Il ne peut pas être facturé avant sa réponse.',
+    other:
+      '{count} travaux sont en attente de l’accord du client. Aucun ne peut être facturé avant sa réponse.',
+  },
+
+  'workshop.stageBooked': 'Planifié',
+  'workshop.stageInProgress': 'En cours de réparation',
+  'workshop.stageCompleted': 'Travaux terminés',
+  'workshop.stageInvoiced': 'Facturé',
+  'workshop.stageCancelled': 'Annulé',
+
+  'workshop.moveInProgress': 'Commencer les travaux',
+  'workshop.moveCompleted': 'Les travaux sont terminés',
+  'workshop.moveInvoiced': 'Facturer',
+  'workshop.moveCancelled': 'Annuler l’OR',
+  'workshop.moveBooked': 'Revenir à planifié',
+
+  'workshop.miles': '{count} miles',
+  'workshop.bookedIn': 'entré le {date}',
+  'workshop.printJobSheet': 'Imprimer l’ordre de réparation',
+  'workshop.printInvoice': 'Imprimer la facture',
+  'workshop.whatHappened': 'Historique',
+
+  'workshop.theWork': 'Les travaux',
+  'workshop.nothingWrittenUp': 'Rien n’a encore été saisi.',
+  'workshop.colWhat': 'Nature',
+  'workshop.colDetail': 'Détail',
+  'workshop.colAgreed': 'Accepté ?',
+  'workshop.colAmount': 'Montant',
+  'workshop.nobodyAsked': 'Client non contacté',
+  'workshop.saidNo': 'Refusé',
+  'workshop.agreed': 'Accepté',
+  'workshop.iRangThem': 'Je l’ai appelé',
+  'workshop.notNow': 'Pas maintenant',
+  'workshop.howObtained': 'Comment l’accord a été obtenu',
+  'workshop.howObtainedPlaceholder': 'Appel à 10h40, Mme Okafor',
+  'workshop.theySaidYes': 'Le client accepte',
+  'workshop.theySaidNo': 'Le client refuse',
+  'workshop.hoursAtRate': '{hours} h à {rate}',
+
+  'workshop.writeUpMore': 'Saisir d’autres travaux',
+  'workshop.lineKind': 'Nature',
+  'workshop.lineDescription': 'Désignation',
+  'workshop.hours': 'Heures',
+  'workshop.rate': 'Taux horaire',
+  'workshop.amount': 'Montant',
+  'workshop.addLine': 'Ajouter',
+
+  'workshop.totalsCaption': 'Le total de cet ordre de réparation.',
+  'workshop.totalLabour': 'Main-d’œuvre',
+  'workshop.totalParts': 'Pièces',
+  'workshop.totalSublet': 'Sous-traitance',
+  'workshop.totalDue': 'Montant dû',
+
+  'workshop.whoIsOnIt': 'Qui s’en occupe',
+  'workshop.nobodyYet': 'Personne pour l’instant',
+  'workshop.caption2': 'Les travaux des sites que vous couvrez, du plus récent au plus ancien, jusqu’à {limit}.',
+  'workshop.invoicedNothingMore': 'Facturé le {date}. Plus rien à faire.',
+  'workshop.jobFinished': 'Cet ordre de réparation est terminé.',
+  'workshop.assignedElsewhere':
+    'Attribué à quelqu’un qui ne figure pas dans votre liste de personnel — cette personne travaille peut-être sur un autre site.',
 };

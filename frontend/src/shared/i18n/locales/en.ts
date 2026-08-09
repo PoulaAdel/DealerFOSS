@@ -760,4 +760,101 @@ export const en = {
     'No acquisition date was recorded, so this counts from when it was entered.',
   'dash.estimatedAgeNote':
     '* counted from when the car was entered, because no acquisition date was recorded.',
+
+  // --- The workshop ---------------------------------------------------------
+  'workshop.title': 'Workshop',
+  'workshop.loading': 'Loading the workshop…',
+  'workshop.denied':
+    'You do not have access to this location’s workshop. Ask a manager if you think that is wrong.',
+  'workshop.failed': 'The workshop list could not be read.',
+  'workshop.actionFailed': 'That did not work.',
+  'workshop.openOnly': 'Only what is still open',
+  'workshop.nothingOpen': 'Nothing is in the workshop right now.',
+  'workshop.empty': 'No jobs here yet.',
+  'workshop.caption': 'Jobs in the workshop at the locations you cover.',
+  'workshop.colJob': 'Job',
+  'workshop.colCustomer': 'Customer',
+  'workshop.colVehicle': 'Vehicle',
+  'workshop.colCameInFor': 'Came in for',
+  'workshop.colWaiting': 'Waiting',
+  'workshop.colDue': 'Due',
+  'workshop.colStage': 'Stage',
+
+  'workshop.waitingTitle': 'Waiting on a customer',
+  // The whole sentence per plural form, because the second half changes with
+  // the count too — "it cannot" against "none of them can".
+  'workshop.waitingNote': {
+    one: 'One job has work nobody has agreed to pay for yet. It cannot be invoiced until somebody rings.',
+    other:
+      '{count} jobs have work nobody has agreed to pay for yet. None of them can be invoiced until somebody rings.',
+  },
+  'workshop.toAskAbout': {
+    one: '{count} job to ask about',
+    other: '{count} jobs to ask about',
+  },
+  'workshop.pendingNote': {
+    one: 'One piece of work is waiting on the customer. It cannot be billed until they answer.',
+    other:
+      '{count} pieces of work are waiting on the customer. None of them can be billed until they answer.',
+  },
+
+  // How a job's stage reads on screen, and how the button that moves it there
+  // reads. Deliberately different words: "Work finished" is a state, "Work is
+  // finished" is somebody telling the system so.
+  'workshop.stageBooked': 'Booked in',
+  'workshop.stageInProgress': 'Being worked on',
+  'workshop.stageCompleted': 'Work finished',
+  'workshop.stageInvoiced': 'Invoiced',
+  'workshop.stageCancelled': 'Cancelled',
+
+  'workshop.moveInProgress': 'Start work',
+  'workshop.moveCompleted': 'Work is finished',
+  'workshop.moveInvoiced': 'Invoice it',
+  'workshop.moveCancelled': 'Cancel the job',
+  'workshop.moveBooked': 'Back to booked',
+
+  'workshop.miles': '{count} miles',
+  'workshop.bookedIn': 'booked in {date}',
+  'workshop.printJobSheet': 'Print the job sheet',
+  'workshop.printInvoice': 'Print the invoice',
+  'workshop.whatHappened': 'What happened',
+
+  'workshop.theWork': 'The work',
+  'workshop.nothingWrittenUp': 'Nothing written up yet.',
+  'workshop.colWhat': 'What',
+  'workshop.colDetail': 'Detail',
+  'workshop.colAgreed': 'Agreed?',
+  'workshop.colAmount': 'Amount',
+  'workshop.nobodyAsked': 'Nobody has asked',
+  'workshop.saidNo': 'Said no',
+  'workshop.agreed': 'Agreed',
+  'workshop.iRangThem': 'I rang them',
+  'workshop.notNow': 'Not now',
+  'workshop.howObtained': 'How it was obtained',
+  'workshop.howObtainedPlaceholder': 'Phoned 10:40, spoke to Mrs Okafor',
+  'workshop.theySaidYes': 'They said yes',
+  'workshop.theySaidNo': 'They said no',
+  'workshop.hoursAtRate': '{hours} h at {rate}',
+
+  'workshop.writeUpMore': 'Write up more work',
+  'workshop.lineKind': 'What',
+  'workshop.lineDescription': 'Description',
+  'workshop.hours': 'Hours',
+  'workshop.rate': 'Rate',
+  'workshop.amount': 'Amount',
+  'workshop.addLine': 'Add it',
+
+  'workshop.totalsCaption': 'What the job comes to.',
+  'workshop.totalLabour': 'Labour',
+  'workshop.totalParts': 'Parts',
+  'workshop.totalSublet': 'Sent out',
+  'workshop.totalDue': 'Due',
+
+  'workshop.whoIsOnIt': 'Who is on it',
+  'workshop.nobodyYet': 'Nobody yet',
+  'workshop.caption2': 'The work at the locations you cover, newest first, up to {limit}.',
+  'workshop.invoicedNothingMore': 'Invoiced {date}. Nothing more to do.',
+  'workshop.jobFinished': 'This job is finished.',
+  'workshop.assignedElsewhere':
+    'Assigned to somebody who is not on your staff list — they may work at another location.',
 } as const;

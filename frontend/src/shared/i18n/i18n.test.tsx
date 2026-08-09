@@ -210,6 +210,8 @@ describe('the catalogues', () => {
       ['dash.financeShort', 'an industry abbreviation, unchanged in the trade'],
       ['dash.total', 'the same word in French'],
       ['dash.colStatus', 'the same word in German'],
+      ['workshop.miles', 'the same word in French'],
+      ['workshop.colDetail', 'the same word in German'],
     ]);
 
     for (const [name, catalogue] of Object.entries(catalogues)) {

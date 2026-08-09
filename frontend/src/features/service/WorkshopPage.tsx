@@ -26,6 +26,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, openDocument, post, remove } from '../../shared/api';
+import { useI18n, type MessageKey } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 import type {
   RepairOrderDetail,
   RepairOrderStatus,
@@ -43,41 +45,61 @@ type Load =
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
-const money = (amount: number, currency: string) =>
-  new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount);
+/**
+ * Money in the reader's language. Was a module-level `Intl.NumberFormat` with
+ * an `undefined` locale, which followed the operating system rather than the
+ * application — so a French screen could show `$1,234.50`.
+ */
+function useMoney() {
+  const { format } = useI18n();
+  return (amount: number, currency: string) => format.money(amount, currency);
+}
 
-export function statusLabel(status: RepairOrderStatus): string {
+/**
+ * A job's stage, and the button that moves it there — two different sets of
+ * words for the same five values, deliberately. "Work finished" describes where
+ * the job IS; "Work is finished" is somebody telling the system so. Both are
+ * keys rather than sentences, so both survive translation.
+ *
+ * The workshop's own wording, not `enum.repairOrderStatus.*`: that family is
+ * the neutral label a table cell uses, and this screen says it in the trade's
+ * words instead.
+ */
+export function statusKey(status: RepairOrderStatus): MessageKey {
   switch (status) {
     case 'Booked':
-      return 'Booked in';
+      return 'workshop.stageBooked';
     case 'InProgress':
-      return 'Being worked on';
+      return 'workshop.stageInProgress';
     case 'Completed':
-      return 'Work finished';
+      return 'workshop.stageCompleted';
     case 'Invoiced':
-      return 'Invoiced';
-    case 'Cancelled':
-      return 'Cancelled';
+      return 'workshop.stageInvoiced';
+    default:
+      return 'workshop.stageCancelled';
   }
 }
 
-/** What each move means to the person clicking it, rather than the enum name. */
-function moveLabel(status: RepairOrderStatus): string {
+function moveKey(status: RepairOrderStatus): MessageKey {
   switch (status) {
     case 'InProgress':
-      return 'Start work';
+      return 'workshop.moveInProgress';
     case 'Completed':
-      return 'Work is finished';
+      return 'workshop.moveCompleted';
     case 'Invoiced':
-      return 'Invoice it';
+      return 'workshop.moveInvoiced';
     case 'Cancelled':
-      return 'Cancel the job';
-    case 'Booked':
-      return 'Back to booked';
+      return 'workshop.moveCancelled';
+    default:
+      return 'workshop.moveBooked';
   }
 }
 
 export function WorkshopPage() {
+  const { t } = useI18n();
+  const money = useMoney();
+  const describe = useApiMessage();
+
   const [openOnly, setOpenOnly] = useState(true);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [selected, setSelected] = useState<RepairOrderDetail | null>(null);
@@ -100,7 +122,7 @@ export function WorkshopPage() {
 
       setLoad({
         kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'The workshop list could not be read.',
+        message: describe(failure),
       });
     }
   }, []);
@@ -114,17 +136,14 @@ export function WorkshopPage() {
   }
 
   if (load.kind === 'loading') {
-    return <p>Loading the workshop…</p>;
+    return <p>{t('workshop.loading')}</p>;
   }
 
   if (load.kind === 'denied') {
     return (
       <section className="page">
-        <h1>Workshop</h1>
-        <p className="note">
-          You do not have access to this location’s workshop. Ask a manager if you
-          think that is wrong.
-        </p>
+        <h1>{t('workshop.title')}</h1>
+        <p className="note">{t('workshop.denied')}</p>
       </section>
     );
   }
@@ -132,10 +151,10 @@ export function WorkshopPage() {
   if (load.kind === 'failed') {
     return (
       <section className="page">
-        <h1>Workshop</h1>
+        <h1>{t('workshop.title')}</h1>
         <p className="error">{load.message}</p>
         <button type="button" onClick={() => void find(openOnly)}>
-          Try again
+          {t('common.retry')}
         </button>
       </section>
     );
@@ -148,7 +167,7 @@ export function WorkshopPage() {
   return (
     <section className="page">
       <header className="page__head">
-        <h1>Workshop</h1>
+        <h1>{t('workshop.title')}</h1>
         <label className="check" htmlFor="workshop-open">
           <input
             id="workshop-open"
@@ -156,18 +175,18 @@ export function WorkshopPage() {
             checked={openOnly}
             onChange={(event) => setOpenOnly(event.target.checked)}
           />
-          Only jobs still open
+          {t('workshop.openOnly')}
         </label>
       </header>
 
       {waiting.length === 0 ? null : (
         <section className="panel panel--waiting">
-          <h2>Waiting on a customer</h2>
-          <p className="note">
-            {waiting.length === 1
-              ? 'One job has work nobody has agreed to pay for yet. It cannot be invoiced until somebody rings.'
-              : `${waiting.length} jobs have work nobody has agreed to pay for yet. None of them can be invoiced until somebody rings.`}
-          </p>
+          <h2>{t('workshop.waitingTitle')}</h2>
+          {/* One plural entry rather than a hand-written singular/plural pair:
+              the second half of the sentence changes with the count too ("it
+              cannot" against "none of them can"), and Russian and Arabic need
+              four and six versions of the whole thing. */}
+          <p className="note">{t('workshop.waitingNote', { count: waiting.length })}</p>
           <ul className="calls">
             {waiting.map((job) => (
               <li key={job.id}>
@@ -176,9 +195,7 @@ export function WorkshopPage() {
                 </button>{' '}
                 <span className="muted">
                   {job.vehicle} ·{' '}
-                  {job.linesAwaitingAnswer === 1
-                    ? '1 job to ask about'
-                    : `${job.linesAwaitingAnswer} jobs to ask about`}
+                  {t('workshop.toAskAbout', { count: job.linesAwaitingAnswer })}
                 </span>
               </li>
             ))}
@@ -199,25 +216,25 @@ export function WorkshopPage() {
 
       {load.jobs.length === 0 ? (
         <p className="note">
-          {openOnly ? 'Nothing is in the workshop right now.' : 'No jobs here yet.'}
+          {openOnly ? t('workshop.nothingOpen') : t('workshop.empty')}
         </p>
       ) : (
         <div className="scroll">
           <table className="table">
             <caption className="visually-hidden">
-              The work at the locations you cover, newest first, up to {PageSize}.
+              {t('workshop.caption2', { limit: PageSize })}
             </caption>
             <thead>
               <tr>
-                <th scope="col">Job</th>
-                <th scope="col">Customer</th>
-                <th scope="col">Vehicle</th>
-                <th scope="col">Came in for</th>
-                <th scope="col">Waiting</th>
+                <th scope="col">{t('workshop.colJob')}</th>
+                <th scope="col">{t('workshop.colCustomer')}</th>
+                <th scope="col">{t('workshop.colVehicle')}</th>
+                <th scope="col">{t('workshop.colCameInFor')}</th>
+                <th scope="col">{t('workshop.colWaiting')}</th>
                 <th scope="col" className="num">
                   Due
                 </th>
-                <th scope="col">Stage</th>
+                <th scope="col">{t('workshop.colStage')}</th>
               </tr>
             </thead>
             <tbody>
@@ -241,7 +258,7 @@ export function WorkshopPage() {
                   <td className="num">{money(job.amountDue, job.currency)}</td>
                   <td>
                     <span className={`chip chip--${job.status.toLowerCase()}`}>
-                      {statusLabel(job.status)}
+                      {t(statusKey(job.status))}
                     </span>
                   </td>
                 </tr>
@@ -269,7 +286,9 @@ function Job({
   onClose: () => void;
   onChanged: (updated: RepairOrderDetail) => Promise<void>;
 }) {
+  const { t, format } = useI18n();
   const [note, setNote] = useState('');
+  const describe = useApiMessage();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -283,7 +302,7 @@ function Job({
     } catch (failure) {
       // The server knows which line is unanswered and says so. Anything invented
       // here would be less useful and eventually wrong.
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -298,24 +317,22 @@ function Job({
           {job.number} <span className="muted">·</span> {job.customerName}
         </h2>
         <button type="button" onClick={onClose}>
-          Close
+          {t('common.close')}
         </button>
       </header>
 
       <p className="muted">
-        <span className={`chip chip--${job.status.toLowerCase()}`}>{statusLabel(job.status)}</span> ·{' '}
+        <span className={`chip chip--${job.status.toLowerCase()}`}>{t(statusKey(job.status))}</span> ·{' '}
         {job.vehicle}
-        {job.odometerReading === null ? '' : ` · ${job.odometerReading.toLocaleString()} miles`} ·
-        booked in {new Date(job.openedAt).toLocaleDateString()}
+        {job.odometerReading === null ? '' : ` · ${t('workshop.miles', { count: job.odometerReading })}`} ·
+        {t('workshop.bookedIn', { date: format.date(job.openedAt) })}
       </p>
 
       <blockquote className="enquiry">{job.complaint}</blockquote>
 
       {pending.length === 0 ? null : (
         <p className="note note--warn">
-          {pending.length === 1
-            ? 'One piece of work is waiting on the customer. It cannot be billed until they answer.'
-            : `${pending.length} pieces of work are waiting on the customer. None of them can be billed until they answer.`}
+          {t('workshop.pendingNote', { count: pending.length })}
         </p>
       )}
 
@@ -339,24 +356,24 @@ function Job({
             setError(null);
             void openDocument(`/documents/repair-orders/${job.id}`).catch((failure: unknown) =>
               setError(
-                failure instanceof ApiError ? failure.message : 'The document could not be opened.',
+                describe(failure),
               ),
             );
           }}
         >
-          {job.invoicedAt === null ? 'Print the job sheet' : 'Print the invoice'}
+          {job.invoicedAt === null ? t('workshop.printJobSheet') : t('workshop.printInvoice')}
         </button>
       </div>
 
       <Moves job={job} busy={busy} note={note} onNote={setNote} onAct={act} />
 
-      <h3>What happened</h3>
+      <h3>{t('workshop.whatHappened')}</h3>
       <ol className="history">
         {[...job.history].reverse().map((entry, index) => (
           <li key={`${entry.toStatus}-${entry.occurredAt}-${index}`}>
-            <span className="strong">{statusLabel(entry.toStatus)}</span>{' '}
+            <span className="strong">{t(statusKey(entry.toStatus))}</span>{' '}
             <span className="muted">
-              {new Date(entry.occurredAt).toLocaleString()}
+              {format.dateTime(entry.occurredAt)}
               {entry.note === null ? '' : ` — ${entry.note}`}
             </span>
           </li>
@@ -375,19 +392,20 @@ function Lines({
   busy: boolean;
   onAct: (work: () => Promise<RepairOrderDetail>) => Promise<void>;
 }) {
+  const { t } = useI18n();
   return (
     <>
-      <h3>The work</h3>
+      <h3>{t('workshop.theWork')}</h3>
       {job.lines.length === 0 ? (
-        <p className="note">Nothing written up yet.</p>
+        <p className="note">{t('workshop.nothingWrittenUp')}</p>
       ) : (
         <div className="scroll">
           <table className="table terms">
             <thead>
               <tr>
-                <th scope="col">What</th>
-                <th scope="col">Detail</th>
-                <th scope="col">Agreed?</th>
+                <th scope="col">{t('workshop.colWhat')}</th>
+                <th scope="col">{t('workshop.colDetail')}</th>
+                <th scope="col">{t('workshop.colAgreed')}</th>
                 <th scope="col" className="num">
                   Amount
                 </th>
@@ -425,6 +443,8 @@ function Line({
   busy: boolean;
   onAct: (work: () => Promise<RepairOrderDetail>) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const money = useMoney();
   const [answering, setAnswering] = useState(false);
   const [answerNote, setAnswerNote] = useState('');
 
@@ -439,25 +459,25 @@ function Line({
   return (
     <>
       <tr>
-        <td>{line.kind}</td>
+        <td>{t(`enum.serviceLineKind.${line.kind}` as MessageKey)}</td>
         <td>
           {line.description}
           {line.hours === null || line.rate === null ? null : (
             <>
               {' '}
               <span className="muted">
-                ({line.hours} h at {money(line.rate, job.currency)})
+({t('workshop.hoursAtRate', { hours: line.hours, rate: money(line.rate, job.currency) })})
               </span>
             </>
           )}
         </td>
         <td>
           {line.authorization === 'Pending' ? (
-            <span className="chip chip--warn">Nobody has asked</span>
+            <span className="chip chip--warn">{t('workshop.nobodyAsked')}</span>
           ) : line.authorization === 'Declined' ? (
-            <span className="chip chip--lost">Said no</span>
+            <span className="chip chip--lost">{t('workshop.saidNo')}</span>
           ) : (
-            <span className="chip chip--won">Agreed</span>
+            <span className="chip chip--won">{t('workshop.agreed')}</span>
           )}
           {line.authorizationNote === null ? null : (
             <div className="muted">{line.authorizationNote}</div>
@@ -481,7 +501,7 @@ function Line({
           */}
           {line.authorization === 'Pending' ? (
             <button type="button" disabled={busy} onClick={() => setAnswering(!answering)}>
-              {answering ? 'Not now' : 'I rang them'}
+              {answering ? t('workshop.notNow') : t('workshop.iRangThem')}
             </button>
           ) : job.linesAreOpen ? (
             <button
@@ -503,11 +523,11 @@ function Line({
         <tr>
           <td colSpan={5}>
             <div className="field">
-              <label htmlFor={`answer-${line.id}`}>How it was obtained</label>
+              <label htmlFor={`answer-${line.id}`}>{t('workshop.howObtained')}</label>
               <input
                 id={`answer-${line.id}`}
                 value={answerNote}
-                placeholder="Phoned 10:40, spoke to Mrs Okafor"
+                placeholder={t('workshop.howObtainedPlaceholder')}
                 onChange={(event) => setAnswerNote(event.target.value)}
               />
               <p className="hint">
@@ -544,6 +564,7 @@ function AddLine({
   busy: boolean;
   onAct: (work: () => Promise<RepairOrderDetail>) => Promise<void>;
 }) {
+  const { t } = useI18n();
   const [kind, setKind] = useState<ServiceLineKind>('Labour');
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState('');
@@ -572,7 +593,7 @@ function AddLine({
 
   return (
     <>
-      <h4>Write up more work</h4>
+      <h4>{t('workshop.writeUpMore')}</h4>
       <p className="note">
         Anything added now needs the customer’s answer before it can be billed —
         which is the point. Write it down while you are looking at it.
@@ -580,20 +601,20 @@ function AddLine({
 
       <div className="row">
         <div className="field">
-          <label htmlFor="line-kind">What</label>
+          <label htmlFor="line-kind">{t('workshop.lineKind')}</label>
           <select
             id="line-kind"
             value={kind}
             onChange={(event) => setKind(event.target.value as ServiceLineKind)}
           >
-            <option value="Labour">Labour</option>
-            <option value="Part">Part</option>
-            <option value="Sublet">Sent out</option>
+            <option value="Labour">{t('enum.serviceLineKind.Labour')}</option>
+            <option value="Part">{t('enum.serviceLineKind.Part')}</option>
+            <option value="Sublet">{t('enum.serviceLineKind.Sublet')}</option>
           </select>
         </div>
 
         <div className="field field--grow">
-          <label htmlFor="line-description">Description</label>
+          <label htmlFor="line-description">{t('workshop.lineDescription')}</label>
           <input
             id="line-description"
             value={description}
@@ -604,7 +625,7 @@ function AddLine({
         {isLabour ? (
           <>
             <div className="field">
-              <label htmlFor="line-hours">Hours</label>
+              <label htmlFor="line-hours">{t('workshop.hours')}</label>
               <input
                 id="line-hours"
                 inputMode="decimal"
@@ -613,7 +634,7 @@ function AddLine({
               />
             </div>
             <div className="field">
-              <label htmlFor="line-rate">Rate</label>
+              <label htmlFor="line-rate">{t('workshop.rate')}</label>
               <input
                 id="line-rate"
                 inputMode="decimal"
@@ -624,7 +645,7 @@ function AddLine({
           </>
         ) : (
           <div className="field">
-            <label htmlFor="line-amount">Amount</label>
+            <label htmlFor="line-amount">{t('workshop.amount')}</label>
             <input
               id="line-amount"
               inputMode="decimal"
@@ -649,9 +670,11 @@ function AddLine({
 }
 
 function Totals({ job }: { job: RepairOrderDetail }) {
+  const { t } = useI18n();
+  const money = useMoney();
   return (
     <table className="table totals">
-      <caption className="visually-hidden">What the job comes to.</caption>
+      <caption className="visually-hidden">{t('workshop.totalsCaption')}</caption>
       <tbody>
         {/*
           Split rather than a single figure: "we sold 464 of service" tells a
@@ -659,19 +682,19 @@ function Totals({ job }: { job: RepairOrderDetail }) {
           department on.
         */}
         <tr>
-          <th scope="row">Labour</th>
+          <th scope="row">{t('workshop.totalLabour')}</th>
           <td className="num">{money(job.labourTotal, job.currency)}</td>
         </tr>
         <tr>
-          <th scope="row">Parts</th>
+          <th scope="row">{t('workshop.totalParts')}</th>
           <td className="num">{money(job.partsTotal, job.currency)}</td>
         </tr>
         <tr>
-          <th scope="row">Sent out</th>
+          <th scope="row">{t('workshop.totalSublet')}</th>
           <td className="num">{money(job.subletTotal, job.currency)}</td>
         </tr>
         <tr className="strong">
-          <th scope="row">Due</th>
+          <th scope="row">{t('workshop.totalDue')}</th>
           <td className="num">{money(job.amountDue, job.currency)}</td>
         </tr>
       </tbody>
@@ -693,6 +716,7 @@ function Technician({
   busy: boolean;
   onAct: (work: () => Promise<RepairOrderDetail>) => Promise<void>;
 }) {
+  const { t } = useI18n();
   const [colleagues, setColleagues] = useState<StaffMember[]>([]);
 
   useEffect(() => {
@@ -728,7 +752,7 @@ function Technician({
 
   return (
     <div className="field">
-      <label htmlFor="job-technician">Who is on it</label>
+      <label htmlFor="job-technician">{t('workshop.whoIsOnIt')}</label>
       <select
         id="job-technician"
         disabled={busy}
@@ -741,7 +765,7 @@ function Technician({
           )
         }
       >
-        <option value="">Nobody yet</option>
+        <option value="">{t('workshop.nobodyYet')}</option>
         {options.map((person) => (
           <option key={person.id} value={person.id}>
             {person.displayName}
@@ -771,12 +795,15 @@ function Moves({
   onNote: (value: string) => void;
   onAct: (work: () => Promise<RepairOrderDetail>) => Promise<void>;
 }) {
+  const { t, format } = useI18n();
   if (job.availableMoves.length === 0) {
     return (
       <p className="note">
         {job.status === 'Invoiced'
-          ? `Invoiced ${job.invoicedAt === null ? '' : new Date(job.invoicedAt).toLocaleDateString()}. Nothing more to do.`
-          : 'This job is finished.'}
+          ? t('workshop.invoicedNothingMore', {
+              date: job.invoicedAt === null ? '' : format.date(job.invoicedAt),
+            })
+          : t('workshop.jobFinished')}
       </p>
     );
   }
@@ -809,7 +836,7 @@ function Moves({
               )
             }
           >
-            {moveLabel(move)}
+            {t(moveKey(move))}
           </button>
         ))}
       </div>

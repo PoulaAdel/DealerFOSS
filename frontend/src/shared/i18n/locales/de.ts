@@ -744,4 +744,95 @@ export const de: Catalogue = {
     'Es wurde kein Zugangsdatum erfasst, daher zählt dies ab der Erfassung.',
   'dash.estimatedAgeNote':
     '* gezählt ab der Erfassung des Fahrzeugs, da kein Zugangsdatum hinterlegt war.',
+
+  'workshop.title': 'Werkstatt',
+  'workshop.loading': 'Die Werkstatt wird geladen…',
+  'workshop.denied':
+    'Sie haben keinen Zugriff auf die Werkstatt dieses Standorts. Fragen Sie eine Führungskraft, falls das nicht stimmen sollte.',
+  'workshop.failed': 'Die Werkstattliste konnte nicht gelesen werden.',
+  'workshop.actionFailed': 'Das hat nicht funktioniert.',
+  'workshop.openOnly': 'Nur noch offene Aufträge',
+  'workshop.nothingOpen': 'Derzeit ist nichts in der Werkstatt.',
+  'workshop.empty': 'Hier gibt es noch keine Aufträge.',
+  'workshop.caption': 'Werkstattaufträge an den Standorten, die Sie betreuen.',
+  'workshop.colJob': 'Auftrag',
+  'workshop.colCustomer': 'Kunde',
+  'workshop.colVehicle': 'Fahrzeug',
+  'workshop.colCameInFor': 'Grund',
+  'workshop.colWaiting': 'Wartet',
+  'workshop.colDue': 'Offen',
+  'workshop.colStage': 'Stand',
+
+  'workshop.waitingTitle': 'Wartet auf den Kunden',
+  'workshop.waitingNote': {
+    one: 'Ein Auftrag enthält Arbeiten, denen noch niemand zugestimmt hat. Er kann nicht berechnet werden, bevor jemand anruft.',
+    other:
+      '{count} Aufträge enthalten Arbeiten, denen noch niemand zugestimmt hat. Keiner davon kann berechnet werden, bevor jemand anruft.',
+  },
+  'workshop.toAskAbout': {
+    one: '{count} Position zum Nachfragen',
+    other: '{count} Positionen zum Nachfragen',
+  },
+  'workshop.pendingNote': {
+    one: 'Eine Arbeit wartet auf den Kunden. Sie kann nicht berechnet werden, bevor er antwortet.',
+    other:
+      '{count} Arbeiten warten auf den Kunden. Keine davon kann berechnet werden, bevor er antwortet.',
+  },
+
+  'workshop.stageBooked': 'Terminiert',
+  'workshop.stageInProgress': 'In Arbeit',
+  'workshop.stageCompleted': 'Arbeiten fertig',
+  'workshop.stageInvoiced': 'Berechnet',
+  'workshop.stageCancelled': 'Storniert',
+
+  'workshop.moveInProgress': 'Arbeit beginnen',
+  'workshop.moveCompleted': 'Arbeiten sind fertig',
+  'workshop.moveInvoiced': 'Berechnen',
+  'workshop.moveCancelled': 'Auftrag stornieren',
+  'workshop.moveBooked': 'Zurück auf terminiert',
+
+  'workshop.miles': '{count} Meilen',
+  'workshop.bookedIn': 'angenommen am {date}',
+  'workshop.printJobSheet': 'Auftragszettel drucken',
+  'workshop.printInvoice': 'Rechnung drucken',
+  'workshop.whatHappened': 'Verlauf',
+
+  'workshop.theWork': 'Die Arbeiten',
+  'workshop.nothingWrittenUp': 'Noch nichts erfasst.',
+  'workshop.colWhat': 'Art',
+  'workshop.colDetail': 'Detail',
+  'workshop.colAgreed': 'Freigegeben?',
+  'workshop.colAmount': 'Betrag',
+  'workshop.nobodyAsked': 'Noch nicht gefragt',
+  'workshop.saidNo': 'Abgelehnt',
+  'workshop.agreed': 'Freigegeben',
+  'workshop.iRangThem': 'Ich habe angerufen',
+  'workshop.notNow': 'Jetzt nicht',
+  'workshop.howObtained': 'Wie die Freigabe eingeholt wurde',
+  'workshop.howObtainedPlaceholder': 'Angerufen 10:40, mit Frau Okafor gesprochen',
+  'workshop.theySaidYes': 'Kunde stimmt zu',
+  'workshop.theySaidNo': 'Kunde lehnt ab',
+  'workshop.hoursAtRate': '{hours} Std. zu {rate}',
+
+  'workshop.writeUpMore': 'Weitere Arbeiten erfassen',
+  'workshop.lineKind': 'Art',
+  'workshop.lineDescription': 'Bezeichnung',
+  'workshop.hours': 'Stunden',
+  'workshop.rate': 'Stundensatz',
+  'workshop.amount': 'Betrag',
+  'workshop.addLine': 'Hinzufügen',
+
+  'workshop.totalsCaption': 'Was der Auftrag ergibt.',
+  'workshop.totalLabour': 'Arbeitslohn',
+  'workshop.totalParts': 'Teile',
+  'workshop.totalSublet': 'Fremdleistung',
+  'workshop.totalDue': 'Offen',
+
+  'workshop.whoIsOnIt': 'Wer daran arbeitet',
+  'workshop.nobodyYet': 'Noch niemand',
+  'workshop.caption2': 'Die Arbeiten an den Standorten, die Sie betreuen, neueste zuerst, bis zu {limit}.',
+  'workshop.invoicedNothingMore': 'Berechnet am {date}. Nichts mehr zu tun.',
+  'workshop.jobFinished': 'Dieser Auftrag ist abgeschlossen.',
+  'workshop.assignedElsewhere':
+    'Jemandem zugewiesen, der nicht auf Ihrer Mitarbeiterliste steht — die Person arbeitet möglicherweise an einem anderen Standort.',
 };
