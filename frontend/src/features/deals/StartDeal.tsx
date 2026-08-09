@@ -13,8 +13,10 @@
 //       to pick the wrong one.
 
 import { useEffect, useState } from 'react';
-import { ApiError, api, post } from '../../shared/api';
+import { api, post } from '../../shared/api';
 import type { CustomerSummary, DealDetail, InventoryUnitSummary } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 export function StartDeal({
   onStarted, onCancel, leadId = null, customerId: fromLead = null,
@@ -26,6 +28,9 @@ export function StartDeal({
   /** The buyer the enquiry was from, preselected so nobody retypes them. */
   customerId?: string | null;
 }) {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [units, setUnits] = useState<InventoryUnitSummary[]>([]);
 
@@ -37,12 +42,14 @@ export function StartDeal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const buyerName = buyer?.displayName ?? t('startDeal.thatCustomer');
+
   useEffect(() => {
     void (async () => {
       try {
         setUnits(await api<InventoryUnitSummary[]>('/inventory?status=Available&limit=200'));
       } catch (failure) {
-        setError(failure instanceof ApiError ? failure.message : 'Could not load the stock list.');
+        setError(describe(failure));
       }
     })();
 
@@ -55,7 +62,7 @@ export function StartDeal({
           setBuyer(await api<CustomerSummary>(`/customers/${fromLead}`));
         } catch (failure) {
           setError(
-            failure instanceof ApiError ? failure.message : 'Could not read that customer.',
+            describe(failure),
           );
         }
       })();
@@ -79,7 +86,7 @@ export function StartDeal({
 
       setCustomers(await api<CustomerSummary[]>(`/customers${query}`));
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'Could not look that up.');
+      setError(describe(failure));
     }
   }
 
@@ -89,7 +96,7 @@ export function StartDeal({
 
     const unit = units.find((u) => u.id === unitId);
     if (unit === undefined) {
-      setError('Choose a car first.');
+      setError(t('startDeal.chooseCarFirst'));
       setBusy(false);
       return;
     }
@@ -107,7 +114,7 @@ export function StartDeal({
         }),
       );
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That deal could not be started.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -115,7 +122,7 @@ export function StartDeal({
 
   return (
     <section className="panel">
-      <h2>Start a deal</h2>
+      <h2>{t('startDeal.title')}</h2>
 
       {fromLead === null ? (
         <>
@@ -125,19 +132,19 @@ export function StartDeal({
               void findCustomers(search);
             }}
           >
-            <label htmlFor="buyer-search">Find the buyer</label>
+            <label htmlFor="buyer-search">{t('startDeal.findBuyer')}</label>
             <input
               id="buyer-search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name, phone, or email"
+              placeholder={t('customers.findPlaceholder')}
               autoComplete="off"
             />
           </form>
 
-          <label htmlFor="buyer">Who is buying</label>
+          <label htmlFor="buyer">{t('startDeal.buyer')}</label>
           <select id="buyer" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-            <option value="">Choose somebody…</option>
+            <option value="">{t('startDeal.chooseBuyer')}</option>
             {customers.map((customer) => (
               <option key={customer.id} value={customer.id}>
                 {customer.displayName}
@@ -146,23 +153,23 @@ export function StartDeal({
             ))}
           </select>
 
-          {customers.length === 0 ? (
-            <p className="note">Search above to find them. Add them on the customers page if they are new.</p>
-          ) : null}
+          {customers.length === 0 ? <p className="note">{t('startDeal.searchAbove')}</p> : null}
         </>
       ) : (
         // No picker. The enquiry already says who this is for, and offering a
         // choice here would let somebody build the deal for the wrong person
         // while the lead still claims credit for it.
         <p className="note">
-          From the enquiry for <span className="strong">{buyer?.displayName ?? 'that customer'}</span>.
-          The deal will be linked to it.
+          <Emphasised
+            sentence={t('startDeal.fromEnquiry', { name: buyerName })}
+            value={buyerName}
+          />
         </p>
       )}
 
-      <label htmlFor="car">Which car</label>
+      <label htmlFor="car">{t('startDeal.whichCar')}</label>
       <select id="car" value={unitId} onChange={(e) => setUnitId(e.target.value)}>
-        <option value="">Choose a car…</option>
+        <option value="">{t('startDeal.chooseCar')}</option>
         {units.map((unit) => (
           <option key={unit.id} value={unit.id}>
             {unit.stockNumber} · {unit.vehicleDisplayName}
@@ -170,12 +177,7 @@ export function StartDeal({
         ))}
       </select>
 
-      {units.length === 0 ? (
-        <p className="note">
-          Nothing on the lot is available right now. A car already on another deal
-          is held until that deal ends.
-        </p>
-      ) : null}
+      {units.length === 0 ? <p className="note">{t('startDeal.nothingAvailable')}</p> : null}
 
       <p className="error" aria-live="polite">
         {error ?? ''}
@@ -188,12 +190,39 @@ export function StartDeal({
           disabled={busy || customerId === '' || unitId === ''}
           onClick={() => void start()}
         >
-          {busy ? 'Starting…' : 'Start the deal'}
+          {busy ? t('startDeal.starting') : t('startDeal.submit')}
         </button>
         <button type="button" onClick={onCancel} disabled={busy}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </section>
+  );
+}
+
+/**
+ * A translated sentence with one substituted value picked out in bold.
+ *
+ * Splitting the FINISHED sentence around the value, rather than assembling
+ * "From the enquiry for " + name, is what keeps this working in every language:
+ * the translator is free to put the name first, last, or in the middle, and the
+ * emphasis follows it wherever they put it. Building it from fragments would
+ * hard-code English word order and read as nonsense in German or Arabic.
+ *
+ * `indexOf` rather than `split`, so a name that happens to occur twice in the
+ * sentence still produces exactly one emphasised run.
+ */
+function Emphasised({ sentence, value }: { sentence: string; value: string }) {
+  const at = sentence.indexOf(value);
+  if (at < 0) {
+    return <>{sentence}</>;
+  }
+
+  return (
+    <>
+      {sentence.slice(0, at)}
+      <span className="strong">{value}</span>
+      {sentence.slice(at + value.length)}
+    </>
   );
 }

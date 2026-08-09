@@ -13,9 +13,12 @@
 //       silently delete the rest.
 
 import { useState } from 'react';
-import { ApiError, post } from '../../shared/api';
+import { post } from '../../shared/api';
 import { chargeKinds } from '../../shared/contracts';
 import type { ChargeKind, DealDetail } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 interface ChargeRow {
   kind: ChargeKind;
@@ -35,12 +38,16 @@ export function DealTerms({
   deal: DealDetail;
   onSaved: (updated: DealDetail) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const label = useEnumLabel();
+  const describe = useApiMessage();
+
   // Seeded from what is on the deal already: saving replaces everything, so
   // starting empty would quietly wipe whatever was there.
   const [charges, setCharges] = useState<ChargeRow[]>(() =>
     deal.charges.length > 0
       ? deal.charges.map((c) => ({
-          kind: c.kind as ChargeKind,
+          kind: c.kind,
           description: c.description,
           amount: String(c.amount),
         }))
@@ -89,7 +96,7 @@ export function DealTerms({
 
       await onSaved(updated);
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'Those numbers were not accepted.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -101,7 +108,7 @@ export function DealTerms({
 
   return (
     <section className="terms">
-      <h3>The numbers</h3>
+      <h3>{t('terms.title')}</h3>
 
       {/* Wrapped so it scrolls inside its own box, like every other wide table
           here. The editor's four columns — kind, description, amount, remove —
@@ -113,13 +120,17 @@ export function DealTerms({
           honest test is whether `window.scrollTo(200, 0)` moves anything. */}
       <div className="scroll">
       <table>
-        <caption className="visually-hidden">The charges on this deal</caption>
+        <caption className="visually-hidden">{t('terms.caption')}</caption>
         <thead>
           <tr>
-            <th scope="col">Line</th>
-            <th scope="col">Description</th>
-            <th scope="col" className="num">Amount</th>
-            <th scope="col"><span className="visually-hidden">Remove</span></th>
+            <th scope="col">{t('terms.colLine')}</th>
+            <th scope="col">{t('terms.colDescription')}</th>
+            <th scope="col" className="num">
+              {t('terms.colAmount')}
+            </th>
+            <th scope="col">
+              <span className="visually-hidden">{t('terms.remove')}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -127,7 +138,7 @@ export function DealTerms({
             <tr key={index}>
               <td>
                 <label className="visually-hidden" htmlFor={`kind-${index}`}>
-                  Line {index + 1} kind
+                  {t('terms.lineKind', { n: index + 1 })}
                 </label>
                 <select
                   id={`kind-${index}`}
@@ -136,14 +147,14 @@ export function DealTerms({
                 >
                   {chargeKinds.map((kind) => (
                     <option key={kind} value={kind}>
-                      {kind}
+                      {label('chargeKind', kind)}
                     </option>
                   ))}
                 </select>
               </td>
               <td>
                 <label className="visually-hidden" htmlFor={`description-${index}`}>
-                  Line {index + 1} description
+                  {t('terms.lineDescription', { n: index + 1 })}
                 </label>
                 <input
                   id={`description-${index}`}
@@ -153,7 +164,7 @@ export function DealTerms({
               </td>
               <td>
                 <label className="visually-hidden" htmlFor={`amount-${index}`}>
-                  Line {index + 1} amount
+                  {t('terms.lineAmount', { n: index + 1 })}
                 </label>
                 <input
                   id={`amount-${index}`}
@@ -172,7 +183,7 @@ export function DealTerms({
                   onClick={() => setCharges(charges.filter((_, i) => i !== index))}
                   disabled={charges.length === 1}
                 >
-                  Remove
+                  {t('terms.remove')}
                 </button>
               </td>
             </tr>
@@ -186,7 +197,7 @@ export function DealTerms({
           type="button"
           onClick={() => setCharges([...charges, { kind: 'Fee', description: '', amount: '' }])}
         >
-          Add a line
+          {t('terms.addLine')}
         </button>
 
         {tradeIn === null ? (
@@ -194,27 +205,27 @@ export function DealTerms({
             type="button"
             onClick={() => setTradeIn({ description: '', allowance: '', payoff: '' })}
           >
-            Add a trade-in
+            {t('terms.addTradeIn')}
           </button>
         ) : (
           <button type="button" onClick={() => setTradeIn(null)}>
-            Remove the trade-in
+            {t('terms.dropTradeIn')}
           </button>
         )}
       </div>
 
       {tradeIn === null ? null : (
         <>
-          <h3>The trade-in</h3>
+          <h3>{t('terms.tradeInTitle')}</h3>
 
-          <label htmlFor="trade-description">What they are trading</label>
+          <label htmlFor="trade-description">{t('terms.whatTheyTrade')}</label>
           <input
             id="trade-description"
             value={tradeIn.description}
             onChange={(e) => setTradeIn({ ...tradeIn, description: e.target.value })}
           />
 
-          <label htmlFor="trade-allowance">What we are allowing for it</label>
+          <label htmlFor="trade-allowance">{t('terms.whatWeAllow')}</label>
           <input
             id="trade-allowance"
             inputMode="decimal"
@@ -222,7 +233,7 @@ export function DealTerms({
             onChange={(e) => setTradeIn({ ...tradeIn, allowance: e.target.value })}
           />
 
-          <label htmlFor="trade-payoff">What is still owed on it</label>
+          <label htmlFor="trade-payoff">{t('terms.whatIsOwed')}</label>
           <input
             id="trade-payoff"
             inputMode="decimal"
@@ -233,10 +244,7 @@ export function DealTerms({
           {Number(tradeIn.payoff) > Number(tradeIn.allowance) ? (
             // Said while they are typing rather than after saving: it changes
             // what the customer has to find, and finding out later is worse.
-            <p className="note">
-              They owe more on it than we are allowing, so the difference is added
-              to this deal.
-            </p>
+            <p className="note">{t('terms.negativeEquity')}</p>
           ) : null}
         </>
       )}
@@ -247,13 +255,11 @@ export function DealTerms({
 
       <div className="actions">
         <button type="button" className="primary" onClick={() => void save()} disabled={busy || !priced}>
-          {busy ? 'Saving…' : 'Save the numbers'}
+          {busy ? t('common.saving') : t('terms.save')}
         </button>
       </div>
 
-      {priced ? null : (
-        <p className="note">Every deal needs a price for the car itself before it can be saved.</p>
-      )}
+      {priced ? null : <p className="note">{t('terms.needsPrice')}</p>}
     </section>
   );
 }

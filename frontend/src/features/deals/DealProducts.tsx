@@ -16,11 +16,10 @@
 //       one product deleted the rest.
 
 import { useEffect, useState } from 'react';
-import { ApiError, api, post } from '../../shared/api';
+import { api, post } from '../../shared/api';
 import type { DealDetail, FinanceProductView } from '../../shared/contracts';
-
-const money = (amount: number, currency: string) =>
-  new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount);
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 /** What the salesperson is choosing between, with this deal's figures on it. */
 type Row = {
@@ -37,6 +36,10 @@ export function DealProducts({
   deal: DealDetail;
   onChanged: (updated: DealDetail) => void;
 }) {
+  const { t, format } = useI18n();
+  const describe = useApiMessage();
+  const money = (amount: number) => format.money(amount, deal.currency);
+
   const [rows, setRows] = useState<Row[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +61,7 @@ export function DealProducts({
               id: line.financeProductId,
               name: line.name,
               kind: 'Other',
-              provider: line.provider ?? 'no longer offered',
+              provider: line.provider ?? t('products.withdrawn'),
               defaultPrice: line.price,
               defaultCost: line.cost,
               currency: deal.currency,
@@ -99,16 +102,11 @@ export function DealProducts({
   }, [deal]);
 
   if (rows === null) {
-    return <p className="note">Loading what can be sold…</p>;
+    return <p className="note">{t('products.loading')}</p>;
   }
 
   if (rows.length === 0) {
-    return (
-      <p className="note">
-        No products are set up to sell. A manager adds them under the finance
-        catalogue.
-      </p>
-    );
+    return <p className="note">{t('products.none')}</p>;
   }
 
   const chosen = rows.filter((r) => r.selected);
@@ -138,7 +136,7 @@ export function DealProducts({
         }),
       );
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That did not save.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -146,27 +144,23 @@ export function DealProducts({
 
   return (
     <>
-      <h3>Sold with the car</h3>
-      <p className="note">
-        The prices start from the catalogue and are yours to change — what you type
-        here is what gets recorded on this deal, and later price-list changes will
-        not touch it.
-      </p>
+      <h3>{t('products.title')}</h3>
+      <p className="note">{t('products.lede')}</p>
 
       <div className="scroll">
         <table className="table terms">
           <thead>
             <tr>
-              <th scope="col">Sell</th>
-              <th scope="col">Product</th>
+              <th scope="col">{t('products.colSell')}</th>
+              <th scope="col">{t('products.colProduct')}</th>
               <th scope="col" className="num">
-                Price
+                {t('products.colPrice')}
               </th>
               <th scope="col" className="num">
-                Cost
+                {t('products.colCost')}
               </th>
               <th scope="col" className="num">
-                Gross
+                {t('products.colGross')}
               </th>
             </tr>
           </thead>
@@ -176,24 +170,29 @@ export function DealProducts({
                 <td>
                   <input
                     type="checkbox"
-                    aria-label={`Sell ${row.product.name}`}
+                    aria-label={t('products.sellThis', { product: row.product.name })}
                     checked={row.selected}
                     disabled={busy}
                     onChange={(event) => update(row.product.id, { selected: event.target.checked })}
                   />
                 </td>
                 <td>
+                  {/* The product NAME and PROVIDER are catalogue records the
+                      dealership typed, so they are printed as stored. Only the
+                      term and the withdrawn marker are our words. */}
                   {row.product.name}
                   <div className="muted">
                     {row.product.provider}
-                    {row.product.termMonths === null ? '' : ` · ${row.product.termMonths} months`}
-                    {row.product.isAvailable ? '' : ' · no longer offered'}
+                    {row.product.termMonths === null
+                      ? ''
+                      : ` · ${t('products.termMonths', { count: row.product.termMonths })}`}
+                    {row.product.isAvailable ? '' : ` · ${t('products.withdrawn')}`}
                   </div>
                 </td>
                 <td className="num">
                   <input
                     inputMode="decimal"
-                    aria-label={`Price for ${row.product.name}`}
+                    aria-label={t('products.priceFor', { product: row.product.name })}
                     value={row.price}
                     disabled={busy || !row.selected}
                     onChange={(event) => update(row.product.id, { price: event.target.value })}
@@ -202,7 +201,7 @@ export function DealProducts({
                 <td className="num">
                   <input
                     inputMode="decimal"
-                    aria-label={`Cost of ${row.product.name}`}
+                    aria-label={t('products.costOf', { product: row.product.name })}
                     value={row.cost}
                     disabled={busy || !row.selected}
                     onChange={(event) => update(row.product.id, { cost: event.target.value })}
@@ -210,7 +209,7 @@ export function DealProducts({
                 </td>
                 <td className="num">
                   {row.selected
-                    ? money((Number(row.price) || 0) - (Number(row.cost) || 0), deal.currency)
+                    ? money((Number(row.price) || 0) - (Number(row.cost) || 0))
                     : '—'}
                 </td>
               </tr>
@@ -221,8 +220,8 @@ export function DealProducts({
 
       <p className="note">
         {chosen.length === 0
-          ? 'Nothing selected.'
-          : `${money(total, deal.currency)} added to the deal, making ${money(gross, deal.currency)}.`}
+          ? t('products.nothingSelected')
+          : t('products.addedToDeal', { added: money(total), gross: money(gross) })}
       </p>
 
       <p className="error" aria-live="polite">
@@ -231,7 +230,7 @@ export function DealProducts({
 
       <div className="actions">
         <button type="button" disabled={busy} onClick={() => void save()}>
-          Save what is being sold
+          {busy ? t('common.saving') : t('products.saveWhatIsSold')}
         </button>
       </div>
     </>

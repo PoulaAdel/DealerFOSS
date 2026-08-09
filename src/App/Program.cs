@@ -176,6 +176,13 @@ builder.Services
 // Note what this does NOT replace: the second-factor challenge already dies
 // after five wrong codes, and an enrolment code after five. Those are per-secret
 // and this is per-caller; each covers what the other cannot.
+// Whether anything in front of this process may be believed about who the
+// caller is. Empty unless the operator listed their reverse proxies, and the
+// limiter below partitions on the direct peer when it is — see TrustedProxies
+// for why trusting X-Forwarded-For unconditionally is worse than not trusting
+// it at all.
+var trustedProxies = builder.Services.AddTrustedProxies(builder.Configuration);
+
 var credentialAttemptsPerMinute =
     builder.Configuration.GetValue("RateLimiting:CredentialAttemptsPerMinute", 20);
 
@@ -192,6 +199,14 @@ builder.Services.AddRateLimiter(options =>
             // and the whole test suite started failing. A real deployment always
             // has a remote address (the client's, or the proxy's), so this
             // fallback is effectively in-process callers only.
+            //
+            // Behind a reverse proxy this is the PROXY's address for every
+            // caller — the same one-bucket failure — unless the operator has
+            // listed their proxies under Network:TrustedProxies, in which case
+            // UseForwardedHeaders below has already replaced it with the real
+            // client. It is opt-in because an unconditionally trusted
+            // X-Forwarded-For is spoofable, and a limiter an attacker can step
+            // around at will is worse than one that is merely shared.
             context.Connection.RemoteIpAddress?.ToString() ?? context.Connection.Id,
             _ => new FixedWindowRateLimiterOptions
             {
@@ -254,8 +269,19 @@ if (args.Contains(RepointTenants.Verb, StringComparer.OrdinalIgnoreCase))
         Console.Out);
 }
 
-// First, so a response that fails anywhere below still carries them. A security
-// header set only on the happy path is not a control.
+// Before everything, because it changes the answer to "who is calling" and "is
+// this HTTPS" — and both the security headers and the rate limiter below are
+// wrong if they run first. Registered only when the operator named their
+// proxies; with none configured this is not in the pipeline at all and the
+// direct peer is used, exactly as before.
+if (trustedProxies.Count > 0)
+{
+    app.UseForwardedHeaders();
+    TrustedProxyLog.Trusting(app.Logger, trustedProxies.Count, trustedProxies);
+}
+
+// First of the real pipeline, so a response that fails anywhere below still
+// carries them. A security header set only on the happy path is not a control.
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
 app.UseSerilogRequestLogging();

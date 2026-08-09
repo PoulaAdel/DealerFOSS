@@ -508,7 +508,10 @@ export interface DealSummary {
 }
 
 export interface ChargeView {
-  kind: string;
+  // The union, not `string`. DealTerms was already casting this to ChargeKind
+  // to seed its dropdown, which is the tell that the declared type was wider
+  // than the truth — the API only ever sends one of the four.
+  kind: ChargeKind;
   description: string;
   amount: number;
 }

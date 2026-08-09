@@ -19,6 +19,9 @@ import { DealTerms } from './DealTerms';
 import { DealProducts } from './DealProducts';
 import { StartDeal } from './StartDeal';
 import type { DealDetail, DealStatus, DealSummary } from '../../shared/contracts';
+import { useI18n } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 const PageSize = 50;
 
@@ -33,6 +36,9 @@ export function DealsPage() {
   // records which enquiry produced it, so this is a real link rather than a
   // convenience: without it the two halves of the same sale sit in the system
   // unaware of each other.
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [params, setParams] = useSearchParams();
   const fromLead = params.get('leadId');
   const forCustomer = params.get('customerId');
@@ -56,12 +62,9 @@ export function DealsPage() {
         return;
       }
 
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'Could not load the deals.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, []);
+  }, [describe]);
 
   useEffect(() => {
     void find(openOnly);
@@ -71,27 +74,24 @@ export function DealsPage() {
     try {
       setSelected(await api<DealDetail>(`/deals/${dealId}`));
     } catch (failure) {
-      setLoad({
-        kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'Could not open that deal.',
-      });
+      setLoad({ kind: 'failed', message: describe(failure) });
     }
   }
 
   return (
     <>
       <header className="page__head">
-        <h1>Deals</h1>
+        <h1>{t('deals.title')}</h1>
 
         <div className="filter">
-          <label htmlFor="open-only">Show</label>
+          <label htmlFor="open-only">{t('deals.show')}</label>
           <select
             id="open-only"
             value={openOnly ? 'open' : 'all'}
             onChange={(e) => setOpenOnly(e.target.value === 'open')}
           >
-            <option value="open">Still being worked</option>
-            <option value="all">Everything</option>
+            <option value="open">{t('deals.stillWorked')}</option>
+            <option value="all">{t('deals.everything')}</option>
           </select>
         </div>
       </header>
@@ -116,7 +116,7 @@ export function DealsPage() {
       ) : (
         <div className="actions actions--lead">
           <button type="button" className="primary" onClick={() => setStarting(true)}>
-            Start a deal
+            {t('deals.start')}
           </button>
         </div>
       )}
@@ -144,6 +144,11 @@ function DealPanel({
   onChanged: (updated: DealDetail) => Promise<void>;
   onClose: () => void;
 }) {
+  const { t, format } = useI18n();
+  const label = useEnumLabel();
+  const describe = useApiMessage();
+  const money = (amount: number) => format.money(amount, deal.currency);
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -156,7 +161,7 @@ function DealPanel({
     try {
       await openDocument(`/documents/deals/${deal.id}`);
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'The document could not be opened.');
+      setError(describe(failure));
     }
   }
 
@@ -169,7 +174,7 @@ function DealPanel({
     } catch (failure) {
       // The server's refusal is the honest one — it knows who is asking and what
       // rule they hit. Anything invented here would be a guess.
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -186,34 +191,42 @@ function DealPanel({
               is delivered — and a delivered deal is exactly when somebody asks for
               another copy of the paperwork. */}
           <button type="button" onClick={() => void printOrder()}>
-            Print the order
+            {t('deals.printOrder')}
           </button>
           <button type="button" onClick={onClose}>
-            Close
+            {t('common.close')}
           </button>
         </div>
       </header>
 
       <p className="muted">
-        Stock {deal.stockNumber} · <span className={`chip chip--${deal.status.toLowerCase()}`}>{deal.status}</span>
+        {t('deals.stockLine', { stock: deal.stockNumber })} ·{' '}
+        <span className={`chip chip--${deal.status.toLowerCase()}`}>
+          {label('dealStatus', deal.status)}
+        </span>
       </p>
 
       <div className="scroll">
         <table>
-          <caption className="visually-hidden">The numbers on this deal</caption>
+          <caption className="visually-hidden">{t('deals.numbersCaption')}</caption>
           <thead>
             <tr>
-              <th scope="col">Line</th>
-              <th scope="col">Description</th>
-              <th scope="col" className="num">Amount</th>
+              <th scope="col">{t('deals.colLine')}</th>
+              <th scope="col">{t('deals.colDescription')}</th>
+              <th scope="col" className="num">
+                {t('deals.colAmount')}
+              </th>
             </tr>
           </thead>
           <tbody>
             {deal.charges.map((charge, index) => (
               <tr key={`${charge.kind}-${index}`}>
-                <td>{charge.kind}</td>
+                {/* The KIND is our vocabulary and is translated. The DESCRIPTION
+                    is what a salesperson typed on this deal and is printed
+                    exactly as they wrote it. */}
+                <td>{label('chargeKind', charge.kind)}</td>
                 <td>{charge.description}</td>
-                <td className="num">{money(charge.amount, deal.currency)}</td>
+                <td className="num">{money(charge.amount)}</td>
               </tr>
             ))}
 
@@ -224,22 +237,25 @@ function DealPanel({
                 by reading down the column in a browser. */}
             {deal.products.map((product) => (
               <tr key={product.id}>
-                <td>Product</td>
+                <td>{t('deals.lineProduct')}</td>
                 <td>{product.name}</td>
-                <td className="num">{money(product.price, deal.currency)}</td>
+                <td className="num">{money(product.price)}</td>
               </tr>
             ))}
 
             {deal.tradeIn === null ? null : (
               <tr>
-                <td>Trade-in</td>
+                <td>{t('deals.lineTradeIn')}</td>
                 <td>
                   {deal.tradeIn.description}
                   {deal.tradeIn.isNegativeEquity ? (
                     // Worth more owing than the car is worth. It changes what the
                     // customer has to find, so it is said rather than left to be
                     // worked out from two numbers.
-                    <> — <span className="strong">owes more than it is worth</span></>
+                    <>
+                      {' — '}
+                      <span className="strong">{t('deals.owesMore')}</span>
+                    </>
                   ) : null}
                 </td>
                 {/* Negated, because this column is what the customer owes and a
@@ -248,14 +264,14 @@ function DealPanel({
                     up — read down it and you got a different total from the one
                     printed at the bottom. Negative equity flips the other way
                     and correctly *increases* what is due. */}
-                <td className="num">{money(-deal.tradeIn.equity, deal.currency)}</td>
+                <td className="num">{money(-deal.tradeIn.equity)}</td>
               </tr>
             )}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={2}>Due from the customer</td>
-              <td className="num strong">{money(deal.amountDue, deal.currency)}</td>
+              <td colSpan={2}>{t('deals.dueFromCustomer')}</td>
+              <td className="num strong">{money(deal.amountDue)}</td>
             </tr>
           </tfoot>
         </table>
@@ -271,10 +287,7 @@ function DealPanel({
         </>
       ) : (
         <>
-          <p className="note">
-            The numbers are frozen. They stopped being editable when this deal was
-            submitted, so what a manager approves is what was put in front of them.
-          </p>
+          <p className="note">{t('deals.frozen')}</p>
           {deal.products.length === 0 ? null : <SoldProducts deal={deal} />}
         </>
       )}
@@ -285,13 +298,13 @@ function DealPanel({
 
       <Actions deal={deal} busy={busy} onMove={(status, note) => void move(status, note)} />
 
-      <h3>What happened</h3>
+      <h3>{t('deals.whatHappened')}</h3>
       <ol className="history">
         {[...deal.history].reverse().map((entry, index) => (
           <li key={`${entry.toStatus}-${entry.occurredAt}-${index}`}>
-            <span className="strong">{entry.toStatus}</span>{' '}
+            <span className="strong">{label('dealStatus', entry.toStatus)}</span>{' '}
             <span className="muted">
-              {new Date(entry.occurredAt).toLocaleString()}
+              {format.dateTime(entry.occurredAt)}
               {entry.note === null ? '' : ` — ${entry.note}`}
             </span>
           </li>
@@ -316,8 +329,10 @@ function Actions({
   busy: boolean;
   onMove: (status: DealStatus, note?: string) => void;
 }) {
+  const { t } = useI18n();
+
   if (deal.status === 'Delivered' || deal.status === 'Lost') {
-    return <p className="note">This deal is finished. Nothing more can happen to it.</p>;
+    return <p className="note">{t('deals.finished')}</p>;
   }
 
   return (
@@ -325,37 +340,35 @@ function Actions({
       <div className="actions">
         {deal.status === 'Draft' ? (
           <button type="button" className="primary" disabled={busy} onClick={() => onMove('Submitted')}>
-            Send to a manager
+            {t('deals.sendToManager')}
           </button>
         ) : null}
 
         {deal.status === 'Submitted' ? (
           <button type="button" className="primary" disabled={busy} onClick={() => onMove('Approved')}>
-            Approve
+            {t('deals.approve')}
           </button>
         ) : null}
 
         {deal.status === 'Approved' ? (
           <button type="button" className="primary" disabled={busy} onClick={() => onMove('Delivered')}>
-            Hand the car over
+            {t('deals.handOver')}
           </button>
         ) : null}
 
+        {/* The note travels to the server and lands in the deal's permanent
+            history, so it is written in the language of whoever marked it —
+            which is the honest record of who did what. */}
         <button
           type="button"
           disabled={busy}
-          onClick={() => onMove('Lost', 'Marked lost from the deal desk.')}
+          onClick={() => onMove('Lost', t('deals.markedLostNote'))}
         >
-          Mark lost
+          {t('deals.markLost')}
         </button>
       </div>
 
-      {deal.status === 'Submitted' ? (
-        <p className="note">
-          Whoever built this deal cannot be the one who approves it. If that is
-          you, a manager has to do it.
-        </p>
-      ) : null}
+      {deal.status === 'Submitted' ? <p className="note">{t('deals.cannotApproveOwn')}</p> : null}
     </>
   );
 }
@@ -367,19 +380,20 @@ function Body({
   onRetry: () => void;
   onOpen: (id: string) => void;
 }) {
+  const { t } = useI18n();
+
   switch (load.kind) {
     case 'loading':
       return (
         <p className="state" aria-live="polite">
-          Loading the deals…
+          {t('deals.loading')}
         </p>
       );
 
     case 'denied':
       return (
         <p className="state" role="alert">
-          You do not have access to deals at this location. Ask a manager if you
-          think that is wrong.
+          {t('deals.denied')}
         </p>
       );
 
@@ -388,14 +402,14 @@ function Body({
         <div className="state" role="alert">
           <p>{load.message}</p>
           <button type="button" onClick={onRetry}>
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       );
 
     case 'ready':
       return load.deals.length === 0 ? (
-        <p className="state">No deals here. One starts when a car is priced for somebody.</p>
+        <p className="state">{t('deals.empty')}</p>
       ) : (
         <DealTable deals={load.deals} onOpen={onOpen} />
       );
@@ -408,22 +422,22 @@ function Body({
  * approved.
  */
 function SoldProducts({ deal }: { deal: DealDetail }) {
-  const money = (amount: number) =>
-    new Intl.NumberFormat(undefined, { style: 'currency', currency: deal.currency }).format(amount);
+  const { t, format } = useI18n();
+  const money = (amount: number) => format.money(amount, deal.currency);
 
   return (
     <>
-      <h3>Sold with the car</h3>
+      <h3>{t('deals.soldWithTheCar')}</h3>
       <div className="scroll">
         <table className="table terms">
           <thead>
             <tr>
-              <th scope="col">Product</th>
+              <th scope="col">{t('deals.colProduct')}</th>
               <th scope="col" className="num">
-                Price
+                {t('deals.colPrice')}
               </th>
               <th scope="col" className="num">
-                Gross
+                {t('deals.colGross')}
               </th>
             </tr>
           </thead>
@@ -443,27 +457,33 @@ function SoldProducts({ deal }: { deal: DealDetail }) {
           </tbody>
         </table>
       </div>
-      <p className="note">{money(deal.productGross)} made on what was sold with the car.</p>
+      <p className="note">{t('deals.productGross', { amount: money(deal.productGross) })}</p>
     </>
   );
 }
 
 function DealTable({ deals, onOpen }: { deals: DealSummary[]; onOpen: (id: string) => void }) {
+  const { t, format } = useI18n();
+  const label = useEnumLabel();
   const capped = deals.length >= PageSize;
 
   return (
     <div className="scroll">
       <table>
         <caption className="visually-hidden">
-          {capped ? `The first ${deals.length} deals. There may be more.` : `${deals.length} deals`}
+          {capped
+            ? t('deals.countCapped', { count: deals.length })
+            : t('deals.count', { count: deals.length })}
         </caption>
         <thead>
           <tr>
-            <th scope="col">Customer</th>
-            <th scope="col">Vehicle</th>
-            <th scope="col">Stock</th>
-            <th scope="col" className="num">Due</th>
-            <th scope="col">Stage</th>
+            <th scope="col">{t('deals.colCustomer')}</th>
+            <th scope="col">{t('deals.colVehicle')}</th>
+            <th scope="col">{t('deals.colStock')}</th>
+            <th scope="col" className="num">
+              {t('deals.colDue')}
+            </th>
+            <th scope="col">{t('deals.colStage')}</th>
           </tr>
         </thead>
         <tbody>
@@ -478,10 +498,14 @@ function DealTable({ deals, onOpen }: { deals: DealSummary[]; onOpen: (id: strin
                 </button>
               </td>
               <td>{deal.vehicle}</td>
-              <td className="mono">{deal.stockNumber}</td>
-              <td className="num">{money(deal.amountDue, deal.currency)}</td>
+              <td className="mono" dir="ltr">
+                {deal.stockNumber}
+              </td>
+              <td className="num">{format.money(deal.amountDue, deal.currency)}</td>
               <td>
-                <span className={`chip chip--${deal.status.toLowerCase()}`}>{deal.status}</span>
+                <span className={`chip chip--${deal.status.toLowerCase()}`}>
+                  {label('dealStatus', deal.status)}
+                </span>
               </td>
             </tr>
           ))}
@@ -489,20 +513,8 @@ function DealTable({ deals, onOpen }: { deals: DealSummary[]; onOpen: (id: strin
       </table>
 
       {capped ? (
-        <p className="note note--footer">
-          Showing the first {deals.length}. There may be more — narrow it with the
-          filter until paging exists.
-        </p>
+        <p className="note note--footer">{t('deals.cappedNote', { count: deals.length })}</p>
       ) : null}
     </div>
   );
-}
-
-/**
- * Money, in the deal's own currency. Formatted by the browser rather than by
- * hand: a dealership near a border sells in more than one, and a hard-coded
- * dollar sign in front of a euro amount is the kind of error nobody reports.
- */
-function money(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount);
 }

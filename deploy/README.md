@@ -330,6 +330,65 @@ New values are written with the new key; existing ones still decrypt with the ol
 re-encrypted — and note that no tool does that re-encryption yet, so for now
 rotation means "add a key and keep the old one".
 
+## Behind a reverse proxy — required, or the sign-in limiter misfires
+
+**Skip this if the application is reached directly.** It matters only when
+something sits in front of it: nginx, Apache, IIS ARR, Caddy, a cloud load
+balancer, or a hosting platform's ingress.
+
+Sign-in attempts are rate limited **per caller**, and the caller is identified by
+their network address. Behind a proxy, every request arrives from the *proxy's*
+address — so all of them land in one bucket, and twenty failed sign-ins from
+anybody, including one attacker, locks out the whole dealership.
+
+The real client is in the `X-Forwarded-For` header, but that header is only worth
+reading if it came from a proxy you actually run. Anyone can send one, and an
+attacker who can write their own address gets a fresh bucket on every request —
+a limiter that is worse than useless because it looks like it is working. So the
+application refuses to read it until you say which proxies may set it:
+
+```json
+{
+  "Network": {
+    "TrustedProxies": [ "10.0.0.5", "10.1.0.0/16" ]
+  }
+}
+```
+
+Or as environment variables, which is how the container and a hosted target
+usually take it:
+
+```bash
+Network__TrustedProxies__0=10.0.0.5
+Network__TrustedProxies__1=10.1.0.0/16
+```
+
+Single addresses and CIDR ranges are both accepted. **List the address the proxy
+connects *from*, which is not always the address it listens on** — on Docker it
+is the container's address on the shared network, not the published port's host.
+`docker inspect` or one line in the access log will tell you.
+
+Two things worth knowing:
+
+- **A typo stops the service starting.** An entry that is neither an address nor
+  a range throws at startup and names itself. Dropping it silently would leave
+  the limiter partitioning on the proxy's address while you believed it fixed —
+  invisible until the day it mattered.
+- **It also fixes HSTS.** A proxy that terminates TLS forwards plain HTTP, so the
+  application sees a non-secure request and omits `Strict-Transport-Security`.
+  `X-Forwarded-Proto` is honoured alongside the address, so configuring this is
+  what makes that header actually appear.
+
+Only one hop is trusted. A chain of two proxies needs `Network:ForwardLimit`
+raised deliberately — each extra hop is one more machine you are choosing to
+believe.
+
+Confirm it took: the log line at startup names what it trusted.
+
+```
+Trusting forwarded headers from 2 configured proxy source(s): …
+```
+
 ## Proving it works end to end
 
 ```bash
