@@ -704,4 +704,60 @@ export const en = {
   'parts.costEach': 'Cost each',
   'parts.deliveryNote': 'Delivery note',
   'parts.bookItIn': 'Book it in',
+
+  // --- This month (the dashboard) -------------------------------------------
+  'dash.soFar': 'So far this month.',
+  'dash.asFinished': 'The month as it finished.',
+  'dash.whichMonth': 'Which month',
+  'dash.previousMonth': 'Previous month',
+  'dash.nextMonth': 'Next month',
+  'dash.previousMonthTitle': 'Previous month ( [ )',
+  'dash.nextMonthTitle': 'Next month ( ] )',
+  'dash.rooftop': 'Rooftop',
+  'dash.everywhere': 'Everywhere I can see',
+  'dash.loading': 'Adding the month up…',
+  'dash.denied': 'You do not have access to any of the figures on this dashboard.',
+  'dash.failed': 'Could not load the month.',
+
+  'dash.withheldTrading':
+    'The money on this month is not yours to see, so the figures below are only the stock.',
+  'dash.withheldStock': 'Stock is not yours to see, so this month shows only what was sold.',
+
+  'dash.booksOpen': 'The books are open, so these figures can still move.',
+  'dash.booksClosed': 'The books are closed. These are the figures that were reported.',
+  'dash.booksClosedOn':
+    'The books are closed on {date}. These are the figures that were reported.',
+  'dash.booksNotOpened':
+    'Nobody has opened the books for this month, so nothing can post into it.',
+  'dash.booksUnknown': 'Whether the books are open is not yours to see.',
+
+  'dash.whatTheMonthMade': 'What the month made',
+  'dash.totalGross': 'Total gross',
+  'dash.financeShort': 'F&I',
+  'dash.whatSold': 'What sold',
+  'dash.carsDelivered': 'Cars delivered',
+  'dash.jobsInvoiced': 'Jobs invoiced',
+  'dash.grossPerCar': 'Gross per car',
+  'dash.frontAndBack': 'front and back together',
+
+  'dash.whereGrossCameFrom': 'Where the gross came from',
+  'dash.colDepartment': 'Department',
+  'dash.colRevenue': 'Revenue',
+  'dash.colCost': 'Cost',
+  'dash.colGross': 'Gross',
+  'dash.colMargin': 'Margin',
+  'dash.total': 'Total',
+
+  'dash.howOldTheStockIs': 'How old the stock is',
+  'dash.unsoldAsAt': ' — {count} unsold, as at {date}',
+  'dash.nothingUnsold': 'Nothing unsold on the lot.',
+  'dash.standingLongest': 'Standing longest',
+  'dash.colStock': 'Stock',
+  'dash.colVehicle': 'Vehicle',
+  'dash.colStatus': 'Status',
+  'dash.colDays': 'Days',
+  'dash.estimatedAge':
+    'No acquisition date was recorded, so this counts from when it was entered.',
+  'dash.estimatedAgeNote':
+    '* counted from when the car was entered, because no acquisition date was recorded.',
 } as const;

@@ -12,6 +12,9 @@
 //       "∞% up", which is worse than saying there is nothing to compare.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useI18n } from '../../shared/i18n';
+import { useEnumLabel } from '../../shared/i18n/enums';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { Link } from 'react-router';
 import { ApiError, api } from '../../shared/api';
 import { useHotkeys } from '../../shared/useHotkeys';
@@ -48,12 +51,8 @@ function shift({ year, month }: Chosen, by: number): Chosen {
   return { year: moved.getFullYear(), month: moved.getMonth() + 1 };
 }
 
-function monthName({ year, month }: Chosen): string {
-  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
-    month: 'long',
-    year: 'numeric',
-  });
-}
+// `monthName` is gone: the heading now goes through format.monthAndYear, which
+// is bound to the chosen language rather than to the operating system.
 
 function isCurrent(chosen: Chosen): boolean {
   const now = thisMonth();
@@ -61,6 +60,9 @@ function isCurrent(chosen: Chosen): boolean {
 }
 
 export function DashboardPage() {
+  const { t, format } = useI18n();
+  const describe = useApiMessage();
+
   const [chosen, setChosen] = useState<Chosen>(thisMonth);
   const [rooftopId, setRooftopId] = useState(() => localStorage.getItem(ROOFTOP_KEY) ?? '');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
@@ -89,7 +91,7 @@ export function DashboardPage() {
       } else {
         setLoad({
           kind: 'failed',
-          message: failure instanceof ApiError ? failure.message : 'Could not load the month.',
+          message: describe(failure),
         });
       }
     } finally {
@@ -142,19 +144,19 @@ export function DashboardPage() {
     <>
       <header className="page__head">
         <div>
-          <h1>{monthName(chosen)}</h1>
+          <h1>{format.monthAndYear(chosen.year, chosen.month)}</h1>
           <p className="muted dash__lede">
-            {isCurrent(chosen) ? 'So far this month.' : 'The month as it finished.'}
+            {isCurrent(chosen) ? t('dash.soFar') : t('dash.asFinished')}
           </p>
         </div>
 
         <div className="dash__controls">
           {/* Inline, and no navigation: moving month is a change to this view,
               not a different page. */}
-          <div className="switcher" role="group" aria-label="Which month">
-            <button type="button" onClick={() => goto(shift(chosen, -1))} title="Previous month ( [ )">
+          <div className="switcher" role="group" aria-label={t('dash.whichMonth')}>
+            <button type="button" onClick={() => goto(shift(chosen, -1))} title={t('dash.previousMonthTitle')}>
               <Chevron towards="start" />
-              <span className="visually-hidden">Previous month</span>
+              <span className="visually-hidden">{t('dash.previousMonth')}</span>
             </button>
             <button type="button" onClick={() => goto(thisMonth())} disabled={isCurrent(chosen)}>
               This month
@@ -163,22 +165,22 @@ export function DashboardPage() {
               type="button"
               onClick={() => goto(shift(chosen, 1))}
               disabled={isCurrent(chosen)}
-              title="Next month ( ] )"
+              title={t('dash.nextMonthTitle')}
             >
               <Chevron towards="end" />
-              <span className="visually-hidden">Next month</span>
+              <span className="visually-hidden">{t('dash.nextMonth')}</span>
             </button>
           </div>
 
           {rooftops.length > 1 ? (
             <div className="filter">
-              <label htmlFor="dash-rooftop">Rooftop</label>
+              <label htmlFor="dash-rooftop">{t('dash.rooftop')}</label>
               <select
                 id="dash-rooftop"
                 value={rooftopId}
                 onChange={(event) => chooseRooftop(event.target.value)}
               >
-                <option value="">Everywhere I can see</option>
+                <option value="">{t('dash.everywhere')}</option>
                 {rooftops.map((rooftop) => (
                   <option key={rooftop.id} value={rooftop.id}>
                     {rooftop.name}
@@ -223,18 +225,20 @@ function Chevron({ towards }: { towards: 'start' | 'end' }) {
 }
 
 function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
+  const { t } = useI18n();
+
   switch (load.kind) {
     case 'loading':
       return (
         <p className="state" aria-live="polite">
-          Adding the month up…
+          {t('dash.loading')}
         </p>
       );
 
     case 'denied':
       return (
         <p className="state" role="alert">
-          You do not have access to any of the figures on this dashboard.
+          {t('dash.denied')}
         </p>
       );
 
@@ -243,7 +247,7 @@ function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
         <div className="state" role="alert">
           <p>{load.message}</p>
           <button type="button" onClick={onRetry}>
-            Try again
+            {t('common.retry')}
           </button>
         </div>
       );
@@ -254,14 +258,19 @@ function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
 }
 
 function Review({ review }: { review: MonthInReview }) {
+  const { t, language } = useI18n();
+
+  // Whole units on a dashboard: the pennies are noise at this altitude. Built
+  // from the ACTIVE locale rather than `undefined`, which followed the operating
+  // system and so could disagree with the language the page is in.
   const money = useMemo(
     () =>
-      new Intl.NumberFormat(undefined, {
+      new Intl.NumberFormat(language.locale, {
         style: 'currency',
         currency: review.trading?.currency || 'USD',
         maximumFractionDigits: 0,
       }),
-    [review.trading?.currency],
+    [language.locale, review.trading?.currency],
   );
 
   return (
@@ -271,8 +280,8 @@ function Review({ review }: { review: MonthInReview }) {
       {review.withheld.map((section) => (
         <p key={section} className="notice" role="note">
           {section === 'Trading'
-            ? 'The money on this month is not yours to see, so the figures below are only the stock.'
-            : 'Stock is not yours to see, so this month shows only what was sold.'}
+            ? t('dash.withheldTrading')
+            : t('dash.withheldStock')}
         </p>
       ))}
 
@@ -291,13 +300,22 @@ function Review({ review }: { review: MonthInReview }) {
  * reading a gross number needs to know.
  */
 function Books({ review }: { review: MonthInReview }) {
-  const closed = review.closedAt === null ? '' : ` on ${new Date(review.closedAt).toLocaleDateString()}`;
+  const { t, format } = useI18n();
+
+  // Two separate sentences rather than one with an optional " on {date}"
+  // fragment spliced into it. A date inserted mid-sentence lands in a different
+  // place in German and Arabic, and a translator cannot move a fragment that
+  // was concatenated here.
+  const closedWords =
+    review.closedAt === null
+      ? t('dash.booksClosed')
+      : t('dash.booksClosedOn', { date: format.date(review.closedAt) });
 
   const words: Record<string, string> = {
-    Open: 'The books are open, so these figures can still move.',
-    Closed: `The books are closed${closed}. These are the figures that were reported.`,
-    NotOpened: 'Nobody has opened the books for this month, so nothing can post into it.',
-    Unknown: 'Whether the books are open is not yours to see.',
+    Open: t('dash.booksOpen'),
+    Closed: closedWords,
+    NotOpened: t('dash.booksNotOpened'),
+    Unknown: t('dash.booksUnknown'),
   };
 
   return (
@@ -316,13 +334,19 @@ function Trading({
   prior: LedgerPerformance | null;
   money: Intl.NumberFormat;
 }) {
+  const { t } = useI18n();
+
   const find = (name: string, from: LedgerPerformance | null): DepartmentResult | undefined =>
     from?.departments.find((department) => department.name === name);
 
+  // Department NAMES come from the seeded chart of accounts and are the
+  // dealership's own words, so they are shown as stored. Only the two labels
+  // this screen invents — the total, and the abbreviation for the finance
+  // department — are translated.
   const tiles = [
-    { label: 'Total gross', now: trading.totalGross, was: prior?.totalGross, lead: true },
+    { label: t('dash.totalGross'), now: trading.totalGross, was: prior?.totalGross, lead: true },
     ...Object.values(departments).map((name) => ({
-      label: name === departments.finance ? 'F&I' : name,
+      label: name === departments.finance ? t('dash.financeShort') : name,
       now: find(name, trading)?.gross ?? 0,
       was: find(name, prior)?.gross,
       lead: false,
@@ -331,7 +355,7 @@ function Trading({
 
   return (
     <>
-      <section aria-label="What the month made">
+      <section aria-label={t('dash.whatTheMonthMade')}>
         <div className="tiles">
           {tiles.map((tile) => (
             <Tile
@@ -346,26 +370,26 @@ function Trading({
       </section>
 
       <div className="dash__split">
-        <section className="panel panel--dash" aria-label="What sold">
-          <h2>What sold</h2>
+        <section className="panel panel--dash" aria-label={t('dash.whatSold')}>
+          <h2>{t('dash.whatSold')}</h2>
 
           <dl className="figures">
             <div>
-              <dt>Cars delivered</dt>
+              <dt>{t('dash.carsDelivered')}</dt>
               <dd>
                 {trading.vehiclesDelivered}
                 <Was value={prior?.vehiclesDelivered} />
               </dd>
             </div>
             <div>
-              <dt>Jobs invoiced</dt>
+              <dt>{t('dash.jobsInvoiced')}</dt>
               <dd>
                 {trading.serviceInvoices}
                 <Was value={prior?.serviceInvoices} />
               </dd>
             </div>
             <div>
-              <dt>Gross per car</dt>
+              <dt>{t('dash.grossPerCar')}</dt>
               <dd>
                 {trading.vehiclesDelivered === 0 ? (
                   // No cars is no average. "— front and back together" reads as
@@ -378,7 +402,7 @@ function Trading({
                         (find(departments.finance, trading)?.gross ?? 0)) /
                         trading.vehiclesDelivered,
                     )}
-                    <span className="muted"> front and back together</span>
+                    <span className="muted"> {t('dash.frontAndBack')}</span>
                   </>
                 )}
               </dd>
@@ -386,14 +410,14 @@ function Trading({
           </dl>
         </section>
 
-        <section className="panel panel--dash" aria-label="Where the gross came from">
-          <h2>Where the gross came from</h2>
+        <section className="panel panel--dash" aria-label={t('dash.whereGrossCameFrom')}>
+          <h2>{t('dash.whereGrossCameFrom')}</h2>
 
           <div className="scroll">
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Department</th>
+                  <th scope="col">{t('dash.colDepartment')}</th>
                   <th scope="col" className="num">
                     Revenue
                   </th>
@@ -404,7 +428,7 @@ function Trading({
                     Gross
                   </th>
                   <th scope="col" className="num">
-                    Margin
+                    {t('dash.colMargin')}
                   </th>
                 </tr>
               </thead>
@@ -426,7 +450,7 @@ function Trading({
               </tbody>
               <tfoot>
                 <tr>
-                  <td>Total</td>
+                  <td>{t('dash.total')}</td>
                   <td className="num mono">{money.format(trading.totalRevenue)}</td>
                   <td className="num mono">{money.format(trading.totalCost)}</td>
                   <td className="num mono strong">{money.format(trading.totalGross)}</td>
@@ -442,20 +466,28 @@ function Trading({
 }
 
 function Stock({ stock }: { stock: StockAging }) {
+  const { t, format } = useI18n();
+  const label = useEnumLabel();
+
   // Bars are drawn relative to the fullest band, not to the total: three bands
   // of four cars each would otherwise all be a third of the width and say
   // nothing.
   const widest = Math.max(1, ...stock.bands.map((band) => band.units));
 
   return (
-    <section className="panel panel--dash" aria-label="How old the stock is">
+    <section className="panel panel--dash" aria-label={t('dash.howOldTheStockIs')}>
       <h2>
-        How old the stock is
-        <span className="muted"> — {stock.units} unsold, as at {stock.asOf}</span>
+        {t('dash.howOldTheStockIs')}
+        <span className="muted">
+          {t('dash.unsoldAsAt', {
+            count: stock.units,
+            date: format.date(stock.asOf),
+          })}
+        </span>
       </h2>
 
       {stock.units === 0 ? (
-        <p className="muted">Nothing unsold on the lot.</p>
+        <p className="muted">{t('dash.nothingUnsold')}</p>
       ) : (
         <>
           <ul className="bands">
@@ -474,16 +506,16 @@ function Stock({ stock }: { stock: StockAging }) {
 
           {stock.oldest.length === 0 ? null : (
             <>
-              <h3>Standing longest</h3>
+              <h3>{t('dash.standingLongest')}</h3>
               <div className="scroll">
                 <table>
                   <thead>
                     <tr>
-                      <th scope="col">Stock</th>
-                      <th scope="col">Vehicle</th>
-                      <th scope="col">Status</th>
+                      <th scope="col">{t('dash.colStock')}</th>
+                      <th scope="col">{t('dash.colVehicle')}</th>
+                      <th scope="col">{t('dash.colStatus')}</th>
                       <th scope="col" className="num">
-                        Days
+                        {t('dash.colDays')}
                       </th>
                     </tr>
                   </thead>
@@ -498,13 +530,13 @@ function Stock({ stock }: { stock: StockAging }) {
                         <td>{unit.vehicleDisplayName}</td>
                         <td>
                           <span className={`chip chip--${unit.status.toLowerCase()}`}>
-                            {unit.status}
+                            {label('inventoryStatus', unit.status)}
                           </span>
                         </td>
                         <td className="num mono strong">
                           {unit.daysInStock}
                           {unit.ageIsEstimated ? (
-                            <abbr title="No acquisition date was recorded, so this counts from when it was entered.">
+                            <abbr title={t('dash.estimatedAge')}>
                               *
                             </abbr>
                           ) : null}
@@ -516,9 +548,7 @@ function Stock({ stock }: { stock: StockAging }) {
               </div>
 
               {stock.oldest.some((unit) => unit.ageIsEstimated) ? (
-                <p className="note">
-                  * counted from when the car was entered, because no acquisition date was recorded.
-                </p>
+                <p className="note">{t('dash.estimatedAgeNote')}</p>
               ) : null}
             </>
           )}

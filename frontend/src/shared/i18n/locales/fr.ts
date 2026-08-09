@@ -685,4 +685,60 @@ export const fr: Catalogue = {
   'parts.costEach': 'Coût unitaire',
   'parts.deliveryNote': 'Bon de livraison',
   'parts.bookItIn': 'Réceptionner',
+
+  'dash.soFar': 'Depuis le début du mois.',
+  'dash.asFinished': 'Le mois tel qu’il s’est terminé.',
+  'dash.whichMonth': 'Quel mois',
+  'dash.previousMonth': 'Mois précédent',
+  'dash.nextMonth': 'Mois suivant',
+  'dash.previousMonthTitle': 'Mois précédent ( [ )',
+  'dash.nextMonthTitle': 'Mois suivant ( ] )',
+  'dash.rooftop': 'Site',
+  'dash.everywhere': 'Tous les sites visibles',
+  'dash.loading': 'Calcul du mois…',
+  'dash.denied': 'Vous n’avez accès à aucun des chiffres de ce tableau de bord.',
+  'dash.failed': 'Impossible de charger le mois.',
+
+  'dash.withheldTrading':
+    'Les montants de ce mois ne vous sont pas accessibles : les chiffres ci-dessous ne concernent que le stock.',
+  'dash.withheldStock':
+    'Le stock ne vous est pas accessible : ce mois n’affiche donc que ce qui a été vendu.',
+
+  'dash.booksOpen': 'Les comptes sont ouverts, ces chiffres peuvent donc encore bouger.',
+  'dash.booksClosed': 'Les comptes sont clôturés. Voici les chiffres qui ont été communiqués.',
+  'dash.booksClosedOn':
+    'Les comptes ont été clôturés le {date}. Voici les chiffres qui ont été communiqués.',
+  'dash.booksNotOpened':
+    'Personne n’a ouvert les comptes de ce mois : rien ne peut y être comptabilisé.',
+  'dash.booksUnknown': 'L’état des comptes ne vous est pas accessible.',
+
+  'dash.whatTheMonthMade': 'Ce que le mois a rapporté',
+  'dash.totalGross': 'Marge totale',
+  'dash.financeShort': 'F&I',
+  'dash.whatSold': 'Ce qui a été vendu',
+  'dash.carsDelivered': 'Véhicules livrés',
+  'dash.jobsInvoiced': 'Ordres de réparation facturés',
+  'dash.grossPerCar': 'Marge par véhicule',
+  'dash.frontAndBack': 'véhicule et F&I confondus',
+
+  'dash.whereGrossCameFrom': 'D’où vient la marge',
+  'dash.colDepartment': 'Service',
+  'dash.colRevenue': 'Chiffre d’affaires',
+  'dash.colCost': 'Coût',
+  'dash.colGross': 'Marge',
+  'dash.colMargin': 'Taux',
+  'dash.total': 'Total',
+
+  'dash.howOldTheStockIs': 'Ancienneté du stock',
+  'dash.unsoldAsAt': ' — {count} invendus, au {date}',
+  'dash.nothingUnsold': 'Aucun véhicule invendu sur le parc.',
+  'dash.standingLongest': 'Les plus anciens',
+  'dash.colStock': 'N° de stock',
+  'dash.colVehicle': 'Véhicule',
+  'dash.colStatus': 'Statut',
+  'dash.colDays': 'Jours',
+  'dash.estimatedAge':
+    'Aucune date d’acquisition n’a été enregistrée : le décompte part de la date de saisie.',
+  'dash.estimatedAgeNote':
+    '* décompté depuis la saisie du véhicule, faute de date d’acquisition enregistrée.',
 };

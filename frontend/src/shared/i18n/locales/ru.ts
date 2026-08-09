@@ -713,4 +713,57 @@ export const ru: Catalogue = {
   'parts.costEach': 'Цена за штуку',
   'parts.deliveryNote': 'Накладная',
   'parts.bookItIn': 'Оприходовать',
+
+  'dash.soFar': 'С начала месяца.',
+  'dash.asFinished': 'Месяц в том виде, в каком он завершился.',
+  'dash.whichMonth': 'Какой месяц',
+  'dash.previousMonth': 'Предыдущий месяц',
+  'dash.nextMonth': 'Следующий месяц',
+  'dash.previousMonthTitle': 'Предыдущий месяц ( [ )',
+  'dash.nextMonthTitle': 'Следующий месяц ( ] )',
+  'dash.rooftop': 'Площадка',
+  'dash.everywhere': 'Все доступные мне',
+  'dash.loading': 'Подсчёт месяца…',
+  'dash.denied': 'У вас нет доступа ни к одной цифре на этой сводке.',
+  'dash.failed': 'Не удалось загрузить месяц.',
+
+  'dash.withheldTrading':
+    'Суммы за этот месяц вам недоступны, поэтому ниже показаны только данные по складу.',
+  'dash.withheldStock': 'Склад вам недоступен, поэтому за месяц показано только проданное.',
+
+  'dash.booksOpen': 'Период открыт, поэтому эти цифры ещё могут измениться.',
+  'dash.booksClosed': 'Период закрыт. Это те цифры, которые были сданы.',
+  'dash.booksClosedOn': 'Период закрыт {date}. Это те цифры, которые были сданы.',
+  'dash.booksNotOpened': 'Период за этот месяц никто не открывал, провести в него ничего нельзя.',
+  'dash.booksUnknown': 'Состояние периода вам недоступно.',
+
+  'dash.whatTheMonthMade': 'Что принёс месяц',
+  'dash.totalGross': 'Валовая прибыль',
+  'dash.financeShort': 'F&I',
+  'dash.whatSold': 'Что продано',
+  'dash.carsDelivered': 'Выдано автомобилей',
+  'dash.jobsInvoiced': 'Заказ-нарядов выставлено',
+  'dash.grossPerCar': 'Прибыль на автомобиль',
+  'dash.frontAndBack': 'автомобиль и F&I вместе',
+
+  'dash.whereGrossCameFrom': 'Откуда пришла прибыль',
+  'dash.colDepartment': 'Подразделение',
+  'dash.colRevenue': 'Выручка',
+  'dash.colCost': 'Себестоимость',
+  'dash.colGross': 'Прибыль',
+  'dash.colMargin': 'Рентабельность',
+  'dash.total': 'Итого',
+
+  'dash.howOldTheStockIs': 'Возраст склада',
+  'dash.unsoldAsAt': ' — {count} непроданных, на {date}',
+  'dash.nothingUnsold': 'На площадке нет непроданных автомобилей.',
+  'dash.standingLongest': 'Стоят дольше всех',
+  'dash.colStock': 'Складской №',
+  'dash.colVehicle': 'Автомобиль',
+  'dash.colStatus': 'Статус',
+  'dash.colDays': 'Дней',
+  'dash.estimatedAge':
+    'Дата поступления не записана, поэтому отсчёт идёт с момента внесения в систему.',
+  'dash.estimatedAgeNote':
+    '* отсчёт с момента внесения автомобиля в систему, так как дата поступления не записана.',
 };

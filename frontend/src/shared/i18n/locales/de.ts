@@ -688,4 +688,60 @@ export const de: Catalogue = {
   'parts.costEach': 'Kosten je Stück',
   'parts.deliveryNote': 'Lieferschein',
   'parts.bookItIn': 'Einbuchen',
+
+  'dash.soFar': 'Bisher in diesem Monat.',
+  'dash.asFinished': 'Der Monat, wie er abgeschlossen wurde.',
+  'dash.whichMonth': 'Welcher Monat',
+  'dash.previousMonth': 'Vorheriger Monat',
+  'dash.nextMonth': 'Nächster Monat',
+  'dash.previousMonthTitle': 'Vorheriger Monat ( [ )',
+  'dash.nextMonthTitle': 'Nächster Monat ( ] )',
+  'dash.rooftop': 'Standort',
+  'dash.everywhere': 'Alle für mich sichtbaren',
+  'dash.loading': 'Der Monat wird zusammengerechnet…',
+  'dash.denied': 'Sie haben auf keine der Zahlen dieser Übersicht Zugriff.',
+  'dash.failed': 'Der Monat konnte nicht geladen werden.',
+
+  'dash.withheldTrading':
+    'Die Beträge dieses Monats sind für Sie nicht einsehbar, die Zahlen unten betreffen daher nur den Bestand.',
+  'dash.withheldStock':
+    'Der Bestand ist für Sie nicht einsehbar, dieser Monat zeigt daher nur das Verkaufte.',
+
+  'dash.booksOpen': 'Die Bücher sind offen, diese Zahlen können sich also noch ändern.',
+  'dash.booksClosed': 'Die Bücher sind abgeschlossen. Dies sind die gemeldeten Zahlen.',
+  'dash.booksClosedOn':
+    'Die Bücher wurden am {date} abgeschlossen. Dies sind die gemeldeten Zahlen.',
+  'dash.booksNotOpened':
+    'Für diesen Monat hat niemand die Bücher eröffnet, es kann also nichts hineingebucht werden.',
+  'dash.booksUnknown': 'Ob die Bücher offen sind, ist für Sie nicht einsehbar.',
+
+  'dash.whatTheMonthMade': 'Was der Monat gebracht hat',
+  'dash.totalGross': 'Rohertrag gesamt',
+  'dash.financeShort': 'F&I',
+  'dash.whatSold': 'Was verkauft wurde',
+  'dash.carsDelivered': 'Ausgelieferte Fahrzeuge',
+  'dash.jobsInvoiced': 'Berechnete Aufträge',
+  'dash.grossPerCar': 'Rohertrag je Fahrzeug',
+  'dash.frontAndBack': 'Fahrzeug und F&I zusammen',
+
+  'dash.whereGrossCameFrom': 'Woher der Rohertrag kam',
+  'dash.colDepartment': 'Abteilung',
+  'dash.colRevenue': 'Umsatz',
+  'dash.colCost': 'Kosten',
+  'dash.colGross': 'Rohertrag',
+  'dash.colMargin': 'Marge',
+  'dash.total': 'Summe',
+
+  'dash.howOldTheStockIs': 'Wie alt der Bestand ist',
+  'dash.unsoldAsAt': ' — {count} unverkauft, Stand {date}',
+  'dash.nothingUnsold': 'Nichts Unverkauftes auf dem Hof.',
+  'dash.standingLongest': 'Am längsten stehend',
+  'dash.colStock': 'Bestandsnr.',
+  'dash.colVehicle': 'Fahrzeug',
+  'dash.colStatus': 'Status',
+  'dash.colDays': 'Tage',
+  'dash.estimatedAge':
+    'Es wurde kein Zugangsdatum erfasst, daher zählt dies ab der Erfassung.',
+  'dash.estimatedAgeNote':
+    '* gezählt ab der Erfassung des Fahrzeugs, da kein Zugangsdatum hinterlegt war.',
 };
