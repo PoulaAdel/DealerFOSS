@@ -855,6 +855,10 @@ export const de: Catalogue = {
     one: '{count} Fahrzeug, {hours} Std. Arbeit',
     other: '{count} Fahrzeuge, {hours} Std. Arbeit',
   },
+  'diary.dayLoadSome': {
+    one: '{count} Fahrzeug, {hours} Std. gebucht und {unestimated} nicht geschätzt',
+    other: '{count} Fahrzeuge, {hours} Std. gebucht und {unestimated} nicht geschätzt',
+  },
   'diary.unestimated': 'Nicht geschätzt',
   'diary.colWhen': 'Wann',
   'diary.colCustomer': 'Kunde',

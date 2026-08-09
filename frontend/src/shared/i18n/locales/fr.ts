@@ -857,6 +857,10 @@ export const fr: Catalogue = {
   'diary.colCustomer': 'Client',
   'diary.colVehicle': 'Véhicule',
   'diary.colReason': 'Motif',
+  'diary.dayLoadSome': {
+    one: '{count} voiture, {hours} h réservées et {unestimated} non estimée',
+    other: '{count} voitures, {hours} h réservées et {unestimated} non estimées',
+  },
   // « Est. » se lirait comme le verbe « est » dans une en-tête de colonne.
   'diary.colHours': 'Estim.',
   'diary.colWhat': 'Et maintenant',

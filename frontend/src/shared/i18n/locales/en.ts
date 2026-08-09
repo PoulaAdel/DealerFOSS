@@ -877,6 +877,10 @@ export const en = {
     one: '{count} car, {hours} h of work',
     other: '{count} cars, {hours} h of work',
   },
+  'diary.dayLoadSome': {
+    one: '{count} car, {hours} h booked and {unestimated} not estimated',
+    other: '{count} cars, {hours} h booked and {unestimated} not estimated',
+  },
   'diary.unestimated': 'Not estimated',
   'diary.colWhen': 'When',
   'diary.colCustomer': 'Customer',

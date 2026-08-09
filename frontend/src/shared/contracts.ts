@@ -421,6 +421,8 @@ export interface DiaryDay {
   date: string;
   expected: number;
   bookedHours: number;
+  /** Reported apart from the hours: a car nobody estimated is not zero work. */
+  unestimated: number;
 }
 
 export interface Diary {

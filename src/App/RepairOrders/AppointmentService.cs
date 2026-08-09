@@ -397,7 +397,11 @@ public sealed class AppointmentService(
         rows.Where(a => AppointmentStatusRules.CountsTowardLoad(a.Status))
             .GroupBy(a => DateOnly.FromDateTime(a.ScheduledFor.UtcDateTime))
             .OrderBy(g => g.Key)
-            .Select(g => new DiaryDay(g.Key, g.Count(), g.Sum(a => a.EstimatedHours ?? 0m)))
+            .Select(g => new DiaryDay(
+                g.Key,
+                g.Count(),
+                g.Sum(a => a.EstimatedHours ?? 0m),
+                g.Count(a => a.EstimatedHours is null)))
             .ToList();
 
     private async Task<Appointment?> LoadAsync(

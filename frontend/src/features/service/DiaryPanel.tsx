@@ -169,9 +169,13 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
           {byDay.map((day) => (
             <li key={day.date} className="chip">
               <strong>{format.date(day.date)}</strong>{' '}
-              {t('diary.dayLoad', {
+              {/* A day with an unestimated car on it says so. Folding it in as
+                  zero hours would read as a free day, which is the one thing
+                  this figure must never say by mistake. */}
+              {t(day.unestimated === 0 ? 'diary.dayLoad' : 'diary.dayLoadSome', {
                 count: day.expected,
                 hours: format.number(day.bookedHours, { maximumFractionDigits: 1 }),
+                unestimated: day.unestimated,
               })}
             </li>
           ))}

@@ -37,7 +37,7 @@ const booking = (over: Partial<AppointmentView> = {}): AppointmentView => ({
 
 const diary = (over: Partial<Diary> = {}): Diary => ({
   appointments: [booking()],
-  load: [{ date: '2026-08-12', expected: 1, bookedHours: 2 }],
+  load: [{ date: '2026-08-12', expected: 1, bookedHours: 2, unestimated: 0 }],
   ...over,
 });
 
@@ -59,13 +59,27 @@ describe('the service diary', () => {
     show(
       diary({
         appointments: [booking(), booking({ id: 'a2', estimatedHours: 3.5 })],
-        load: [{ date: '2026-08-12', expected: 2, bookedHours: 5.5 }],
+        load: [{ date: '2026-08-12', expected: 2, bookedHours: 5.5, unestimated: 0 }],
       }),
     );
 
     // Straight from the server. A browser that summed the rows itself would be a
     // second copy of the rule about which bookings count.
     expect(await screen.findByText(/2 cars, 5.5 h of work/)).toBeVisible();
+  });
+
+  it('never reports a day with an unestimated car on it as empty', async () => {
+    show(
+      diary({
+        appointments: [booking({ estimatedHours: null })],
+        load: [{ date: '2026-08-12', expected: 1, bookedHours: 0, unestimated: 1 }],
+      }),
+    );
+
+    // "1 car, 0 h of work" reads as a free day. It is the one thing this figure
+    // must never say by mistake, because a manager takes a booking on it.
+    expect(await screen.findByText(/1 car, 0 h booked and 1 not estimated/)).toBeVisible();
+    expect(screen.queryByText(/0 h of work/)).not.toBeInTheDocument();
   });
 
   it('shows a car nobody estimated as unestimated, not as zero', async () => {

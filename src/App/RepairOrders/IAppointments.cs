@@ -69,7 +69,14 @@ public sealed record Diary(
 /// expected: once a car arrives its hours belong to the job, and counting both
 /// would show a workshop twice as busy as it is.
 /// </summary>
-public sealed record DiaryDay(DateOnly Date, int Expected, decimal BookedHours);
+/// <remarks>
+/// <paramref name="Unestimated"/> is reported separately rather than folded into
+/// the hours as a zero. A day carrying one car nobody has estimated is not an
+/// empty day, and "0 h of work" is exactly how a service manager would come to
+/// think it was — the one figure the diary exists to give them, reading the wrong
+/// way round.
+/// </remarks>
+public sealed record DiaryDay(DateOnly Date, int Expected, decimal BookedHours, int Unestimated);
 
 public sealed record AppointmentView(
     Guid Id,

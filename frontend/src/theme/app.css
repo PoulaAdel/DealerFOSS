@@ -1155,3 +1155,97 @@ abbr[title] {
   text-decoration: none;
   color: var(--ink-3);
 }
+
+/* --- Form and panel scaffolding ------------------------------------------
+   These class names were being written in JSX and had no rules behind them:
+   `.field`, `.row` and `.hint` have been in the control-plane console since it
+   was built, and `.panel__head`, `.chips` and `.panel--diary` arrived with the
+   service diary. Unstyled, they render as stacked full-width divs with the
+   browser's default margins — which is exactly the "strange gaps and misaligned
+   containers" problem, and it was invisible because no test asserts on layout.
+
+   Everything here is written in LOGICAL properties. `inline-start`, not `left`:
+   that is the whole mechanism by which one `dir="rtl"` on <html> mirrors the
+   application, and a single `margin-left` would be the one thing that did not
+   turn round. */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-block-end: 16px;
+}
+
+.field > label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* A row of fields that becomes a column when there is no room for two. The
+   breakpoint is content-driven: below this, two inputs side by side are each
+   too narrow to read what is typed in them. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.row > .field {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+}
+
+.row > .field--grow {
+  flex: 2 1 16rem;
+}
+
+/* Sits under the input it explains, not beside it — a hint to the side of a
+   field is the first thing to disappear when the viewport narrows. */
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+}
+
+/* Title, a count, and the action that belongs to this panel. The action is
+   pushed to the far end, which follows the reading direction. */
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin-block-end: 12px;
+}
+
+.panel__head > h2,
+.panel__head > h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.panel__head > button:last-child {
+  margin-inline-start: auto;
+}
+
+/* A day's load, a filter, a set of counts: short standalone facts that wrap
+   rather than scrolling. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+/* The diary carries a table, so it is not held to the reading measure the
+   narrow panels use. */
+.panel--diary {
+  max-width: none;
+  margin-block-end: 24px;
+}
+
+.panel--diary .panel__head > .muted {
+  font-size: 0.85rem;
+}

@@ -162,6 +162,36 @@ public sealed class AppointmentTests(HostFixture fixture)
         var load = diary.GetProperty("load").EnumerateArray().Single();
         load.GetProperty("expected").GetInt32().Should().Be(2);
         load.GetProperty("bookedHours").GetDecimal().Should().Be(5.5m);
+        load.GetProperty("unestimated").GetInt32().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task A_car_nobody_estimated_is_counted_apart_from_the_hours()
+    {
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var day = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(75));
+
+        using var response = await PostAsync(Diary, Manager, new
+        {
+            rooftopId = rooftop,
+            customerId = await AddCustomerAsync(),
+            vehicleId = await AddVehicleAsync(),
+            scheduledFor = day.ToDateTime(new TimeOnly(9, 0)),
+            reason = "Air conditioning not cold",
+            estimatedHours = (decimal?)null,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var diary = await ListAsync($"{Diary}?rooftopId={rooftop}&from={Iso(day)}&to={Iso(day)}", Manager);
+        var load = diary.GetProperty("load").EnumerateArray().Single();
+
+        // Folding it in as zero hours would let a screen say "1 car, 0 h of
+        // work", which reads as a free day — the one thing this figure must
+        // never say by mistake, because a manager takes a booking on it.
+        load.GetProperty("expected").GetInt32().Should().Be(1);
+        load.GetProperty("bookedHours").GetDecimal().Should().Be(0m);
+        load.GetProperty("unestimated").GetInt32().Should().Be(1);
     }
 
     [Fact]

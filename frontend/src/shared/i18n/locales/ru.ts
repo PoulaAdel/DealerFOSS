@@ -887,6 +887,12 @@ export const ru: Catalogue = {
     many: '{count} машин, {hours} ч работы',
     other: '{count} машины, {hours} ч работы',
   },
+  'diary.dayLoadSome': {
+    one: '{count} машина, {hours} ч в плане и {unestimated} без оценки',
+    few: '{count} машины, {hours} ч в плане и {unestimated} без оценки',
+    many: '{count} машин, {hours} ч в плане и {unestimated} без оценки',
+    other: '{count} машины, {hours} ч в плане и {unestimated} без оценки',
+  },
   'diary.unestimated': 'Без оценки',
   'diary.colWhen': 'Когда',
   'diary.colCustomer': 'Клиент',
