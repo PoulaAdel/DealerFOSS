@@ -3,7 +3,7 @@
 Plain language, no jargon. For the engineering detail — every claim paired with
 the command that proves it — see [implementation/STATUS.md](implementation/STATUS.md).
 
-**Last updated:** 7 August 2026
+**Last updated:** 9 August 2026
 
 ---
 
@@ -53,7 +53,26 @@ up a second time, so it cannot drift away from the books.
 service — one thing either way, because the application serves its own screens.
 There is no separate web server to set up.
 
-**About 69% of the first release. Four of the eight stages are finished and three
+**The application now speaks five languages: English, French, German, Russian
+and Arabic.** Somebody picks their language on the sign-in screen — before they
+have an account, because otherwise you have to read English to find out how to
+stop reading English — and every screen a dealership uses follows: the menu, the
+buttons, the column headings, the empty screens, and the sentences that explain
+a refusal. Prices, dates and counts follow it too, so a French screen writes
+`1 250,00 $US` where an English one writes `$1,250.00`.
+
+**Choosing Arabic turns the whole page round**, right to left, with the menu,
+tables and buttons mirrored. Vehicle identification numbers, stock numbers and
+security codes stay the way round they are printed, because a VIN read backwards
+is a different car.
+
+Two things it deliberately does **not** do. It never translates your records —
+a customer called "Bob & Sons Motors" is that in every language, and so is every
+vehicle description, note and part number. And a handful of detailed error
+messages from the server are still English; those are named in the engineering
+notes and closing it is a change to the server rather than to the screens.
+
+**About 72% of the first release. Four of the eight stages are finished and three
 more are under way.**
 
 ---

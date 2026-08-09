@@ -100,6 +100,7 @@ real server is an integration test and belongs in `tests/Integration`.
 | `src/app/` | routing, the two shells, and who is signed in to each |
 | `src/features/` | one folder per screen area, mirroring the backend capabilities |
 | `src/shared/` | the two API clients and the response shapes |
+| `src/shared/i18n/` | every visible string, in five languages, and the direction that follows the language |
 | `src/test/` | the fetch stub every component test shares |
 | `src/theme/` | the whole visual language, in one file until it stops scanning |
 
@@ -126,7 +127,7 @@ deciding between them from a flag would eventually send a dealership's token to
 the control plane, or the reverse; two functions cannot make that mistake.
 `adminApi.test.ts` asserts it in both directions.
 
-## Three rules worth knowing
+## Rules worth knowing
 
 **The route guard is a convenience, not a control.** Every screen calls an API
 that enforces the same rules server-side, and the server's answer is the one that
@@ -151,6 +152,34 @@ and retry. A screen that only handles the happy path is not finished.
 `InventoryPage` is the
 reference for what that looks like, and `InventoryPage.test.tsx` is what stops
 that claim being taken on trust.
+
+**No visible string is written in a component.** It goes in
+`shared/i18n/locales/en.ts` and comes back through `t()`. English is the schema:
+the other four catalogues are typed against it, so a key you add and forget to
+translate fails `npm run typecheck` rather than surfacing an English sentence in
+the middle of a Russian screen. See
+[ADR-019](../docs/adr/0019-language-owns-direction-and-ui-only-translation.md).
+
+Four things follow from that and are easy to get wrong:
+
+- **Never `n === 1`.** Counted nouns use a plural entry and `t(key, { count })`.
+  Russian has four plural categories and Arabic six; two forms are wrong for
+  most numbers in both. `Intl.PluralRules` picks, and the call site never counts.
+- **Never `new Intl.NumberFormat(undefined, …)`.** `undefined` follows the
+  *operating system*, not the application. Use `format.money`, `format.number`,
+  `format.date`, `format.dateTime`, `format.monthAndYear` and `format.list` from
+  `useI18n()`.
+- **Never print an API enum.** `OnHold` is not a word. Use `useEnumLabel()`,
+  which is typed from the catalogue keys, so adding a value to a union without a
+  label is a compile error at the call site.
+- **Records are not translated.** Customer names, vehicle descriptions, part
+  numbers, notes, rooftop codes and imported rows print exactly as stored, in
+  every language. If the dealership typed it, it is theirs.
+
+**Codes carry `dir="ltr"`.** VINs, stock numbers, account codes, recovery codes,
+the TOTP secret, email addresses, raw CSV rows. Inside an Arabic paragraph the
+bidirectional algorithm reorders their groups otherwise — and a VIN read out in
+the wrong order is a different car.
 
 ## Accessibility
 
