@@ -87,7 +87,15 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
         ...init?.headers,
       },
     });
-  } catch {
+  } catch (failure) {
+    // An abort is not a failure. The caller superseded this request — a
+    // keystroke in a search box, or a screen unmounting — and rethrowing it
+    // unchanged lets them ignore it. Reporting it as a network error would put
+    // "could not reach the server" on screen every time somebody types.
+    if (failure instanceof DOMException && failure.name === 'AbortError') {
+      throw failure;
+    }
+
     // A network-level failure, not an answer from the API. Saying so is more
     // useful than "something went wrong".
     throw new ApiError(0, 'network', 'Could not reach the server. Is it running?');

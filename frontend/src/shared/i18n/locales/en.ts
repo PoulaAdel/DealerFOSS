@@ -899,6 +899,10 @@ export const en = {
   'staff.resetIssued': 'A reset code was issued {when} and has not been used yet.',
   'staff.resetDone': 'I have read it out',
 
+  // Changing a value where it is written. See shared/InlineEdit.tsx.
+  'inline.changeThis': '{label}: {value}. Press to change it.',
+  'inline.saved': 'Saved',
+
   // --- The service diary ----------------------------------------------------
   // Cars expected but not here yet. "Booking" throughout, never "appointment
   // slot" — a workshop books a car in for a morning, not for a 40-minute window.

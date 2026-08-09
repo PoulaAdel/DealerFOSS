@@ -871,6 +871,10 @@ export const fr: Catalogue = {
     'Un code de réinitialisation a été délivré {when} et n’a pas encore été utilisé.',
   'staff.resetDone': 'Je le lui ai lu',
 
+  // Changing a value where it is written. See shared/InlineEdit.tsx.
+  'inline.changeThis': '{label} : {value}. Appuyez pour le modifier.',
+  'inline.saved': 'Enregistré',
+
   // --- Le carnet de l’atelier ---------------------------------------------------
   // Les voitures attendues, pas encore arrivées. « Rendez-vous », jamais
   // « créneau » : un atelier réserve une matinée, pas quarante minutes.

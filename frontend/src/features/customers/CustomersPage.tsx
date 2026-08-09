@@ -17,6 +17,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
+import { useDebounced } from '../../shared/useDebounced';
 import type { CustomerSummary, NewCustomer } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
@@ -56,7 +57,7 @@ export function CustomersPage() {
   const [draft, setDraft] = useState<NewCustomer>(empty);
   const [error, setError] = useState<string | null>(null);
 
-  const find = useCallback(async (term: string) => {
+  const find = useCallback(async (term: string, signal?: AbortSignal) => {
     setLoad({ kind: 'loading' });
 
     try {
@@ -64,8 +65,17 @@ export function CustomersPage() {
         ? `?limit=${PageSize}`
         : `?search=${encodeURIComponent(term.trim())}&limit=${PageSize}`;
 
-      setLoad({ kind: 'ready', customers: await api<CustomerSummary[]>(`/customers${query}`) });
+      setLoad({
+        kind: 'ready',
+        customers: await api<CustomerSummary[]>(`/customers${query}`, { signal }),
+      });
     } catch (failure) {
+      // Superseded by a later keystroke. Not a failure, and the request that
+      // replaced this one is already showing its own loading state.
+      if (failure instanceof DOMException && failure.name === 'AbortError') {
+        return;
+      }
+
       if (failure instanceof ApiError && failure.status === 403) {
         setLoad({ kind: 'denied' });
         return;
@@ -75,9 +85,16 @@ export function CustomersPage() {
     }
   }, [describe]);
 
+  // The list follows the box. Aborting on cleanup is what stops a slow answer
+  // for "f" landing after the right answer for "focus" and overwriting it —
+  // see useDebounced for why debouncing alone would only make that rarer.
+  const settled = useDebounced(search);
+
   useEffect(() => {
-    void find('');
-  }, [find]);
+    const stop = new AbortController();
+    void find(settled, stop.signal);
+    return () => stop.abort();
+  }, [find, settled]);
 
   /**
    * Looks for anybody who might already be this person before creating them.
@@ -147,13 +164,10 @@ export function CustomersPage() {
       <header className="page__head">
         <h1>{t('customers.title')}</h1>
 
-        <form
-          className="filter"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void find(search);
-          }}
-        >
+        {/* Still a form, so Enter does the obvious thing — but Enter is no
+            longer how you search. It only prevents the page reloading for
+            somebody who presses it out of habit. */}
+        <form className="filter" onSubmit={(e) => e.preventDefault()}>
           <label htmlFor="search">{t('customers.find')}</label>
           <input
             id="search"

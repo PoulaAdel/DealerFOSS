@@ -152,6 +152,110 @@ describe('the service diary', () => {
     expect(JSON.parse(String(close?.init?.body))).toEqual({ cancelled: false });
   });
 
+  it('re-estimates in place, without opening a form', async () => {
+    mockApi({
+      '/appointments?openOnly=true&limit=100': { ok: true, body: diary() },
+      '/appointments/a1/reschedule': { ok: true, status: 204 },
+    });
+
+    render(<DiaryPanel onArrived={() => {}} />);
+
+    // The value is a BUTTON, not a div with a click handler — so it is reachable
+    // by keyboard and announces what pressing it does. That is the difference
+    // between inline editing and a mouse-only secret.
+    const value = await screen.findByRole('button', { name: /Est\..*2.*change it/i });
+    await userEvent.click(value);
+
+    const box = screen.getByRole('textbox', { name: 'Est.' });
+    await userEvent.clear(box);
+    await userEvent.type(box, '4{Enter}');
+
+    const sent = apiCalls().find((call) => call.path.includes('/reschedule'));
+    expect(JSON.parse(String(sent?.init?.body))).toMatchObject({ estimatedHours: 4 });
+  });
+
+  it('keeps the booking’s time when only the hours change', async () => {
+    mockApi({
+      '/appointments?openOnly=true&limit=100': { ok: true, body: diary() },
+      '/appointments/a1/reschedule': { ok: true, status: 204 },
+    });
+
+    render(<DiaryPanel onArrived={() => {}} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Est\..*change it/i }));
+
+    const box = screen.getByRole('textbox', { name: 'Est.' });
+    await userEvent.clear(box);
+    await userEvent.type(box, '4{Enter}');
+
+    // Reschedule carries both. Sending the existing instant back is what says
+    // "only the estimate changed" rather than silently moving the car.
+    const sent = apiCalls().find((call) => call.path.includes('/reschedule'));
+    expect(JSON.parse(String(sent?.init?.body))).toMatchObject({
+      scheduledFor: '2026-08-12T09:00:00Z',
+    });
+  });
+
+  it('escape abandons the edit and sends nothing', async () => {
+    show();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Est\..*change it/i }));
+
+    const box = screen.getByRole('textbox', { name: 'Est.' });
+    await userEvent.clear(box);
+    await userEvent.type(box, '99{Escape}');
+
+    // Somebody who starts typing in the wrong row needs a way out that is not
+    // "work out what it said before".
+    expect(await screen.findByRole('button', { name: /Est\..*2.*change it/i })).toBeVisible();
+    expect(apiCalls().some((call) => call.path.includes('/reschedule'))).toBe(false);
+  });
+
+  it('puts the old value back when the server refuses', async () => {
+    mockApi({
+      '/appointments?openOnly=true&limit=100': { ok: true, body: diary() },
+      '/appointments/a1/reschedule': {
+        ok: false,
+        status: 409,
+        code: 'appointments.not_movable',
+        detail: 'That time has already passed.',
+      },
+    });
+
+    render(<DiaryPanel onArrived={() => {}} />);
+    await userEvent.click(await screen.findByRole('button', { name: /Est\..*change it/i }));
+
+    const box = screen.getByRole('textbox', { name: 'Est.' });
+    await userEvent.clear(box);
+    await userEvent.type(box, '4{Enter}');
+
+    // The record did not change, so the screen must not imply it did by leaving
+    // the typed value sitting there looking accepted.
+    expect(await screen.findByRole('alert')).toHaveTextContent('That time has already passed.');
+    expect(screen.getByRole('button', { name: /Est\..*2.*change it/i })).toBeVisible();
+
+    // And reopening shows what the record actually holds, not the rejected
+    // number. Without that the next edit starts from a value the server has
+    // already refused, and saving it "unchanged" would look like a no-op.
+    await userEvent.click(screen.getByRole('button', { name: /Est\..*change it/i }));
+    expect(screen.getByRole('textbox', { name: 'Est.' })).toHaveValue('2');
+  });
+
+  it('will not let an arrived booking be re-estimated', async () => {
+    show(
+      diary({
+        appointments: [
+          booking({ status: 'Arrived', repairOrderId: 'ro9', repairOrderNumber: 'RO-1009', isOpen: false }),
+        ],
+        load: [],
+      }),
+    );
+
+    // Its hours belong to the job now. Editing them here would change a figure
+    // that no longer drives anything.
+    const value = await screen.findByRole('button', { name: /Est\..*change it/i });
+    expect(value).toBeDisabled();
+  });
+
   it('says the diary is clear rather than showing an empty table', async () => {
     show(diary({ appointments: [], load: [] }));
 

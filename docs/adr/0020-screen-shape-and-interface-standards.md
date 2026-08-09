@@ -101,20 +101,39 @@ steps is a form that is asking for things it does not need.
    behaviours exists yet — inventing the animation before the behaviour would be
    decoration.
 
-**Not held. Named so they are not mistaken for done.**
+**Also held, added 2026-08-09.**
 
-9. **Instant search.** `CustomersPage` and `PartsPage` both require **Enter**.
-   Both search server-side, so instant means debounced (250 ms), request
-   cancellation on the next keystroke, and the list never showing results for a
-   query the box no longer contains. That last part is why this is not a
-   two-line change.
-10. **Quick-action toolbars and inline editing.** Every edit today opens a form
-    band. Editing a value in place — a price, an estimate, a status — is the
-    single biggest click reduction available and exists nowhere.
-11. **A measured AA pass.** Contrast was measured for the token palette and
-    corrected. The rest of AA — reflow at 320 px, 200 % zoom, target sizes,
-    every state reachable by keyboard on every screen — has been *followed as a
-    practice* but never *audited as a checklist*, and those are different claims.
+9. **Instant search.** The list follows the box on Customers and Parts; Enter is
+   no longer how you search. Debounced at 250 ms, and — the part that made this
+   more than a two-line change — the superseded request is **aborted**, so the
+   list can never show results for a query the box no longer contains.
+   Debouncing alone would only make that race rarer, which is worse than leaving
+   it obvious. `useDebounced` carries the reasoning; the test stub had to learn
+   delays and cancellation before the property could be proven at all.
+10. **Inline editing.** `shared/InlineEdit.tsx`, first used on the diary's
+    estimate — the most repeated edit in a service diary, and the one that stops
+    being kept current the moment it needs a form. Idle state is a **button**,
+    not a div with an `onClick`, so it is reachable by Tab and announces what
+    pressing it does; Escape restores; blur saves; the confirmation is a word,
+    not a colour; and a refused save puts the record's value back rather than
+    leaving the typed one looking accepted. Quick-action toolbars are still to
+    come.
+11. **A measured AA pass**, run at 320 px and at 640 px (1280 at 200 %), in both
+    directions, across all nine dealership screens:
+
+    | Criterion | Result |
+    |---|---|
+    | 1.4.10 Reflow, 320 px | Pass — 0 of 9 screens scroll sideways, measured by scrolling rather than by trusting `scrollWidth` |
+    | 1.4.4 Resize text, 200 % | Pass — LTR and RTL |
+    | 2.5.8 Target size | **5 failures found and fixed**: the inline-edit value at 22 px wide, a parts row button at 22 px tall, three dashboard account links at 15 px tall, and two bare checkboxes at 13×13. Floored at 24 px; re-measured clean |
+    | 2.1.1 Keyboard | Pass — nothing unreachable, and no `div` with a click handler pretending to be a control |
+    | 2.4.7 Focus visible | Pass — 3 px outline, verified with **real Tab presses**; a first attempt using programmatic `.focus()` reported every control as failing, which was the measurement being wrong, not the application |
+    | 2.3.3 Animation | Pass — one `--beat` token, `prefers-reduced-motion` cuts every transition |
+    | 1.4.3 Contrast | Pass — measured previously, two token pairs corrected |
+
+    What this pass does **not** cover, and so is not claimed: a screen reader
+    driven end to end by a person, and any judgement about whether the wording
+    is understandable to somebody who has not used the product.
 
 ## Alternatives rejected
 
@@ -143,9 +162,20 @@ obvious place to look. Writing the standards down also found the six unstyled
 class names, which had been shipping as unstyled stacked divs since the console
 was built.
 
-**Cost.** Three of the eleven standards are not met, and this document is now the
-place that says so. If items 9, 10 and 11 are still unticked in three months, the
-document has become the thing it was written to prevent.
+**Cost.** Eight of the eleven are now met and three are partly met, so this
+document's job has shifted from listing intentions to holding the line. The
+remaining work is named in items 6, 7 and 8 — consolidation beyond the workshop,
+systematic smart defaults, and a motion vocabulary for behaviours (autosave,
+background sync) that do not exist yet. Writing 9–11 down is what got them built
+within the day; if 6–8 are still partial in three months, this document has
+become the thing it was written to prevent.
+
+**Worth keeping.** Two of the three closed items were closed by *measuring*
+rather than by inspection, and both measurements were wrong the first time — the
+target-size sweep initially ran against pages that had not rendered, and the
+focus-ring check reported every control as failing because programmatic `.focus()`
+does not trigger `:focus-visible`. A measurement that has not itself been checked
+is not evidence.
 
 ## Validation / review trigger
 

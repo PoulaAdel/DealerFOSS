@@ -50,13 +50,72 @@ describe('finding customers', () => {
     render(<CustomersPage />);
     await screen.findByText('Ada Lovelace');
 
-    await userEvent.type(screen.getByLabelText('Find someone'), 'lovelace{Enter}');
+    // No Enter. The list follows the box.
+    await userEvent.type(screen.getByLabelText('Find someone'), 'lovelace');
 
     // The server is the only party that knows what this caller may see, so the
     // filtering cannot happen in the browser.
     await waitFor(() =>
       expect(apiCalls().some((c) => c.path.includes('search=lovelace'))).toBe(true),
     );
+  });
+
+  it('collapses a burst of typing into one search', async () => {
+    mockApi({ '/customers': { ok: true, body: [ada] } });
+    render(<CustomersPage />);
+    await screen.findByText('Ada Lovelace');
+
+    await userEvent.type(screen.getByLabelText('Find someone'), 'lovelace');
+
+    await waitFor(() =>
+      expect(apiCalls().some((c) => c.path.includes('search=lovelace'))).toBe(true),
+    );
+
+    // Eight characters must not be eight searches. The first call is the
+    // unfiltered list on mount; anything beyond one more means the debounce is
+    // not doing its job.
+    const searches = apiCalls().filter((c) => c.path.includes('search='));
+    expect(searches.length).toBeLessThanOrEqual(2);
+  });
+
+  it('never shows results for a query the box no longer holds', async () => {
+    // The race instant search exists to avoid: a slow answer for an early
+    // keystroke landing AFTER the right answer and overwriting it. Debouncing
+    // alone only makes this rarer, which is worse than leaving it obvious —
+    // so the superseded request is aborted, and an aborted request cannot win.
+    const grace = { id: 'c9', displayName: 'Grace Hopper', kind: 'Person' as const,
+      primaryEmail: null, primaryPhone: null };
+
+    mockApi({
+      // Slow first, fast second. Without cancellation the stale reply lands last.
+      '/customers?search=': [
+        { ok: true, body: [ada], delayMs: 400 },
+        { ok: true, body: [grace] },
+      ],
+      '/customers': { ok: true, body: [ada] },
+    });
+
+    render(<CustomersPage />);
+    await screen.findByText('Ada Lovelace');
+
+    const box = screen.getByLabelText('Find someone');
+
+    // The pause matters: without it the debounce collapses both bursts into one
+    // request and there is no race to lose. This waits just past the debounce
+    // so the slow search for "a" is genuinely in flight before the next
+    // keystroke supersedes it.
+    await userEvent.type(box, 'a');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    await userEvent.type(box, 'grace');
+
+    await waitFor(() => expect(screen.getByText('Grace Hopper')).toBeVisible());
+
+    // Long enough for the abandoned reply to have arrived if it were going to.
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    expect(screen.getByText('Grace Hopper')).toBeVisible();
+    expect(screen.queryByText('Ada Lovelace')).not.toBeInTheDocument();
   });
 
   it('says nobody matches rather than showing an empty table', async () => {

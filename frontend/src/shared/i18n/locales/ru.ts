@@ -901,6 +901,10 @@ export const ru: Catalogue = {
   'staff.resetIssued': 'Код сброса выдан {when} и пока не использован.',
   'staff.resetDone': 'Я продиктовал код',
 
+  // Changing a value where it is written. See shared/InlineEdit.tsx.
+  'inline.changeThis': '{label}: {value}. Нажмите, чтобы изменить.',
+  'inline.saved': 'Сохранено',
+
   // --- Журнал записи в сервис ---------------------------------------------------
   // Машины, которых ждут, но которых ещё нет. «Запись», а не «слот»: сервис
   // записывает на утро, а не на сорок минут.

@@ -17,6 +17,7 @@
 //       on the shelf are the honest answer.
 
 import { useCallback, useEffect, useState } from 'react';
+import { useDebounced } from '../../shared/useDebounced';
 import { ApiError, api, post } from '../../shared/api';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
@@ -67,13 +68,18 @@ export function PartsPage() {
   const [selected, setSelected] = useState<PartDetail | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const find = useCallback(async (term: string) => {
+  const find = useCallback(async (term: string, signal?: AbortSignal) => {
     setLoad({ kind: 'loading' });
 
     try {
       const query = term.trim() === '' ? '' : `?search=${encodeURIComponent(term.trim())}`;
-      setLoad({ kind: 'ready', parts: await api<PartSummary[]>(`/parts${query}`) });
+      setLoad({ kind: 'ready', parts: await api<PartSummary[]>(`/parts${query}`, { signal }) });
     } catch (failure) {
+      // Superseded by a later keystroke, not a failure. See useDebounced.
+      if (failure instanceof DOMException && failure.name === 'AbortError') {
+        return;
+      }
+
       if (failure instanceof ApiError && failure.status === 403) {
         setLoad({ kind: 'denied' });
         return;
@@ -84,11 +90,17 @@ export function PartsPage() {
         message: describe(failure),
       });
     }
-  }, []);
+  }, [describe]);
+
+  // The catalogue follows the box, and an answer for a query that has been
+  // typed past is aborted rather than allowed to land late and win.
+  const settled = useDebounced(search);
 
   useEffect(() => {
-    void find('');
-  }, [find]);
+    const stop = new AbortController();
+    void find(settled, stop.signal);
+    return () => stop.abort();
+  }, [find, settled]);
 
   useEffect(() => {
     void (async () => {
@@ -180,11 +192,7 @@ export function PartsPage() {
           value={search}
           placeholder={t('parts.findPlaceholder')}
           onChange={(event) => setSearch(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              void find(search);
-            }
-          }}
+          autoComplete="off"
         />
         <p className="hint">{t('parts.findHint')}</p>
       </div>

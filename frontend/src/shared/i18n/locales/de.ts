@@ -873,6 +873,10 @@ export const de: Catalogue = {
   'staff.resetIssued': 'Am {when} wurde ein Zurücksetzcode ausgestellt und noch nicht verwendet.',
   'staff.resetDone': 'Ich habe ihn vorgelesen',
 
+  // Changing a value where it is written. See shared/InlineEdit.tsx.
+  'inline.changeThis': '{label}: {value}. Zum Ändern drücken.',
+  'inline.saved': 'Gespeichert',
+
   // --- Das Werkstattbuch ------------------------------------------------------
   // Erwartete Fahrzeuge, die noch nicht da sind. „Termin“, nie „Zeitfenster“:
   // Eine Werkstatt bucht einen Vormittag, keine vierzig Minuten.

@@ -917,6 +917,10 @@ export const ar: Catalogue = {
   'staff.resetIssued': 'صدر رمز إعادة تعيين في {when} ولم يُستخدم بعد.',
   'staff.resetDone': 'قرأته عليه',
 
+  // Changing a value where it is written. See shared/InlineEdit.tsx.
+  'inline.changeThis': '{label}: {value}. اضغط لتغييره.',
+  'inline.saved': 'حُفظ',
+
   // --- دفتر مواعيد الورشة ---------------------------------------------------------
   // السيارات المنتظرة التي لم تصل بعد. «حجز» لا «فترة زمنية»: الورشة تحجز
   // صباحًا كاملًا، لا أربعين دقيقة.

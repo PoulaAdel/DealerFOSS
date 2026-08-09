@@ -27,6 +27,7 @@ import { ApiError, api, post } from '../../shared/api';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { useEnumLabel } from '../../shared/i18n/enums';
+import { InlineEdit } from '../../shared/InlineEdit';
 import type {
   AppointmentView,
   ArrivalResult,
@@ -91,6 +92,29 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
     } finally {
       setWorking(null);
     }
+  }
+
+  /**
+   * Re-estimating. The booking keeps its time — reschedule carries both, and
+   * sending the existing instant back is what says "only the hours changed".
+   *
+   * Throws on failure rather than swallowing it, because InlineEdit puts the old
+   * value back and shows the server's refusal when it does.
+   */
+  async function reEstimate(appointment: AppointmentView, hours: string) {
+    const trimmed = hours.trim();
+
+    await post(`/appointments/${appointment.id}/reschedule`, {
+      scheduledFor: appointment.scheduledFor,
+      // Blank means nobody has estimated it, which is a different fact from
+      // estimating zero and is stored as a different value.
+      estimatedHours: trimmed === '' ? null : Number(trimmed),
+    });
+
+    // The day's load is computed by the server, so it has to be re-read rather
+    // than adjusted here — a browser doing that arithmetic would be a second
+    // copy of the rule about which bookings count.
+    await find();
   }
 
   async function didNotCome(appointment: AppointmentView) {
@@ -211,11 +235,25 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
                   <td>{appointment.vehicle}</td>
                   <td>{appointment.reason}</td>
                   <td>
-                    {appointment.estimatedHours === null ? (
-                      <span className="muted">{t('diary.unestimated')}</span>
-                    ) : (
-                      format.number(appointment.estimatedHours, { maximumFractionDigits: 1 })
-                    )}
+                    {/* Changed where it is written. Re-estimating is the single
+                        most repeated edit in a service diary — a job that was
+                        two hours turns out to be four — and sending somebody to
+                        a form to change one number is why nobody keeps the
+                        figure current, which then makes the day's load a lie. */}
+                    <InlineEdit
+                      label={t('diary.colHours')}
+                      value={appointment.estimatedHours?.toString() ?? ''}
+                      display={
+                        appointment.estimatedHours === null
+                          ? t('diary.unestimated')
+                          : format.number(appointment.estimatedHours, {
+                              maximumFractionDigits: 1,
+                            })
+                      }
+                      inputMode="decimal"
+                      disabled={!appointment.isOpen}
+                      onSave={(next) => reEstimate(appointment, next)}
+                    />
                   </td>
                   <td>
                     {appointment.isOpen ? (

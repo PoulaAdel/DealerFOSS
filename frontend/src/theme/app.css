@@ -1264,3 +1264,110 @@ abbr[title] {
 :root[dir='rtl'] .note--warn {
   border-radius: 6px 0 0 6px;
 }
+
+/* --- Changing a value where it is written --------------------------------- */
+
+.inline-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Reads as text until it is hovered or focused, then admits it is a control.
+   A value that looks like a button everywhere makes a table look like a
+   toolbar; one that never does is a mouse-only secret. */
+.inline-edit__value {
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: text;
+  transition: background var(--beat) ease, border-color var(--beat) ease;
+}
+
+.inline-edit__value:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--ground);
+}
+
+.inline-edit__value:disabled {
+  cursor: default;
+  color: var(--ink-3);
+}
+
+/* Sized to the content it replaces, so the row does not jump on opening —
+   a table that reflows as you tab through it is unusable at speed. */
+.inline-edit__box {
+  inline-size: 100%;
+  min-inline-size: 4rem;
+  max-inline-size: 12rem;
+  padding: 2px 6px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.inline-edit__saved {
+  color: var(--done);
+  font-size: 0.8rem;
+  font-weight: 600;
+  animation: inline-edit-confirm var(--beat) ease;
+}
+
+.inline-edit__failed {
+  color: var(--fail);
+  font-size: 0.8rem;
+}
+
+@keyframes inline-edit-confirm {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --- WCAG 2.5.8 Target Size (Minimum), measured 2026-08-09 -----------------
+   AA asks for 24x24 CSS pixels. Measured at 320px across all nine dealership
+   screens and five things missed it: the inline-edit value when its content is
+   short (22px wide), a row button in the parts catalogue (22px tall), the
+   account-code links on the dashboard (15px tall), and the two bare checkboxes
+   (13x13, the browser default).
+
+   Fixed by flooring the targets rather than by enlarging the type, so nothing
+   about the visual density changes for a sighted mouse user — the hit area
+   grows into padding that was already there. */
+
+.inline-edit__value,
+.chip button,
+td button,
+td a,
+.check {
+  min-block-size: 24px;
+  min-inline-size: 24px;
+}
+
+/* Centres the label text inside the floor, so a 24px-tall target does not read
+   as a 24px-tall word sitting at the top of its box. */
+td button,
+td a,
+.inline-edit__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* The checkbox itself stays visually modest; the LABEL is the target, and it is
+   what a pointer actually hits because `for` ties them together. */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.check input[type='checkbox'] {
+  inline-size: 18px;
+  block-size: 18px;
+}

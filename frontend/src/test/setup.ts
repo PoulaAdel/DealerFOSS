@@ -40,11 +40,18 @@ afterEach(() => {
   cleanup();
 });
 
-/** What the API returns for one path, in the order the component asks. */
+/**
+ * What the API returns for one path, in the order the component asks.
+ *
+ * `delayMs` makes a reply slow. It exists for one kind of test that cannot be
+ * written without it: proving that a superseded request loses the race. With
+ * every reply instant, responses always arrive in request order and the bug
+ * that instant search guards against is unreachable.
+ */
 export type Reply =
-  | { ok: true; body: unknown }
-  | { ok: true; status: 204 }
-  | { ok: false; status: number; code: string; detail: string };
+  | { ok: true; body: unknown; delayMs?: number }
+  | { ok: true; status: 204; delayMs?: number }
+  | { ok: false; status: number; code: string; detail: string; delayMs?: number };
 
 /**
  * Answers the component's fetch calls from a table keyed by path prefix. Paths
@@ -80,31 +87,58 @@ export function mockApi(replies: Record<string, Reply | Reply[]>): void {
       const queue = remaining.get(key)!;
       const reply = queue.length > 1 ? queue.shift()! : queue[0]!;
 
-      if (reply.ok) {
-        const status = 'status' in reply ? reply.status : 200;
-        const body = 'body' in reply ? reply.body : undefined;
+      // Honour cancellation, because a stub that ignores it cannot show the
+      // difference between code that cancels and code that does not — which is
+      // exactly the property instant search depends on. Rejects with the same
+      // DOMException the real fetch does, so callers detect it identically.
+      const abort = () =>
+        Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
 
-        // blob() and headers exist because a file download reads them rather
-        // than json(). A mock that only speaks JSON silently fails any code
-        // path that fetches a file.
-        return Promise.resolve({
-          ok: true,
-          status,
-          json: () => Promise.resolve(body),
-          blob: () => Promise.resolve(new Blob([String(body ?? '')], { type: 'text/csv' })),
-          text: () => Promise.resolve(String(body ?? '')),
-          headers: new Headers({ 'Content-Disposition': 'attachment; filename="export.csv"' }),
-        } as unknown as Response);
+      if (init?.signal?.aborted === true) {
+        return abort();
       }
 
-      return Promise.resolve({
-        ok: false,
-        status: reply.status,
-        json: () => Promise.resolve({ code: reply.code, detail: reply.detail }),
-        headers: new Headers(),
-      } as unknown as Response);
+      if (reply.delayMs !== undefined) {
+        return new Promise<Response>((resolve, reject) => {
+          const timer = setTimeout(() => void respond(reply).then(resolve), reply.delayMs);
+
+          init?.signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        });
+      }
+
+      return respond(reply);
     }),
   );
+}
+
+/** Turns one arranged reply into the Response shape the api client reads. */
+function respond(reply: Reply): Promise<Response> {
+  if (reply.ok) {
+    const status = 'status' in reply ? reply.status : 200;
+    const body = 'body' in reply ? reply.body : undefined;
+
+    // blob() and headers exist because a file download reads them rather
+    // than json(). A mock that only speaks JSON silently fails any code
+    // path that fetches a file.
+    return Promise.resolve({
+      ok: true,
+      status,
+      json: () => Promise.resolve(body),
+      blob: () => Promise.resolve(new Blob([String(body ?? '')], { type: 'text/csv' })),
+      text: () => Promise.resolve(String(body ?? '')),
+      headers: new Headers({ 'Content-Disposition': 'attachment; filename="export.csv"' }),
+    } as unknown as Response);
+  }
+
+  return Promise.resolve({
+    ok: false,
+    status: reply.status,
+    json: () => Promise.resolve({ code: reply.code, detail: reply.detail }),
+    headers: new Headers(),
+  } as unknown as Response);
 }
 
 /** Makes every call fail the way an unreachable server does. */
