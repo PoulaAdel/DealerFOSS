@@ -72,8 +72,13 @@ vehicle description, note and part number. And a handful of detailed error
 messages from the server are still English; those are named in the engineering
 notes and closing it is a change to the server rather than to the screens.
 
-**About 72% of the first release. Four of the eight stages are finished and three
+**About 69% of the first release. Four of the eight stages are finished and three
 more are under way.**
+
+The languages did not move that number, and it would be dishonest if they had.
+It measures how much of the *plan* exists, and speaking five languages was never
+a line on the plan — it makes what is already built usable by more people rather
+than building more of it.
 
 ---
 
