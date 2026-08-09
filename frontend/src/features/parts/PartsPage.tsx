@@ -18,6 +18,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { Emphasised } from '../../shared/i18n/Emphasised';
 import type {
   PartDetail,
   PartSummary,
@@ -31,13 +34,32 @@ type Load =
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
-const money = (amount: number, currency: string) =>
-  new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount);
+/**
+ * Money and shelf counts, in the reader's language.
+ *
+ * A hook rather than a module-level constant, because both now depend on the
+ * chosen locale — grouping, the decimal mark, and where the currency symbol
+ * sits all differ, and the previous `undefined` locale silently followed the
+ * operating system instead of the application.
+ *
+ * Trailing zeros are still dropped: "18" reads better than "18.000" for a
+ * shelf count, and `maximumFractionDigits` does that per locale rather than
+ * via `toFixed` and a re-parse.
+ */
+function useAmounts() {
+  const { format } = useI18n();
 
-/** Trailing zeros dropped: "18" reads better than "18.000" for a shelf count. */
-const quantity = (value: number) => Number(value.toFixed(3)).toLocaleString();
+  return {
+    money: (amount: number, currency: string) => format.money(amount, currency),
+    quantity: (value: number) => format.number(value, { maximumFractionDigits: 3 }),
+  };
+}
 
 export function PartsPage() {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+  const { money, quantity } = useAmounts();
+
   const [search, setSearch] = useState('');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [costing, setCosting] = useState<PartsCostingSetting | null>(null);
@@ -59,7 +81,7 @@ export function PartsPage() {
 
       setLoad({
         kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'The catalogue could not be read.',
+        message: describe(failure),
       });
     }
   }, []);
@@ -86,17 +108,14 @@ export function PartsPage() {
   }, []);
 
   if (load.kind === 'loading') {
-    return <p>Loading the parts catalogue…</p>;
+    return <p>{t('parts.loading')}</p>;
   }
 
   if (load.kind === 'denied') {
     return (
       <section className="page">
-        <h1>Parts</h1>
-        <p className="note">
-          You do not have access to parts at this location. Ask a manager if you
-          think that is wrong.
-        </p>
+        <h1>{t('parts.title')}</h1>
+        <p className="note">{t('parts.denied')}</p>
       </section>
     );
   }
@@ -104,10 +123,10 @@ export function PartsPage() {
   if (load.kind === 'failed') {
     return (
       <section className="page">
-        <h1>Parts</h1>
+        <h1>{t('parts.title')}</h1>
         <p className="error">{load.message}</p>
         <button type="button" onClick={() => void find(search)}>
-          Try again
+          {t('common.retry')}
         </button>
       </section>
     );
@@ -116,9 +135,9 @@ export function PartsPage() {
   return (
     <section className="page">
       <header className="page__head">
-        <h1>Parts</h1>
+        <h1>{t('parts.title')}</h1>
         <button type="button" className="primary" onClick={() => setAdding(true)}>
-          Add a part
+          {t('parts.add')}
         </button>
       </header>
 
@@ -155,11 +174,11 @@ export function PartsPage() {
       )}
 
       <div className="field">
-        <label htmlFor="part-search">Find a part</label>
+        <label htmlFor="part-search">{t('parts.find')}</label>
         <input
           id="part-search"
           value={search}
-          placeholder="Number or description"
+          placeholder={t('parts.findPlaceholder')}
           onChange={(event) => setSearch(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -167,32 +186,27 @@ export function PartsPage() {
             }
           }}
         />
-        <p className="hint">
-          The number is matched however it was typed — MZ-690411, mz690411, and
-          MZ 690 411 all find the same part.
-        </p>
+        <p className="hint">{t('parts.findHint')}</p>
       </div>
 
       {load.parts.length === 0 ? (
         <p className="note">
-          {search.trim() === '' ? 'Nothing in the catalogue yet.' : 'Nothing matches that.'}
+          {search.trim() === '' ? t('parts.catalogueEmpty') : t('parts.noMatches')}
         </p>
       ) : (
         <div className="scroll">
           <table className="table">
-            <caption className="visually-hidden">
-              Parts, with what is on the shelf at the locations you cover.
-            </caption>
+            <caption className="visually-hidden">{t('parts.caption')}</caption>
             <thead>
               <tr>
-                <th scope="col">Number</th>
-                <th scope="col">Description</th>
-                <th scope="col">Where</th>
+                <th scope="col">{t('parts.colNumber')}</th>
+                <th scope="col">{t('parts.colDescription')}</th>
+                <th scope="col">{t('parts.colWhere')}</th>
                 <th scope="col" className="num">
-                  On hand
+                  {t('parts.colOnHand')}
                 </th>
                 <th scope="col" className="num">
-                  Cost each
+                  {t('parts.colCostEach')}
                 </th>
               </tr>
             </thead>
@@ -215,12 +229,12 @@ export function PartsPage() {
                     {part.rooftopId === null
                       ? // Never stocked anywhere. Saying "one location" would be a
                         // lie, and a blank cell would read as a loading bug.
-                        <span className="muted">Not stocked</span>
-                      : (rooftops.find((r) => r.id === part.rooftopId)?.code ?? 'one location')}
+                        <span className="muted">{t('parts.notStocked')}</span>
+                      : (rooftops.find((r) => r.id === part.rooftopId)?.code ?? t('parts.oneLocation'))}
                   </td>
                   <td className="num">
                     {part.quantityOnHand <= 0 ? (
-                      <span className="chip chip--warn">None</span>
+                      <span className="chip chip--warn">{t('parts.noneOnHand')}</span>
                     ) : (
                       quantity(part.quantityOnHand)
                     )}
@@ -250,6 +264,9 @@ function Costing({
   costing: PartsCostingSetting;
   onChanged: (updated: PartsCostingSetting) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -262,7 +279,7 @@ function Costing({
     } catch (failure) {
       // Changing this needs organization-wide permission, and the server is the
       // one that knows whether this caller has it.
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -272,10 +289,10 @@ function Costing({
 
   return (
     <section className="panel">
-      <h2>How parts are costed</h2>
+      <h2>{t('parts.costingTitle')}</h2>
 
       <div className="field">
-        <label htmlFor="costing-method">Method</label>
+        <label htmlFor="costing-method">{t('parts.costingMethod')}</label>
         <select
           id="costing-method"
           value={costing.method}
@@ -292,10 +309,16 @@ function Costing({
 
       {current === undefined ? null : <p className="hint">{current.explanation}</p>}
 
+      {/* The emphasis is on the clause a manager must not miss, and it moves
+          with the translation rather than being a fixed slice of the sentence. */}
       <p className="note">
-        This applies to <strong>future sales only</strong>. Work already invoiced
-        keeps the cost it was sold at — changing this cannot restate a month you
-        have already reported on.
+        <Emphasised
+          sentence={t('parts.costingApplies', {
+            futureOnly: t('parts.costingFutureOnly'),
+            rest: t('parts.costingNote'),
+          })}
+          value={t('parts.costingFutureOnly')}
+        />
       </p>
 
       <p className="error" aria-live="polite">
@@ -312,6 +335,9 @@ function AddPart({
   onCancel: () => void;
   onAdded: () => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [partNumber, setPartNumber] = useState('');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
@@ -325,7 +351,7 @@ function AddPart({
       await post<PartDetail>('/parts', { partNumber, description });
       await onAdded();
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -333,15 +359,11 @@ function AddPart({
 
   return (
     <section className="panel">
-      <h2>Add a part</h2>
-      <p className="note">
-        A part number means the same component at every location, so this is a
-        group-level change. The stock itself belongs to whichever shelf it is
-        booked onto.
-      </p>
+      <h2>{t('parts.addTitle')}</h2>
+      <p className="note">{t('parts.addLede')}</p>
 
       <div className="field">
-        <label htmlFor="new-part-number">Part number</label>
+        <label htmlFor="new-part-number">{t('parts.partNumber')}</label>
         <input
           id="new-part-number"
           value={partNumber}
@@ -350,7 +372,7 @@ function AddPart({
       </div>
 
       <div className="field">
-        <label htmlFor="new-part-description">Description</label>
+        <label htmlFor="new-part-description">{t('parts.description')}</label>
         <input
           id="new-part-description"
           value={description}
@@ -369,10 +391,10 @@ function AddPart({
           disabled={busy || partNumber.trim() === '' || description.trim() === ''}
           onClick={() => void submit()}
         >
-          Add it
+          {t('parts.addIt')}
         </button>
         <button type="button" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </section>
@@ -390,6 +412,10 @@ function Part({
   onClose: () => void;
   onChanged: (updated: PartDetail) => Promise<void>;
 }) {
+  const { t, format } = useI18n();
+  const describe = useApiMessage();
+  const { money, quantity } = useAmounts();
+
   const [rooftopId, setRooftopId] = useState(rooftops[0]?.id ?? '');
   const [qty, setQty] = useState('');
   const [unitCost, setUnitCost] = useState('');
@@ -414,13 +440,14 @@ function Part({
       setReference('');
       await onChanged(updated);
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
   }
 
-  const codeFor = (id: string) => rooftops.find((r) => r.id === id)?.code ?? 'one location';
+  // The rooftop CODE is the dealership's own label and is printed as they set it.
+  const codeFor = (id: string) => rooftops.find((r) => r.id === id)?.code ?? t('parts.oneLocation');
 
   return (
     <section className="panel panel--deal">
@@ -434,13 +461,16 @@ function Part({
       </header>
 
       {part.stock.length === 0 ? (
-        <p className="note">None of this on any shelf you can see.</p>
+        <p className="note">{t('parts.noneVisible')}</p>
       ) : (
         part.stock.map((shelf) => (
           <div key={shelf.rooftopId}>
             <h3>
-              {codeFor(shelf.rooftopId)} — {quantity(shelf.quantityOnHand)} on hand at{' '}
-              {money(shelf.unitCost, shelf.currency)} each
+              {t('parts.shelfHeading', {
+                code: codeFor(shelf.rooftopId),
+                quantity: quantity(shelf.quantityOnHand),
+                cost: money(shelf.unitCost, shelf.currency),
+              })}
             </h3>
 
             {/*
@@ -450,27 +480,30 @@ function Part({
             <div className="scroll">
               <table className="table terms">
                 <caption className="visually-hidden">
-                  Deliveries of {part.partNumber} at {codeFor(shelf.rooftopId)}.
+                  {t('parts.deliveriesCaption', {
+                    part: part.partNumber,
+                    code: codeFor(shelf.rooftopId),
+                  })}
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col">Received</th>
-                    <th scope="col">Note</th>
+                    <th scope="col">{t('parts.colReceived')}</th>
+                    <th scope="col">{t('parts.colNote')}</th>
                     <th scope="col" className="num">
-                      Came in
+                      {t('parts.colCameIn')}
                     </th>
                     <th scope="col" className="num">
-                      Left
+                      {t('parts.colLeft')}
                     </th>
                     <th scope="col" className="num">
-                      Cost each
+                      {t('parts.colCostEach')}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {shelf.layers.map((layer) => (
                     <tr key={layer.id}>
-                      <td>{new Date(layer.receivedAt).toLocaleDateString()}</td>
+                      <td>{format.date(layer.receivedAt)}</td>
                       <td>{layer.reference ?? ''}</td>
                       <td className="num">{quantity(layer.quantityReceived)}</td>
                       <td className="num">{quantity(layer.remainingQuantity)}</td>
@@ -484,11 +517,11 @@ function Part({
         ))
       )}
 
-      <h3>Book a delivery in</h3>
+      <h3>{t('parts.bookIn')}</h3>
 
       <div className="row">
         <div className="field">
-          <label htmlFor="receipt-rooftop">Onto which shelf</label>
+          <label htmlFor="receipt-rooftop">{t('parts.ontoWhichShelf')}</label>
           <select
             id="receipt-rooftop"
             value={rooftopId}
@@ -503,7 +536,7 @@ function Part({
         </div>
 
         <div className="field">
-          <label htmlFor="receipt-quantity">How many</label>
+          <label htmlFor="receipt-quantity">{t('parts.howMany')}</label>
           <input
             id="receipt-quantity"
             inputMode="decimal"
@@ -513,7 +546,7 @@ function Part({
         </div>
 
         <div className="field">
-          <label htmlFor="receipt-cost">Cost each</label>
+          <label htmlFor="receipt-cost">{t('parts.costEach')}</label>
           <input
             id="receipt-cost"
             inputMode="decimal"
@@ -523,7 +556,7 @@ function Part({
         </div>
 
         <div className="field field--grow">
-          <label htmlFor="receipt-reference">Delivery note</label>
+          <label htmlFor="receipt-reference">{t('parts.deliveryNote')}</label>
           <input
             id="receipt-reference"
             value={reference}
@@ -542,7 +575,7 @@ function Part({
           disabled={busy || qty === '' || unitCost === '' || rooftopId === ''}
           onClick={() => void receive()}
         >
-          Book it in
+          {t('parts.bookItIn')}
         </button>
       </div>
     </section>

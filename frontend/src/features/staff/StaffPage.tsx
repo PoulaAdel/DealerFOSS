@@ -19,6 +19,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post, remove } from '../../shared/api';
+import { useI18n } from '../../shared/i18n';
+import { useApiMessage } from '../../shared/i18n/apiMessage';
 import type { RooftopSummary, StaffEnrolmentCode, StaffMember, StaffRole } from '../../shared/contracts';
 
 type Load =
@@ -28,6 +30,9 @@ type Load =
   | { kind: 'failed'; message: string };
 
 export function StaffPage() {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [roles, setRoles] = useState<StaffRole[]>([]);
   const [rooftops, setRooftops] = useState<RooftopSummary[]>([]);
@@ -48,7 +53,7 @@ export function StaffPage() {
 
       setLoad({
         kind: 'failed',
-        message: failure instanceof ApiError ? failure.message : 'The staff list could not be read.',
+        message: describe(failure),
       });
     }
   }, []);
@@ -82,16 +87,14 @@ export function StaffPage() {
   }
 
   if (load.kind === 'loading') {
-    return <p>Loading the people who work here…</p>;
+    return <p>{t('staff.loading')}</p>;
   }
 
   if (load.kind === 'denied') {
     return (
       <section className="page">
-        <h1>People</h1>
-        <p className="note">
-          You do not have access to the staff list. Ask a manager if you need it.
-        </p>
+        <h1>{t('staff.title')}</h1>
+        <p className="note">{t('staff.denied')}</p>
       </section>
     );
   }
@@ -99,10 +102,10 @@ export function StaffPage() {
   if (load.kind === 'failed') {
     return (
       <section className="page">
-        <h1>People</h1>
+        <h1>{t('staff.title')}</h1>
         <p className="error">{load.message}</p>
         <button type="button" onClick={() => void find()}>
-          Try again
+          {t('common.retry')}
         </button>
       </section>
     );
@@ -111,9 +114,9 @@ export function StaffPage() {
   return (
     <section className="page">
       <header className="page__head">
-        <h1>People</h1>
+        <h1>{t('staff.title')}</h1>
         <button type="button" className="primary" onClick={() => setAdding(true)}>
-          Add somebody
+          {t('staff.add')}
         </button>
       </header>
 
@@ -144,7 +147,7 @@ export function StaffPage() {
       )}
 
       {load.people.length === 0 ? (
-        <p className="note">Nobody here yet.</p>
+        <p className="note">{t('staff.empty')}</p>
       ) : (
         // Five columns do not fit a phone. `div.scroll` makes the table scroll
         // inside its own box instead of pushing the whole page sideways — the
@@ -153,16 +156,14 @@ export function StaffPage() {
         // the wrapper is present rather than measuring anything.
         <div className="scroll">
           <table className="table">
-            <caption className="visually-hidden">
-              Everybody whose access reaches a location you work at.
-            </caption>
+            <caption className="visually-hidden">{t('staff.caption')}</caption>
             <thead>
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Email</th>
-                <th scope="col">Holds</th>
-                <th scope="col">Second factor</th>
-                <th scope="col">State</th>
+                <th scope="col">{t('staff.colName')}</th>
+                <th scope="col">{t('staff.colEmail')}</th>
+                <th scope="col">{t('staff.colHolds')}</th>
+                <th scope="col">{t('staff.colSecondFactor')}</th>
+                <th scope="col">{t('staff.colState')}</th>
               </tr>
             </thead>
             <tbody>
@@ -176,10 +177,10 @@ export function StaffPage() {
                   <td>{person.email}</td>
                   <td>
                     {person.assignments.length === 0
-                      ? 'Nothing yet'
+                      ? t('staff.holdsNothing')
                       : person.assignments.map((a) => a.roleName).join(', ')}
                   </td>
-                  <td>{person.hasSecondFactor ? 'Yes' : 'No'}</td>
+                  <td>{person.hasSecondFactor ? t('common.yes') : t('common.no')}</td>
                   <td>
                     <State person={person} />
                   </td>
@@ -198,15 +199,17 @@ export function StaffPage() {
  * actions — so they are never shown the same way.
  */
 function State({ person }: { person: StaffMember }) {
+  const { t } = useI18n();
+
   if (!person.isActive) {
-    return <span className="chip chip--lost">Stopped</span>;
+    return <span className="chip chip--lost">{t('staff.stateStopped')}</span>;
   }
 
   if (person.awaitingEnrolment) {
-    return <span className="chip chip--new">Awaiting first password</span>;
+    return <span className="chip chip--new">{t('staff.stateAwaiting')}</span>;
   }
 
-  return <span className="chip chip--won">Working</span>;
+  return <span className="chip chip--won">{t('staff.stateWorking')}</span>;
 }
 
 function EnrolmentCode({
@@ -216,22 +219,23 @@ function EnrolmentCode({
   issued: { person: string; code: StaffEnrolmentCode };
   onDismiss: () => void;
 }) {
+  const { t, format } = useI18n();
+
   return (
     <section className="panel panel--code" aria-live="polite">
-      <h2>Code for {issued.person}</h2>
-      <p className="code">{issued.code.code}</p>
-      <p>
-        Read this out to them. They set their own password with it at the sign-in
-        screen — nobody else ever types it, including you.
+      <h2>{t('staff.codeFor', { name: issued.person })}</h2>
+      {/* Read out character by character and typed on another screen, so it
+          runs left to right whatever the page does. */}
+      <p className="code" dir="ltr">
+        {issued.code.code}
       </p>
+      <p>{t('staff.readItOut')}</p>
       <p className="note">
-        <strong>This is the only time it can be shown.</strong> Only a hash of it is
-        stored, so it cannot be looked up again — if it goes astray, issue a new
-        one, which stops this one working. It expires{' '}
-        {new Date(issued.code.expiresAt).toLocaleString()}.
+        <strong>{t('staff.onlyTimeShown')}</strong>{' '}
+        {t('staff.onlyTimeShownRest', { expires: format.dateTime(issued.code.expiresAt) })}
       </p>
       <button type="button" onClick={onDismiss}>
-        I have passed it on
+        {t('staff.passedItOn')}
       </button>
     </section>
   );
@@ -244,6 +248,9 @@ function AddStarter({
   onCancel: () => void;
   onAdded: (person: StaffMember, code: StaffEnrolmentCode) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -262,7 +269,7 @@ function AddStarter({
       const code = await post<StaffEnrolmentCode>(`/staff/${person.id}/enrolment`, {});
       await onAdded(person, code);
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -270,15 +277,12 @@ function AddStarter({
 
   return (
     <section className="panel">
-      <h2>Add somebody</h2>
+      <h2>{t('staff.addTitle')}</h2>
 
-      <p className="note">
-        They will not be able to sign in until they set a password with the code
-        this produces. You never see or choose their password.
-      </p>
+      <p className="note">{t('staff.addLede')}</p>
 
       <div className="field">
-        <label htmlFor="starter-name">Name</label>
+        <label htmlFor="starter-name">{t('staff.name')}</label>
         <input
           id="starter-name"
           value={displayName}
@@ -287,7 +291,7 @@ function AddStarter({
       </div>
 
       <div className="field">
-        <label htmlFor="starter-email">Email</label>
+        <label htmlFor="starter-email">{t('staff.email')}</label>
         <input
           id="starter-email"
           type="email"
@@ -307,10 +311,10 @@ function AddStarter({
           disabled={busy || displayName.trim() === '' || email.trim() === ''}
           onClick={() => void submit()}
         >
-          Add and make a code
+          {t('staff.addAndMakeCode')}
         </button>
         <button type="button" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </section>
@@ -332,6 +336,9 @@ function Person({
   onChanged: () => void;
   onIssued: (code: StaffEnrolmentCode) => void;
 }) {
+  const { t, format } = useI18n();
+  const describe = useApiMessage();
+
   const [roleId, setRoleId] = useState('');
   const [rooftopId, setRooftopId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -347,7 +354,7 @@ function Person({
     } catch (failure) {
       // The server knows who is asking and which rule they hit. Anything guessed
       // here would be a second, worse copy of the rule.
-      setError(failure instanceof ApiError ? failure.message : 'That did not work.');
+      setError(describe(failure));
     } finally {
       setBusy(false);
     }
@@ -360,18 +367,18 @@ function Person({
       <header className="page__head">
         <h2>{person.displayName}</h2>
         <button type="button" onClick={onClose}>
-          Close
+          {t('common.close')}
         </button>
       </header>
 
       <p className="muted">
-        {person.email} · <State person={person} /> ·{' '}
-        {person.hasSecondFactor ? 'has a second factor' : 'no second factor'}
+        <span dir="ltr">{person.email}</span> · <State person={person} /> ·{' '}
+        {person.hasSecondFactor ? t('staff.hasSecondFactor') : t('staff.noSecondFactor')}
       </p>
 
-      <h3>What they hold</h3>
+      <h3>{t('staff.whatTheyHold')}</h3>
       {person.assignments.length === 0 ? (
-        <p className="note">Nothing yet, so they can sign in and see nothing.</p>
+        <p className="note">{t('staff.holdsNothingYet')}</p>
       ) : (
         <ul className="grants">
           {person.assignments.map((assignment) => (
@@ -379,9 +386,12 @@ function Person({
               <span>
                 <strong>{assignment.roleName}</strong>{' '}
                 {assignment.isOrganizationWide ? (
-                  <span className="chip chip--warn">everywhere</span>
+                  <span className="chip chip--warn">{t('staff.everywhere')}</span>
                 ) : (
-                  (rooftops.find((r) => r.id === assignment.rooftopId)?.code ?? 'one location')
+                  // The rooftop CODE is the dealership's own label for that
+                  // location and is printed as they set it.
+                  (rooftops.find((r) => r.id === assignment.rooftopId)?.code ??
+                    t('staff.oneLocation'))
                 )}
               </span>
               <button
@@ -389,18 +399,18 @@ function Person({
                 disabled={busy}
                 onClick={() => void act(() => remove(`/staff/${person.id}/assignments/${assignment.id}`))}
               >
-                Take it away
+                {t('staff.takeItAway')}
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      <h3>Give them a role</h3>
+      <h3>{t('staff.giveARole')}</h3>
       <div className="field">
-        <label htmlFor="grant-role">Role</label>
+        <label htmlFor="grant-role">{t('staff.role')}</label>
         <select id="grant-role" value={roleId} onChange={(event) => setRoleId(event.target.value)}>
-          <option value="">Choose a role</option>
+          <option value="">{t('staff.chooseRole')}</option>
           {roles.map((role) => (
             <option key={role.id} value={role.id}>
               {role.name}
@@ -411,19 +421,23 @@ function Person({
 
       {grant === undefined ? null : (
         <p className="note">
-          Holding it grants: {grant.permissions.join(', ')}
-          {grant.requiresSecondFactor ? ' — and obliges them to set up a second factor.' : ''}
+          {/* The permission NAMES are the API's catalogue (`Deals.Approve`) and
+              are shown verbatim — they are identifiers a manager matches
+              against the documentation, not prose. `format.list` joins them the
+              way the reader's language joins a list. */}
+          {t('staff.holdingGrants', { permissions: format.list(grant.permissions) })}
+          {grant.requiresSecondFactor ? t('staff.andObligesSecondFactor') : ''}
         </p>
       )}
 
       <div className="field">
-        <label htmlFor="grant-rooftop">Where</label>
+        <label htmlFor="grant-rooftop">{t('staff.where')}</label>
         <select
           id="grant-rooftop"
           value={rooftopId}
           onChange={(event) => setRooftopId(event.target.value)}
         >
-          <option value="">Everywhere in the organization</option>
+          <option value="">{t('staff.everywhereInOrg')}</option>
           {rooftops.map((rooftop) => (
             <option key={rooftop.id} value={rooftop.id}>
               {rooftop.code} — {rooftop.name}
@@ -450,7 +464,7 @@ function Person({
             )
           }
         >
-          Give them this
+          {t('staff.giveThem')}
         </button>
 
         {person.awaitingEnrolment && person.isActive ? (
@@ -463,7 +477,7 @@ function Person({
               )
             }
           >
-            Make a new code
+            {t('staff.makeNewCode')}
           </button>
         ) : null}
 
@@ -474,17 +488,11 @@ function Person({
             void act(() => post(`/staff/${person.id}/active`, { active: !person.isActive }))
           }
         >
-          {person.isActive ? 'Stop this account' : 'Let them back in'}
+          {person.isActive ? t('staff.stopAccount') : t('staff.letThemBackIn')}
         </button>
       </div>
 
-      {person.isActive ? (
-        <p className="note">
-          Stopping an account ends their sessions on the very next request, and
-          deletes nothing — their name still has to appear against the work they
-          did.
-        </p>
-      ) : null}
+      {person.isActive ? <p className="note">{t('staff.stoppingNote')}</p> : null}
     </section>
   );
 }

@@ -17,6 +17,7 @@ import { api, post } from '../../shared/api';
 import type { CustomerSummary, DealDetail, InventoryUnitSummary } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { Emphasised } from '../../shared/i18n/Emphasised';
 
 export function StartDeal({
   onStarted, onCancel, leadId = null, customerId: fromLead = null,
@@ -200,29 +201,3 @@ export function StartDeal({
   );
 }
 
-/**
- * A translated sentence with one substituted value picked out in bold.
- *
- * Splitting the FINISHED sentence around the value, rather than assembling
- * "From the enquiry for " + name, is what keeps this working in every language:
- * the translator is free to put the name first, last, or in the middle, and the
- * emphasis follows it wherever they put it. Building it from fragments would
- * hard-code English word order and read as nonsense in German or Arabic.
- *
- * `indexOf` rather than `split`, so a name that happens to occur twice in the
- * sentence still produces exactly one emphasised run.
- */
-function Emphasised({ sentence, value }: { sentence: string; value: string }) {
-  const at = sentence.indexOf(value);
-  if (at < 0) {
-    return <>{sentence}</>;
-  }
-
-  return (
-    <>
-      {sentence.slice(0, at)}
-      <span className="strong">{value}</span>
-      {sentence.slice(at + value.length)}
-    </>
-  );
-}

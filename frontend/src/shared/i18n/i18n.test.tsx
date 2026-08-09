@@ -204,6 +204,9 @@ describe('the catalogues', () => {
       ['trialBalance.total', 'the same word in French'],
       ['customers.colName', 'the same word in German'],
       ['deals.stockLine', 'French uses "stock" for vehicle inventory'],
+      ['staff.colName', 'the same word in German'],
+      ['staff.name', 'the same word in German'],
+      ['parts.colNote', 'the same word in French'],
     ]);
 
     for (const [name, catalogue] of Object.entries(catalogues)) {

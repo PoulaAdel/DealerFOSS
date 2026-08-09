@@ -595,4 +595,113 @@ export const en = {
   'startDeal.failed': 'That deal could not be started.',
   'startDeal.stockFailed': 'Could not load the stock list.',
   'startDeal.customerFailed': 'Could not read that customer.',
+
+  // --- People ---------------------------------------------------------------
+  'staff.title': 'People',
+  'staff.loading': 'Loading the people who work here…',
+  'staff.denied': 'You do not have access to the staff list. Ask a manager if you need it.',
+  'staff.failed': 'The staff list could not be read.',
+  'staff.actionFailed': 'That did not work.',
+  'staff.empty': 'Nobody here yet.',
+  'staff.add': 'Add somebody',
+  'staff.caption': 'Everybody whose access reaches a location you work at.',
+  'staff.colName': 'Name',
+  'staff.colEmail': 'Email',
+  'staff.colHolds': 'Holds',
+  'staff.colSecondFactor': 'Second factor',
+  'staff.colState': 'State',
+  'staff.holdsNothing': 'Nothing yet',
+
+  'staff.stateStopped': 'Stopped',
+  'staff.stateAwaiting': 'Awaiting first password',
+  'staff.stateWorking': 'Working',
+
+  'staff.codeFor': 'Code for {name}',
+  'staff.readItOut':
+    'Read this out to them. They set their own password with it at the sign-in screen — nobody else ever types it, including you.',
+  'staff.onlyTimeShown': 'This is the only time it can be shown.',
+  'staff.onlyTimeShownRest':
+    'Only a hash of it is stored, so it cannot be looked up again — if it goes astray, issue a new one, which stops this one working. It expires {expires}.',
+  'staff.passedItOn': 'I have passed it on',
+
+  'staff.addTitle': 'Add somebody',
+  'staff.addLede':
+    'They will not be able to sign in until they set a password with the code this produces. You never see or choose their password.',
+  'staff.name': 'Name',
+  'staff.email': 'Email',
+  'staff.addAndMakeCode': 'Add and make a code',
+
+  'staff.hasSecondFactor': 'has a second factor',
+  'staff.noSecondFactor': 'no second factor',
+  'staff.whatTheyHold': 'What they hold',
+  'staff.holdsNothingYet': 'Nothing yet, so they can sign in and see nothing.',
+  'staff.everywhere': 'everywhere',
+  'staff.oneLocation': 'one location',
+  'staff.takeItAway': 'Take it away',
+  'staff.giveARole': 'Give them a role',
+  'staff.role': 'Role',
+  'staff.chooseRole': 'Choose a role',
+  'staff.holdingGrants': 'Holding it grants: {permissions}',
+  'staff.andObligesSecondFactor': ' — and obliges them to set up a second factor.',
+  'staff.where': 'Where',
+  'staff.everywhereInOrg': 'Everywhere in the organization',
+  'staff.giveThem': 'Give them this',
+  'staff.makeNewCode': 'Make a new code',
+  'staff.stopAccount': 'Stop this account',
+  'staff.letThemBackIn': 'Let them back in',
+  'staff.stoppingNote':
+    'Stopping an account ends their sessions on the very next request, and deletes nothing — their name still has to appear against the work they did.',
+
+  // --- Parts ----------------------------------------------------------------
+  'parts.title': 'Parts',
+  'parts.loading': 'Loading the parts catalogue…',
+  'parts.denied':
+    'You do not have access to parts at this location. Ask a manager if you think that is wrong.',
+  'parts.failed': 'The catalogue could not be read.',
+  'parts.actionFailed': 'That did not work.',
+  'parts.add': 'Add a part',
+  'parts.find': 'Find a part',
+  'parts.findPlaceholder': 'Number or description',
+  'parts.findHint':
+    'The number is matched however it was typed — MZ-690411, mz690411, and MZ 690 411 all find the same part.',
+  'parts.catalogueEmpty': 'Nothing in the catalogue yet.',
+  'parts.noMatches': 'Nothing matches that.',
+  'parts.caption': 'Parts, with what is on the shelf at the locations you cover.',
+  'parts.colNumber': 'Number',
+  'parts.colDescription': 'Description',
+  'parts.colWhere': 'Where',
+  'parts.colOnHand': 'On hand',
+  'parts.colCostEach': 'Cost each',
+  'parts.notStocked': 'Not stocked',
+  'parts.oneLocation': 'one location',
+  'parts.noneOnHand': 'None',
+
+  'parts.costingTitle': 'How parts are costed',
+  'parts.costingMethod': 'Method',
+  'parts.costingFutureOnly': 'future sales only',
+  'parts.costingNote':
+    'Work already invoiced keeps the cost it was sold at — changing this cannot restate a month you have already reported on.',
+  'parts.costingApplies': 'This applies to {futureOnly}. {rest}',
+
+  'parts.addTitle': 'Add a part',
+  'parts.addLede':
+    'A part number means the same component at every location, so this is a group-level change. The stock itself belongs to whichever shelf it is booked onto.',
+  'parts.partNumber': 'Part number',
+  'parts.description': 'Description',
+  'parts.addIt': 'Add it',
+
+  'parts.noneVisible': 'None of this on any shelf you can see.',
+  'parts.shelfHeading': '{code} — {quantity} on hand at {cost} each',
+  'parts.deliveriesCaption': 'Deliveries of {part} at {code}.',
+  'parts.colReceived': 'Received',
+  'parts.colNote': 'Note',
+  'parts.colCameIn': 'Came in',
+  'parts.colLeft': 'Left',
+
+  'parts.bookIn': 'Book a delivery in',
+  'parts.ontoWhichShelf': 'Onto which shelf',
+  'parts.howMany': 'How many',
+  'parts.costEach': 'Cost each',
+  'parts.deliveryNote': 'Delivery note',
+  'parts.bookItIn': 'Book it in',
 } as const;
