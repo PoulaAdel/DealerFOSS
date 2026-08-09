@@ -5,7 +5,6 @@
 // Edit: audit rows are append-only (ADR-016) — write new rows, never update.
 //       Nothing sensitive may be placed in an entry; see IAuditSink.
 
-using DealerFOSS.Identity;
 using DealerFOSS.Core;
 
 namespace DealerFOSS.Identity;

@@ -14,12 +14,12 @@
 //       what makes the access visible to the dealership in their own audit trail
 //       and revocable by ending one session.
 
-using System.Security.Cryptography;
-using System.Text;
+using DealerFOSS.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using DealerFOSS.Core;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace DealerFOSS.Identity;
 

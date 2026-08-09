@@ -8,12 +8,11 @@
 //       user does not exist, so the response time does not reveal which emails
 //       are real.
 
-using System.Security.Cryptography;
-using System.Text;
+using DealerFOSS.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using DealerFOSS.Core;
-using DealerFOSS.Identity;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace DealerFOSS.Identity;
 

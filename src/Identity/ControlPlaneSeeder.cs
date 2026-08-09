@@ -7,9 +7,9 @@
 //       seed one outside Development — an account that operates the whole
 //       installation must be created deliberately by whoever owns it.
 
+using DealerFOSS.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using DealerFOSS.Core;
 
 namespace DealerFOSS.Identity;
 
