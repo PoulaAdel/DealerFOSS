@@ -1,21 +1,32 @@
 // ConnectorRun — what happened, per connector, per dealership, per run.
 //
-// Use:  one of these per dealership per run, whether it succeeded or not.
+// Use:  Started() before the work, Succeeded()/Failed()/Misconfigured() after.
+//       Written in its own save so a crash leaves a row behind.
 // Edit: this is a record, not a log line, because the question an operator asks
 //       is "has this dealership been failing all week?" — and metrics are
 //       aggregates that expire. A store producing zero rows every night looks
 //       exactly like a quiet store until somebody can compare last night with
 //       the one before.
 //
-//       Not yet persisted: there is no table, no migration and no endpoint
-//       behind this. It is the shape the runtime will record, and saying so
-//       here is better than a README claiming a facility that does not exist.
+//       The row is inserted BEFORE the fetch and completed after, so a process
+//       killed mid-run leaves FinishedAt null. That unfinished row is the only
+//       evidence such a run ever happened, and it is worth more than the tidiness
+//       of writing one row at the end.
+//
+//       CursorHeld is deliberately separate from Outcome. A run can succeed —
+//       records arrived, records applied — and still not move the cursor, and
+//       collapsing the two would hide the more important half.
+
+using DealerFOSS.Core;
 
 namespace DealerFOSS.Integrations;
 
 /// <summary>How a dealership's run ended.</summary>
 public enum RunOutcome
 {
+    /// <summary>Still going, or the process died before it could say.</summary>
+    Running = 0,
+
     Succeeded = 1,
 
     /// <summary>Records arrived and some were quarantined.</summary>
@@ -35,29 +46,144 @@ public enum RunOutcome
 }
 
 /// <summary>One dealership's share of one run.</summary>
-/// <param name="Connector">Provider name from the manifest.</param>
-/// <param name="RooftopId">The dealership this covers.</param>
-/// <param name="Contract">The capability that was read.</param>
-/// <param name="StartedAt">When it began.</param>
-/// <param name="FinishedAt">When it ended; null while running.</param>
-/// <param name="Outcome">How it ended.</param>
-/// <param name="RecordsApplied">Records committed.</param>
-/// <param name="RecordsQuarantined">Records held back for an operator.</param>
-/// <param name="WarningCount">Values that did not survive intact.</param>
-/// <param name="Covered">
-/// The period the provider reported serving, or null when it did not say — in
-/// which case the cursor did not move, and this row is the evidence of why.
-/// </param>
-/// <param name="FailureCode">The stable error code when it failed.</param>
-public sealed record ConnectorRun(
-    string Connector,
-    Guid RooftopId,
-    string Contract,
-    DateTimeOffset StartedAt,
-    DateTimeOffset? FinishedAt,
-    RunOutcome Outcome,
-    int RecordsApplied,
-    int RecordsQuarantined,
-    int WarningCount,
-    DateRange? Covered,
-    string? FailureCode);
+public sealed class ConnectorRun : AuditableEntity
+{
+    public Guid Id { get; private set; }
+
+    /// <summary>Provider name from the manifest.</summary>
+    public string Connector { get; private set; } = string.Empty;
+
+    public RooftopId RooftopId { get; private set; }
+
+    /// <summary>The capability that was read.</summary>
+    public string Contract { get; private set; } = string.Empty;
+
+    public int Version { get; private set; }
+
+    public DateTimeOffset StartedAt { get; private set; }
+
+    /// <summary>When it ended. Null means it never did — see the header.</summary>
+    public DateTimeOffset? FinishedAt { get; private set; }
+
+    public RunOutcome Outcome { get; private set; } = RunOutcome.Running;
+
+    public int RecordsApplied { get; private set; }
+
+    public int RecordsQuarantined { get; private set; }
+
+    /// <summary>Values that did not survive intact but did not stop the record.</summary>
+    public int WarningCount { get; private set; }
+
+    /// <summary>
+    /// The period the provider reported serving, or null when it did not say.
+    /// Stored split because a range is two columns to a database.
+    /// </summary>
+    public DateTimeOffset? CoveredFrom { get; private set; }
+
+    public DateTimeOffset? CoveredTo { get; private set; }
+
+    /// <summary>True when the run finished without the cursor being able to move.</summary>
+    public bool CursorHeld { get; private set; }
+
+    /// <summary>The stable code explaining the hold; null when the cursor moved.</summary>
+    public string? CursorHeldReason { get; private set; }
+
+    /// <summary>The stable error code when it failed.</summary>
+    public string? FailureCode { get; private set; }
+
+    private ConnectorRun()
+    {
+    }
+
+    private ConnectorRun(
+        Guid id,
+        string connector,
+        RooftopId rooftopId,
+        string contract,
+        int version,
+        DateTimeOffset startedAt)
+    {
+        Id = id;
+        Connector = connector;
+        RooftopId = rooftopId;
+        Contract = contract;
+        Version = version;
+        StartedAt = startedAt;
+    }
+
+    /// <summary>Open a run. Save this before doing any work.</summary>
+    public static ConnectorRun Started(
+        Guid id,
+        string connector,
+        RooftopId rooftopId,
+        ConnectorCapability capability,
+        DateTimeOffset startedAt)
+    {
+        ArgumentNullException.ThrowIfNull(capability);
+
+        if (string.IsNullOrWhiteSpace(connector))
+        {
+            throw new ArgumentException("A connector name is required.", nameof(connector));
+        }
+
+        return new ConnectorRun(id, connector.Trim(), rooftopId, capability.Contract, capability.Version, startedAt);
+    }
+
+    /// <summary>Records arrived and were applied.</summary>
+    public void Completed(
+        DateTimeOffset finishedAt,
+        int applied,
+        int quarantined,
+        int warnings,
+        DateRange? covered)
+    {
+        Finish(finishedAt);
+        RecordsApplied = applied;
+        RecordsQuarantined = quarantined;
+        WarningCount = warnings;
+        CoveredFrom = covered?.Start;
+        CoveredTo = covered?.End;
+        Outcome = quarantined > 0 ? RunOutcome.SucceededWithQuarantine : RunOutcome.Succeeded;
+    }
+
+    /// <summary>
+    /// The run did its work but the window could not be accounted for, so the
+    /// cursor stayed where it was. Called alongside <see cref="Completed"/>,
+    /// never instead of it.
+    /// </summary>
+    public void HeldCursor(string reasonCode) =>
+        (CursorHeld, CursorHeldReason) = (true, reasonCode);
+
+    /// <summary>The provider was still working when the poll deadline passed.</summary>
+    public void StillRunningAtProvider(DateTimeOffset finishedAt)
+    {
+        Finish(finishedAt);
+        Outcome = RunOutcome.StillRunningAtProvider;
+    }
+
+    /// <summary>This dealership failed; the rest of the run carried on.</summary>
+    public void Failed(DateTimeOffset finishedAt, string failureCode)
+    {
+        Finish(finishedAt);
+        Outcome = RunOutcome.Failed;
+        FailureCode = failureCode;
+    }
+
+    /// <summary>Nothing was attempted, because the configuration is not usable.</summary>
+    public void Misconfigured(DateTimeOffset finishedAt, string failureCode)
+    {
+        Finish(finishedAt);
+        Outcome = RunOutcome.Misconfigured;
+        FailureCode = failureCode;
+    }
+
+    private void Finish(DateTimeOffset finishedAt)
+    {
+        if (FinishedAt is not null)
+        {
+            throw new InvalidOperationException("This run has already been completed.");
+        }
+
+        FinishedAt = finishedAt;
+    }
+}

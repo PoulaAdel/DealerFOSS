@@ -3,10 +3,11 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the integration edge** (skeleton complete, nothing talks to a
-network yet). `src/App/Integrations/` holds the manifest, the window arithmetic,
-the coercion rules and a fixture connector, with 41 conformance tests
-Last verified: 2026-08-12 · `dotnet build` 0 warnings/0 errors, `dotnet test` 601/601,
+Current milestone: **the integration runtime** (cursors, run history and quarantine
+are durable; nothing talks to a network yet). `src/App/Integrations/` holds the
+manifest, the window arithmetic, the coercion rules, a fixture connector and the
+runtime that enforces them, with 55 tests
+Last verified: 2026-08-12 · `dotnet build` 0 warnings/0 errors, `dotnet test` 615/615,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
 `npm run typecheck`, `npm test` 255/255, and `npm run build` all pass
 
@@ -518,3 +519,23 @@ a privileged manager-issued code as the backstop. No longer blocked on a decisio
   Evidence: `dotnet build` 0/0, `dotnet test` **601/601** (was 559 — 41 new conformance and mapping tests, 1 new architecture case), `verify-e2e.ps1` **PASS**.
 
   **Nothing here talks to a network.** No real connector, no inbox or outbox, no quarantine store, no replay, no reconciliation, no persistence — `ConnectorRun` is a shape with no table behind it, and cursors are not stored anywhere. `src/App/Integrations/README.md` lists all of it rather than leaving a half-built edge looking finished.
+
+- **2026-08-12 — The integration runtime: the cursor rules stop being checkable and start being enforced.** The skeleton committed earlier today held four rules and a conformance suite, and every one of them lived in memory. A cursor rule that is correct in a method and lost on save is worth nothing, because the entire payoff of refusing to advance is that *tomorrow's* run re-reads the same window — and tomorrow is a different process against the same row. Three tables, one runtime, 14 SQL-backed tests.
+
+  **`ConnectorCursor` is the row the whole design exists to protect.** It carries the position, `HeldBecause`, and `ConsecutiveHolds` — the last of which is the number that turns an ordinary event into a reportable one. One hold is a Tuesday; six in a row is a dealership quietly falling behind with nobody being told. The unique index on (connector, dealership, contract, version) is enforced by the database rather than remembered by the runtime: two rows would let two runs each advance their own copy, and the feed would read as up to date while skipping whatever the other had passed.
+
+  **A held cursor is not a failed run**, and `ConnectorRun.CursorHeld` is deliberately a separate column from `Outcome`. A feed whose provider will not account for its window succeeds every night, applies records every night, and falls further behind every night; collapsing the two facts would hide the more important half.
+
+  **The run row is written before the fetch, not after.** A process killed mid-run leaves a row with `FinishedAt` null, and that unfinished row is the only evidence the attempt happened — one tidy row at the end would make a crash indistinguishable from a night that never ran. **Rehearsed:** moving the save to the end fails the test that proves it.
+
+  **An endpoint that takes no dates keeps no cursor at all.** This was not the first design. A cursor for a dateless delta feed is permanently "held", which reads as a fault rather than as the normal shape of that kind of endpoint — so there is no row, and the feed depends entirely on the sink being idempotent, which is now the first stated obligation on `IRecordSink`.
+
+  **`IRecordSink` is how a record reaches the capability that owns it**, and it exists because `FeatureBoundaryTests` forbids Integrations from seeing `Deal` or `Customer` at all. A run with no sink registered is refused as `Misconfigured` **before the provider is called** — spending a rate limit to throw the answer away looks like a working integration, which is worse than a failure.
+
+  **Quarantine holds the provider's own payload**, which makes it personal data, which makes ADR-022 apply in full. Each row carries an expiry from a 90-day retention and reads filter on it, so the column does work from the day it is written rather than from the day somebody builds a purge job. The uncomfortable half is deliberate: a record left unresolved past its retention is gone. Keeping a customer's details indefinitely because a mapping bug was never fixed is not a data-quality feature. **Rehearsed:** dropping the expiry filter fails the test.
+
+  **The rehearsal that mattered most:** changing the runtime to advance from the range it *requested* instead of the range the provider *served* — the exact mistake the whole design exists to prevent, and the shorter code — fails **five** tests.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **615/615** (was 601), `verify-e2e.ps1` **PASS**.
+
+  **Still not built, and listed rather than implied.** No sink implementation, so a real deployment reports every run misconfigured. No scheduler, endpoint or screen — a run happens because a test starts one. No inbox, no webhooks, no poll lease, no reconciliation, no outbound writes. No quarantine purge (the expiry is enforced on read only) and no replay: `Resolve` marks a record dealt with without re-applying it.

@@ -3,7 +3,7 @@
 Plain language, no jargon. For the engineering detail — every claim paired with
 the command that proves it — see [implementation/STATUS.md](implementation/STATUS.md).
 
-**Last updated:** 9 August 2026
+**Last updated:** 12 August 2026
 
 ---
 
@@ -97,7 +97,7 @@ months of focused work.
 |---|---|---|---|
 | 0 | Find pilot dealers, get provider access | Agreements, real data samples, access to the systems we must connect to. People work, not code. | **Yours to do** |
 | 1 | Foundation | Keeping dealership groups apart, locations, staff and permissions, signing in, backups. | **Done** — only signing in with an existing company login is missing, and that needs a provider to test against |
-| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Half** — in and out both work, with a screen. Keeping in step with another live system does not exist |
+| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Half** — in and out both work, with a screen. Keeping in step with another live system now has its machinery built and tested, but no connection to a real system yet |
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Done** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, warranties, paperwork. | **Done** |
 | 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Three quarters** — the workshop, parts stock and the booking diary are built. Finance applications to lenders are not, and need a lender to test against |
@@ -549,6 +549,39 @@ but sends nobody a reminder, because there is no way to send a message yet.
 ---
 
 ## Next
+
+**Talking to another dealership system — the machinery, 12 Aug.** Not a
+connection to anything real: there is still nothing on the other end. What was
+built is the part that decides *how far a system has been read*, and it was built
+first on purpose, because the mistake it prevents is the one you cannot recover
+from.
+
+The problem in plain terms. When we read a supplier's system every night, we have
+to remember where we got to, or we would re-read everything from the beginning
+each time. The obvious way to remember is to write down what we *asked* for —
+"give me the last three days" — and move on. The trouble is that suppliers very
+often serve less than they were asked for, and quite often will not say what they
+served at all. Write down the request, and the days that never arrived are gone:
+no error, no warning, nothing on any screen. It surfaces months later when
+somebody notices a week of sales missing, by which time the supplier no longer
+holds them.
+
+So this refuses. It moves the marker only across what the supplier actually
+confirmed sending, and where the supplier says nothing, the marker stays put and
+the same period is asked for again tomorrow. Reading the same days twice is
+harmless — bringing a record in twice is designed to be safe. Skipping days is
+not. A dealership stuck this way is also **counted**, because one night of it is
+ordinary and six in a row is a store falling behind that nobody has told you
+about.
+
+Records that arrive and cannot be understood are set aside rather than guessed
+at, kept with exactly what the supplier sent so somebody can see the original —
+and, because that is a real customer's details, held for 90 days and no longer.
+
+Four of these decisions came from reading your four older integration projects.
+Every one of them is a mistake that had already happened somewhere, which is why
+the machinery was worth building before the first real connection rather than
+after.
 
 **~~A forgotten password~~ — built, 9 Aug.** See "Getting back in" above. Two of
 the five methods you chose are live: the authenticator app, and a manager handing

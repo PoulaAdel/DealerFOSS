@@ -73,6 +73,49 @@ and a flapping server are different problems.
 > the deadline returns `StillRunningAtProvider`, a state to report rather than a
 > failure to raise.
 
+## The runtime
+
+`ConnectorRuntime.RunAsync` is where the four rules stop being checkable and
+start being enforced. For one dealership's feed it loads the cursor, plans the
+window from it, fetches each slice, hands the records to the capability that
+owns them, quarantines what will not apply, advances the cursor only from what
+was served, and writes down what happened.
+
+Two orderings in it are load-bearing and neither is the obvious one:
+
+- **The run row is saved before any work.** A process killed mid-fetch leaves a
+  row with `FinishedAt` null, and that unfinished row is the only evidence the
+  attempt happened. One tidy row written at the end would make a crash
+  indistinguishable from a night that never ran.
+- **Slices advance the cursor one at a time, in order, and the first slice that
+  cannot account for itself stops the loop.** Fetching the rest would leave the
+  cursor behind a period that had already been read.
+
+A held cursor is not a failed run. Records arrive, records apply, and the
+position stays put — `ConnectorRun.CursorHeld` is deliberately separate from
+`Outcome`, and `ConnectorCursor.ConsecutiveHolds` is the number that turns an
+ordinary event into a reportable one. One hold is a Tuesday; six in a row is a
+dealership quietly falling behind.
+
+**An endpoint that takes no dates keeps no cursor at all.** There is no position
+to hold when the provider decides what "recent" means and never says, and a row
+that was permanently held would read as a fault rather than as the normal shape
+of a delta feed. Such a feed depends entirely on the sink being idempotent.
+
+### Records reach a capability through `IRecordSink`, never directly
+
+Integrations cannot see `Deal` or `Customer` — `FeatureBoundaryTests` fails the
+build on the reference. A capability implements `IRecordSink` for the contract it
+owns and registers it; the runtime finds it by contract and version, and refuses
+the run as `Misconfigured` when nothing is registered, **before calling the
+provider**. Spending a rate limit to throw the answer away looks like a working
+integration, which is worse than a failure.
+
+Two obligations on an implementer, both load-bearing: **applying must be
+idempotent on `ExternalId`** — a held cursor means the same records arrive again
+tomorrow, by design — and **a sink must not save**, because the runtime owns the
+transaction.
+
 ## Settings are declared, one field at a time
 
 `ConnectorManifest` declares every per-dealership setting with a name, a kind and
@@ -96,7 +139,12 @@ connector.
 | `FieldValue.cs` | ADR-021 — coercion to absence, with the raw text kept |
 | `ProviderShape.cs` | parallel arrays, and fixed-arity slots |
 | `PollBudget.cs` | waiting on an accepted job, measured in time |
-| `ConnectorRun.cs` | the shape of per-dealership run history |
+| `IRecordSink.cs` | how a record reaches the capability that owns it |
+| `ConnectorRuntime.cs` | the run: plan, fetch, apply, quarantine, advance, record |
+| `ConnectorCursor.cs` | how far a feed has been read, and why it stopped |
+| `ConnectorRun.cs` | per-dealership run history |
+| `QuarantinedRecord.cs` | what was held back, with the payload and an expiry |
+| `IntegrationTables.cs` | how all three are stored |
 | `IntegrationErrors.cs` | the stable refusal codes |
 | `Connectors/Fixture/` | a provider that misbehaves the way real ones do |
 
@@ -108,14 +156,21 @@ than one that says where it stops. **Nothing here talks to a network yet.**
 - **No real connector.** `Connectors/Fixture` is the only one, it fabricates its
   records, and a passing conformance suite means *fixture-tested* and nothing
   more (doc 05 §3).
-- **No runtime.** No inbox, no outbox, no quarantine store, no replay, no
-  reconciliation — doc 05 §4 describes all of these and none of them exist.
-- **No persistence.** `ConnectorRun` is a shape, not a table: no EF configuration,
-  no migration, no endpoint. Cursors are not stored anywhere either.
+- **No sink is registered.** Nothing implements `IRecordSink`, so every run in a
+  real deployment reports itself `Misconfigured` — which is the honest state of
+  an edge with no capability wired to receive anything.
+- **Nothing calls the runtime.** No scheduler, no endpoint, no screen. A run
+  happens because a test starts one.
+- **No quarantine purge.** `QuarantinedRecord.ExpiresAt` is enforced on *read*,
+  so an expired row stops being listed, but nothing deletes it from the table.
+- **No replay.** `Resolve` marks a held record dealt with; it does not re-apply
+  it. Where the cursor was held, the record arrives again on its own; where it
+  advanced, a fix currently needs the window re-read by hand.
 - **No credential storage.** `SettingKind.Secret` says how a setting must be
   treated; nothing yet enforces it.
 - **No raw capture**, though
   [ADR-022](../../../docs/adr/0022-raw-capture-is-personal-data-with-an-expiry.md)
-  decides what it must do when it lands.
-- **No scheduling, no webhooks, no outbound writes.** `Slots.Fit` anticipates the
-  fixed-arity refusal an outbound write will need; there is no outbound write.
+  decides what it must do when it lands, and the quarantine payload already
+  follows it.
+- **No webhooks and no outbound writes.** `Slots.Fit` anticipates the fixed-arity
+  refusal an outbound write will need; there is no outbound write.

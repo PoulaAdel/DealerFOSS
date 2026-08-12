@@ -18,6 +18,7 @@ using DealerFOSS.Customers;
 using DealerFOSS.DataMigration;
 using DealerFOSS.Deals;
 using DealerFOSS.Finance;
+using DealerFOSS.Integrations;
 using DealerFOSS.Inventory;
 using DealerFOSS.Leads;
 using DealerFOSS.Organization;
@@ -81,6 +82,12 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
     public DbSet<StockReceipt> StockReceipts => Set<StockReceipt>();
 
     public DbSet<PartsSettings> PartsSettings => Set<PartsSettings>();
+
+    public DbSet<ConnectorCursor> ConnectorCursors => Set<ConnectorCursor>();
+
+    public DbSet<ConnectorRun> ConnectorRuns => Set<ConnectorRun>();
+
+    public DbSet<QuarantinedRecord> QuarantinedRecords => Set<QuarantinedRecord>();
 
     public DbSet<Account> Accounts => Set<Account>();
 

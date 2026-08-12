@@ -84,4 +84,16 @@ public static class IntegrationErrors
     public static Error SettingUnknown(string name) => Error.Validation(
         "integration.setting_unknown",
         $"The connector does not have a setting called '{name}'.");
+
+    // --- Runtime (doc 05 §4) ---------------------------------------------
+
+    /// <summary>
+    /// The connector offers a capability that nothing in the application knows
+    /// how to apply. **Non-transient** — it is a deployment mistake, and
+    /// fetching anyway would spend a provider's rate limit to throw the answer
+    /// away.
+    /// </summary>
+    public static Error NoSinkRegistered(string contract, int version) => Error.Conflict(
+        "integration.no_sink",
+        $"Nothing is registered to apply '{contract}' v{version} records.");
 }

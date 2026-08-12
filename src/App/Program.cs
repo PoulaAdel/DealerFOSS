@@ -25,6 +25,7 @@ using DealerFOSS.Finance;
 using DealerFOSS.RepairOrders;
 using DealerFOSS.Reporting;
 using DealerFOSS.Identity;
+using DealerFOSS.Integrations;
 using DealerFOSS.Inventory;
 using DealerFOSS.Leads;
 using DealerFOSS.Organization;
@@ -127,6 +128,11 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IAccounting, AccountingService>();
     builder.Services.AddScoped<IReporting, ReportingService>();
     builder.Services.AddScoped<IMigration, MigrationService>();
+
+    // The integration edge. No IRecordSink is registered yet, so any run reports
+    // itself Misconfigured rather than fetching — which is the honest state of a
+    // deployment with no capability wired to receive records.
+    builder.Services.AddScoped<ConnectorRuntime>();
 
     // Work that is not a request. It names the dealership it is working on
     // rather than inheriting one, because outside a request there is no

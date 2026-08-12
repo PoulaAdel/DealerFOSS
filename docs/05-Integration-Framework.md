@@ -97,6 +97,10 @@ The coexistence release commits to one production- or sandbox-certified connecto
 6. Advance a poll cursor only after the full page commits, and only across the range the provider actually covered.
 7. Update counts, timing, lag, warnings, and reconciliation status.
 
+Steps 4 through 7 are built, in `src/App/Integrations/ConnectorRuntime.cs`, along with the cursor, run-history and quarantine tables behind them. Steps 1 and 2 are not: there is no inbox, no webhook path and no poll lease, so the only thing that can start a run today is a caller holding a connector instance. Nothing implements `IRecordSink` either, which means step 5 has no capability to apply through and a real deployment reports every run as misconfigured. `src/App/Integrations/README.md` keeps the current list.
+
+Two details of the built runtime are worth stating here because they are easy to get wrong later. **The run row is written before the fetch**, so a process killed mid-run leaves an unfinished row rather than no row at all. And **a held cursor is recorded separately from the run's outcome**: a run can succeed, apply every record, and still not move, which is a different fact from a failure and has to stay visible as one.
+
 ### The range requested is not the range served
 
 A cursor is not a date. Real providers impose window arithmetic that has nothing to do with what the caller wants: a delta endpoint may take **no date parameters at all** and decide "recent" for itself; a history endpoint may cap a request at a fixed span and require chunking; a bulk endpoint may reach back only a few weeks, so history and bulk must be stitched with a deliberate overlap; a search may refuse any range older than a week and silently clamp the one it was given.
@@ -185,6 +189,8 @@ Fixture tests permit merge. Only sandbox/production evidence changes certificati
 Metrics show the shape of the last hour; they cannot answer "has this dealership been failing all week?" — and that is the question an operator actually asks, because a store producing zero rows every night looks identical to a quiet store.
 
 Each run records, per connector and per dealership, a durable row: started, finished, records applied, records quarantined, mapping warnings, the range covered, and the failure if there was one. One dealership's failure never ends the run for the others — and never disappears with it either.
+
+A run also records **whether the cursor moved**, separately from whether the run succeeded. The two are not the same question and the second one is the more urgent: a feed whose provider will not account for its window succeeds every night, applies records every night, and falls further behind every night. The cursor itself carries the count of consecutive holds, so the difference between an ordinary Tuesday and a store that has been stuck for a fortnight is a number rather than an inference.
 
 ## 8. Secrets and observability
 
