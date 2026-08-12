@@ -26,6 +26,8 @@ Statuses are **Proposed**, **Accepted**, **Superseded**, or **Rejected**. A mate
 | [ADR-018](0018-account-recovery-methods.md) | Account recovery is a set of pluggable proofs, not one flow | Accepted |
 | [ADR-019](0019-language-owns-direction-and-ui-only-translation.md) | The language owns the direction, and only the UI is translated | Accepted |
 | [ADR-020](0020-screen-shape-and-interface-standards.md) | A screen is five bands, and the standards each is held to | Accepted |
+| [ADR-021](0021-coerced-values-become-absent.md) | A value that does not fit becomes absent, never a substitute | Accepted |
+| [ADR-022](0022-raw-capture-is-personal-data-with-an-expiry.md) | Raw provider capture is a required facility, and it is personal data | Accepted |
 
 ## ADR file template
 

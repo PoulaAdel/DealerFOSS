@@ -89,6 +89,22 @@ Supersedes ADR-002. `src/Core`, `src/Identity`, `src/App` and no others; a new c
 
 Somebody who cannot sign in proves the account is theirs through one of several configurable methods — authenticator, passkey, email, WhatsApp/SMS — with a privileged manager-issued code as the backstop. A method that is not configured is not offered. See [`adr/0018`](adr/0018-account-recovery-methods.md).
 
+### ADR-019 — The language owns the direction, and only the UI is translated — Accepted
+
+Text direction derives from the chosen language rather than being separately selectable, and translation covers the interface only — dealership records are never translated. See [`adr/0019`](adr/0019-language-owns-direction-and-ui-only-translation.md).
+
+### ADR-020 — A screen is five bands, and the standards each is held to — Accepted
+
+Every dealership screen is one route built from five ordered bands, and a record detail is a band rather than a second route. See [`adr/0020`](adr/0020-screen-shape-and-interface-standards.md).
+
+### ADR-021 — A value that does not fit becomes absent, never a substitute — Accepted
+
+External data that cannot be stored as received is recorded as absent with the raw text kept as a mapping warning. Never a clamped bound, a zero, or a sentinel date — those are indistinguishable from real values downstream. See [`adr/0021`](adr/0021-coerced-values-become-absent.md).
+
+### ADR-022 — Raw provider capture is a required facility, and it is personal data — Accepted
+
+An integration that cannot show what a provider actually sent cannot be operated, so raw capture is part of the runtime — with a default retention in code, redaction of the body rather than only the header, and the same erasure obligations as any other personal data. See [`adr/0022`](adr/0022-raw-capture-is-personal-data-with-an-expiry.md).
+
 ## 4. Technology stack
 
 Versions follow supported LTS/current stable releases and are pinned centrally. Upgrades require compatibility tests, not a new ADR unless the technology changes.
