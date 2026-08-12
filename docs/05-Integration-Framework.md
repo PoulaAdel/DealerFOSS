@@ -1,7 +1,9 @@
 # 05 — Integration Framework
 
 ← [Data & Tenancy](04-Data-and-Tenancy.md) · Next: [Security & API](06-Security-and-API.md)  
-Visual: [Integration flow](diagrams/04-dms-sync-flow.md)
+Visual: [Integration flow](diagrams/04-dms-sync-flow.md)  
+Field evidence: [11 — Integration Field Lessons](11-Integration-Field-Lessons.md), which tests
+this document against four integrations that ran in production and names six places it would not hold.
 
 ## 1. Boundary and layout
 
