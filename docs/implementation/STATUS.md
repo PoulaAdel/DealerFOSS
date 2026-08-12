@@ -3,9 +3,10 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the interface standards** (complete). Every one of the 25 screens
-now reads from the translation catalogue
-Last verified: 2026-08-09 · `dotnet build` 0 warnings/0 errors, `dotnet test` 559/559,
+Current milestone: **the integration edge** (skeleton complete, nothing talks to a
+network yet). `src/App/Integrations/` holds the manifest, the window arithmetic,
+the coercion rules and a fixture connector, with 41 conformance tests
+Last verified: 2026-08-12 · `dotnet build` 0 warnings/0 errors, `dotnet test` 601/601,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
 `npm run typecheck`, `npm test` 255/255, and `npm run build` all pass
 
@@ -495,3 +496,25 @@ a privileged manager-issued code as the backstop. No longer blocked on a decisio
   Evidence: `dotnet build` 0/0, `dotnet test` **559/559**, `verify-e2e.ps1` **PASS**, `npm audit` clean, `npm run typecheck` clean, `npm test` **255/255** (was 245), `npm run build` ok.
 
   **Still open on the interface**: a signal band for untouched enquiries, detail bands on stock and customers, quick-action toolbars, systematic smart defaults, and a motion vocabulary for autosave and background sync — which do not exist as behaviours yet, so inventing their animation would be decoration.
+
+- **2026-08-12 — The integration edge, designed against four that already ran.** Four private DMS integration codebases were read end to end and the lessons distilled into a device-only analysis (`local/`, deliberately not published: it is third-party work). What is committed is the effect on our own design — six amendments to doc 05, two ADRs, and a connector skeleton that holds them.
+
+  **A cursor is not a date, and this is the expensive one.** Real endpoints cap a request at a fixed span, refuse anything older than a few days, or take no date parameters at all and decide "recent" for themselves. So `FetchWindowPolicy` declares the arithmetic as data and `FetchOutcome.Covered` reports what the provider *actually served* — nullable, because "it did not say" is the common answer. `Cursor.Advance` moves only from that, and refuses two ways: `coverage_unknown` when nothing was reported, `coverage_gap` when the served range starts after the cursor. **Rehearsed:** deleting the gap guard fails two tests, including the end-to-end one against the fixture.
+
+  **A value that does not fit becomes absent** (ADR-021). The row-correction pass is the best idea in the four codebases — one bad field must not fail a ten-thousand-row night — and its substitutions are the worst: an out-of-range amount becomes `0`, an impossible date becomes a sentinel, and both then read as fact forever. `Coerce` returns present-or-absent with the raw text kept, and `FieldValue<T>` has no way to read a default out of an absence. Truncation survives only for free text; `isKey: true` refuses instead, because a truncated key matches the *wrong* record rather than failing. **Rehearsed:** returning `0` for an out-of-range amount fails the test.
+
+  **Position is not a join key.** `ColumnSet.Align` quarantines when parallel provider arrays disagree in length. In the reviewed code this failure had already cost real data: labour descriptions and hours are permanently discarded there, with a comment explaining that the arrays stopped lining up.
+
+  **A poll deadline is not a retry count.** Five attempts is fifty seconds against a provider saying "check back in 10" and fifty minutes against one saying "600". `PollBudget` spends wall-clock time, `ProviderTiming` keeps the poll deadline and the transport retry budget apart, and passing the deadline returns `StillRunningAtProvider` — a state to report, not a failure to raise.
+
+  **Settings are declared one field at a time**, and validated when saved. A required setting left blank fails that dealership *loudly*; an undeclared key is refused rather than ignored. Both matter: in the reviewed code a blank spreadsheet column throws, the per-store catch swallows it, and that dealership is skipped silently every night.
+
+  **ADR-022** makes raw request/response capture a named runtime facility with retention in code — required to operate an integration at all, and personal data, so redaction covers the body and not only the header.
+
+  **A boundary was added before it could be crossed.** `FeatureBoundaryTests` now forbids Integrations from touching any capability's entities; **rehearsed** by giving a connector type a `Deal` and watching it fail.
+
+  Also corrected doc 05's layout, which still showed `src/Integrations/` as a fourth project and contradicted ADR-017.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **601/601** (was 559 — 41 new conformance and mapping tests, 1 new architecture case), `verify-e2e.ps1` **PASS**.
+
+  **Nothing here talks to a network.** No real connector, no inbox or outbox, no quarantine store, no replay, no reconciliation, no persistence — `ConnectorRun` is a shape with no table behind it, and cursors are not stored anywhere. `src/App/Integrations/README.md` lists all of it rather than leaving a half-built edge looking finished.

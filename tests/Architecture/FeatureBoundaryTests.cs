@@ -33,6 +33,11 @@ public sealed class FeatureBoundaryTests
         { "DealerFOSS.Inventory", ["DealerFOSS.Organization", "DealerFOSS.Customers", "DealerFOSS.Leads", "DealerFOSS.Deals"] },
         { "DealerFOSS.Leads", ["DealerFOSS.Organization", "DealerFOSS.Deals", "DealerFOSS.Accounting"] },
         { "DealerFOSS.Accounting", ["DealerFOSS.Customers", "DealerFOSS.Vehicles", "DealerFOSS.Inventory", "DealerFOSS.Leads", "DealerFOSS.Deals"] },
+        // Integrations adapts external systems and owns no dealership rules
+        // (doc 05 §1). It applies through the owning capability's contract, so
+        // it must not see any of them directly — a connector that could write a
+        // Deal row would be a route around every rule Deals enforces.
+        { "DealerFOSS.Integrations", ["DealerFOSS.Organization", "DealerFOSS.Customers", "DealerFOSS.Vehicles", "DealerFOSS.Inventory", "DealerFOSS.Leads", "DealerFOSS.Deals", "DealerFOSS.Accounting", "DealerFOSS.RepairOrders", "DealerFOSS.Parts", "DealerFOSS.Finance"] },
     };
 
     /// <summary>
