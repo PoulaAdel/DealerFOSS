@@ -59,7 +59,9 @@ A release candidate includes signed artifacts and SBOM, test and vulnerability d
 
 ## 6. Deployment and observability
 
-The small-install default is one application host, SQL Server, and filesystem document store. Redis is optional unless multiple application nodes are configured. Quartz.NET persists job schedules in SQL. Windows and Linux-container packages use the same application behavior.
+The small-install default is one application host, SQL Server, and filesystem document store. Redis is optional unless multiple application nodes are configured. Windows and Linux-container packages use the same application behavior.
+
+Scheduled work is planned on Quartz.NET with a durable SQL store and **is not built**. The only background work today is one in-process `BackgroundService` for CSV import, which is why nothing yet starts an integration run unattended. A scheduler is a prerequisite for unattended synchronization and for expiring quarantined records.
 
 OpenTelemetry provides correlated logs, metrics, and traces. Minimum dashboards/alerts cover:
 

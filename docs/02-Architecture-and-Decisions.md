@@ -118,7 +118,7 @@ Versions follow supported LTS/current stable releases and are pinned centrally. 
 | Identity | ASP.NET Core Identity, cookie/BFF for browser, OIDC/OAuth for federation/API |
 | Validation | FluentValidation |
 | Resilience | Polly |
-| Jobs | Quartz.NET with durable SQL store |
+| Jobs | Quartz.NET with a durable SQL store — **selected, not yet adopted.** Today the only background work is one in-process `BackgroundService` (CSV import), which is why nothing runs on a schedule |
 | Cache/coordination | in-process single-node; Redis for scale-out |
 | Telemetry | OpenTelemetry and Serilog |
 | Documents/PDF | `IDocumentStore`; QuestPDF or another AGPL-compatible renderer |
