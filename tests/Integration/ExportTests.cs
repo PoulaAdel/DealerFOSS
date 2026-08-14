@@ -177,7 +177,15 @@ public sealed class ExportTests(HostFixture fixture)
         // Created through the ordinary endpoint, so it has no external reference
         // at all. Without one, an export of it would be refused on import — an
         // export that cannot be imported is not an export.
-        var surname = "Roundtrip" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        // Letters only, and that is load-bearing rather than tidiness. Customer
+        // search pulls the digits out of the term and matches them against phone
+        // numbers, so a hex suffix like "A3F91C2E" also searches for "3912" and
+        // drags in anybody whose phone happens to contain it — making the "exactly
+        // one result" assertion at the end depend on what other tests had already
+        // created. It failed intermittently in a full run and passed alone, which
+        // is how this was found. Same defect and same fix as CustomerTests.
+        var surname = "Roundtrip" + new string([.. Guid.NewGuid().ToString("N")[..8]
+            .Select(c => char.IsAsciiDigit(c) ? (char)('q' + (c - '0')) : c)]).ToUpperInvariant();
 
         using var created = await SendAsync(
             HttpMethod.Post, "/api/v1/customers", Manager, "northgroup",
