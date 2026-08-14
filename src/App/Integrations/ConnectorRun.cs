@@ -69,6 +69,15 @@ public sealed class ConnectorRun : AuditableEntity
 
     public int RecordsApplied { get; private set; }
 
+    /// <summary>
+    /// Records already present and left alone. Separate from
+    /// <see cref="RecordsApplied"/> because a held cursor re-reads the same
+    /// window every night: without this column that reads as five hundred
+    /// records a night arriving, which is exactly the healthy-looking history a
+    /// stuck feed should not be able to produce.
+    /// </summary>
+    public int RecordsUnchanged { get; private set; }
+
     public int RecordsQuarantined { get; private set; }
 
     /// <summary>Values that did not survive intact but did not stop the record.</summary>
@@ -133,12 +142,14 @@ public sealed class ConnectorRun : AuditableEntity
     public void Completed(
         DateTimeOffset finishedAt,
         int applied,
+        int unchanged,
         int quarantined,
         int warnings,
         DateRange? covered)
     {
         Finish(finishedAt);
         RecordsApplied = applied;
+        RecordsUnchanged = unchanged;
         RecordsQuarantined = quarantined;
         WarningCount = warnings;
         CoveredFrom = covered?.Start;

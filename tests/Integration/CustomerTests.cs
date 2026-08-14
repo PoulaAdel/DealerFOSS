@@ -209,7 +209,24 @@ public sealed class CustomerTests(HostFixture fixture)
     // --- helpers -----------------------------------------------------------
 
     /// <summary>Surnames unique per run, so tests do not collide on shared data.</summary>
-    private static string UniqueSurname() => $"Test{Guid.NewGuid():N}"[..12];
+    /// <summary>
+    /// A surname unique to this test, containing <strong>no digits</strong>.
+    /// </summary>
+    /// <remarks>
+    /// The digits matter. Search extracts any digits from the term and matches
+    /// them against phone numbers, so a surname of "Test1a2b3c4d" also finds
+    /// every customer whose phone contains "1234" — and a ContainSingle()
+    /// assertion then fails for a reason that has nothing to do with names.
+    /// A letters-only surname leaves the digit clause switched off entirely
+    /// (the query guards it with <c>digits.Length > 0</c>), so the test is
+    /// about surnames again.
+    ///
+    /// This was latent for weeks and only became frequent when another suite
+    /// started adding customers that shared a phone number with the seed data.
+    /// </remarks>
+    private static string UniqueSurname() =>
+        "Test" + new string([.. Guid.NewGuid().ToString("N")[..8]
+            .Select(c => char.IsAsciiDigit(c) ? (char)('q' + (c - '0')) : c)]);
 
     private async Task<string> AddPersonAsync(
         string surname, string? email = null, string? phone = null)

@@ -111,10 +111,33 @@ the run as `Misconfigured` when nothing is registered, **before calling the
 provider**. Spending a rate limit to throw the answer away looks like a working
 integration, which is worse than a failure.
 
-Two obligations on an implementer, both load-bearing: **applying must be
-idempotent on `ExternalId`** — a held cursor means the same records arrive again
-tomorrow, by design — and **a sink must not save**, because the runtime owns the
-transaction.
+**One obligation on an implementer: applying must be idempotent on
+`ExternalId`.** A held cursor means the same records arrive again tomorrow, by
+design and routinely. Saving is fine — the runtime opens a transaction around the
+whole run, so a sink's `SaveChangesAsync` flushes without committing.
+
+`src/App/Customers/CustomerRecordSink.cs` is the worked example. It guards every
+insert with an external-reference lookup, reports an existing record as
+`Unchanged` rather than `Applied`, and quarantines what it cannot map.
+
+### A record arrives in contract vocabulary, not the provider's
+
+`ProviderRecord.Fields` is keyed by **contract** field names — see
+`ContractFields.cs`. Translating from the provider's own names is the connector's
+job, done once at the edge.
+
+> **What this prevents.** If a sink read raw provider names it would need one
+> mapping per provider, per capability. That is the multiplication that makes an
+> integration layer collapse at about the fourth provider, and it is invisible
+> until then.
+
+### An integration run happens on behalf of a named person
+
+`ConnectorRuntime` refuses to start without an authenticated caller, and the
+records it writes are subject to that person's permissions — the same rule the
+CSV import worker follows. There is deliberately no system principal: an
+integration that could write records nobody is accountable for would be the one
+path into this application leaving no name on the audit trail.
 
 ## Settings are declared, one field at a time
 
@@ -140,6 +163,7 @@ connector.
 | `ProviderShape.cs` | parallel arrays, and fixed-arity slots |
 | `PollBudget.cs` | waiting on an accepted job, measured in time |
 | `IRecordSink.cs` | how a record reaches the capability that owns it |
+| `ContractFields.cs` | the field vocabulary a contract is spoken in |
 | `ConnectorRuntime.cs` | the run: plan, fetch, apply, quarantine, advance, record |
 | `ConnectorCursor.cs` | how far a feed has been read, and why it stopped |
 | `ConnectorRun.cs` | per-dealership run history |
@@ -156,9 +180,14 @@ than one that says where it stops. **Nothing here talks to a network yet.**
 - **No real connector.** `Connectors/Fixture` is the only one, it fabricates its
   records, and a passing conformance suite means *fixture-tested* and nothing
   more (doc 05 §3).
-- **No sink is registered.** Nothing implements `IRecordSink`, so every run in a
-  real deployment reports itself `Misconfigured` — which is the honest state of
-  an edge with no capability wired to receive anything.
+- **Only one sink exists.** `Customers` v1 receives records; `Deals` and
+  `Service` are declared by the fixture and have nowhere to go, so a run against
+  either reports `Misconfigured`.
+- **A sink cannot update, only insert.** An existing customer is reported
+  `Unchanged` and left alone, because field ownership — who wins when a provider
+  and a member of staff disagree about a phone number — is undecided (doc 05 §4).
+  Overwriting somebody's correction with stale provider data would be worse than
+  doing nothing.
 - **Nothing calls the runtime.** No scheduler, no endpoint, no screen. A run
   happens because a test starts one.
 - **No quarantine purge.** `QuarantinedRecord.ExpiresAt` is enforced on *read*,

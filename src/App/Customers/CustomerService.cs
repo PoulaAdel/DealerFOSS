@@ -279,4 +279,13 @@ internal static class CustomerErrors
     public static Error UnknownKind { get; } = Error.Validation(
         "customers.unknown_kind",
         "A customer must be either a Person or a Business.");
+
+    /// <summary>
+    /// Used by <see cref="CustomerRecordSink"/> when an arriving record has no
+    /// usable surname. A customer with a blank display name is a row nobody can
+    /// find again, so it is quarantined rather than created.
+    /// </summary>
+    public static Error MissingName { get; } = Error.Validation(
+        "customers.missing_name",
+        "A customer record arrived without a usable name.");
 }

@@ -3,11 +3,10 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the integration runtime** (cursors, run history and quarantine
-are durable; nothing talks to a network yet). `src/App/Integrations/` holds the
-manifest, the window arithmetic, the coercion rules, a fixture connector and the
-runtime that enforces them, with 55 tests
-Last verified: 2026-08-12 · `dotnet build` 0 warnings/0 errors, `dotnet test` 615/615,
+Current milestone: **the integration loop closes**. A capability can now receive
+records from a connector: `CustomerRecordSink` applies Customers v1, idempotently,
+under a named user. Still nothing talks to a network
+Last verified: 2026-08-14 · `dotnet build` 0 warnings/0 errors, `dotnet test` 622/622,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
 `npm run typecheck`, `npm test` 255/255, and `npm run build` all pass
 
@@ -539,3 +538,23 @@ a privileged manager-issued code as the backstop. No longer blocked on a decisio
   Evidence: `dotnet build` 0/0, `dotnet test` **615/615** (was 601), `verify-e2e.ps1` **PASS**.
 
   **Still not built, and listed rather than implied.** No sink implementation, so a real deployment reports every run misconfigured. No scheduler, endpoint or screen — a run happens because a test starts one. No inbox, no webhooks, no poll lease, no reconciliation, no outbound writes. No quarantine purge (the expiry is enforced on read only) and no replay: `Resolve` marks a record dealt with without re-applying it.
+
+- **2026-08-14 — The integration loop closes: a record now reaches the capability that owns it.** The edge could fetch, translate, quarantine and track a cursor, and could deliver none of it: every run in a real deployment reported `Misconfigured` because nothing implemented `IRecordSink`. `CustomerRecordSink` is the first, and building it exposed two flaws in the port that a design review had not.
+
+  **`ProviderRecord.Fields` was documented as the provider's own field names.** Had that stood, every sink would have needed a mapping for every provider — one per capability, per vendor, which is the multiplication that makes an integration layer collapse at about the fourth provider and is invisible until then. Fields are now keyed by **contract** names, declared once in `ContractFields.cs`, and translating from the vendor's vocabulary is the connector's job. One sink now serves every provider.
+
+  **`IRecordSink` said "do not save", and no capability in this codebase could satisfy it** — every service saves, and the alternative was an awkward second no-save method on each one. The runtime now opens an explicit transaction around the whole run, so a sink's `SaveChangesAsync` flushes without committing and applying still commits together with the cursor. The invariant that actually matters is preserved and the contract got easier to obey rather than harder.
+
+  **Idempotence is the whole job of a sink**, because a held cursor re-reads the same window by design. Every insert is guarded by an external-reference lookup. **Rehearsed:** removing that guard fails three tests.
+
+  **An integration run happens on behalf of a named person**, following the CSV import worker rather than inventing a system principal — which would have been the one path into this application that writes records with nobody accountable. The runtime refuses to start without an authenticated caller. **Rehearsed:** removing the check fails the test.
+
+  **A new column, `RecordsUnchanged`, and it is not bookkeeping.** A feed whose cursor is held re-reads the same window nightly. Counting those as applied would show five hundred records a night arriving and look perfectly healthy. "3 applied, 497 unchanged" is the shape of a working feed; "500 applied" every night is the shape of a stuck one.
+
+  **A sink cannot update, only insert.** Field ownership is undecided (doc 05 §4), and silently overwriting a member of staff's correction with stale provider data would be worse than doing nothing. Named rather than left as a surprise.
+
+  **A pre-existing flaky test was found and fixed.** `A_customer_can_be_found_by_surname` failed once in a full run and passed in isolation. Cause: `UniqueSurname()` produced `Test` + hex, hex contains digits, and customer search extracts digits from the term and matches them against **phone numbers** — so a surname could pull in any customer whose phone contained those digits. Every test customer shared `5550102030`; the new fixture rows added ten more and turned a latent coincidence into a regular one. Surnames are now letters-only, which switches the digit clause off entirely, and fixture phones are distinct per record. **Verified by three consecutive clean full-suite runs**, not by one.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **622/622** (was 615), `verify-e2e.ps1` **PASS**.
+
+  **Still not built.** Only one sink — `Deals` and `Service` are declared by the fixture and have nowhere to go. No scheduler, endpoint or screen, so a run happens because a test starts one. No real connector, no inbox or outbox, no webhooks, no replay, no reconciliation, no quarantine purge.

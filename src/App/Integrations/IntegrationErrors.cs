@@ -96,4 +96,15 @@ public static class IntegrationErrors
     public static Error NoSinkRegistered(string contract, int version) => Error.Conflict(
         "integration.no_sink",
         $"Nothing is registered to apply '{contract}' v{version} records.");
+
+    /// <summary>
+    /// The run was started without a caller. An integration writes real
+    /// dealership records, so it happens **on behalf of a named user** and is
+    /// subject to that user's permissions — the same rule the CSV import worker
+    /// follows. Refused here rather than surfacing later as an unhandled
+    /// "no user is resolved" from deep inside a capability.
+    /// </summary>
+    public static readonly Error NoRunAsUser = Error.Conflict(
+        "integration.no_run_as_user",
+        "An integration run must be made on behalf of a named user.");
 }

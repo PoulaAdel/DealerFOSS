@@ -8,6 +8,7 @@
 //       nothing, and the conformance suite would pass against a connector that
 //       cannot survive a Tuesday.
 
+using System.Globalization;
 using DealerFOSS.Core;
 
 namespace DealerFOSS.Integrations.Connectors.Fixture;
@@ -42,11 +43,22 @@ public sealed class FixtureConnector : IConnector
 {
     private readonly FixtureBehaviour _behaviour;
     private readonly int _recordCount;
+    private readonly string _idPrefix;
 
-    public FixtureConnector(FixtureBehaviour behaviour = FixtureBehaviour.Wellbehaved, int recordCount = 2)
+    /// <param name="idPrefix">
+    /// Leads every fabricated external id. Exists because an external reference
+    /// is unique across a dealer organization — correctly, since it identifies
+    /// exactly one record — so two tests sharing a database and both inventing
+    /// "FIX-0001" would silently see each other's rows.
+    /// </param>
+    public FixtureConnector(
+        FixtureBehaviour behaviour = FixtureBehaviour.Wellbehaved,
+        int recordCount = 2,
+        string idPrefix = "FIX")
     {
         _behaviour = behaviour;
         _recordCount = recordCount;
+        _idPrefix = idPrefix;
     }
 
     /// <summary>The window a chunked history endpoint really imposes.</summary>
@@ -71,6 +83,7 @@ public sealed class FixtureConnector : IConnector
         [
             new ConnectorCapability("Deals", 1, SyncDirection.Read, HistoryWindow),
             new ConnectorCapability("Service", 1, SyncDirection.Read, DeltaWindow),
+            new ConnectorCapability(CustomerFields.Contract, CustomerFields.Version, SyncDirection.Read, HistoryWindow),
         ],
         Settings:
         [
@@ -96,17 +109,9 @@ public sealed class FixtureConnector : IConnector
         ArgumentNullException.ThrowIfNull(slice);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var records = Enumerable.Range(1, _recordCount)
-            .Select(i => new ProviderRecord(
-                $"FIX-{i:D4}",
-                i.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                new Dictionary<string, string?>(StringComparer.Ordinal)
-                {
-                    ["dealNumber"] = $"FIX-{i:D4}",
-                    ["frontGross"] = "1250.00",
-                    ["contractDate"] = "2026-03-04",
-                }))
-            .ToList();
+        var records = string.Equals(capability.Contract, CustomerFields.Contract, StringComparison.OrdinalIgnoreCase)
+            ? Customers()
+            : Deals();
 
         var covered = slice.Range is not { } asked
             ? null
@@ -128,4 +133,52 @@ public sealed class FixtureConnector : IConnector
 
         return Task.FromResult(Result.Success(new FetchOutcome(records, covered, [])));
     }
+
+    private List<ProviderRecord> Deals() =>
+        [.. Enumerable.Range(1, _recordCount).Select(i => new ProviderRecord(
+            $"{_idPrefix}-{i:D4}",
+            i.ToString(CultureInfo.InvariantCulture),
+            new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["deal.number"] = $"{_idPrefix}-{i:D4}",
+                ["deal.frontGross"] = "1250.00",
+                ["deal.contractDate"] = "2026-03-04",
+            }))];
+
+    /// <summary>
+    /// Customers in contract vocabulary, already translated from whatever the
+    /// provider called them — that translation is the connector's job.
+    /// </summary>
+    /// <remarks>
+    /// Every third record is unusable, and deliberately so. A fixture where all
+    /// the records are good proves a sink can insert, which was never in doubt;
+    /// what needs proving is that a bad record is quarantined without taking the
+    /// good ones down with it.
+    /// </remarks>
+    private List<ProviderRecord> Customers() =>
+        [.. Enumerable.Range(1, _recordCount).Select(i =>
+        {
+            var broken = i % 3 == 0;
+
+            return new ProviderRecord(
+                $"{_idPrefix}-{i:D4}",
+                i.ToString(CultureInfo.InvariantCulture),
+                new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    // A provider that sends no surname at all. Common on records
+                    // migrated from a system that only had a company field.
+                    [CustomerFields.LastName] = broken ? "   " : $"{_idPrefix}{i:D4}",
+                    [CustomerFields.FirstName] = "Sam",
+                    [CustomerFields.Kind] = "Person",
+                    [CustomerFields.Email] = $"{_idPrefix}{i:D4}@example.invalid",
+                    // Distinct per record rather than one shared number. Search
+                    // matches a term's digits against phone values, so a pile of
+                    // customers sharing a number turns every digit-bearing
+                    // search into a multi-row match somewhere else in the suite.
+                    [CustomerFields.Phone] = $"555{i:D7}",
+                    [CustomerFields.AddressLine1] = "1 Fixture Way",
+                    [CustomerFields.City] = "Testburg",
+                    [CustomerFields.Country] = "US",
+                });
+        })];
 }

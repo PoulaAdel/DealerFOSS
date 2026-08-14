@@ -11,13 +11,27 @@ using DealerFOSS.Core;
 
 namespace DealerFOSS.Integrations;
 
-/// <summary>One record as the provider sent it, before mapping.</summary>
-/// <param name="ExternalId">The provider's identifier, used to deduplicate.</param>
+/// <summary>One record, translated into contract vocabulary but not yet applied.</summary>
+/// <param name="ExternalId">
+/// The provider's identifier. This is what deduplication is keyed on, so a sink
+/// can be called twice with the same record and produce one row.
+/// </param>
 /// <param name="ExternalVersion">
 /// The provider's own version or sequence, preferred over its timestamps for
 /// ordering. Null when the provider offers none.
 /// </param>
-/// <param name="Fields">The raw values, keyed by the provider's own field names.</param>
+/// <param name="Fields">
+/// Values keyed by <strong>contract</strong> field names — see
+/// <see cref="CustomerFields"/>. Not the provider's own names: translating is
+/// the connector's job and doing it here, once, is what stops every sink having
+/// to learn every provider's vocabulary.
+/// <para>
+/// Values are still raw text. A sink coerces them with <see cref="Coerce"/>, so
+/// a value that will not fit becomes absent rather than a substitute (ADR-021).
+/// A field the provider did not supply is simply missing from the dictionary,
+/// which is different from present-and-empty and must stay so.
+/// </para>
+/// </param>
 public sealed record ProviderRecord(
     string ExternalId,
     string? ExternalVersion,

@@ -129,10 +129,12 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IReporting, ReportingService>();
     builder.Services.AddScoped<IMigration, MigrationService>();
 
-    // The integration edge. No IRecordSink is registered yet, so any run reports
-    // itself Misconfigured rather than fetching — which is the honest state of a
-    // deployment with no capability wired to receive records.
+    // The integration edge. A capability that can receive records from a
+    // connector registers an IRecordSink here; the runtime finds it by contract
+    // name and version. A contract with no sink is refused as Misconfigured
+    // before the provider is called.
     builder.Services.AddScoped<ConnectorRuntime>();
+    builder.Services.AddScoped<IRecordSink, CustomerRecordSink>();
 
     // Work that is not a request. It names the dealership it is working on
     // rather than inheriting one, because outside a request there is no

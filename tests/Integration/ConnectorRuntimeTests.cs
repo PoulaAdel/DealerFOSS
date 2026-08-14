@@ -172,7 +172,7 @@ public sealed class ConnectorRuntimeTests
         // distinguishable from a night that never ran. A throwing sink stands in
         // for the crash.
         await using var db = NewContext(Start);
-        var runtime = new ConnectorRuntime(db, [new ThrowingSink()], new FixedClock(Start));
+        var runtime = new ConnectorRuntime(db, [new ThrowingSink()], SignedIn(), new FixedClock(Start));
 
         var crash = async () => await runtime.RunAsync(
             new FixtureConnector(), _rooftop, Deals, Settings, TimeSpan.FromDays(7), CancellationToken.None);
@@ -194,7 +194,7 @@ public sealed class ConnectorRuntimeTests
         await RunAsync(new FixtureConnector(), Deals, Start.AddDays(1));
 
         await using var db = NewContext(Start.AddDays(2));
-        var runtime = new ConnectorRuntime(db, [new CountingSink()], new FixedClock(Start.AddDays(2)));
+        var runtime = new ConnectorRuntime(db, [new CountingSink()], SignedIn(), new FixedClock(Start.AddDays(2)));
 
         var history = await runtime.RecentRunsAsync(_rooftop, 10, CancellationToken.None);
 
@@ -212,7 +212,7 @@ public sealed class ConnectorRuntimeTests
         var settings = new Dictionary<string, string?>(Settings) { ["DepartmentId"] = "   " };
 
         await using var db = NewContext(Start);
-        var runtime = new ConnectorRuntime(db, [new CountingSink()], new FixedClock(Start));
+        var runtime = new ConnectorRuntime(db, [new CountingSink()], SignedIn(), new FixedClock(Start));
 
         var run = await runtime.RunAsync(
             connector, _rooftop, Deals, settings, TimeSpan.FromDays(7), CancellationToken.None);
@@ -234,7 +234,7 @@ public sealed class ConnectorRuntimeTests
         var connector = new RecordingConnector(new FixtureConnector());
 
         await using var db = NewContext(Start);
-        var runtime = new ConnectorRuntime(db, [], new FixedClock(Start));
+        var runtime = new ConnectorRuntime(db, [], SignedIn(), new FixedClock(Start));
 
         var run = await runtime.RunAsync(
             connector, _rooftop, Deals, Settings, TimeSpan.FromDays(7), CancellationToken.None);
@@ -250,7 +250,7 @@ public sealed class ConnectorRuntimeTests
     public async Task A_rejected_record_is_kept_with_the_payload_that_caused_it()
     {
         await using var db = NewContext(Start);
-        var runtime = new ConnectorRuntime(db, [new RejectingSink()], new FixedClock(Start));
+        var runtime = new ConnectorRuntime(db, [new RejectingSink()], SignedIn(), new FixedClock(Start));
 
         var run = await runtime.RunAsync(
             new FixtureConnector(), _rooftop, Deals, Settings, TimeSpan.FromDays(7), CancellationToken.None);
@@ -277,7 +277,7 @@ public sealed class ConnectorRuntimeTests
     public async Task A_quarantined_record_stops_being_listed_once_its_retention_runs_out()
     {
         await using var db = NewContext(Start);
-        var runtime = new ConnectorRuntime(db, [new RejectingSink()], new FixedClock(Start));
+        var runtime = new ConnectorRuntime(db, [new RejectingSink()], SignedIn(), new FixedClock(Start));
 
         await runtime.RunAsync(
             new FixtureConnector(), _rooftop, Deals, Settings, TimeSpan.FromDays(7), CancellationToken.None);
@@ -289,7 +289,7 @@ public sealed class ConnectorRuntimeTests
         // from the day somebody builds a purge job.
         var afterRetention = Start + QuarantinedRecord.Retention + TimeSpan.FromDays(1);
         await using var later = NewContext(afterRetention);
-        var expired = new ConnectorRuntime(later, [new CountingSink()], new FixedClock(afterRetention));
+        var expired = new ConnectorRuntime(later, [new CountingSink()], SignedIn(), new FixedClock(afterRetention));
 
         (await expired.OpenQuarantineAsync(_rooftop, CancellationToken.None)).Should().BeEmpty();
     }
@@ -298,7 +298,7 @@ public sealed class ConnectorRuntimeTests
     public async Task A_resolved_record_leaves_the_queue_but_stays_on_the_record()
     {
         await using var db = NewContext(Start);
-        var runtime = new ConnectorRuntime(db, [new RejectingSink()], new FixedClock(Start));
+        var runtime = new ConnectorRuntime(db, [new RejectingSink()], SignedIn(), new FixedClock(Start));
 
         await runtime.RunAsync(
             new FixtureConnector(), _rooftop, Deals, Settings, TimeSpan.FromDays(7), CancellationToken.None);
@@ -312,7 +312,7 @@ public sealed class ConnectorRuntimeTests
         await fixing.SaveChangesAsync(CancellationToken.None);
 
         await using var after = NewContext(Start.AddHours(3));
-        var runtime2 = new ConnectorRuntime(after, [new CountingSink()], new FixedClock(Start.AddHours(3)));
+        var runtime2 = new ConnectorRuntime(after, [new CountingSink()], SignedIn(), new FixedClock(Start.AddHours(3)));
 
         (await runtime2.OpenQuarantineAsync(_rooftop, CancellationToken.None)).Should().HaveCount(1);
         (await after.QuarantinedRecords.CountAsync(q => q.RooftopId == _rooftop, CancellationToken.None))
@@ -324,7 +324,7 @@ public sealed class ConnectorRuntimeTests
     private async Task<ConnectorRun> RunAsync(IConnector connector, ConnectorCapability capability, DateTimeOffset now)
     {
         await using var db = NewContext(now);
-        var runtime = new ConnectorRuntime(db, [new CountingSink(capability.Contract)], new FixedClock(now));
+        var runtime = new ConnectorRuntime(db, [new CountingSink(capability.Contract)], SignedIn(), new FixedClock(now));
 
         return await runtime.RunAsync(
             connector, _rooftop, capability, Settings, TimeSpan.FromDays(7), CancellationToken.None);
@@ -347,6 +347,18 @@ public sealed class ConnectorRuntimeTests
                 .UseSqlServer(HostFixture.TenantConnectionString(Tenant))
                 .Options,
             new FixedClock(now));
+
+    /// <summary>
+    /// A run happens on behalf of a named user, whose permissions apply to
+    /// every record it writes. These tests use fake sinks, so the identity is
+    /// never exercised — CustomerRecordSinkTests proves it against the real one.
+    /// </summary>
+    private static CurrentUser SignedIn()
+    {
+        var user = new CurrentUser();
+        user.Set(Guid.NewGuid());
+        return user;
+    }
 
     private sealed class FixedClock(DateTimeOffset now) : IClock
     {
@@ -387,7 +399,7 @@ public sealed class ConnectorRuntimeTests
             RooftopId rooftopId,
             IReadOnlyList<ProviderRecord> records,
             CancellationToken cancellationToken) =>
-            Task.FromResult(Result.Success(new ApplyOutcome(records.Count, [], [])));
+            Task.FromResult(Result.Success(new ApplyOutcome(records.Count, 0, [], [])));
     }
 
     private sealed class RejectingSink : IRecordSink
@@ -405,7 +417,7 @@ public sealed class ConnectorRuntimeTests
                 .Select(r => new RejectedRecord(r, IntegrationErrors.ColumnsMisaligned))
                 .ToList();
 
-            return Task.FromResult(Result.Success(new ApplyOutcome(0, rejected, [])));
+            return Task.FromResult(Result.Success(new ApplyOutcome(0, 0, rejected, [])));
         }
     }
 

@@ -4,15 +4,20 @@
 //       feed. Returns the run record it wrote.
 // Edit: two orderings in here are load-bearing and neither is the obvious one.
 //
-//       1. THE RUN ROW IS SAVED BEFORE ANY WORK. A process killed mid-fetch
-//          leaves a row with FinishedAt null, and that unfinished row is the
-//          only evidence the attempt happened. Writing one tidy row at the end
-//          instead would make a crash look like a night that never ran.
+//       1. THE RUN ROW IS SAVED BEFORE ANY WORK, AND OUTSIDE THE TRANSACTION.
+//          A process killed mid-fetch leaves a row with FinishedAt null, and
+//          that unfinished row is the only evidence the attempt happened. Inside
+//          the transaction it would roll back with everything else, and a crash
+//          would look like a night that never ran.
 //       2. SLICES ADVANCE THE CURSOR ONE AT A TIME, IN ORDER, AND THE FIRST ONE
 //          THAT CANNOT ACCOUNT FOR ITSELF STOPS THE LOOP. Fetching the rest
 //          would leave the cursor behind a period that had already been read,
 //          so the next run re-reads across a boundary the provider has already
 //          moved past.
+//       3. APPLYING AND ADVANCING SHARE ONE TRANSACTION. The dangerous half is
+//          a cursor that moved over records that did not land: that is silent
+//          data loss. The reverse — records applied, cursor unmoved — costs a
+//          re-read, which the idempotency rule on IRecordSink makes free.
 //
 //       There is no interface over this class. Nothing else in the application
 //       calls it — capabilities are called BY it, through IRecordSink — and an
@@ -25,18 +30,32 @@
 
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using DealerFOSS.Core;
 using DealerFOSS.Data;
 
 namespace DealerFOSS.Integrations;
 
 /// <summary>Runs one dealership's feed and records what happened.</summary>
-public sealed class ConnectorRuntime(TenantDb db, IEnumerable<IRecordSink> sinks, IClock clock)
+/// <remarks>
+/// A run happens **on behalf of a named user**, whose permissions apply to every
+/// record it writes. Set <see cref="ICurrentUser"/> on the scope before calling,
+/// exactly as the CSV import worker does. There is deliberately no system
+/// principal: an integration that could write records nobody is accountable for
+/// would be the one way into this application that leaves no name on the audit
+/// trail.
+/// </remarks>
+public sealed class ConnectorRuntime(
+    TenantDb db,
+    IEnumerable<IRecordSink> sinks,
+    ICurrentUser currentUser,
+    IClock clock)
 {
     private static readonly JsonSerializerOptions PayloadFormat = new(JsonSerializerDefaults.Web);
 
     private readonly TenantDb _db = db;
     private readonly IReadOnlyList<IRecordSink> _sinks = [.. sinks];
+    private readonly ICurrentUser _currentUser = currentUser;
     private readonly IClock _clock = clock;
 
     /// <summary>
@@ -65,6 +84,14 @@ public sealed class ConnectorRuntime(TenantDb db, IEnumerable<IRecordSink> sinks
         _db.Set<ConnectorRun>().Add(run);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+        if (!_currentUser.IsAuthenticated)
+        {
+            // Checked here so it is a recorded refusal rather than an exception
+            // thrown from inside whichever capability the sink happened to call.
+            return await MisconfiguredAsync(run, IntegrationErrors.NoRunAsUser, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var configured = connector.Manifest.ValidateSettings(settings);
         if (configured.IsFailure)
         {
@@ -81,17 +108,25 @@ public sealed class ConnectorRuntime(TenantDb db, IEnumerable<IRecordSink> sinks
             return await MisconfiguredAsync(run, missing, cancellationToken).ConfigureAwait(false);
         }
 
+        // Everything from here commits together or not at all. A sink is free to
+        // save inside this — SaveChangesAsync flushes, the commit below is what
+        // makes it durable.
+        await using var transaction = await _db.Database
+            .BeginTransactionAsync(cancellationToken)
+            .ConfigureAwait(false);
+
         var cursor = await LoadCursorAsync(provider, rooftopId, capability, startedAt, firstRunLookback, cancellationToken)
             .ConfigureAwait(false);
 
         // A cursor is meaningless for an endpoint that takes no dates: it decides
         // what "recent" means and never says, so there is no position to hold.
         // Such a feed relies entirely on the sink being idempotent, which is the
-        // first obligation IRecordSink states.
+        // one obligation IRecordSink states.
         var wanted = new DateRange(cursor?.Position ?? startedAt - firstRunLookback, startedAt);
         var plan = FetchWindow.Plan(capability.Window, wanted, startedAt);
 
         var applied = 0;
+        var unchanged = 0;
         var quarantined = 0;
         var warnings = 0;
         DateTimeOffset? servedFrom = null;
@@ -105,9 +140,11 @@ public sealed class ConnectorRuntime(TenantDb db, IEnumerable<IRecordSink> sinks
 
             if (fetched.IsFailure)
             {
-                run.Failed(_clock.UtcNow, fetched.Error.Code);
-                await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                return run;
+                // Earlier slices genuinely succeeded, so their records and their
+                // cursor movement are committed rather than thrown away. Partial
+                // progress, honestly recorded, is the correct outcome here.
+                return await StopAsync(run, transaction, fetched.Error.Code, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             var outcome = fetched.Value;
@@ -119,12 +156,12 @@ public sealed class ConnectorRuntime(TenantDb db, IEnumerable<IRecordSink> sinks
 
             if (applyResult.IsFailure)
             {
-                run.Failed(_clock.UtcNow, applyResult.Error.Code);
-                await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                return run;
+                return await StopAsync(run, transaction, applyResult.Error.Code, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             applied += applyResult.Value.Applied;
+            unchanged += applyResult.Value.Unchanged;
             warnings += applyResult.Value.Warnings.Count;
             quarantined += Quarantine(provider, rooftopId, capability, applyResult.Value.Rejected);
 
@@ -149,9 +186,25 @@ public sealed class ConnectorRuntime(TenantDb db, IEnumerable<IRecordSink> sinks
         }
 
         DateRange? served = servedFrom is { } from && servedTo is { } to ? new DateRange(from, to) : null;
-        run.Completed(_clock.UtcNow, applied, quarantined, warnings, served);
+        run.Completed(_clock.UtcNow, applied, unchanged, quarantined, warnings, served);
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return run;
+    }
+
+    /// <summary>
+    /// End the run early, keeping whatever earlier slices committed.
+    /// </summary>
+    private async Task<ConnectorRun> StopAsync(
+        ConnectorRun run,
+        IDbContextTransaction transaction,
+        string failureCode,
+        CancellationToken cancellationToken)
+    {
+        run.Failed(_clock.UtcNow, failureCode);
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         return run;
     }
 
