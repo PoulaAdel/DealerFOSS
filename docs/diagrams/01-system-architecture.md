@@ -17,7 +17,7 @@ flowchart TB
     HostDB[("Host catalog<br/>tenant routing only")]
     TenantDB[("Dealer organization DB<br/>one or many rooftops · business data")]
     Docs[("Document store")]
-    Redis[["Redis<br/>optional; required for scale-out"]]
+    Redis[["Redis<br/>optional, required for scale-out"]]
     External["DMS and provider APIs"]
 
     Browser -->|HTTPS · session cookie| Host

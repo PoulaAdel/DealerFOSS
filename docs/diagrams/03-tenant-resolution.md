@@ -20,14 +20,14 @@ sequenceDiagram
     participant D as Dealer organization DB
 
     B->>T: request + session cookie + tenant key
-    T->>H: resolve tenant; is it Active?
+    T->>H: resolve tenant, and is it Active?
     H-->>T: encrypted connection reference
-    Note over T: decrypt and place in ITenantContext;<br/>TenantDb for this request now binds to it.<br/>Unknown or suspended → refused here.
+    Note over T: decrypt into ITenantContext.<br/>TenantDb for this request now binds to it.<br/>Unknown or suspended → refused here.
     T->>U: tenant known
     U->>D: validate session against the database
     Note over U: checked every request, so revoking<br/>a session takes effect immediately.<br/>Owes a second factor → enrolment path only.
     U->>F: caller known
-    Note over F: a write must echo the anti-forgery<br/>token; a read passes straight through.
+    Note over F: a write must echo the anti-forgery<br/>token. A read passes straight through.
     F->>E: authorized to proceed
     E->>A: may this user do X, at this rooftop?
     A-->>E: allowed rooftop set
