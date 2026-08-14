@@ -126,6 +126,11 @@ export function LeadsPage() {
         </div>
       )}
 
+      <Untouched
+        load={load}
+        onOpen={(id) => void open(id)}
+      />
+
       {selected === null ? null : (
         <LeadPanel
           lead={selected}
@@ -145,6 +150,66 @@ export function LeadsPage() {
         onOpen={(id) => void open(id)}
       />
     </>
+  );
+}
+
+/**
+ * ADR-020's signal band: enquiries with nobody's name on them.
+ *
+ * An unassigned enquiry is the one that rots. Everything else on this screen has
+ * an owner who will be asked about it; this has nobody, so it goes stale in
+ * silence and the dealership finds out when the customer buys elsewhere.
+ *
+ * Drawn entirely from the list already loaded — no extra request, per ADR-020 —
+ * and **rendered only when there is something in it**. A permanent "0 need
+ * attention" panel trains people to stop reading the one spot they must not stop
+ * reading.
+ *
+ * It reflects the filters above it, which is deliberate: with "only mine" ticked
+ * the server never sends unassigned enquiries, so the band is empty and correct.
+ * Showing work excluded by the reader's own filter would be a different bug.
+ */
+function Untouched({
+  load, onOpen,
+}: {
+  load: Load;
+  onOpen: (leadId: string) => void;
+}) {
+  const { t } = useI18n();
+
+  if (load.kind !== 'ready') {
+    return null;
+  }
+
+  // Oldest first: the one that has been ignored longest is the one to call.
+  const waiting = load.leads
+    .filter((lead) => lead.assignedTo === null && lead.status !== 'Won' && lead.status !== 'Lost')
+    .sort((a, b) => b.daysOpen - a.daysOpen);
+
+  if (waiting.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="panel panel--signal">
+      <h2>{t('leads.untouchedTitle')}</h2>
+      <p className="note">{t('leads.untouchedNote', { count: waiting.length })}</p>
+
+      <ul className="calls" aria-label={t('leads.untouchedTitle')}>
+        {waiting.map((lead) => (
+          <li key={lead.id}>
+            <button type="button" className="link" onClick={() => onOpen(lead.id)}>
+              {lead.customerName}
+            </button>{' '}
+            <span className="muted">
+              {lead.vehicleOfInterest ?? t('leads.noParticularCar')}
+              {' · '}
+              {t('leads.waitingDays', { count: lead.daysOpen })}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -271,7 +336,7 @@ function LeadPanel({
       ) : null}
 
       <h3>{t('leads.whatHappened')}</h3>
-      <ol className="history">
+      <ol className="history" aria-label={t('leads.whatHappened')}>
         {[...lead.history].reverse().map((entry, index) => (
           <li key={`${entry.toStatus}-${entry.occurredAt}-${index}`}>
             <span className="strong">{label('leadStatus', entry.toStatus)}</span>{' '}

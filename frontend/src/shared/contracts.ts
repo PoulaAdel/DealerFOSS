@@ -50,6 +50,41 @@ export interface CustomerSummary {
   primaryPhone: string | null;
 }
 
+/** One customer in full, as the detail band below the results shows them. */
+export interface CustomerDetail {
+  id: string;
+  displayName: string;
+  kind: 'Person' | 'Business';
+  firstName: string;
+  lastName: string;
+  homeRooftopId: string | null;
+  address: AddressView | null;
+  contactPoints: ContactPointView[];
+  /** Their id in the system this record came from. Null when typed in by a person. */
+  externalReference: string | null;
+}
+
+export type ContactKind = 'Email' | 'Phone' | 'Mobile';
+
+export interface ContactPointView {
+  id: string;
+  // The union rather than `string`, so useEnumLabel can translate it. A bare
+  // string forces an unchecked cast at every call site and loses the guarantee
+  // that the catalogue has a label for whatever arrives.
+  kind: ContactKind;
+  value: string;
+  isPrimary: boolean;
+}
+
+export interface AddressView {
+  line1: string;
+  line2: string | null;
+  city: string;
+  administrativeArea: string | null;
+  postalCode: string | null;
+  country: string;
+}
+
 /**
  * Enough to identify a car in a list. A customer's own car, which is not the
  * same thing as a unit in stock — see InventoryUnit for that.
@@ -98,6 +133,22 @@ export interface InventoryUnitSummary {
   vehicleId: string;
   vin: string;
   vehicleDisplayName: string;
+}
+
+/** One unit in full, as the detail band below the stock list shows it. */
+export interface InventoryUnitDetail extends InventoryUnitSummary {
+  costAmount: number | null;
+  costCurrency: string | null;
+  /** ISO date. Null for a unit taken in before the field was recorded. */
+  acquiredOn: string | null;
+  history: InventoryStatusEntry[];
+}
+
+export interface InventoryStatusEntry {
+  fromStatus: InventoryStatus | null;
+  toStatus: InventoryStatus;
+  occurredAt: string;
+  note: string | null;
 }
 
 export type InventoryStatus =

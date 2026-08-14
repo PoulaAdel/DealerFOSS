@@ -239,6 +239,14 @@ export const ru: Catalogue = {
   'stock.countCapped': 'Первые {count} машин в наличии. Возможно, есть ещё.',
   'stock.cappedNote':
     'Показаны первые {count}. Возможно, есть ещё — сузьте выборку фильтром по статусу, пока нет постраничного вывода.',
+  'stock.detailFor': 'Складской номер {stock}',
+  'stock.cost': 'Себестоимость',
+  'stock.costUnknown': 'не указана',
+  'stock.acquired': 'Принят на склад',
+  'stock.historyTitle': 'Что с ним происходило',
+  'stock.historyEmpty': 'По этому автомобилю пока ничего не записано.',
+  'stock.takenIn': 'Принят на склад со статусом «{to}»',
+  'stock.moved': '{from} → {to}',
 
   'enum.accountKind.Asset': 'Актив',
   'enum.accountKind.Liability': 'Обязательство',
@@ -264,6 +272,10 @@ export const ru: Catalogue = {
 
   'enum.customerKind.Person': 'Физлицо',
   'enum.customerKind.Business': 'Компания',
+
+  'enum.contactKind.Email': 'Эл. почта',
+  'enum.contactKind.Phone': 'Телефон',
+  'enum.contactKind.Mobile': 'Мобильный',
 
   'customers.title': 'Клиенты',
   'customers.find': 'Найти человека',
@@ -302,6 +314,11 @@ export const ru: Catalogue = {
   'customers.duplicateLede':
     'Вторая карточка на того же человека разрывает его историю — обслуживание, сделки и контакты перестают сходиться. Проверьте, нет ли его среди этих.',
   'customers.noContactDetails': 'контактов нет',
+  'customers.cameFrom': 'Источник',
+  'customers.waysToReach': 'Как связаться',
+  'customers.primary': 'основной',
+  'customers.address': 'Адрес',
+  'customers.noAddress': 'Адрес не указан.',
   'customers.oneOfTheseIsThem': 'Это кто-то из них',
   'customers.addAnyway': 'Никто из них — всё равно добавить',
 
@@ -410,6 +427,20 @@ export const ru: Catalogue = {
   'leads.everything': 'Все',
   'leads.onlyMine': 'Только мои',
   'leads.take': 'Принять обращение',
+  'leads.untouchedTitle': 'Ими никто не занимается',
+  'leads.untouchedNote': {
+    one: 'У {count} обращения нет ответственного.',
+    few: 'У {count} обращений нет ответственного.',
+    many: 'У {count} обращений нет ответственного.',
+    other: 'У {count} обращения нет ответственного.',
+  },
+  'leads.noParticularCar': 'без конкретного автомобиля',
+  'leads.waitingDays': {
+    one: 'ждёт {count} день',
+    few: 'ждёт {count} дня',
+    many: 'ждёт {count} дней',
+    other: 'ждёт {count} дня',
+  },
   'leads.loading': 'Загрузка обращений…',
   'leads.denied':
     'У вас нет доступа к обращениям этой площадки. Если это ошибка, обратитесь к руководителю.',

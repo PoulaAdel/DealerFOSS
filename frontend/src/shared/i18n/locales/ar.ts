@@ -250,6 +250,14 @@ export const ar: Catalogue = {
   'stock.countCapped': 'أول {count} سيارة في المخزون. قد يكون هناك المزيد.',
   'stock.cappedNote':
     'يُعرض أول {count}. قد يكون هناك المزيد — ضيِّق النطاق بمرشِّح الحالة إلى أن يتوفَّر تقسيم الصفحات.',
+  'stock.detailFor': 'رقم المخزون {stock}',
+  'stock.cost': 'التكلفة',
+  'stock.costUnknown': 'غير مسجَّلة',
+  'stock.acquired': 'تاريخ الإدخال',
+  'stock.historyTitle': 'ما جرى لها',
+  'stock.historyEmpty': 'لم يُسجَّل شيء بعد على هذه السيارة.',
+  'stock.takenIn': 'أُدخلت إلى المخزون بحالة {to}',
+  'stock.moved': '{from} ← {to}',
 
   'enum.accountKind.Asset': 'أصول',
   'enum.accountKind.Liability': 'التزامات',
@@ -274,6 +282,10 @@ export const ar: Catalogue = {
 
   'enum.customerKind.Person': 'فرد',
   'enum.customerKind.Business': 'شركة',
+
+  'enum.contactKind.Email': 'البريد الإلكتروني',
+  'enum.contactKind.Phone': 'هاتف',
+  'enum.contactKind.Mobile': 'جوال',
 
   'customers.title': 'العملاء',
   'customers.find': 'ابحث عن شخص',
@@ -314,6 +326,11 @@ export const ar: Catalogue = {
   'customers.duplicateLede':
     'إنشاء سجل ثانٍ للشخص نفسه يُجزِّئ تاريخه — فتتوقف بيانات الصيانة والصفقات ووسائل الاتصال عن التطابق. تحقَّق مما إذا كان أحد هؤلاء هو المقصود.',
   'customers.noContactDetails': 'لا توجد وسائل اتصال',
+  'customers.cameFrom': 'مصدره',
+  'customers.waysToReach': 'طرق التواصل',
+  'customers.primary': 'الأساسي',
+  'customers.address': 'العنوان',
+  'customers.noAddress': 'لا يوجد عنوان مسجَّل.',
   'customers.oneOfTheseIsThem': 'أحد هؤلاء هو المقصود',
   'customers.addAnyway': 'لا أحد منهم — أضِف على أي حال',
 
@@ -427,6 +444,24 @@ export const ar: Catalogue = {
   'leads.everything': 'الكل',
   'leads.onlyMine': 'ما يخصّني فقط',
   'leads.take': 'تسجيل استفسار',
+  'leads.untouchedTitle': 'لا أحد يتابع هذه',
+  'leads.untouchedNote': {
+    zero: 'لا توجد طلبات بلا مسؤول.',
+    one: 'طلب واحد بلا مسؤول.',
+    two: 'طلبان بلا مسؤول.',
+    few: '{count} طلبات بلا مسؤول.',
+    many: '{count} طلبًا بلا مسؤول.',
+    other: '{count} طلب بلا مسؤول.',
+  },
+  'leads.noParticularCar': 'بدون سيارة محددة',
+  'leads.waitingDays': {
+    zero: 'بلا انتظار',
+    one: 'بانتظار يوم واحد',
+    two: 'بانتظار يومين',
+    few: 'بانتظار {count} أيام',
+    many: 'بانتظار {count} يومًا',
+    other: 'بانتظار {count} يوم',
+  },
   'leads.loading': 'جارٍ تحميل الاستفسارات…',
   'leads.denied':
     'ليس لديك صلاحية الاطّلاع على استفسارات هذا الفرع. راجع مديرك إن كنت ترى أن هذا غير صحيح.',

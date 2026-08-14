@@ -55,8 +55,8 @@ up a second time, so it cannot drift away from the books.
 service — one thing either way, because the application serves its own screens.
 There is no separate web server to set up.
 
-**The application now speaks five languages: English, French, German, Russian
-and Arabic.** Somebody picks their language on the sign-in screen — before they
+**The application now speaks six languages: English, Spanish, French, German,
+Russian and Arabic.** Somebody picks their language on the sign-in screen — before they
 have an account, because otherwise you have to read English to find out how to
 stop reading English — and every screen a dealership uses follows: the menu, the
 buttons, the column headings, the empty screens, and the sentences that explain
@@ -82,7 +82,7 @@ It moved from 69% because the service lane went from half-built to three-quarter
 applications to lenders remain, and those need a lender to test against.
 
 The languages did not move that number, and it would be dishonest if they had.
-It measures how much of the *plan* exists, and speaking five languages was never
+It measures how much of the *plan* exists, and speaking six languages was never
 a line on the plan — it makes what is already built usable by more people rather
 than building more of it.
 
@@ -528,7 +528,7 @@ but sends nobody a reminder, because there is no way to send a message yet.
   trial balance. There is nothing for a quarter or a year, no comparison between
   locations side by side, and no league table by salesperson or advisor
 - ~~Reading the dashboard in another language~~ — built. Every screen in the
-  product, the dashboard included, now reads in whichever of the five languages
+  product, the dashboard included, now reads in whichever of the six languages
   you pick. What is still English: the server's own refusal messages about a
   *record* ("a deal's terms are frozen once it is submitted"), and the printed
   paperwork a customer takes away

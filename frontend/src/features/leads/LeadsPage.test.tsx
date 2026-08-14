@@ -74,8 +74,22 @@ function renderLeads() {
 
 const signedIn = { ok: true as const, body: { userId: me, mustEnrolSecondFactor: false } };
 
+/**
+ * The row's own control, not the one in the signal band above it.
+ *
+ * An unassigned enquiry appears twice on purpose: once in "Nobody is chasing
+ * these" and once in the list. Both open the same record, so an unscoped
+ * `getByRole('button', { name })` matches two elements and throws. Scoping to
+ * the table is also the more precise assertion — these tests are about the
+ * list.
+ */
+function rowButton(name: string) {
+  return within(screen.getByRole('table')).getByRole('button', { name });
+}
+
 async function openLead() {
-  await userEvent.click(await screen.findByRole('button', { name: 'Priya Raman' }));
+  await screen.findByRole('table');
+  await userEvent.click(rowButton('Priya Raman'));
 }
 
 const colleague = (over: Record<string, unknown> = {}) => ({
@@ -153,16 +167,47 @@ describe('the enquiry list', () => {
     mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [summary] } });
     renderLeads();
 
-    expect(await screen.findByRole('button', { name: 'Priya Raman' })).toBeVisible();
-    expect(screen.getByText('2021 Toyota RAV4 XLE')).toBeVisible();
-    expect(screen.getByText('Walk-in')).toBeVisible();
-    expect(screen.getByText('Nobody yet')).toBeVisible();
+    await screen.findByRole('table');
+    const list = within(screen.getByRole('table'));
+
+    expect(rowButton('Priya Raman')).toBeVisible();
+    expect(list.getByText('2021 Toyota RAV4 XLE')).toBeVisible();
+    expect(list.getByText('Walk-in')).toBeVisible();
+    expect(list.getByText('Nobody yet')).toBeVisible();
+  });
+
+  it('puts an enquiry nobody owns in the signal band, and takes it out once claimed', async () => {
+    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [summary] } });
+    renderLeads();
+
+    // The band exists because the enquiry has nobody's name on it. That is the
+    // one that rots — everything else on this screen has an owner who will be
+    // asked about it.
+    const band = await screen.findByRole('heading', { name: 'Nobody is chasing these' });
+    expect(band).toBeVisible();
+    expect(screen.getByText('1 enquiry has no name against it.')).toBeVisible();
+    expect(screen.getByText(/waiting 4 days/)).toBeVisible();
+  });
+
+  it('says nothing at all when every enquiry has somebody chasing it', async () => {
+    // A permanently present "0 need attention" panel trains people to stop
+    // reading the one spot they must not stop reading, so it disappears.
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads': { ok: true, body: [{ ...summary, assignedToUserId: 'u9', assignedTo: 'Ada Nwosu' }] },
+    });
+    renderLeads();
+
+    await screen.findByRole('table');
+    expect(
+      screen.queryByRole('heading', { name: 'Nobody is chasing these' }),
+    ).not.toBeInTheDocument();
   });
 
   it('defaults to the ones still being chased', async () => {
     mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [summary] } });
     renderLeads();
-    await screen.findByRole('button', { name: 'Priya Raman' });
+    await screen.findByRole('table');
 
     expect(apiCalls().some((c) => c.path.includes('openOnly=true'))).toBe(true);
   });
@@ -170,7 +215,7 @@ describe('the enquiry list', () => {
   it('narrows to mine without offering a rooftop to choose', async () => {
     mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [summary] } });
     renderLeads();
-    await screen.findByRole('button', { name: 'Priya Raman' });
+    await screen.findByRole('table');
 
     await userEvent.click(screen.getByLabelText('Only mine'));
 
@@ -366,7 +411,7 @@ describe('one enquiry', () => {
     renderLeads();
     await openLead();
 
-    const history = await screen.findByRole('list');
+    const history = await screen.findByRole('list', { name: 'What happened' });
     const entries = within(history).getAllByRole('listitem');
     expect(entries[0]).toHaveTextContent('Working');
     expect(entries[0]).toHaveTextContent('Left a voicemail.');

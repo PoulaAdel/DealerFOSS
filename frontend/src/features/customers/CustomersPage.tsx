@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
 import { useDebounced } from '../../shared/useDebounced';
-import type { CustomerSummary, NewCustomer } from '../../shared/contracts';
+import type { CustomerDetail, CustomerSummary, NewCustomer } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
@@ -52,6 +52,8 @@ export function CustomersPage() {
 
   const [search, setSearch] = useState('');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
+
+  const [selected, setSelected] = useState<CustomerDetail | null>(null);
 
   const [adding, setAdding] = useState<Adding>({ step: 'closed' });
   const [draft, setDraft] = useState<NewCustomer>(empty);
@@ -95,6 +97,14 @@ export function CustomersPage() {
     void find(settled, stop.signal);
     return () => stop.abort();
   }, [find, settled]);
+
+  async function open(customerId: string) {
+    try {
+      setSelected(await api<CustomerDetail>(`/customers/${customerId}`));
+    } catch (failure) {
+      setLoad({ kind: 'failed', message: describe(failure) });
+    }
+  }
 
   /**
    * Looks for anybody who might already be this person before creating them.
@@ -204,8 +214,104 @@ export function CustomersPage() {
         />
       )}
 
-      <Results load={load} onRetry={() => void find(search)} />
+      <Results
+        load={load}
+        onRetry={() => void find(search)}
+        selectedId={selected?.id ?? null}
+        onOpen={(id) => void open(id)}
+      />
+
+      {selected === null ? null : (
+        <CustomerPanel customer={selected} onClose={() => setSelected(null)} />
+      )}
     </>
+  );
+}
+
+/**
+ * ADR-020's detail band: the selected customer, inline, below the results.
+ *
+ * The zero-jump rule matters more here than anywhere. A receptionist opens this
+ * screen fifty times a day with somebody on the telephone; a route per customer
+ * would throw away the search term they just typed every time they looked at a
+ * record, and they would type it again with the caller waiting.
+ */
+function CustomerPanel({
+  customer, onClose,
+}: {
+  customer: CustomerDetail;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const label = useEnumLabel();
+
+  const address = customer.address;
+
+  return (
+    <section className="panel panel--detail" aria-label={customer.displayName}>
+      <h2>{customer.displayName}</h2>
+
+      <dl className="facts">
+        <dt>{t('customers.colKind')}</dt>
+        <dd>
+          <span className={`chip chip--${customer.kind.toLowerCase()}`}>
+            {label('customerKind', customer.kind)}
+          </span>
+        </dd>
+
+        {customer.externalReference === null ? null : (
+          <>
+            <dt>{t('customers.cameFrom')}</dt>
+            {/* An identifier from another system: a code, so it reads left to
+                right however the page runs. */}
+            <dd className="mono" dir="ltr">{customer.externalReference}</dd>
+          </>
+        )}
+      </dl>
+
+      <h3>{t('customers.waysToReach')}</h3>
+      {customer.contactPoints.length === 0 ? (
+        <p className="note">{t('customers.noContactDetails')}</p>
+      ) : (
+        <ul className="history" aria-label={t('customers.waysToReach')}>
+          {customer.contactPoints.map((point) => (
+            <li key={point.id}>
+              {/* An email address and a telephone number both read left to
+                  right, whichever way the page runs. */}
+              <span className="strong" dir="ltr">{point.value}</span>{' '}
+              <span className="muted">
+                {label('contactKind', point.kind)}
+                {point.isPrimary ? ` · ${t('customers.primary')}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3>{t('customers.address')}</h3>
+      {address === null ? (
+        <p className="note">{t('customers.noAddress')}</p>
+      ) : (
+        <p className="note">
+          {[
+            address.line1,
+            address.line2,
+            address.city,
+            address.administrativeArea,
+            address.postalCode,
+            address.country,
+          ]
+            .filter((part) => part !== null && part !== '')
+            .join(', ')}
+        </p>
+      )}
+
+      <div className="actions">
+        <button type="button" onClick={onClose}>
+          {t('common.close')}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -335,7 +441,14 @@ function AddPanel({
   );
 }
 
-function Results({ load, onRetry }: { load: Load; onRetry: () => void }) {
+function Results({
+  load, onRetry, selectedId, onOpen,
+}: {
+  load: Load;
+  onRetry: () => void;
+  selectedId: string | null;
+  onOpen: (customerId: string) => void;
+}) {
   const { t } = useI18n();
 
   switch (load.kind) {
@@ -367,12 +480,18 @@ function Results({ load, onRetry }: { load: Load; onRetry: () => void }) {
       return load.customers.length === 0 ? (
         <p className="state">{t('customers.noMatches')}</p>
       ) : (
-        <CustomerTable customers={load.customers} />
+        <CustomerTable customers={load.customers} selectedId={selectedId} onOpen={onOpen} />
       );
   }
 }
 
-function CustomerTable({ customers }: { customers: CustomerSummary[] }) {
+function CustomerTable({
+  customers, selectedId, onOpen,
+}: {
+  customers: CustomerSummary[];
+  selectedId: string | null;
+  onOpen: (customerId: string) => void;
+}) {
   const { t } = useI18n();
   const label = useEnumLabel();
 
@@ -397,8 +516,14 @@ function CustomerTable({ customers }: { customers: CustomerSummary[] }) {
         </thead>
         <tbody>
           {customers.map((customer) => (
-            <tr key={customer.id}>
-              <td>{customer.displayName}</td>
+            <tr key={customer.id} aria-selected={customer.id === selectedId}>
+              <td>
+                {/* A button and not a clickable row: a <tr> with an onClick is
+                    unreachable by keyboard and announces nothing. */}
+                <button type="button" className="cell-open" onClick={() => onOpen(customer.id)}>
+                  {customer.displayName}
+                </button>
+              </td>
               <td>
                 <span className={`chip chip--${customer.kind.toLowerCase()}`}>
                   {label('customerKind', customer.kind)}

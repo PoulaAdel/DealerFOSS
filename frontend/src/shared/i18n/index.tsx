@@ -14,7 +14,7 @@
 //       bug with a switch in front of it.
 //
 //       TWO. English is the schema. `MessageKey` is `keyof typeof en`, and the
-//       other four catalogues are typed as `Catalogue`, so a key added to
+//       other five catalogues are typed as `Catalogue`, so a key added to
 //       English and forgotten in Russian fails `npm run typecheck` rather than
 //       shipping an English sentence into a Russian screen. Warnings are errors
 //       here, and this is the cheapest place to catch a missing translation.
@@ -39,6 +39,7 @@ import {
 } from 'react';
 import { isPluralForms, type Message, type Substitutions } from './catalogue';
 import { en } from './locales/en';
+import { es } from './locales/es';
 import { fr } from './locales/fr';
 import { de } from './locales/de';
 import { ru } from './locales/ru';
@@ -60,7 +61,7 @@ export type MessageKey = keyof typeof en;
 /** A complete translation. Missing a key is a compile error, not a runtime gap. */
 export type Catalogue = Readonly<Record<MessageKey, Message>>;
 
-const CATALOGUES: Readonly<Record<LanguageCode, Catalogue>> = { en, fr, de, ru, ar };
+const CATALOGUES: Readonly<Record<LanguageCode, Catalogue>> = { en, es, fr, de, ru, ar };
 
 const LANGUAGE_KEY = 'dfoss.language';
 

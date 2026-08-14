@@ -235,6 +235,14 @@ export const fr: Catalogue = {
   'stock.countCapped': 'Les {count} premiers véhicules en stock. Il peut y en avoir d’autres.',
   'stock.cappedNote':
     'Affichage des {count} premiers. Il peut y en avoir d’autres — affinez avec le filtre de statut en attendant la pagination.',
+  'stock.detailFor': 'Numéro de stock {stock}',
+  'stock.cost': 'Coût',
+  'stock.costUnknown': 'non renseigné',
+  'stock.acquired': 'Entré en stock',
+  'stock.historyTitle': 'Ce qui s’est passé',
+  'stock.historyEmpty': 'Rien n’a encore été enregistré pour cette voiture.',
+  'stock.takenIn': 'Entré en stock comme {to}',
+  'stock.moved': '{from} → {to}',
 
   // Vocabulaire du plan comptable général.
   'enum.accountKind.Asset': 'Actif',
@@ -262,6 +270,10 @@ export const fr: Catalogue = {
 
   'enum.customerKind.Person': 'Particulier',
   'enum.customerKind.Business': 'Entreprise',
+
+  'enum.contactKind.Email': 'E-mail',
+  'enum.contactKind.Phone': 'Téléphone',
+  'enum.contactKind.Mobile': 'Portable',
 
   'customers.title': 'Clients',
   'customers.find': 'Rechercher quelqu’un',
@@ -295,6 +307,11 @@ export const fr: Catalogue = {
   'customers.duplicateLede':
     'Créer une seconde fiche pour la même personne divise son historique — son entretien, ses ventes et ses coordonnées cessent de concorder. Vérifiez si l’une de ces fiches est la bonne.',
   'customers.noContactDetails': 'aucune coordonnée',
+  'customers.cameFrom': 'Provient de',
+  'customers.waysToReach': 'Comment le joindre',
+  'customers.primary': 'principal',
+  'customers.address': 'Adresse',
+  'customers.noAddress': 'Aucune adresse enregistrée.',
   'customers.oneOfTheseIsThem': 'C’est l’une de ces fiches',
   'customers.addAnyway': 'Aucune de celles-ci — ajouter quand même',
 
@@ -397,6 +414,16 @@ export const fr: Catalogue = {
   'leads.everything': 'Tout',
   'leads.onlyMine': 'Seulement les miennes',
   'leads.take': 'Enregistrer une demande',
+  'leads.untouchedTitle': 'Personne ne s’en occupe',
+  'leads.untouchedNote': {
+    one: '{count} demande n’a personne à son nom.',
+    other: '{count} demandes n’ont personne à leur nom.',
+  },
+  'leads.noParticularCar': 'aucune voiture précise',
+  'leads.waitingDays': {
+    one: 'en attente depuis {count} jour',
+    other: 'en attente depuis {count} jours',
+  },
   'leads.loading': 'Chargement des demandes…',
   'leads.denied':
     'Vous n’avez pas accès aux demandes de ce site. Demandez à un responsable si cela vous semble anormal.',

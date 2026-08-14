@@ -243,6 +243,14 @@ export const en = {
   'stock.countCapped': 'The first {count} cars in stock. There may be more.',
   'stock.cappedNote':
     'Showing the first {count}. There may be more — narrow it with the status filter until paging exists.',
+  'stock.detailFor': 'Stock number {stock}',
+  'stock.cost': 'Cost',
+  'stock.costUnknown': 'not recorded',
+  'stock.acquired': 'Taken in',
+  'stock.historyTitle': 'What has happened to it',
+  'stock.historyEmpty': 'Nothing has been recorded against this car yet.',
+  'stock.takenIn': 'Taken into stock as {to}',
+  'stock.moved': '{from} → {to}',
 
   'enum.accountKind.Asset': 'Asset',
   'enum.accountKind.Liability': 'Liability',
@@ -270,6 +278,10 @@ export const en = {
   // --- Customers ------------------------------------------------------------
   'enum.customerKind.Person': 'Person',
   'enum.customerKind.Business': 'Business',
+
+  'enum.contactKind.Email': 'Email',
+  'enum.contactKind.Phone': 'Phone',
+  'enum.contactKind.Mobile': 'Mobile',
 
   'customers.title': 'Customers',
   'customers.find': 'Find someone',
@@ -303,6 +315,11 @@ export const en = {
   'customers.duplicateLede':
     'Adding a second record for the same person splits their history — their service, their deals, and their contact details stop agreeing. Check whether one of these is them.',
   'customers.noContactDetails': 'no contact details',
+  'customers.cameFrom': 'Came from',
+  'customers.waysToReach': 'Ways to reach them',
+  'customers.primary': 'main one',
+  'customers.address': 'Address',
+  'customers.noAddress': 'No address recorded.',
   'customers.oneOfTheseIsThem': 'One of these is them',
   'customers.addAnyway': 'None of these — add anyway',
 
@@ -411,6 +428,16 @@ export const en = {
   'leads.everything': 'Everything',
   'leads.onlyMine': 'Only mine',
   'leads.take': 'Take an enquiry',
+  'leads.untouchedTitle': 'Nobody is chasing these',
+  'leads.untouchedNote': {
+    one: '{count} enquiry has no name against it.',
+    other: '{count} enquiries have no name against them.',
+  },
+  'leads.noParticularCar': 'no particular car',
+  'leads.waitingDays': {
+    one: 'waiting {count} day',
+    other: 'waiting {count} days',
+  },
   'leads.loading': 'Loading the enquiries…',
   'leads.denied':
     'You do not have access to enquiries at this location. Ask a manager if you think that is wrong.',

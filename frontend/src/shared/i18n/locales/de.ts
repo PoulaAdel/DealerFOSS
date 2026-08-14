@@ -236,6 +236,14 @@ export const de: Catalogue = {
   'stock.countCapped': 'Die ersten {count} Fahrzeuge im Bestand. Es können mehr sein.',
   'stock.cappedNote':
     'Es werden die ersten {count} angezeigt. Es können mehr sein — grenzen Sie es mit dem Statusfilter ein, bis es eine Seitenblätterung gibt.',
+  'stock.detailFor': 'Bestandsnummer {stock}',
+  'stock.cost': 'Kosten',
+  'stock.costUnknown': 'nicht erfasst',
+  'stock.acquired': 'Aufgenommen am',
+  'stock.historyTitle': 'Was damit geschehen ist',
+  'stock.historyEmpty': 'Zu diesem Fahrzeug wurde noch nichts erfasst.',
+  'stock.takenIn': 'Als {to} in den Bestand aufgenommen',
+  'stock.moved': '{from} → {to}',
 
   // HGB-Bilanzgliederung.
   'enum.accountKind.Asset': 'Aktiva',
@@ -263,6 +271,10 @@ export const de: Catalogue = {
 
   'enum.customerKind.Person': 'Privatperson',
   'enum.customerKind.Business': 'Firma',
+
+  'enum.contactKind.Email': 'E-Mail',
+  'enum.contactKind.Phone': 'Telefon',
+  'enum.contactKind.Mobile': 'Mobil',
 
   'customers.title': 'Kunden',
   'customers.find': 'Jemanden suchen',
@@ -296,6 +308,11 @@ export const de: Catalogue = {
   'customers.duplicateLede':
     'Ein zweiter Datensatz für dieselbe Person zerteilt ihre Historie — Werkstatt, Verkäufe und Kontaktdaten stimmen dann nicht mehr überein. Prüfen Sie, ob eine dieser Personen gemeint ist.',
   'customers.noContactDetails': 'keine Kontaktdaten',
+  'customers.cameFrom': 'Stammt aus',
+  'customers.waysToReach': 'So ist er erreichbar',
+  'customers.primary': 'Haupt',
+  'customers.address': 'Adresse',
+  'customers.noAddress': 'Keine Adresse erfasst.',
   'customers.oneOfTheseIsThem': 'Eine davon ist es',
   'customers.addAnyway': 'Keine davon — trotzdem anlegen',
 
@@ -399,6 +416,16 @@ export const de: Catalogue = {
   'leads.everything': 'Alle',
   'leads.onlyMine': 'Nur meine',
   'leads.take': 'Anfrage aufnehmen',
+  'leads.untouchedTitle': 'Darum kümmert sich niemand',
+  'leads.untouchedNote': {
+    one: 'Bei {count} Anfrage steht kein Name.',
+    other: 'Bei {count} Anfragen steht kein Name.',
+  },
+  'leads.noParticularCar': 'kein bestimmtes Fahrzeug',
+  'leads.waitingDays': {
+    one: 'wartet seit {count} Tag',
+    other: 'wartet seit {count} Tagen',
+  },
   'leads.loading': 'Anfragen werden geladen…',
   'leads.denied':
     'Sie haben keinen Zugriff auf die Anfragen dieses Standorts. Fragen Sie eine Führungskraft, falls das nicht stimmen sollte.',

@@ -9,7 +9,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ApiError, api } from '../../shared/api';
-import { inventoryStatuses, type InventoryStatus, type InventoryUnitSummary } from '../../shared/contracts';
+import {
+  inventoryStatuses,
+  type InventoryStatus,
+  type InventoryUnitDetail,
+  type InventoryUnitSummary,
+} from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
@@ -35,6 +40,7 @@ export function InventoryPage() {
 
   const [status, setStatus] = useState<InventoryStatus | ''>('');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
+  const [selected, setSelected] = useState<InventoryUnitDetail | null>(null);
 
   // Somebody arrived here from a car named somewhere else — the dashboard's
   // oldest-stock list is the one that does this. Landing on the whole list
@@ -67,6 +73,14 @@ export function InventoryPage() {
   useEffect(() => {
     void fetchUnits();
   }, [fetchUnits]);
+
+  async function open(unitId: string) {
+    try {
+      setSelected(await api<InventoryUnitDetail>(`/inventory/${unitId}`));
+    } catch (failure) {
+      setLoad({ kind: 'failed', message: describe(failure) });
+    }
+  }
 
   return (
     <>
@@ -101,12 +115,108 @@ export function InventoryPage() {
         </p>
       )}
 
-      <Body load={load} onRetry={fetchUnits} />
+      <Body
+        load={load}
+        onRetry={fetchUnits}
+        selectedId={selected?.id ?? null}
+        onOpen={(id) => void open(id)}
+      />
+
+      {selected === null ? null : (
+        <UnitDetail unit={selected} onClose={() => setSelected(null)} />
+      )}
     </>
   );
 }
 
-function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
+/**
+ * ADR-020's detail band: the selected unit, inline, below the list.
+ *
+ * Below and not instead. The zero-jump rule is the point — the list keeps its
+ * filter and its scroll position, and going back is not an operation. A route
+ * per record would lose all three every time somebody checked a cost.
+ */
+function UnitDetail({ unit, onClose }: { unit: InventoryUnitDetail; onClose: () => void }) {
+  const { t, format } = useI18n();
+  const label = useEnumLabel();
+
+  return (
+    <section className="panel panel--detail" aria-label={t('stock.detailFor', { stock: unit.stockNumber })}>
+      <h2>
+        <span className="mono" dir="ltr">{unit.stockNumber}</span> — {unit.vehicleDisplayName}
+      </h2>
+
+      <dl className="facts">
+        <dt>{t('stock.colVin')}</dt>
+        <dd className="mono" dir="ltr">{unit.vin}</dd>
+
+        <dt>{t('stock.colStatus')}</dt>
+        <dd>
+          <span className={`chip chip--${unit.status.toLowerCase()}`}>
+            {label('inventoryStatus', unit.status)}
+          </span>
+        </dd>
+
+        <dt>{t('stock.cost')}</dt>
+        <dd>
+          {/* A cost of zero is a real figure and must not read as "unknown",
+              so the check is for null rather than falsy. */}
+          {unit.costAmount === null || unit.costCurrency === null
+            ? <span className="muted">{t('stock.costUnknown')}</span>
+            : format.money(unit.costAmount, unit.costCurrency)}
+        </dd>
+
+        <dt>{t('stock.acquired')}</dt>
+        <dd>
+          {unit.acquiredOn === null
+            ? <span className="muted">—</span>
+            : format.date(unit.acquiredOn)}
+        </dd>
+      </dl>
+
+      <h3>{t('stock.historyTitle')}</h3>
+      {unit.history.length === 0 ? (
+        <p className="note">{t('stock.historyEmpty')}</p>
+      ) : (
+        // Newest first, and named for a screen-reader user moving between
+        // landmarks — the same shape the deal desk uses.
+        <ol className="history" aria-label={t('stock.historyTitle')}>
+          {[...unit.history].reverse().map((entry, index) => (
+            <li key={`${entry.toStatus}-${entry.occurredAt}-${index}`}>
+              <span className="strong">
+                {entry.fromStatus === null
+                  ? t('stock.takenIn', { to: label('inventoryStatus', entry.toStatus) })
+                  : t('stock.moved', {
+                      from: label('inventoryStatus', entry.fromStatus),
+                      to: label('inventoryStatus', entry.toStatus),
+                    })}
+              </span>{' '}
+              <span className="muted">
+                {format.dateTime(entry.occurredAt)}
+                {entry.note === null ? '' : ` — ${entry.note}`}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      <div className="actions">
+        <button type="button" onClick={onClose}>
+          {t('common.close')}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function Body({
+  load, onRetry, selectedId, onOpen,
+}: {
+  load: Load;
+  onRetry: () => void;
+  selectedId: string | null;
+  onOpen: (unitId: string) => void;
+}) {
   const { t } = useI18n();
 
   switch (load.kind) {
@@ -138,12 +248,18 @@ function Body({ load, onRetry }: { load: Load; onRetry: () => void }) {
       return load.units.length === 0 ? (
         <p className="state">{t('stock.empty')}</p>
       ) : (
-        <UnitTable units={load.units} />
+        <UnitTable units={load.units} selectedId={selectedId} onOpen={onOpen} />
       );
   }
 }
 
-function UnitTable({ units }: { units: InventoryUnitSummary[] }) {
+function UnitTable({
+  units, selectedId, onOpen,
+}: {
+  units: InventoryUnitSummary[];
+  selectedId: string | null;
+  onOpen: (unitId: string) => void;
+}) {
   const { t } = useI18n();
   const label = useEnumLabel();
 
@@ -174,12 +290,21 @@ function UnitTable({ units }: { units: InventoryUnitSummary[] }) {
         </thead>
         <tbody>
           {units.map((unit) => (
-            <tr key={unit.id}>
+            <tr key={unit.id} aria-selected={unit.id === selectedId}>
               {/* Stock numbers and VINs are codes, not prose: they read left to
                   right whatever the page does, or the bidi algorithm reorders
                   the groups and somebody reads out the wrong VIN. */}
               <td className="mono" dir="ltr">
-                {unit.stockNumber}
+                {/* A button and not a row-level onClick. A clickable <tr> is
+                    invisible to a keyboard and announces nothing; this is
+                    reachable by Tab and reads as "open stock number X". */}
+                <button
+                  type="button"
+                  className="cell-open mono"
+                  onClick={() => onOpen(unit.id)}
+                >
+                  {unit.stockNumber}
+                </button>
               </td>
               <td>{unit.vehicleDisplayName}</td>
               <td className="mono vin" dir="ltr">

@@ -1394,6 +1394,72 @@ td a,
   margin-block-start: 0;
 }
 
+/* --- The detail band ------------------------------------------------------
+   ADR-020's fifth band: the selected record, inline, below the list. It was
+   named in the ADR and had no rules behind it — exactly the trap `.panel--signal`
+   fell into as `.panel--waiting`, so the second occurrence is worth naming.
+
+   The point of the band is the ZERO-JUMP RULE: the list stays on screen, with
+   its filter and its scroll position, and "back" is not an operation. That is
+   why the emphasis here is quieter than the signal band's — this is where you
+   already are, not something shouting for attention. A left border ties it to
+   the row above it; the accent is reserved for work somebody owes. */
+
+.panel--detail {
+  max-width: none;
+  margin-block-start: 16px;
+  border-inline-start: 4px solid var(--line);
+}
+
+.panel--detail > h2 {
+  margin-block-start: 0;
+}
+
+/* The selected row, so the eye can get back to it after reading the band. */
+tbody tr[aria-selected='true'] {
+  background: var(--accent-soft);
+}
+
+/* A cell whose whole content is the control that opens the detail. The button
+   fills the cell so the target is the row's height, not the text's — WCAG
+   2.5.8 wants 24px and a bare link in a dense table does not reach it. */
+.cell-open {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  inline-size: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cell-open:hover {
+  text-decoration: underline;
+}
+
+/* Label/value pairs inside a detail band. Deliberately not a table: a table
+   announces rows and columns to a screen reader, and this is a description of
+   one record. */
+.facts {
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  font-size: 0.9rem;
+}
+
+.facts dt {
+  color: var(--ink-3);
+}
+
+.facts dd {
+  margin: 0;
+}
+
 /* Each row is one thing somebody owes: a call, an approval. Not a table —
    these are actions, and a table invites reading rather than doing. */
 .calls {

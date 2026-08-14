@@ -3,12 +3,12 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the integration loop closes**. A capability can now receive
-records from a connector: `CustomerRecordSink` applies Customers v1, idempotently,
-under a named user. Still nothing talks to a network
+Current milestone: **the five-band screen shape is real, and the sixth language
+is Spanish**. Every band ADR-020 names now has CSS behind it and a screen using
+it. Still nothing talks to a network
 Last verified: 2026-08-14 · `dotnet build` 0 warnings/0 errors, `dotnet test` 622/622,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 255/255, and `npm run build` all pass
+`npm run typecheck`, `npm test` 257/257, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -385,7 +385,7 @@ are not engineering, and none is blocked by anything in this repository:
   nothing shortens that. The coexistence release cannot meet its own success
   criteria without it.
 - **Decide the target market.** The compliance scope in doc 01 §4 is entirely US
-  while the product ships five languages with RTL. Both cannot be the priority,
+  while the product ships six languages with RTL. Both cannot be the priority,
   and the answer decides whether the tax and title work is worth doing at all.
 
 **Ready to build, when building is the right thing:**
@@ -576,3 +576,15 @@ to come.
   Evidence: `dotnet build` 0/0, `dotnet test` **622/622** (was 615), `verify-e2e.ps1` **PASS**.
 
   **Still not built.** Only one sink — `Deals` and `Service` are declared by the fixture and have nowhere to go. No scheduler, endpoint or screen, so a run happens because a test starts one. No real connector, no inbox or outbox, no webhooks, no replay, no reconciliation, no quarantine purge.
+
+- **2026-08-14 — Every band ADR-020 names now exists, and the sixth language is Spanish.** The screen standard listed five bands; `panel--detail` had **no CSS rules behind it at all** — named in the ADR, referenced nowhere, so "the shape is applied everywhere" was true of four bands out of five. It now has rules and three screens using it: stock shows what a car cost, when it was taken in, and everything that has happened to it; customers show every way to reach them, their address, and where the record came from. Enquiries gained the missing signal band — the enquiries with nobody's name against them, oldest first, absent entirely when there are none, because a panel that says "nothing to worry about" is a panel people learn to skip.
+
+  **The row controls are buttons, not clickable rows.** A `<tr onClick>` is unreachable by keyboard and announces nothing to a screen reader; the stock number and the customer name are now real buttons.
+
+  **A defect the browser found and the DOM tests could not:** the stock history renders in a causally impossible order — *Available → On hold*, then *taken in as Incoming*, then *Incoming → Available*. The car becomes available before it arrives. The cause is not the screen. Two history rows carry an identical `OccurredAt` to the microsecond, and all **ten** history queries across Inventory, Deals, Leads, RepairOrders and Accounting order by that column alone, with no tiebreak — so SQL Server is free to return tied rows in any order, and did. Recorded rather than fixed here: it needs a stable ordering key on five append-only tables and a migration, which is its own milestone.
+
+  **Spanish** is 795 keys, `usted` throughout, and vocabulary chosen to be neutral across Spain and Latin America ("repuestos", "vehículo") rather than idiomatic in one and odd in the other. All six catalogues carry **identical key sets**. French `Mobile` was still the English word and is now `Portable`; the language-count test had to be told about Spanish, which is the test doing its job.
+
+  **Seen in a real browser** against seeded data, not only in jsdom: the signal band listing two unclaimed enquiries oldest-first (50 days, then 13), both detail bands opening on real records, Spanish rendering while the customer's name and address stay untranslated, and Arabic still turning the page round with `dir="rtl"`, no horizontal page scroll (measured by scrolling, not by trusting `scrollWidth`), and the correct CLDR **dual** form for two enquiries — a plural category English does not have.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` 622/622, `verify-e2e.ps1` PASS, `npm audit` clean, `npm run typecheck`, `npm test` **257/257** (was 255), `npm run build`.

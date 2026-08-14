@@ -216,6 +216,7 @@ describe('the catalogues', () => {
       ['admin.colName', 'the same word in German'],
       ['admin.colStatus', 'the same word in German'],
       ['admin.colSchema', 'the same word in German'],
+      ['stock.moved', 'two placeholders and an arrow; only Arabic turns the arrow round'],
     ]);
 
     for (const [name, catalogue] of Object.entries(catalogues)) {
@@ -233,7 +234,7 @@ describe('the catalogues', () => {
   });
 
   it('give every language a direction and a name in itself', () => {
-    expect(LANGUAGES.map((l) => l.code)).toEqual(['en', 'fr', 'de', 'ru', 'ar']);
+    expect(LANGUAGES.map((l) => l.code)).toEqual(['en', 'es', 'fr', 'de', 'ru', 'ar']);
     expect(LANGUAGES.filter((l) => l.direction === 'rtl').map((l) => l.code)).toEqual(['ar']);
 
     for (const language of LANGUAGES) {

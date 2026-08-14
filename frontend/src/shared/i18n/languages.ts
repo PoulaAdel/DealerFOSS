@@ -1,8 +1,8 @@
-// languages — the five the application speaks, and what each one needs.
+// languages — the six the application speaks, and what each one needs.
 //
 // Use:  LANGUAGES for a picker; languageFor(code) to resolve one safely.
 // Edit: direction is a property OF THE LANGUAGE, not a separate preference.
-//       Arabic runs right to left; the other four run left to right. Nobody
+//       Arabic runs right to left; the other five run left to right. Nobody
 //       reads Arabic in a left-to-right layout, and offering the combination as
 //       a choice invites somebody to pick the broken one. The old manual
 //       LTR/RTL toggle is gone for exactly that reason.
@@ -14,8 +14,8 @@
 //       We use `ar` (not `ar-EG`) so digits stay Western — a dealership's price
 //       list mixing ٣ and 3 is harder to read, not more authentic.
 
-/** The five languages the UI ships in. */
-export type LanguageCode = 'en' | 'fr' | 'de' | 'ru' | 'ar';
+/** The six languages the UI ships in. */
+export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'ru' | 'ar';
 
 export type Direction = 'ltr' | 'rtl';
 
@@ -32,6 +32,7 @@ export interface Language {
 
 export const LANGUAGES: readonly Language[] = [
   { code: 'en', nativeName: 'English', englishName: 'English', direction: 'ltr', locale: 'en' },
+  { code: 'es', nativeName: 'Español', englishName: 'Spanish', direction: 'ltr', locale: 'es' },
   { code: 'fr', nativeName: 'Français', englishName: 'French', direction: 'ltr', locale: 'fr' },
   { code: 'de', nativeName: 'Deutsch', englishName: 'German', direction: 'ltr', locale: 'de' },
   { code: 'ru', nativeName: 'Русский', englishName: 'Russian', direction: 'ltr', locale: 'ru' },
