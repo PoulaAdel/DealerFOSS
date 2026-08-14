@@ -66,6 +66,7 @@ internal sealed class InventoryStatusChangeConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.FromStatus).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.ToStatus).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.Note).HasMaxLength(500);
-        builder.HasIndex(x => new { x.InventoryUnitId, x.OccurredAt });
+        builder.Property(x => x.Sequence).ValueGeneratedOnAdd().UseIdentityColumn();
+        builder.HasIndex(x => new { x.InventoryUnitId, x.OccurredAt, x.Sequence });
     }
 }

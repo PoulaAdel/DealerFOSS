@@ -597,6 +597,7 @@ public sealed class DealService(
             .AsNoTracking()
             .Where(h => h.DealId == deal.Id)
             .OrderBy(h => h.OccurredAt)
+            .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
         // A deal that has only just been started has its first history row in
@@ -664,6 +665,7 @@ public sealed class DealService(
             deal.TermsAreOpen,
             history
                 .OrderBy(h => h.OccurredAt)
+                .ThenBy(h => h.Sequence)
                 .Select(h => new DealHistoryEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt,
                     h.ChangedByUserId, h.Note, h.AmountAtChange))

@@ -24,6 +24,14 @@ public sealed class RepairOrderStatusChange : IAppendOnly
 
     public DateTimeOffset OccurredAt { get; private set; }
 
+    /// <summary>
+    /// Insertion order, assigned by the database. Two entries can carry the same
+    /// OccurredAt to the microsecond; ordering on the timestamp alone lets the
+    /// store return tied rows in any order, so a history read as a sequence of
+    /// events could contradict itself. Never set in code — the column is an IDENTITY.
+    /// </summary>
+    public long Sequence { get; private set; }
+
     public Guid? ChangedByUserId { get; private set; }
 
     public string? Note { get; private set; }

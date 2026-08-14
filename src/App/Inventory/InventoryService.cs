@@ -138,6 +138,7 @@ public sealed class InventoryService(
             .AsNoTracking()
             .Where(h => h.InventoryUnitId == unitId)
             .OrderBy(h => h.OccurredAt)
+            .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
         return Result.Success(Describe(row.Unit, row.Vehicle, history));
@@ -312,6 +313,7 @@ public sealed class InventoryService(
             .AsNoTracking()
             .Where(h => h.InventoryUnitId == unitId)
             .OrderBy(h => h.OccurredAt)
+            .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
         return Result.Success(Describe(unit, vehicle, history));
@@ -450,6 +452,7 @@ public sealed class InventoryService(
             u.AcquiredOn,
             history
                 .OrderBy(h => h.OccurredAt)
+                .ThenBy(h => h.Sequence)
                 .Select(h => new InventoryStatusEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt, h.Note))
                 .ToList());

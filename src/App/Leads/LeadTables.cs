@@ -68,6 +68,7 @@ internal sealed class LeadStatusChangeConfiguration : IEntityTypeConfiguration<L
         builder.Property(x => x.FromStatus).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.ToStatus).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.Note).HasMaxLength(1000);
-        builder.HasIndex(x => new { x.LeadId, x.OccurredAt });
+        builder.Property(x => x.Sequence).ValueGeneratedOnAdd().UseIdentityColumn();
+        builder.HasIndex(x => new { x.LeadId, x.OccurredAt, x.Sequence });
     }
 }

@@ -356,6 +356,7 @@ public sealed class LeadService(
             .AsNoTracking()
             .Where(h => h.LeadId == lead.Id)
             .OrderBy(h => h.OccurredAt)
+            .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
         // A freshly captured lead has its first history row in memory, not yet in
@@ -387,6 +388,7 @@ public sealed class LeadService(
             LeadStatusRules.MovesFrom(lead.Status).Select(s => s.ToString()).ToList(),
             history
                 .OrderBy(h => h.OccurredAt)
+                .ThenBy(h => h.Sequence)
                 .Select(h => new LeadHistoryEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt, h.Note))
                 .ToList()));

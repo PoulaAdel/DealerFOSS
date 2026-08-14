@@ -633,6 +633,7 @@ public sealed class RepairOrderService(
             .AsNoTracking()
             .Where(h => h.RepairOrderId == order.Id)
             .OrderBy(h => h.OccurredAt)
+            .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
         // A job that has only just been opened has its first history row in memory
@@ -684,6 +685,7 @@ public sealed class RepairOrderService(
                 .ToList(),
             history
                 .OrderBy(h => h.OccurredAt)
+                .ThenBy(h => h.Sequence)
                 .Select(h => new RepairOrderHistoryEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt,
                     h.ChangedByUserId, h.Note, h.AmountAtChange))

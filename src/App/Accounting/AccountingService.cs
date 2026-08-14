@@ -822,6 +822,7 @@ public sealed class AccountingService(
             entries,
             period.History
                 .OrderBy(h => h.OccurredAt)
+                .ThenBy(h => h.Sequence)
                 .Select(h => new AccountingPeriodChangeView(
                     h.FromState?.ToString(), h.ToState.ToString(), h.OccurredAt, h.ChangedByUserId, h.Note))
                 .ToList());

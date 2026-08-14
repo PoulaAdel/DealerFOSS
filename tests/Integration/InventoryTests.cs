@@ -9,6 +9,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
 using FluentAssertions;
 using DealerFOSS.App;
 
@@ -314,7 +315,80 @@ public sealed class InventoryTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// The history must read as a sequence of events even when the clock cannot
+    /// tell the events apart.
+    ///
+    /// Two moves recorded in the same instant is not a contrived case: the seeder
+    /// produced one, and it rendered a car that was available before it arrived.
+    /// Ordering on OccurredAt alone leaves tied rows in whatever order the store
+    /// feels like returning, so this test flattens all three timestamps to one
+    /// value and then asks whether the chain still holds — each entry leaving the
+    /// status the entry before it arrived at.
+    ///
+    /// It fails without the Sequence tiebreak.
+    /// </summary>
+    [Fact]
+    public async Task The_history_still_reads_in_order_when_two_moves_share_an_instant()
+    {
+        var unitId = await ReceiveIdAsync(Manager, await RooftopIdAsync("NAG-01"), UniqueStock());
+
+        using (var reconditioning = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+            new { status = "Reconditioning", note = "Awaiting tyres." }))
+        {
+            reconditioning.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        using (var available = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+            new { status = "Available" }))
+        {
+            available.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        await FlattenHistoryTimestampsAsync(Guid.Parse(unitId));
+
+        using var read = await SendAsync(HttpMethod.Get, $"{Inventory}/{unitId}", Manager);
+        read.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var detail = await read.Content.ReadFromJsonAsync<JsonElement>();
+        var history = detail.GetProperty("history").EnumerateArray().ToList();
+        history.Should().HaveCount(3);
+
+        history[0].GetProperty("fromStatus").ValueKind.Should().Be(JsonValueKind.Null,
+            because: "a car has to arrive before it can move anywhere");
+
+        for (var i = 1; i < history.Count; i++)
+        {
+            history[i].GetProperty("fromStatus").GetString().Should().Be(
+                history[i - 1].GetProperty("toStatus").GetString(),
+                because: "each move leaves the status the move before it arrived at");
+        }
+    }
+
     // --- helpers -----------------------------------------------------------
+
+    /// <summary>
+    /// Gives every history row for one unit the same OccurredAt, reproducing what
+    /// two writes in a single tick produce. Raw SQL because the row is append-only
+    /// and TenantDb is right to refuse the update (ADR-016).
+    /// </summary>
+    private static async Task FlattenHistoryTimestampsAsync(Guid unitId)
+    {
+        await using var connection = new SqlConnection(HostFixture.TenantConnectionString(Tenant));
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = """
+            UPDATE [vehicles].[InventoryStatusHistory]
+               SET OccurredAt = (SELECT MIN(OccurredAt)
+                                   FROM [vehicles].[InventoryStatusHistory]
+                                  WHERE InventoryUnitId = @unit)
+             WHERE InventoryUnitId = @unit;
+            """;
+
+        command.Parameters.AddWithValue("@unit", unitId);
+        await command.ExecuteNonQueryAsync();
+    }
 
     /// <summary>A well-formed VIN unique per run, so tests do not collide.</summary>
     private static string UniqueVin()

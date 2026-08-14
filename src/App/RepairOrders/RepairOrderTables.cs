@@ -132,6 +132,7 @@ internal sealed class RepairOrderStatusChangeConfiguration : IEntityTypeConfigur
         builder.Property(x => x.ToStatus).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.Note).HasMaxLength(1000);
         builder.Property(x => x.AmountAtChange).HasPrecision(18, 2);
-        builder.HasIndex(x => new { x.RepairOrderId, x.OccurredAt });
+        builder.Property(x => x.Sequence).ValueGeneratedOnAdd().UseIdentityColumn();
+        builder.HasIndex(x => new { x.RepairOrderId, x.OccurredAt, x.Sequence });
     }
 }

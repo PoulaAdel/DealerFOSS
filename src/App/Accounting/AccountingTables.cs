@@ -62,7 +62,8 @@ internal sealed class AccountingPeriodChangeConfiguration : IEntityTypeConfigura
         // Long enough for a real explanation of why a reported month was reopened.
         builder.Property(x => x.Note).HasMaxLength(1000);
 
-        builder.HasIndex(x => new { x.AccountingPeriodId, x.OccurredAt });
+        builder.Property(x => x.Sequence).ValueGeneratedOnAdd().UseIdentityColumn();
+        builder.HasIndex(x => new { x.AccountingPeriodId, x.OccurredAt, x.Sequence });
     }
 }
 

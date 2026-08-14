@@ -23,6 +23,15 @@ public sealed class InventoryStatusChange : IAppendOnly
 
     public DateTimeOffset OccurredAt { get; private set; }
 
+    /// <summary>
+    /// Insertion order, assigned by the database. This is what makes the history a
+    /// sequence rather than a set: two entries can carry the same OccurredAt to the
+    /// microsecond, and ordering on the timestamp alone lets the store return tied
+    /// rows in any order — which it did, showing a car available before it arrived.
+    /// Never set in code; the column is an IDENTITY.
+    /// </summary>
+    public long Sequence { get; private set; }
+
     /// <summary>Who made the move, or null when the system did.</summary>
     public Guid? ChangedByUserId { get; private set; }
 
