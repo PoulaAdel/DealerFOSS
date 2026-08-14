@@ -129,6 +129,21 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IReporting, ReportingService>();
     builder.Services.AddScoped<IMigration, MigrationService>();
 
+    // The only outbound call in the product, and the only integration on the
+    // manager's list that needs no contract and no approval: the US road-safety
+    // regulator publishes recall campaigns free and unauthenticated (doc 11 §3.4).
+    //
+    // The timeout is here rather than inside the adapter so the deadline is
+    // visible where the dependency is declared. Ten seconds is generous for a
+    // read and short enough that a person waiting on a screen is told something
+    // went wrong rather than left watching a spinner.
+    builder.Services.AddHttpClient<ISafetyRecalls, NhtsaSafetyRecalls>(client =>
+    {
+        client.BaseAddress = new Uri(
+            builder.Configuration["SafetyRecalls:BaseAddress"] ?? "https://api.nhtsa.gov/");
+        client.Timeout = TimeSpan.FromSeconds(10);
+    });
+
     // The integration edge. A capability that can receive records from a
     // connector registers an IRecordSink here; the runtime finds it by contract
     // name and version. A contract with no sink is refused as Misconfigured

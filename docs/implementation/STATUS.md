@@ -598,3 +598,21 @@ to come.
   **Also not proven, and worth saying:** the test writes its history rows through separate requests, so it demonstrates that ties *read back* in insertion order. Two rows inserted in one `SaveChangesAsync` rely on EF Core preserving the order entities were added, which is true in practice but is not asserted anywhere here.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **623/623** (was 622), `verify-e2e.ps1` PASS.
+
+- **2026-08-14 — Something outside this machine answers, for the first time.** The project manager raised twenty-odd business requirements. Every term was checked against industry and government sources before anything was written down, and the write-up is [`docs/11-Franchise-and-External-Scope.md`](../11-Franchise-and-External-Scope.md). Most of the list turned out to be blocked on things engineering cannot supply — a manufacturer relationship, a commercial contract, or the overdue decision about which market we serve. **Exactly one item had nothing in front of it**, and it is now built.
+
+  **Safety recalls from the US road-safety regulator.** `GET /api/v1/vehicles/{id}/recalls`. Their API is free and unauthenticated — verified live rather than taken from documentation — so this needed no approval and no contract. It is the only outbound call in the product.
+
+  **What the feature refuses to claim is the point of it.** The regulator indexes campaigns by year, make and model; it holds no record of whether *this* car has had the work done, because only the manufacturer does. So the property is `campaigns`, not "openRecalls", and every response carries `appliesToModelNotVehicle: true` so a caller is handed the caveat rather than expected to remember it. Telling a dealership a car is clear when it is not concerns somebody's brakes.
+
+  **"We could not ask" and "there is nothing to worry about" must never look the same.** An unreachable regulator is a **503** with its own error code, not an empty list — which needed a new `ErrorType.Unavailable` in Core, mapped at the edge. **Rehearsed:** making a lookup failure return an empty list instead failed exactly the two tests that demand a refusal.
+
+  Three rules this adapter follows, new to the codebase because nothing else calls out: it cannot throw (every network fault becomes a `Result` failure, so a car never becomes unsellable because somebody else is down), its deadline lives on the `HttpClient` where the dependency is declared, and it stores nothing — a cached all-clear that nobody re-checked is worse than no answer.
+
+  **The tests never reach the real regulator.** All six stub the handler. A suite that depends on a public service being up fails on a train, and one that hammers a government endpoint every CI run deserves to be blocked.
+
+  **Two findings from the research that change decisions we had already made**, recorded in doc 11 rather than acted on: the industry has a data-exchange standard (**STAR**, 145+ message formats) and our `ContractFields` vocabulary is invented instead of using it — cheap to change now, expensive after several connectors; and *"a table for service pays"* resolves to **pay type** — Customer Pay, Warranty, Internal — which we do not model at all, and which sits underneath warranty claims, manufacturer reporting and any honest service gross figure.
+
+  **Still not built, and named:** no screen — the endpoint is reachable by API only. No VIN decode, though the same regulator offers one free. No per-vehicle recall status, which is the manufacturer's to give.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **629/629** (was 623), `verify-e2e.ps1` PASS.
