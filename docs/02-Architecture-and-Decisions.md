@@ -111,19 +111,26 @@ Versions follow supported LTS/current stable releases and are pinned centrally. 
 
 ### Backend
 
-| Concern | Choice |
-|---|---|
-| Runtime/API | .NET 10 LTS, ASP.NET Core, OpenAPI |
-| Persistence | EF Core, SQL Server 2022 |
-| Identity | ASP.NET Core Identity, cookie/BFF for browser, OIDC/OAuth for federation/API |
-| Validation | FluentValidation |
-| Resilience | Polly |
-| Jobs | Quartz.NET with a durable SQL store — **selected, not yet adopted.** Today the only background work is one in-process `BackgroundService` (CSV import), which is why nothing runs on a schedule |
-| Cache/coordination | in-process single-node; Redis for scale-out |
-| Telemetry | OpenTelemetry and Serilog |
-| Documents/PDF | `IDocumentStore`; QuestPDF or another AGPL-compatible renderer |
-| Testing | xUnit, FluentAssertions, Testcontainers, architecture tests |
-| CLI | Spectre.Console |
+**Adopted** means it is referenced by the solution today. **Selected** means it is
+the intended choice and nothing uses it yet. The distinction is kept because a
+table that mixes the two describes a system nobody can find — verified against
+`Directory.Packages.props` and the project files on 2026-08-14.
+
+| Concern | Choice | State |
+|---|---|---|
+| Runtime/API | .NET 10, ASP.NET Core minimal APIs, OpenAPI | **Adopted** |
+| Persistence | EF Core, SQL Server 2022 | **Adopted** |
+| Credentials | `Microsoft.Extensions.Identity.Core` for `IPasswordHasher<T>` **only**. Users, roles, sessions, TOTP and audit are this project's own code in `src/Identity` — not ASP.NET Core Identity, and there is no `UserManager` or `IdentityDbContext` | **Adopted** |
+| Browser auth | Durable server-side sessions, HttpOnly cookie, anti-forgery header on writes | **Adopted** |
+| Federation | OIDC/OAuth for company sign-in | **Selected.** Not built — it needs a real identity provider to test against, and a fake one proves nothing |
+| Validation | Guard clauses in entity constructors, returning `Result` for expected failures | **Adopted.** FluentValidation was listed here and was never taken |
+| Resilience | Per-connector retry budgets and poll deadlines (`PollBudget`) | **Adopted** for the integration edge. Polly was listed here and was never taken |
+| Jobs | Quartz.NET with a durable SQL store | **Selected.** The only background work today is one in-process `BackgroundService` for CSV import, which is why nothing runs on a schedule |
+| Cache/coordination | in-process single-node | **Adopted.** Redis for scale-out is **selected** (ADR-005) and not wired |
+| Telemetry | OpenTelemetry and Serilog | **Adopted** |
+| Documents | `IDocumentStore`; server-rendered HTML with a print stylesheet | **Adopted.** No PDF library — decided 2026-08-06 rather than deferred, because a renderer must clear both an AGPL licence review and an advisory history. `RenderedDocument` carries a content type so one can be added later without touching callers |
+| Testing | xUnit, FluentAssertions, NetArchTest, real SQL via `WebApplicationFactory` | **Adopted.** Testcontainers was listed here and was never taken — CI supplies a SQL service container instead |
+| CLI | — | Spectre.Console was listed here and was never taken. There is no CLI |
 
 ### Frontend
 

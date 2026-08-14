@@ -118,7 +118,7 @@ Open decisions are visible and time-bounded:
 | Decision | Close by | Criteria |
 |---|---|---|
 | First certified DMS provider | Phase 0 | signed access, sandbox/data fidelity, pilot match, cost, supportability |
-| PDF/report renderer | Phase 1 | AGPL-compatible redistribution, deterministic printing, accessibility, maintenance |
+| ~~PDF/report renderer~~ | ~~Phase 1~~ | **Closed 2026-08-06:** no renderer. Documents are server-rendered HTML with a print stylesheet. A library would have to clear both an AGPL licence review and an advisory history, and `RenderedDocument` carries a content type so one can be added later without touching callers |
 | E-sign and communications providers | before Variable Operations | evidence export, compliance coverage, delivery reliability, portability, cost |
-| bilingual UX, address/currency/tax/privacy/title tests and expert review |
+| **Target market and jurisdiction** | **overdue — it gates Phase 0** | which market first, and therefore which compliance, tax, title, address, currency and privacy rules apply; bilingual UX; expert review of each. **The row that used to sit here had lost its name and deadline in an edit and read as a fragment.** Reconstructed 2026-08-14, and promoted: §4 scopes US-only compliance (OFAC, Red Flags, Reg B/Z, US tax and title) while the product ships five languages with full RTL. Both cannot be the priority, and building the wrong jurisdiction is among the larger wastes available |
 | Runtime third-party plugins | before ecosystem launch | signing, isolation, compatibility, revocation, support, and license policy |

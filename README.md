@@ -44,10 +44,22 @@ src/
     ├── Program.cs      where everything is wired together
     ├── Tenancy/        finds the right dealer database for a request
     ├── Data/           the tenant database and its migrations
+    │
     ├── Organization/   dealer organization → legal entity → rooftop → department
     ├── Customers/      the people and businesses the dealership deals with
     ├── Vehicles/       vehicles as identities — VIN, year, make, model
-    └── Inventory/      a vehicle on a lot, with a status and a cost
+    ├── Inventory/      a vehicle on a lot, with a status and a cost
+    ├── Leads/          enquiries, and following them up
+    ├── Deals/          selling a car: pricing, trade-ins, charges, approval
+    ├── Finance/        the products sold alongside a car — warranties, plans
+    ├── RepairOrders/   the workshop, and the service booking diary
+    ├── Parts/          the parts catalogue, and stock on each rooftop's shelf
+    ├── Accounting/     accounts, journals, and closing a month
+    ├── Documents/      printable paperwork
+    ├── Reporting/      dashboards. Owns no data; composes other capabilities
+    ├── DataMigration/  bringing records in from a file, and taking them out
+    ├── Integrations/   the edge where another system's data arrives
+    └── Administration/ the control plane, for whoever runs the installation
 
 tests/
 ├── Unit/          domain rules, no infrastructure needed

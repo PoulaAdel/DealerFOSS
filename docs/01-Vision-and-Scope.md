@@ -51,6 +51,25 @@ These capabilities may read or exchange data with the incumbent. The owning syst
 
 The following are required before DealerFOSS can replace an incumbent DMS:
 
+> **Two of these were started early, and that is recorded here rather than left
+> to be discovered.** Partial Accounting and partial Parts exist in the codebase
+> as of 2026-08-14 — Accounting has a chart of accounts, balanced journals,
+> fiscal periods with close and reopen, and posting from a delivery or a service
+> invoice; Parts has a catalogue, stock receipts, and costed issue to a job.
+>
+> Neither is close to the list below: Accounting has no subledgers, no AP/AR and
+> no bank reconciliation; Parts has no purchasing, bins, returns, cores,
+> supersession or physical count. §6 therefore still holds — the release promises
+> neither complete accounting nor Parts, and neither is complete.
+>
+> What was anticipated is the **sequence**, not the promise. §8 places Parts at
+> Years 2–4 and Accounting at Years 3–5, behind parallel-run reconciliation, and
+> some of that work now exists before a single coexistence data path does.
+> R02 in [doc 07](07-Delivery-Roadmap.md) rates exactly this drift Critical.
+> **Neither should be extended further until the coexistence release has a
+> certified connector.** They are useful, they are not the constraint, and
+> "useful" is how the first release gets lost.
+
 - **Accounting:** chart of accounts, balanced journals, subledgers, AP/AR, cash and bank reconciliation, posting rules, fiscal periods, close/reopen, and source traceability.
 - **Deal accounting:** front/back gross, packs, commissions, incentives, trade payoff, CIT, funding variance, chargebacks, unwind, and product cancellation.
 - **Parts:** catalog, bins, stock ledger, purchasing, receiving, issue/return, cores, supersession, pricing, and physical count.

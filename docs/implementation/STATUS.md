@@ -374,25 +374,34 @@ second a real login provider, and a fake one would prove nothing.
 
 ## Next milestone
 
-**Outcome:** account recovery. Settled 2026-08-07 and written up as
-[ADR-018](../adr/0018-account-recovery-methods.md): one contract, five methods, and
-a privileged manager-issued code as the backstop. No longer blocked on a decision.
+**Not decided, and the reason is worth stating.** The three highest-value items
+are not engineering, and none is blocked by anything in this repository:
 
-- **Build the contract plus the two methods that need nothing first** — the
-  authenticator (TOTP is already enrolled) and passkeys (WebAuthn; the device does
-  the check and transmits nothing). Those two cover most people and add no
-  dependency on anything outside the installation.
-- **Email and WhatsApp/SMS ship in the same release but arrive switched off.** The
-  code is there; the provider is the operator's to supply, and an unconfigured
-  method is never offered. That is what makes "all five" deliverable without
-  waiting on an account somebody has to go and buy.
-- **Caution:** starting a recovery must answer identically whether or not the
-  address is known, or the endpoint becomes a way to list a dealership's staff.
-- **Caution:** WhatsApp/SMS needs a **verified** phone number on a staff record and
-  there is no such field. Adding one is part of that method, not a prerequisite for
-  the others.
-- **Caution:** the manager-issued code needs its own permission, not `Staff.Manage`.
-  Handing out account access is a different act from editing a staff record.
+- **Talk to five dealerships.** Nothing here has been seen by anybody who runs
+  one. Every workflow encodes an assumption nobody has checked, and the cost of
+  a wrong assumption grows with each capability built on top of it.
+- **Apply for one vendor's API programme.** Delivery Phase 0 has not started and
+  R01 rates the delay High. Applying costs an hour; access takes months, and
+  nothing shortens that. The coexistence release cannot meet its own success
+  criteria without it.
+- **Decide the target market.** The compliance scope in doc 01 §4 is entirely US
+  while the product ships five languages with RTL. Both cannot be the priority,
+  and the answer decides whether the tax and title work is worth doing at all.
+
+**Ready to build, when building is the right thing:**
+
+- **Field ownership.** A record sink can insert but not update, so an existing
+  customer is reported unchanged and left alone. Who wins when a provider and a
+  member of staff disagree about a phone number is a product decision (doc 05
+  §4), and any connector that syncs rather than seeds needs it settled.
+- **Measure the performance target.** Doc 07 promises p95 under 500 ms at 50
+  concurrent users and it has never been measured. Database-per-tenant carries a
+  known cost — connection pool pressure, and migration time multiplied by tenant
+  count — that has never been exercised. A day, and no external party needed.
+- **A scheduler**, now that a run has somewhere to deliver. Nothing starts an
+  integration unattended, and the quarantine expiry has nothing to purge it.
+
+**Cautions carried forward:**
 
 - **Settled 2026-08-06:** documents are server-rendered HTML with a print stylesheet, not a PDF library. Keep the endpoint shape if that ever changes.
 - **Settled 2026-08-05:** a service advisor **may** authorize work they wrote up themselves. Not an oversight — most independents have one person doing both, and the control is that recording the customer's answer is a separate, permissioned, timestamped act. Do not "fix" it into the salesperson/approver split.
@@ -402,6 +411,15 @@ a privileged manager-issued code as the backstop. No longer blocked on a decisio
 **Also outstanding:** leads, deals, and the ledger still have no import or export path, so "take your data with you" covers customers and vehicles and not yet the whole business.
 
 **Closed 2026-08-05:** the `DealerFOSS Support` role used to sit in every tenant a support visit had touched with no way for the dealership to see it. `GET /api/v1/staff/roles` now lists every role and what holding it grants, so that residue is visible in the product rather than only in the audit trail.
+
+---
+
+## Milestone log
+
+Newest last. Each entry says what now works that did not before, and names the
+evidence. These used to accumulate under "Next milestone" — a heading they
+outgrew — which made the document read as if a year of finished work were still
+to come.
 
 - **2026-08-08 — The application speaks five languages, and Arabic turns the page round.** English, French, German, Russian and Arabic, with the direction of the page derived from the language rather than chosen beside it. There used to be an LTR/RTL toggle next to the theme, which made "Arabic, left to right" a selectable combination — a broken layout with a switch in front of it. Choosing a language now sets both `lang` and `dir` on `<html>`, and because the stylesheet was already written in logical properties, that one attribute mirrors every margin, border and table column at once.
 
