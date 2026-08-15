@@ -117,6 +117,17 @@ public sealed class BoundaryTests
             "IdentityRegistration", "IdentitySeeder", "DevelopmentAccount",
             "ControlPlaneSeeder",
             "Permissions",
+            // Added deliberately: passkeys. Credential verification and session
+            // issuance must stay in the one project nothing else can reach, so
+            // this is the only door to them. Note what is absent — no public
+            // key ever leaves, no challenge is readable after it is issued,
+            // there is no way to register a credential against anybody but the
+            // signed-in user, and there is no "does this credential exist"
+            // question a caller can ask. Every refusal is one error, because
+            // naming the failed check helps a forger more than a person.
+            "IPasskeys", "PasskeyRegistrationChallenge", "PasskeyRegistrationResponse",
+            "PasskeySignInChallenge", "PasskeySignInResponse", "RegisteredPasskey",
+            "PasskeyErrors",
             // Added deliberately: a dealership must be able to see and manage its
             // own staff, and until now that was a developer's job. Note what this
             // contract does NOT carry, because that is what makes it safe to
