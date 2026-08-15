@@ -22,7 +22,7 @@ internal sealed class Authenticator(
     IPasswordHasher<User> passwordHasher,
     ISecretProtector secretProtector,
     IAuditSink audit)
-    : IAuthenticator
+    : IAuthenticator, ISessionIssuer
 {
     /// <summary>Shown as the account issuer in an authenticator app.</summary>
     private const string Issuer = "DealerFOSS";
@@ -272,7 +272,13 @@ internal sealed class Authenticator(
         return true;
     }
 
-    private async Task<IssuedSession> StartSessionAsync(
+    /// <summary>
+    /// Public so ISessionIssuer can expose it to PasskeyDirectory. A second way
+    /// in must not mean a second way to mint a session: cookie, anti-forgery
+    /// pair, expiry and audit entry all have to be the ones every other sign-in
+    /// produces, and the only way to guarantee that is to have one method.
+    /// </summary>
+    public async Task<IssuedSession> StartSessionAsync(
         Guid userId,
         string? deviceSummary,
         DateTimeOffset now,

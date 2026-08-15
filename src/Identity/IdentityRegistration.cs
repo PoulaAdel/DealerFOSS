@@ -9,6 +9,7 @@
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using DealerFOSS.Core;
 
@@ -39,6 +40,25 @@ public static class IdentityRegistration
         // is one change rather than a search through call sites.
         services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IAuthenticator, Authenticator>();
+
+        // Passkeys. ISessionIssuer resolves to the SAME Authenticator instance
+        // as IAuthenticator — registered by forwarding rather than as a second
+        // AddScoped, because two instances would mean two change trackers and a
+        // session written by one while the other holds the transaction.
+        services.AddScoped<ISessionIssuer>(sp => (Authenticator)sp.GetRequiredService<IAuthenticator>());
+        services.AddScoped<IPasskeys, PasskeyDirectory>();
+
+        // Bound from configuration where it exists, so a real deployment sets
+        // its own domain. The default is localhost, which is right for
+        // development and wrong everywhere else — a passkey is bound to the
+        // relying-party id for ever, so shipping with this unset would orphan
+        // every credential the day it was corrected.
+        services.AddSingleton(sp =>
+        {
+            var options = new PasskeyOptions();
+            sp.GetRequiredService<IConfiguration>().GetSection("Passkeys").Bind(options);
+            return options;
+        });
 
         return services;
     }
