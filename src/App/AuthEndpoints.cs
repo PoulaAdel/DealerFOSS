@@ -68,6 +68,87 @@ internal static class AuthEndpoints
             .RequireRateLimiting(RateLimits.Credentials);
         group.MapPost("/mfa/disable", DisableMfaAsync)
             .RequireRateLimiting(RateLimits.Credentials);
+
+        // Passkeys live in this group rather than their own, because they are a
+        // way of signing in and a sign-in ends with the same cookie pair as
+        // every other. Mapping them elsewhere would mean a second copy of
+        // CompleteSession, and two places that write a session cookie is how the
+        // two quietly stop agreeing about SameSite or expiry.
+        //
+        // Rate limited on the same allowance as a password, and for the same
+        // reason: finishing a ceremony is a place where a wrong answer can
+        // simply be tried again.
+        group.MapPost("/passkeys/register/begin", BeginPasskeyRegistrationAsync);
+        group.MapPost("/passkeys/register/finish", FinishPasskeyRegistrationAsync);
+        group.MapPost("/passkeys/sign-in/begin", BeginPasskeySignInAsync)
+            .RequireRateLimiting(RateLimits.Credentials);
+        group.MapPost("/passkeys/sign-in/finish", FinishPasskeySignInAsync)
+            .RequireRateLimiting(RateLimits.Credentials);
+        group.MapGet("/passkeys", ListPasskeysAsync);
+        group.MapDelete("/passkeys/{passkeyId:guid}", ForgetPasskeyAsync);
+    }
+
+    private static async Task<IResult> BeginPasskeyRegistrationAsync(
+        IPasskeys passkeys,
+        CancellationToken cancellationToken)
+    {
+        var result = await passkeys.BeginRegistrationAsync(cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+    }
+
+    private static async Task<IResult> FinishPasskeyRegistrationAsync(
+        PasskeyRegistrationResponse request,
+        IPasskeys passkeys,
+        CancellationToken cancellationToken)
+    {
+        var result = await passkeys.FinishRegistrationAsync(request, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+    }
+
+    private static async Task<IResult> BeginPasskeySignInAsync(
+        IPasskeys passkeys,
+        CancellationToken cancellationToken)
+    {
+        var result = await passkeys.BeginSignInAsync(cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+    }
+
+    /// <summary>
+    /// The one that hands out a session. Ends at <see cref="CompleteSession"/>,
+    /// the same call a password sign-in makes, so the cookie, the anti-forgery
+    /// token and the expiry are identical by construction rather than by
+    /// somebody remembering to keep them the same.
+    /// </summary>
+    private static async Task<IResult> FinishPasskeySignInAsync(
+        PasskeySignInResponse request,
+        IPasskeys passkeys,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        var result = await passkeys.FinishSignInAsync(request, cancellationToken);
+
+        // 401 rather than 400: the caller may try again with another passkey, or
+        // fall back to a password.
+        return result.IsSuccess
+            ? CompleteSession(context, result.Value)
+            : Unauthorized(result.Error);
+    }
+
+    private static async Task<IResult> ListPasskeysAsync(
+        IPasskeys passkeys,
+        CancellationToken cancellationToken)
+    {
+        var result = await passkeys.ListMineAsync(cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : Problem(result.Error);
+    }
+
+    private static async Task<IResult> ForgetPasskeyAsync(
+        Guid passkeyId,
+        IPasskeys passkeys,
+        CancellationToken cancellationToken)
+    {
+        var result = await passkeys.ForgetAsync(passkeyId, cancellationToken);
+        return result.IsSuccess ? Results.NoContent() : Problem(result.Error);
     }
 
     private static async Task<IResult> LoginAsync(

@@ -52,6 +52,13 @@ public sealed class CurrentUserMiddleware(RequestDelegate next)
         "/api/v1/auth/recover",
         "/api/v1/auth/recover/authenticator",
         "/api/v1/auth/recover/code",
+        // Signing in with a passkey, for the same reason as a password: there is
+        // no session yet, and producing one is what these two are for. Note the
+        // REGISTRATION routes are deliberately absent — adding a credential to
+        // an account requires already being signed in to it, so those stay
+        // behind the normal check.
+        "/api/v1/auth/passkeys/sign-in/begin",
+        "/api/v1/auth/passkeys/sign-in/finish",
     ];
 
     /// <summary>

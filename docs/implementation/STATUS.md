@@ -669,3 +669,17 @@ to come.
   **Rehearsed:** never capitalising fails exactly the new test and nothing else.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **658/658** (was 657), `verify-e2e.ps1` PASS.
+
+- **2026-08-15 — A passkey signs somebody in.** The four pieces built separately over the day — verification, storage, contract, implementation — are joined, and the feature stops being inert. Registration and sign-in both work end to end against a real database.
+
+  **The routes live in the `auth` group, not their own.** A sign-in ends in the same cookie pair as every other, and mapping them elsewhere would have meant a second copy of `CompleteSession` — two places writing a session cookie is how the two quietly stop agreeing about `SameSite` or expiry. Sign-in reaches the identical call a password does, so the cookie, the anti-forgery token and the expiry are the same **by construction** rather than by somebody remembering.
+
+  **Two middleware allowlists needed the sign-in routes**, and only those two. Registration is deliberately *not* exempt from either: adding a credential to an account requires already being signed in to it. For anti-forgery specifically, what replaces the token on the sign-in path is stronger than one — a signature over a server-issued single-use challenge, which a cross-site attacker cannot obtain or forge.
+
+  **The fake authenticator is linked into the integration suite, not copied.** Two copies would drift: the unit one would be corrected for a spec change and this one would go on passing against the old shape, which is exactly what a shared fake exists to prevent.
+
+  Five tests over HTTP, and the useful ones are the refusals: a **lookalike site** is refused by the endpoint and hands back no cookie at all; a **whole recorded response replayed** succeeds once and fails the second time; asking for a challenge **needs no account and names none**, so the endpoint cannot be used to discover who has a passkey; and a forgotten passkey **stops working**, not merely disappears from a list.
+
+  **What this is not.** No screen offers a passkey, so it is reachable by API only. Attestation is still unverified by choice. And there is no policy making a passkey sufficient on its own — passwords and recovery codes remain, because a dealership locked out of its service desk on a Saturday morning does not forgive it.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **664/664** (was 658), `verify-e2e.ps1` PASS.

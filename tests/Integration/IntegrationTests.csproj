@@ -25,10 +25,27 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      LINKED, not copied. Both suites need an authenticator that produces real
+      signatures, and two copies of one would drift — the unit copy would be
+      fixed for a spec change and this one would go on passing against the old
+      shape, which is precisely the failure a shared fake is supposed to prevent.
+      It lives in the unit project because that is where it is first used.
+    -->
+    <Compile Include="..\Unit\FakeAuthenticator.cs" Link="FakeAuthenticator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
+
+    <!--
+      The fake authenticator writes CBOR, and it signs real assertions here as
+      well as in the unit suite.
+    -->
+    <PackageReference Include="System.Formats.Cbor" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
 

@@ -53,6 +53,13 @@ public sealed class AntiForgeryMiddleware(RequestDelegate next)
         // issues no session, so nothing here can be chained into being signed in.
         "/api/v1/auth/recover/authenticator",
         "/api/v1/auth/recover/code",
+        // Passkey sign-in: no session exists yet, so no token could have been
+        // issued to echo back. What replaces it is stronger than a CSRF token —
+        // a signature over a server-issued, single-use challenge, which a
+        // cross-site attacker cannot obtain or forge. Registration is NOT exempt:
+        // that caller does have a session, so it must prove it.
+        "/api/v1/auth/passkeys/sign-in/begin",
+        "/api/v1/auth/passkeys/sign-in/finish",
     ];
 
     private readonly RequestDelegate _next = next;

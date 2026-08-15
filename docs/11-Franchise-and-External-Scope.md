@@ -345,7 +345,7 @@ engineering time), or **Done**.
 | Technician load balancing | Service | Decision | Not started |
 | Equity mining and next-vehicle prediction | Sales | Decision | Not started |
 | Labour reports: hours sold, effective rate | Reporting | Done | Built |
-| Passkeys alongside passwords | Security | Build | Not started |
+| Passkeys alongside passwords | Security | Done | Built (API only) |
 | Workflow triggers on data we already hold | Platform | Build | Not started |
 | Contributor on-ramp: issues and first tasks | Business | Build | Not started |
 | Documentation restructure: reorganise all 18 docs | Product | Build | Planned |
