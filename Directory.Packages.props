@@ -14,6 +14,15 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Identity.Core" Version="10.0.10" />
+
+    <!--
+      CBOR, for reading the public key out of a passkey registration. Microsoft's
+      own BCL package rather than a FIDO library: a passkey needs one binary
+      format decoded and two signature algorithms verified, and pulling a whole
+      attestation stack into the sealed Identity project to get that would be a
+      much larger security dependency than the problem calls for.
+    -->
+    <PackageVersion Include="System.Formats.Cbor" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -27,6 +27,12 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
+
+    <!--
+      The fake authenticator writes CBOR, because a passkey test that does not
+      produce a real signature over real authenticator data proves nothing.
+    -->
+    <PackageReference Include="System.Formats.Cbor" />
   </ItemGroup>
 
 </Project>
