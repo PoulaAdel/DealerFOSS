@@ -56,6 +56,58 @@ here, what does not, and the trap that is not visible from the code. Write the
 `<summary>` on the type, which serves IntelliSense, rather than repeating it.
 Generated files (anything under `Migrations/`) are exempt.
 
+### The agreed successor — decided 2026-08-15, not yet applied
+
+The maintainer has settled a four-part header that adds a copyright notice and
+splits the prose more explicitly. **It is not in the tree yet**: all 347
+hand-written source files still carry the three-part form above, and that remains
+the standard until the change is scheduled and applied in one pass. Recorded here
+so the decision does not evaporate between sessions, and so nobody applies half
+of it.
+
+```csharp
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Overview: Purpose, File Design, and Engineering
+//   What this file is for, why it is shaped the way it is, and the engineering
+//   judgement behind it. Absorbs the old one-line summary and grows it: a
+//   reader should learn whether this file concerns them, and why it exists as
+//   a separate thing, before scrolling.
+//
+// Usage:
+//   new Money(24995.00m, "USD")
+//   a.Add(b)  → refuses when the currencies differ
+//
+// Coding Instructions:
+//   What belongs here, what does not, and the trap not visible from the code.
+//   Written for the person who will get it wrong.
+```
+
+**Mapping from the current form**, so nothing is lost in the reformat: the
+summary line and its reasoning become `Overview`, `Use:` becomes `Usage:`, and
+`Edit:` becomes `Coding Instructions:`. The existing headers carry the most
+specific reasoning in the repository and are to be **restructured, never
+replaced with boilerplate** — a generic four-section header repeated 347 times is
+noise people learn to skip, which is worse than the three-part header it replaced.
+
+**Scope when it is applied:** `.cs`, `.ts`, `.tsx`, `.css`, `.ps1` and `.yml`.
+Two exclusions, both load-bearing:
+
+- **Anything under `Migrations/`** — generated, forbidden to hand-edit, and EF
+  overwrites it.
+- **`.json`** — `package.json` cannot carry comments at all.
+
+**This supersedes the SPDX rule below when it lands**, and not before.
+
+### Licence headers — the rule that holds today
+
+SPDX is applied **once at assembly level** in `Directory.Build.props`
+(`AGPL-3.0-or-later`), and per-file licence headers are not used. The four-part
+header above reverses this deliberately; until it is applied, do not add a
+copyright line to an individual file, because a repository where some files carry
+one and most do not is worse than either consistent answer.
+
 - Nullable reference types and warnings-as-errors are enabled.
 - Async I/O accepts `CancellationToken`; no `async void` outside true event handlers.
 - Domain code has no EF/ASP.NET/provider dependency.

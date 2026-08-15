@@ -376,7 +376,8 @@ engineering time), or **Done**.
 | Passkeys alongside passwords | Security | Done | Built, with a screen |
 | Workflow triggers on data we already hold | Platform | Build | Not started |
 | Contributor on-ramp: issues and first tasks | Business | Build | Not started |
-| Documentation restructure: reorganise all 18 docs | Product | Build | Planned |
+| Documentation restructure: reorganise all 18 docs | Product | Build | Done |
+| Four-part file headers with a copyright line (doc 08 §5) | Product | Build | Decided, waiting to be scheduled |
 | Public safety recall lookup | Vehicle | Done | Built, with a screen |
 | Spanish as a sixth language | Product | Done | Built |
 
