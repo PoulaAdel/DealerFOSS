@@ -28,6 +28,11 @@ internal static class RepairOrderEndpoints
         var group = app.MapGroup("/api/v1/repair-orders").WithTags("Service");
 
         group.MapGet("", ListAsync);
+
+        // Before the {id} route: "labour" is not a Guid, so the constrained route
+        // would not catch it anyway — but keeping the literal first means it stays
+        // that way if the constraint is ever loosened.
+        group.MapGet("/labour", LabourAsync);
         group.MapGet("/{repairOrderId:guid}", GetAsync);
         group.MapPost("", OpenAsync);
         group.MapPost("/{repairOrderId:guid}/lines", AddLineAsync);
@@ -35,6 +40,29 @@ internal static class RepairOrderEndpoints
         group.MapPost("/{repairOrderId:guid}/lines/{lineId:guid}/answer", AnswerLineAsync);
         group.MapPost("/{repairOrderId:guid}/technician", AssignTechnicianAsync);
         group.MapPost("/{repairOrderId:guid}/status", ChangeStatusAsync);
+    }
+
+    /// <summary>
+    /// What the workshop sold over a period. The response names the two figures
+    /// it cannot produce rather than leaving them out silently.
+    /// </summary>
+    private static async Task<IResult> LabourAsync(
+        IRepairOrders service,
+        CancellationToken cancellationToken,
+        DateOnly? from = null,
+        DateOnly? to = null,
+        Guid? rooftopId = null)
+    {
+        // Defaults to the month so far, because that is what somebody opening the
+        // report almost always wants and an unbounded scan is not a useful answer.
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var start = from ?? new DateOnly(today.Year, today.Month, 1);
+
+        var result = await service.LabourAsync(
+            new LabourQuery(start, to ?? today, rooftopId is null ? null : new RooftopId(rooftopId.Value)),
+            cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<IResult> ListAsync(

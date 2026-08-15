@@ -31,6 +31,18 @@ public interface IRepairOrders
         NewServiceLine line,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// What the workshop sold, over a period, and what it realised per hour.
+    ///
+    /// <para>
+    /// <b>Read the caveat on <see cref="LabourPerformance"/> before showing any of
+    /// this to a service manager.</b> Two of the four numbers the trade runs on
+    /// cannot be produced from what this system stores, and a report that quietly
+    /// omits them invites somebody to assume they were fine.
+    /// </para>
+    /// </summary>
+    Task<Result<LabourPerformance>> LabourAsync(LabourQuery query, CancellationToken cancellationToken);
+
     Task<Result<RepairOrderDetail>> RemoveLineAsync(
         Guid repairOrderId,
         Guid lineId,
@@ -144,6 +156,81 @@ public sealed record RepairOrderDetail(
     IReadOnlyList<string> AvailableMoves,
     IReadOnlyList<ServiceLineView> Lines,
     IReadOnlyList<RepairOrderHistoryEntry> History);
+
+/// <summary>A period, and optionally one workshop within it.</summary>
+public sealed record LabourQuery(DateOnly From, DateOnly To, RooftopId? RooftopId = null);
+
+/// <summary>
+/// Labour sold over a period, whole and per technician.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Counted from invoiced jobs only.</b> Work in progress is not revenue, and a
+/// report that counts it flatters the month and then contradicts itself when a
+/// job is cancelled.
+/// </para>
+/// <para>
+/// <b>Every pay type counts.</b> A technician who spent Tuesday on warranty work
+/// sold those hours; the manufacturer is paying rather than the customer, which
+/// changes who is billed and not whether the work happened. Broken out by payer
+/// as well, because the mix is itself the thing a service manager watches.
+/// </para>
+/// <para>
+/// <b>What this deliberately does NOT report</b>, named in
+/// <see cref="NotMeasured"/> so a screen can say so rather than leave a gap:
+/// technician <i>efficiency</i> (hours produced ÷ hours available, which the
+/// trade benchmarks at 125%) and <i>productivity</i> (hours billed ÷ hours
+/// clocked, benchmarked at 87.5%). Both need a denominator this system has never
+/// recorded — there is no shift length and no time clock. Publishing a guess at
+/// either would be worse than publishing neither, because both are used to judge
+/// individual people.
+/// </para>
+/// </remarks>
+public sealed record LabourPerformance(
+    DateOnly From,
+    DateOnly To,
+    decimal HoursSold,
+    decimal LabourRevenue,
+
+    /// <summary>
+    /// Revenue ÷ hours sold: what an hour actually realised, as against the
+    /// posted rate. Zero when no hours were sold, which is a real answer and not
+    /// a missing one.
+    /// </summary>
+    decimal EffectiveLabourRate,
+
+    IReadOnlyList<TechnicianLabour> ByTechnician,
+    IReadOnlyList<LabourByPayer> ByPayer,
+
+    /// <summary>Names from <see cref="UnmeasurableLabourFigure"/>.</summary>
+    IReadOnlyList<string> NotMeasured);
+
+/// <summary>
+/// One technician's share. <c>TechnicianUserId</c> is null for work invoiced with
+/// nobody assigned — kept rather than dropped, because hours nobody is credited
+/// with are exactly what a service manager wants to see.
+/// </summary>
+public sealed record TechnicianLabour(
+    Guid? TechnicianUserId,
+    decimal HoursSold,
+    decimal Revenue,
+    decimal EffectiveLabourRate);
+
+public sealed record LabourByPayer(string PayType, decimal HoursSold, decimal Revenue);
+
+/// <summary>
+/// The figures the trade expects that this system cannot honestly produce, and
+/// what each one would need. Constants rather than prose so a screen can decide
+/// how to word it.
+/// </summary>
+public static class UnmeasurableLabourFigure
+{
+    /// <summary>Hours produced ÷ hours available. Needs a shift or roster.</summary>
+    public const string Efficiency = "Efficiency";
+
+    /// <summary>Hours billed ÷ hours clocked. Needs a time clock.</summary>
+    public const string Productivity = "Productivity";
+}
 
 public sealed record ServiceLineView(
     Guid Id,

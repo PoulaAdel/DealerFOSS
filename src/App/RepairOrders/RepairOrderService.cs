@@ -159,6 +159,107 @@ public sealed class RepairOrderService(
                 o.CreatedAt)).ToList());
     }
 
+    public async Task<Result<LabourPerformance>> LabourAsync(
+        LabourQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<LabourPerformance>(ServiceErrors.Forbidden);
+        }
+
+        if (query.RooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<LabourPerformance>(ServiceErrors.Forbidden);
+        }
+
+        if (query.To < query.From)
+        {
+            return Result.Failure<LabourPerformance>(ServiceErrors.BackwardsPeriod);
+        }
+
+        // Inclusive of the last day: a manager asking for "this month" means the
+        // 31st as well, and InvoicedAt carries a time.
+        var from = new DateTimeOffset(query.From.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var to = new DateTimeOffset(query.To.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+        var orders = _db.RepairOrders
+            .AsNoTracking()
+            .Where(o => o.Status == RepairOrderStatus.Invoiced
+                && o.InvoicedAt >= from && o.InvoicedAt < to);
+
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            orders = orders.Where(o => allowed.Contains(o.RooftopId));
+        }
+
+        if (query.RooftopId is { } only)
+        {
+            orders = orders.Where(o => o.RooftopId == only);
+        }
+
+        var rows = await orders.Include(o => o.Lines).ToListAsync(cancellationToken);
+
+        // Flattened in memory rather than in SQL: Amount is a computed property on
+        // the line (declined work is worth nothing, labour multiplies out), and it
+        // is the same rule the invoice uses. Translating it into a second SQL
+        // expression would be a second place for it to be wrong.
+        var labour = rows
+            .SelectMany(o => o.Lines
+                .Where(l => l.Kind == ServiceLineKind.Labour
+                    && l.Authorization != LineAuthorization.Declined)
+                .Select(l => new
+                {
+                    o.TechnicianUserId,
+                    l.PayType,
+                    Hours = l.Hours ?? 0m,
+                    l.Amount,
+                }))
+            .ToList();
+
+        var hours = labour.Sum(l => l.Hours);
+        var revenue = labour.Sum(l => l.Amount);
+
+        return Result.Success(new LabourPerformance(
+            query.From,
+            query.To,
+            HoursSold: hours,
+            LabourRevenue: revenue,
+            EffectiveLabourRate: Realised(revenue, hours),
+            ByTechnician: labour
+                .GroupBy(l => l.TechnicianUserId)
+                .Select(g => new TechnicianLabour(
+                    g.Key,
+                    g.Sum(l => l.Hours),
+                    g.Sum(l => l.Amount),
+                    Realised(g.Sum(l => l.Amount), g.Sum(l => l.Hours))))
+                .OrderByDescending(t => t.Revenue)
+                .ToList(),
+            ByPayer: labour
+                .GroupBy(l => l.PayType)
+                .Select(g => new LabourByPayer(
+                    g.Key.ToString(), g.Sum(l => l.Hours), g.Sum(l => l.Amount)))
+                .OrderBy(p => p.PayType, StringComparer.Ordinal)
+                .ToList(),
+            NotMeasured:
+            [
+                UnmeasurableLabourFigure.Efficiency,
+                UnmeasurableLabourFigure.Productivity,
+            ]));
+    }
+
+    /// <summary>
+    /// What an hour actually realised. Zero hours gives zero rather than a
+    /// division by nothing — a workshop that sold no labour has no rate, and
+    /// inventing one would put a number on an empty month.
+    /// </summary>
+    private static decimal Realised(decimal revenue, decimal hours) =>
+        hours == 0m ? 0m : Math.Round(revenue / hours, 2, MidpointRounding.AwayFromZero);
+
     public async Task<Result<RepairOrderDetail>> GetAsync(
         Guid repairOrderId,
         CancellationToken cancellationToken)
@@ -725,6 +826,10 @@ internal static class ServiceErrors
     public static Error UnknownLineKind { get; } = Error.Validation(
         "service.unknown_line_kind",
         "A line is Labour, a Part, or Sublet work.");
+
+    public static Error BackwardsPeriod { get; } = Error.Validation(
+        "service.backwards_period",
+        "The end of the period cannot be before its start.");
 
     public static Error UnknownPayType { get; } = Error.Validation(
         "service.unknown_pay_type",

@@ -9,6 +9,7 @@
 //       bug. Both must fail loudly if the checks in RepairOrderService or
 //       RepairOrder are removed.
 
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -181,6 +182,85 @@ public sealed class RepairOrderTests(HostFixture fixture)
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await response.Content.ReadAsStringAsync()).Should().Contain("service.unknown_pay_type");
+    }
+
+    /// <summary>
+    /// Hours sold and what they realised. The effective rate is the number a
+    /// service manager actually runs on: the posted rate says what is on the
+    /// wall, this says what came through the door.
+    /// </summary>
+    [Fact]
+    public async Task The_labour_report_gives_hours_sold_and_what_an_hour_realised()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        // 2h at 100 and 2h at 50: four hours, 300, so 75 realised per hour.
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Diagnosis", hours = 2m, rate = 100m,
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 2m, rate = 50m, payType = "Warranty",
+        });
+
+        // Parts must not reach a LABOUR rate. This is the mistake that makes an
+        // effective rate look wonderful and mean nothing.
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Part", description = "Filter", unitAmount = 500m,
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        var report = await LabourReportAsync(Manager);
+
+        report.GetProperty("hoursSold").GetDecimal().Should().BeGreaterThanOrEqualTo(4m);
+        report.GetProperty("effectiveLabourRate").GetDecimal().Should().BeGreaterThan(0m);
+
+        var payers = report.GetProperty("byPayer").EnumerateArray()
+            .ToDictionary(p => p.GetProperty("payType").GetString()!, p => p);
+
+        payers.Should().ContainKey("Warranty",
+            because: "hours a technician worked are sold whoever settles the bill");
+        payers["Warranty"].GetProperty("hoursSold").GetDecimal().Should().BeGreaterThanOrEqualTo(2m);
+
+        // The parts line is worth 500 and must be nowhere in the labour revenue,
+        // so the realised rate cannot have been inflated by it.
+        var hours = report.GetProperty("hoursSold").GetDecimal();
+        var revenue = report.GetProperty("labourRevenue").GetDecimal();
+        (revenue / hours).Should().BeLessThan(200m,
+            because: "a part must never be counted as an hour");
+    }
+
+    /// <summary>
+    /// The report has to say what it is not measuring. Efficiency and
+    /// productivity are the two figures the trade benchmarks technicians on, and
+    /// neither can be produced without a roster or a time clock — so the response
+    /// names them rather than leaving a manager to assume they were fine.
+    /// </summary>
+    [Fact]
+    public async Task The_labour_report_names_the_figures_it_cannot_produce()
+    {
+        var report = await LabourReportAsync(Manager);
+
+        var absent = report.GetProperty("notMeasured").EnumerateArray()
+            .Select(v => v.GetString()).ToList();
+
+        absent.Should().Contain("Efficiency");
+        absent.Should().Contain("Productivity");
+    }
+
+    [Fact]
+    public async Task A_period_that_ends_before_it_starts_is_refused()
+    {
+        using var response = await SendAsync(
+            HttpMethod.Get, $"{Jobs}/labour?from=2026-08-31&to=2026-08-01", Manager);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("service.backwards_period");
     }
 
     [Fact]
@@ -383,6 +463,22 @@ public sealed class RepairOrderTests(HostFixture fixture)
     }
 
     // --- helpers -------------------------------------------------------------
+
+    /// <summary>
+    /// The labour report over a window wide enough to hold whatever this run has
+    /// just invoiced, whichever day it happens to be run on.
+    /// </summary>
+    private async Task<JsonElement> LabourReportAsync(string email)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var from = today.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var to = today.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        using var response = await SendAsync(HttpMethod.Get, $"{Jobs}/labour?from={from}&to={to}", email);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return await response.Content.ReadFromJsonAsync<JsonElement>();
+    }
 
     private static decimal Credit(JsonElement lines, string accountCode) =>
         lines.EnumerateArray()
