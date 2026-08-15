@@ -643,3 +643,19 @@ to come.
   **Rehearsed:** dropping the labour-kind filter lets a $500 part count as an hour, and fails exactly the test guarding the realised rate.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **636/636** (was 633).
+
+- **2026-08-15 — A passkey can be proven genuine, or proven not to be.** The cryptographic half of WebAuthn, and **deliberately nothing else**: no table, no route, no sign-in path. This commit adds no attack surface, and whatever wires it up next can rely on the verification already being trustworthy instead of hoping.
+
+  **Implemented directly rather than by adding a FIDO library.** A passkey needs one binary format decoded and two signature algorithms verified; pulling a whole attestation stack into the sealed Identity project to get that would be a far larger security dependency than the problem calls for. One package was added — Microsoft's own `System.Formats.Cbor` — because hand-rolling a CBOR reader would have been the riskiest line in the change.
+
+  Seven checks, each the reason a passkey cannot be phished, replayed or forged: ceremony type, single-use challenge, **origin** (the anti-phishing property), relying-party hash, user presence, the signature over `authenticatorData || SHA-256(clientDataJSON)`, and the sign counter.
+
+  **Attestation is not verified, and that is stated rather than hidden.** `none` is accepted — what platform passkeys send — and every other format is refused rather than ignored, because accepting one we do not check would imply a guarantee we are not making.
+
+  **The fake authenticator is why any of this is worth trusting.** It holds a real P-256 key, writes real CBOR, assembles real authenticator data and signs real assertions — and misbehaves on demand: wrong origin, wrong relying party, a repeating counter, a signature over the wrong bytes. A suite built on hand-written byte arrays and a stubbed verifier would prove only that the stub returns what it was told. Thirteen tests: one happy path, twelve refusals, each asserting the specific reason.
+
+  **Rehearsed:** deleting the origin check and the counter check fails exactly the lookalike-site test and the clone test, and nothing else.
+
+  **Still not built:** the credential table, registration and sign-in endpoints, and the session issuance that would make a passkey actually sign somebody in. Until those exist **passkeys are not usable**, and no screen offers them.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **649/649** (was 636).
