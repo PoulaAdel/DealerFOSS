@@ -43,7 +43,9 @@ External data maps to capability-specific, versioned contracts with source, enti
 
 ### ADR-007 — Integration is a platform edge — Accepted
 
-`src/Integrations/` is a sibling of business modules. It owns external protocols, credentials, mapping, inbox/outbox processing, checkpoints, and connector health—not dealership business rules.
+Integration is a sibling of business capabilities rather than a layer beneath them. It owns external protocols, credentials, mapping, inbox/outbox processing, checkpoints, and connector health—not dealership business rules.
+
+The path in the original text was `src/Integrations/`, from when this was its own project. ADR-017 collapsed the tree to three projects, so it is now `src/App/Integrations/` — a flat capability folder like every other. **The decision is unchanged; only the address is.**
 
 ### ADR-008 — Module contracts and durable events — Accepted
 
@@ -51,7 +53,15 @@ Synchronous lookups use narrow published interfaces. Cross-module state changes 
 
 ### ADR-009 — Browser sessions and API tokens — Accepted
 
-The React browser uses a backend-for-frontend session in Secure, HttpOnly, SameSite cookies with CSRF protection. OAuth/OIDC bearer tokens are used for machine integrations and public APIs. ASP.NET Core Identity supplies local identity; MFA and OIDC federation are supported. Global administrators require MFA.
+The React browser uses a backend-for-frontend session in Secure, HttpOnly, SameSite cookies with CSRF protection. OAuth/OIDC bearer tokens are used for machine integrations and public APIs. Local identity, MFA and OIDC federation are all in scope. Global administrators require MFA.
+
+> **Corrected 2026-08-15.** This paragraph read "ASP.NET Core Identity supplies
+> local identity", which §4 of this same document has contradicted since
+> 2026-08-14: the project uses `Microsoft.Extensions.Identity.Core` for
+> `IPasswordHasher<T>` **only**, and users, roles, sessions, TOTP and audit are
+> its own code in `src/Identity`. A document that disagrees with itself is worse
+> than one that is merely out of date, because both halves look authoritative.
+> §4 was right and is now the only statement of it.
 
 ### ADR-010 — Document storage behind `IDocumentStore` — Accepted
 
@@ -134,7 +144,29 @@ table that mixes the two describes a system nobody can find — verified against
 
 ### Frontend
 
-React + TypeScript + Vite; Material UI; MUI DataGrid; React Router; TanStack Query; React Hook Form + Zod. The generated OpenAPI client is the transport boundary. WCAG 2.2 AA is required.
+Same two words, and the gap between them was wider here than anywhere else in
+this document: the row below listed six libraries the frontend has never had.
+Verified against `frontend/package.json` on 2026-08-15.
+
+| Concern | Choice | State |
+|---|---|---|
+| Runtime | React 19, TypeScript, Vite | **Adopted** |
+| Routing | React Router 8 (`react-router`; the DOM bindings moved into the main package) | **Adopted** |
+| Components | none — plain elements against one hand-written stylesheet, `frontend/src/theme/app.css` | **Adopted.** Material UI and MUI DataGrid were listed here and were never taken |
+| Data fetching | one `fetch` wrapper, `shared/api.ts`, which every call goes through | **Adopted.** TanStack Query was listed here and was never taken |
+| Forms | controlled components and the server's own validation refusals | **Adopted.** React Hook Form and Zod were listed here and were never taken |
+| API types | `shared/contracts.ts`, hand written and mirroring `src/App/**/I<Feature>.cs` | **Adopted.** A **generated OpenAPI client was listed here and does not exist** — the file says so in its own header, and changing a server record means changing it in the same commit |
+| Translation | six catalogues, no library; English is the schema, so a missing key fails `npm run typecheck` (ADR-019) | **Adopted** |
+| Testing | Vitest, Testing Library, jsdom | **Adopted** |
+| QR codes | `qrcode.react` — the one UI dependency, for authenticator enrolment | **Adopted** |
+
+Four runtime dependencies in total. That is a deliberate position and not an
+unfinished one: the whole product surface is served by React, React Router and
+one QR renderer, which is what keeps `npm audit` quiet and the bundle at roughly
+210 kB gzipped.
+
+WCAG 2.2 AA is required; ADR-020 records which parts of it are met and which are
+not.
 
 ### Deployment
 

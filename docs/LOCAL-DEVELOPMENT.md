@@ -121,11 +121,13 @@ with the same class name — a compile error, not a silent one.
   `src/Core`, `src/Identity`, `src/App`. A new capability is a flat folder inside
   `src/App` — not a project, and not a `Domain/`, `Data/`, or `Contracts/`
   subfolder inside the capability.
-- **Identity's internals are sealed.** Only `IAccessDirectory`, `IAuthenticator`,
-  `ISecurityPolicy`, `IGlobalAdministration`, `IdentityRegistration`,
-  `IdentitySeeder`, `ControlPlaneSeeder`, and `Permissions` (plus their result
-  records) are public, and `BoundaryTests` asserts exactly that list. Making
-  another type public is a security decision, not a convenience.
+- **Identity's internals are sealed.** A short list of contracts is public and
+  everything else is `internal`. **The list lives in one place —
+  `tests/Architecture/BoundaryTests.cs` — and this file deliberately does not
+  copy it**, because the copy that used to be here went stale three times and
+  was three names short by the time anyone noticed. Read the test: every entry
+  carries a comment saying why exporting it was a security decision. Making
+  another type public fails that test, which is the point.
 - **SPDX is applied once** at assembly level in `Directory.Build.props`. Do not add
   per-file licence headers.
 - **Never commit secrets.** `appsettings.Development.json` is git-ignored; the

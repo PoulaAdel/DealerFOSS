@@ -25,6 +25,13 @@ No request may select an arbitrary tenant connection. Tenant middleware resolves
 
 ## 3. Core data model
 
+> **This is the target model, not the schema.** Roughly half of the tables named
+> below exist; the rest are the shape the product is heading for. Do not read a
+> name here as evidence that a table is there — the schema is what
+> `src/App/**/*Tables.cs` configures, and
+> [`implementation/STATUS.md`](implementation/STATUS.md) says which capabilities
+> are built.
+
 ### Organization and identity
 
 `DealerOrganizations`, `LegalEntities`, `Rooftops`, `Departments`, `Users`, `Roles`, `Permissions`, `UserAssignments` (user + scope + role), `Sessions`, `AuditEvents`.
@@ -58,9 +65,15 @@ Standalone Parts, Accounting, and Tax/Title tables are introduced only with thei
 4. The endpoint declares the required scope. Data queries apply it centrally.
 5. Organization-wide access is an explicit permission; global administration never grants silent access to tenant business data.
 
-Background jobs carry a signed/validated tenant job context and create a fresh data context per tenant. They cannot reuse request-scoped tenant state.
+Background jobs must carry a signed/validated tenant job context and create a fresh data context per tenant, and cannot reuse request-scoped tenant state. **The second half holds and the first does not.** The one background worker today — CSV import — builds its own scope and its own tenant context, and a test proves it cannot do what its requester may not; what is missing is the *signed* context that would make that structural rather than careful. It is the last unmet exit criterion of phase I1 that is not blocked on somebody else ([doc 09](09-Implementation-Roadmap.md)).
 
 ## 6. Reporting
+
+> **One lane of the two exists.** There is no `[rpt]` schema and no projection —
+> `grep -rn '"rpt"' src` finds nothing. Reporting today is the operational lane:
+> indexed queries in `src/App/Reporting` answering the month in review and stock
+> aging. The second lane below is the design for when a query gets too slow to
+> run live, and that has not happened yet.
 
 Reporting has two lanes:
 
@@ -79,4 +92,6 @@ Every supported release exports normalized JSON/CSV, relationship manifests, che
 
 ## 8. Migrations and upgrades
 
-The CLI supports host and tenant preview, backup verification, apply, resume, and status. Production migrations use expand → data migration → contract steps so the current and next application versions can coexist during an upgrade. Hosted/fleet operation must add canary rollout and automated tenant-version tracking before scaling beyond manually supportable deployments.
+**There is no CLI.** This section described one — preview, backup verification, apply, resume, status — and doc 02 §4 has recorded "There is no CLI" since 2026-08-14. Both cannot be true. What exists today is `dotnet ef` against four migration sets ([Local Development](LOCAL-DEVELOPMENT.md#migrations)) and the application applying them at start-up; an operator's route is [Operating](OPERATING.md).
+
+The rest of this section is the intended shape and is unbuilt: production migrations should use expand → data migration → contract steps so the current and next application versions can coexist during an upgrade, and hosted/fleet operation must add canary rollout and automated tenant-version tracking before scaling beyond manually supportable deployments.

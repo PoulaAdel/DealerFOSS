@@ -13,8 +13,8 @@ flowchart TB
     Root --> Deploy["deploy/"]
     Root --> Docs["docs/"]
     Src --> Core["Core/ — 11 files<br/>no EF, no ASP.NET"]
-    Src --> Identity["Identity/ — 34 files<br/>internals sealed: 8 public types"]
-    Src --> App["App/ — 141 files"]
+    Src --> Identity["Identity/ — 38 files<br/>internals sealed; the exported<br/>list is asserted by BoundaryTests"]
+    Src --> App["App/ — 145 files"]
     App --> Plumbing["Tenancy/ · Data/<br/>plumbing"]
     App --> Features["Organization · Customers · Vehicles · Inventory<br/>Leads · Deals · Finance · RepairOrders · Parts<br/>Accounting · Reporting · Documents · DataMigration<br/>Integrations · Administration"]
     App -.depends on.-> Identity

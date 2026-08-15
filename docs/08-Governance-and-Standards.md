@@ -92,18 +92,32 @@ Generated files (anything under `Migrations/`) are exempt.
 
 Local development uses a checked-in Compose profile for SQL Server and optional Redis, plus .NET and Node. Sample data includes one single-rooftop and one multi-rooftop dealer organization. Setup commands validate prerequisites, create development keys, migrate/seed, and print the local URLs; secrets are never committed.
 
-A new contributor reads:
+A new contributor starts at **[Onboarding](ONBOARDING.md)**, which is the one
+door and orders the reading for them: the repository map, then STATUS, then a
+single request traced through nine files, and only then the design documents.
 
-1. `README.md` and [workbook index](00-Workbook.md);
-2. [Vision & Scope](01-Vision-and-Scope.md);
-3. [Architecture & Decisions](02-Architecture-and-Decisions.md);
-4. the module or connector README for their task;
-5. architecture and conformance tests;
-6. `.github/CONTRIBUTING.md`, security policy, and relevant ADRs.
+This section used to give a different, longer list starting at `README.md` —
+a second entry point that quietly disagreed with the first. Two doors is worse
+than either door, so there is now one, and the order lives there.
 
 ## 9. Branching and review
 
-Use trunk-based development with short-lived branches. Every pull request links an issue, states user/operational impact, identifies schema/public-contract/security effects, and passes CI. At least one code-owner review is required; security-, accounting-, compliance-, migration-, and connector-certification changes require the relevant specialist reviewer.
+**The policy below is for the project this becomes when a second contributor
+arrives. It is not how the repository runs today**, and saying so is the point of
+this note — a governance document describing a review process nobody performs
+teaches a newcomer to expect one.
+
+Today: one maintainer, one agent committing sequentially to `main`, pushes done
+by hand, and local verification (`dotnet build`, `dotnet test`,
+`verify-e2e.ps1`, and the frontend gate) as the real gate. Feature branches would
+add a second layer of isolation on top of one that already exists.
+
+The policy, for when it applies: trunk-based development with short-lived
+branches. Every pull request links an issue, states user/operational impact,
+identifies schema/public-contract/security effects, and passes CI. At least one
+code-owner review is required; security-, accounting-, compliance-, migration-,
+and connector-certification changes require the relevant specialist reviewer.
+Adopt it properly at the moment a second person can review, not before.
 
 ## 10. Sustainability and strategy
 

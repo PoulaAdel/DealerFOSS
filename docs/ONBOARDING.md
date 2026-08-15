@@ -11,8 +11,8 @@ Budget about 30 minutes for the reading, 10 for getting it running.
 
 ## 1. Read (30 minutes)
 
-**Do not start with the documents.** There are 45 of them and they are written as
-a reference. Reading them cold is the slowest route in.
+**Do not start with the documents.** There are nearly fifty and they are written
+as a reference. Reading them cold is the slowest route in.
 
 ### Step 1 — the shape (5 min)
 
@@ -169,38 +169,46 @@ comment explaining why it is legitimate — that is the standard for adding anot
 
 ## 4. Know what is still soft
 
-Calibrate your confidence — these are current, honest limitations:
+Calibrate your confidence — these are current, honest limitations, re-checked
+against the code on 2026-08-15.
 
-- **Ten capabilities exist** (Organization, Identity, Customers, Vehicles,
-  Inventory, Leads, Deals, Accounting, Administration, DataMigration) out of
-  roughly thirteen planned.
-- **Importing is one file at a time, in one direction.** There is no export, no
-  connector, and no way to update a matched record from a file.
+- **Fifteen capability folders exist** in `src/App`. `ls src/App` is the
+  authority; [doc 03 §2](03-Project-Structure.md) describes what each is for.
 - **The features inside `App` are held apart by tests, not by the compiler.** That
   is deliberate, and it means a cross-feature `using` compiles and fails later.
-- **CI has never executed** (no remote configured). The workflow is a claim.
+  Only `Core` and `Identity` have compiler walls, because breaching those two is
+  a security or correctness incident rather than a mess.
+- **CI has never executed.** A remote *is* configured and the workflow exists,
+  but nothing has been pushed, so `.github/workflows/ci.yml` is an untested
+  claim. Local verification is the real gate.
 - **Federation (OIDC) does not exist**, and cannot be honestly built until there
-  is a real identity provider to test against. Local passwords and TOTP —
-  optional or required by role — are the whole of sign-in today.
+  is a real identity provider to test against. Passwords, TOTP and **passkeys**
+  are the whole of sign-in today.
 - **Administrator accounts can only be seeded, not created.** The separation
   between operating the deployment and reading a dealership's records exists, and
   so does time-limited support access — but there is no endpoint that creates a
   second administrator, and no recovery codes if one loses their phone. Clearing
   the row is a database operation today.
-- **Provisioning a new dealership is not an administrator action.** The control
-  plane lists dealerships and can suspend or resume one — from `/admin` in the
-  browser, or the API — but creating the database still happens through the
-  development seeder.
+- **Provisioning a new dealership *is* now an administrator action** — the
+  control-plane console sets one up, creates its database, opens its books and
+  issues its first manager a code. This entry used to say the opposite.
+- **One outbound call exists in the whole product**: the public safety-recall
+  lookup. Everything else is self-contained, which is why "the regulator did not
+  answer" is the only external-failure path any screen has to handle.
 - **The frontend renders and has been looked at.** Component tests answer "does
   it draw?" on every change; every screen has also been signed into and walked
   on a real browser at desktop and phone width. Do both after a visual change —
   jsdom has no layout engine, and opening the real thing has already caught
-  defects the tests could not. The only remaining physical unknown is whether a
-  phone camera reads the QR code.
-- **Backup and restore have never been rehearsed.**
+  defects the tests could not, including one the same week this was written. The
+  only remaining physical unknown is whether a phone camera reads the QR code.
+- **Backup and restore are rehearsed**, and were the last open criterion of
+  stage 1 (closed 2026-08-04). This entry said "never rehearsed" for eleven days
+  after that stopped being true, while [doc 01](01-Vision-and-Scope.md) said the
+  opposite — one of the contradictions the 2026-08-15 sweep was looking for.
 
 `STATUS.md` is the live version of this list. If it disagrees with this section,
-`STATUS.md` is right and this section is stale.
+`STATUS.md` is right and this section is stale — and the entries above are the
+evidence that this section *does* go stale, so check it rather than trusting it.
 
 ---
 

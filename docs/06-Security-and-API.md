@@ -20,13 +20,27 @@ Threat models are maintained for authentication/session handling, tenant and roo
 
 The browser uses a backend-for-frontend session cookie marked Secure, HttpOnly, and SameSite, with CSRF protection and rotation after authentication/privilege changes. Access and idle timeouts are configurable; the default workday session has a 15-minute idle warning and a maximum eight-hour duration. “Remember me” is disabled for privileged roles.
 
-OIDC/SAML-compatible federation is supported through ASP.NET Core. TOTP is the minimum MFA option; WebAuthn/passkeys are preferred for administrators.
+OIDC/SAML-compatible federation is **specified and not built**, and cannot honestly be built until there is a real identity provider to test against — a fake one proves nothing. Doc 02 §4 has recorded that as **Selected** since 2026-08-14; this paragraph said "is supported" and was the other half of the same contradiction.
 
-Who must hold a second factor is a property of the **role**, not of the person, so the obligation follows responsibility rather than a list somebody maintains as staff change. A dealer organization sets it for its own roles; the setting lives in that organization's database and reaches no other. It is evaluated on every request rather than frozen at sign-in, so turning it on takes effect immediately instead of waiting for everyone to sign out. A user who owes a second factor is not refused entry — they receive a real session that can reach enrolment, confirmation, `auth/me`, and sign-out, and nothing else. Disabling a second factor is deliberately not on that list: it would answer the policy by removing the thing it asks for. This is what makes turning the policy on safe, since a dealership can always satisfy a rule it has just imposed on itself. Passwords follow current ASP.NET Identity/NIST-style rules: block known-compromised passwords, allow password managers and long passphrases, avoid composition-rule dependence, rate-limit attempts, and provide secure recovery.
+TOTP is the minimum MFA option. WebAuthn/passkeys are built and usable **for dealership users**: they can be enrolled from `/security/passkeys` and used to sign in. They are **not** available to administrators — `IPasskeys` resolves the caller through `ICurrentUser`, which a control-plane identity never reaches (§3), so an administrator's second factor is TOTP and nothing else today. "Preferred for administrators" is the intent, not the state.
 
-Session records are durable in SQL and include device/user-agent summary, issued/last-seen/expiry, MFA level, and revocation. Cache failure cannot revive a revoked privileged session. Users can view and revoke their sessions.
+Who must hold a second factor is a property of the **role**, not of the person, so the obligation follows responsibility rather than a list somebody maintains as staff change. A dealer organization sets it for its own roles; the setting lives in that organization's database and reaches no other. It is evaluated on every request rather than frozen at sign-in, so turning it on takes effect immediately instead of waiting for everyone to sign out. A user who owes a second factor is not refused entry — they receive a real session that can reach enrolment, confirmation, `auth/me`, and sign-out, and nothing else. Disabling a second factor is deliberately not on that list: it would answer the policy by removing the thing it asks for. This is what makes turning the policy on safe, since a dealership can always satisfy a rule it has just imposed on itself. Passwords follow NIST-style rules: allow password managers and long passphrases, avoid composition-rule dependence, rate-limit attempts, and provide secure recovery. **Blocking known-compromised passwords is specified and not built** — it needs either a breach corpus shipped with the product or a call to somebody else's service on every password change, and neither has been decided.
 
-CSRF protection is a token bound to the session rather than a free-standing one. Sign-in issues a second random secret alongside the session token, stores only its hash on the session row, and returns it in a script-readable cookie; every request that is not GET, HEAD, OPTIONS, or TRACE must repeat it in the `X-CSRF-Token` header. Sign-in and second-factor completion are the only exempt writes, because no session exists yet to have issued a token. Two properties follow from binding the token to the session: it dies the instant the session is revoked, and a token minted for one session cannot authorize a write on another — which is what a plain double-submit cookie cannot promise, since anything able to set cookies for the site can supply both halves of the pair.
+Session records are durable in SQL and include device/user-agent summary, issued/last-seen/expiry, MFA level, and revocation. Cache failure cannot revive a revoked privileged session. **Letting users view and revoke their own sessions is specified and not built** — the rows carry everything needed, and no endpoint reads them back.
+
+CSRF protection is a token bound to the session rather than a free-standing one. Sign-in issues a second random secret alongside the session token, stores only its hash on the session row, and returns it in a script-readable cookie; every request that is not GET, HEAD, OPTIONS, or TRACE must repeat it in the `X-CSRF-Token` header. Two properties follow from binding the token to the session: it dies the instant the session is revoked, and a token minted for one session cannot authorize a write on another — which is what a plain double-submit cookie cannot promise, since anything able to set cookies for the site can supply both halves of the pair.
+
+**The exempt writes are the ones where no session can exist yet to have issued a token**, and each is protected by a credential instead. The authority is the `ExemptPaths` array in `App/Tenancy/AntiForgeryMiddleware.cs`, which carries a comment per entry; as of 2026-08-15 it holds eight paths, not the two this paragraph used to name:
+
+| Exempt path | What protects it instead |
+|---|---|
+| `auth/login`, `auth/login/second-factor` | the password, then the code |
+| `admin/login` | the same, for the control plane — no administrator session exists yet either |
+| `auth/enrol` | a single-use, hashed, expiring code. A starter has no password to sign in with |
+| `auth/recover/authenticator`, `auth/recover/code` | a live authenticator code, or a manager-issued one. Note what this does **not** weaken: a successful recovery issues no session, so nothing here chains into being signed in |
+| `auth/passkeys/sign-in/begin`, `auth/passkeys/sign-in/finish` | a signature over a server-issued, single-use challenge — which a cross-site attacker cannot obtain or forge, and is therefore stronger than the token it replaces |
+
+Passkey **registration** is deliberately absent from that list: adding a credential to an account requires already being signed in to it, so it carries a token like any other write.
 
 ## 3. Authorization and segregation of duties
 
@@ -67,14 +81,19 @@ F&I and communications store the exact version of a menu, disclosure, notice, co
 
 ## 6. API conventions
 
-- REST endpoints live under `/api/v1/`; public contracts are documented by OpenAPI.
-- Successful responses return their resource directly. Errors use RFC Problem Details with stable application error codes.
-- Commands that could be retried—create, post, payment, export, connector write—accept an idempotency key.
-- Mutable resources expose an ETag/concurrency token; conflicts return 409 rather than overwriting newer work.
-- Lists use bounded paging; cursor pagination is preferred for rapidly changing or large datasets.
-- Bulk import/export is an asynchronous job with progress, errors, cancellation rules, and result download.
-- Public breaking changes require a new API version and at least a 12-month supported transition after general availability.
-- File downloads authorize the document and scope before producing a short-lived stream; filesystem paths are never exposed.
+Marked, because four of these describe the target and were being read as a
+description of the API. **Built** means it holds today and a test says so.
+
+| Convention | State |
+|---|---|
+| REST endpoints live under `/api/v1/`; public contracts documented by OpenAPI | **Built** |
+| Successful responses return their resource directly; errors use RFC 7807 Problem Details with stable application error codes | **Built.** One mapping, in `ProblemResults.cs` |
+| Lists use bounded paging | **Built** — every list clamps its own limit. Cursor pagination is **specified**; the integration edge has cursors, the HTTP surface does not |
+| File downloads authorize the document and scope before producing a short-lived stream; filesystem paths are never exposed | **Built** |
+| Bulk import/export is an asynchronous job with progress and errors | **Built for import** (one in-process `BackgroundService`). Cancellation is **specified and absent**, and export is synchronous |
+| Commands that could be retried accept an **idempotency key** | **Specified, not built.** No endpoint reads one. Idempotence exists inside the connector edge, on `IRecordSink`, which is a different mechanism for a different problem |
+| Mutable resources expose an **ETag**; conflicts return 409 | **Specified, not built.** The concurrency token exists on every row and is enforced at `SaveChanges`; nothing surfaces it as an ETag, so a conflict is detected server-side rather than prevented client-side |
+| Public breaking changes require a new API version and a 12-month transition | **Specified.** There has never been a second version, so the rule is untested |
 
 ## 7. Secure development and incident response
 

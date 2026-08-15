@@ -18,8 +18,11 @@ correctness incident:
 - **`Core`** must never learn about a database, or business rules become
   untestable and coupled to storage.
 - **`Identity`** owns who may see what. Its tables and services are `internal`,
-  so application code cannot write a user row or an audit row except through
-  `IAccessDirectory` and `IAuthenticator`.
+  so application code cannot write a user row or an audit row except through the
+  handful of contracts it exports. **That list is asserted by
+  `BoundaryTests`, which is the authority** — do not maintain a second copy of it
+  here or anywhere else. Read the test: each entry carries a comment saying why
+  exporting it was a security decision rather than a convenience.
 
 Every other boundary is held by architecture tests, which fail the build on a
 breach. Accounting will earn a compiler wall of its own when it lands, for the
@@ -32,21 +35,31 @@ DealerFOSS/
 ├── src/
 │   ├── Core/         Result, Money, Ids, Clock, AuditableEntity, and the
 │   │                 interfaces everything depends on. No EF, no ASP.NET. Flat.
-│   ├── Identity/     users, roles, permissions, sessions, audit. Internals sealed;
-│   │                 only IAccessDirectory and IAuthenticator are public.
+│   ├── Identity/     users, roles, permissions, sessions, audit, passkeys, and
+│   │                 the control plane. Internals sealed; the exported list is
+│   │                 asserted by tests/Architecture/BoundaryTests.cs.
 │   └── App/          the application — everything else
 │       ├── Program.cs          composition root
-│       ├── AuthEndpoints.cs    sign in, sign out, who am I
+│       ├── AuthEndpoints.cs    sign in, sign out, who am I, passkeys, recovery
 │       ├── ProblemResults.cs   the one Error → HTTP mapping
 │       ├── Tenancy/            host catalog, tenant resolution, middleware
 │       ├── Data/               TenantDb + Migrations/
 │       ├── Organization/       dealer organization → legal entity → rooftop → department
 │       ├── Customers/          people and businesses the dealership deals with
-│       ├── Vehicles/           vehicles as identities — VIN, year, make, model
+│       ├── Vehicles/           vehicles as identities — VIN, year, make, model,
+│       │                       and the public safety-recall lookup
 │       ├── Inventory/          a vehicle on a rooftop's lot, with a status and a cost
 │       ├── Leads/              enquiries being worked at a rooftop
 │       ├── Deals/              one customer buying one car, priced and approved
-│       └── Accounting/         the ledger behind a delivered sale
+│       ├── Finance/            what was sold alongside the car, and what it made
+│       ├── RepairOrders/       the workshop and the booking diary
+│       ├── Parts/              catalogue, stock receipts, costed issue to a job
+│       ├── Accounting/         the ledger behind a delivered sale or a service invoice
+│       ├── Documents/          IDocumentStore and the printable paperwork
+│       ├── Reporting/          the month in review, and stock aging
+│       ├── DataMigration/      importing and exporting a dealership's records
+│       ├── Integrations/       the connector edge (ADR-007)
+│       └── Administration/     the control plane's own HTTP surface
 ├── tests/
 │   ├── Unit/           domain rules, no infrastructure
 │   ├── Integration/    the real app against a real database
@@ -55,11 +68,16 @@ DealerFOSS/
 └── docs/
 ```
 
-Future capabilities — Finance, Service, Parts, Documents, Reporting — arrive as
-sibling folders inside `App/`. Speculative empty folders are
-forbidden. Tax/title, communications, and compliance begin as features inside
-their owning capability and separate only when they acquire independent data
-ownership and workflows.
+Verified against the tree on 2026-08-15. The list above was eight folders short
+for about a week — it named Accounting as the last capability while six more had
+landed — which is the failure mode of writing a tree by hand. **If you are asking
+"what capabilities exist", `ls src/App` is the authority and this is a
+description of it.**
+
+Further capabilities arrive as sibling folders inside `App/`. Speculative empty
+folders are forbidden. Tax/title, communications, and compliance begin as
+features inside their owning capability and separate only when they acquire
+independent data ownership and workflows.
 
 **Why Vehicles and Inventory are separate folders but one schema.** They answer
 different questions at different scopes: a vehicle is organization-shared and
@@ -122,13 +140,21 @@ later" is insufficient.
 
 ## 5. Persistence
 
-Three contexts, not one per capability:
+Four contexts, not one per capability:
 
-| Context | Lives in | Holds |
-|---|---|---|
-| `HostDb` | `App/Tenancy/` | which dealer organization lives in which database |
-| `IdentityDb` | `Identity/` | users, roles, sessions, audit — `internal` |
-| `TenantDb` | `App/Data/` | one dealer's business data across every feature |
+| Context | Lives in | Holds | Physical database |
+|---|---|---|---|
+| `HostDb` | `App/Tenancy/` | which dealer organization lives in which database | host catalog |
+| `ControlPlaneDb` | `Identity/` | administrators, their sessions, and support-access grants — `internal` | host catalog, `control` schema |
+| `IdentityDb` | `Identity/` | users, roles, sessions, audit — `internal` | each tenant, `identity` schema |
+| `TenantDb` | `App/Data/` | one dealer's business data across every feature | each tenant |
+
+`ControlPlaneDb` is the fourth and is easy to miss because it shares a *file
+tree* with `IdentityDb` and a *database* with `HostDb`. It is separate from both
+on purpose: whoever runs the installation is not a dealership user, and putting
+their credentials in a tenant database would mean a tenant restore could resurrect
+an administrator. See [`LOCAL-DEVELOPMENT.md`](LOCAL-DEVELOPMENT.md#migrations)
+for what that costs when generating a migration.
 
 `TenantDb` knows no table names. Each feature contributes an
 `IEntityTypeConfiguration<T>` in its own `<Feature>Tables.cs`, including the
@@ -169,19 +195,26 @@ tests.
 
 ```text
 frontend/src/
-├── app/                    router, providers, authenticated shell
-├── features/
-│   ├── organization/
-│   ├── customers/
-│   ├── inventory/
-│   └── ...
-├── shared/                 generated API client, reusable accessible UI
-├── print/                  print preview and local print-agent integration
-└── theme/
+├── app/                    router, providers, both authenticated shells
+├── features/               one folder per area, mirroring src/App where it can
+│   ├── auth/               sign in, second factor, recovery, passkeys
+│   ├── admin/              the control-plane console — a separate shell
+│   ├── customers/  deals/  inventory/  leads/  parts/  service/
+│   ├── accounting/ dashboard/ migration/ staff/ vehicles/
+├── shared/                 api.ts, contracts.ts, i18n/, reusable accessible UI
+├── test/                   the render wrapper and the fetch stub
+└── theme/                  app.css — the whole stylesheet
 ```
 
+Two differences from the original sketch, both real: **`shared/` holds a
+hand-written `contracts.ts`, not a generated client** (doc 02 §4), and there is
+**no `print/` folder** — printable paperwork is server-rendered HTML from
+`src/App/Documents`, opened in a tab with a print stylesheet, so the browser
+needs no print code of its own (ADR-010).
+
 Each route declares its organization/rooftop context. UI permission checks improve
-usability but never replace server authorization.
+usability but never replace server authorization. The shape of a screen is
+[ADR-020](adr/0020-screen-shape-and-interface-standards.md)'s five bands.
 
 ## 8. Naming
 

@@ -12,6 +12,17 @@ Placing connectors among business modules blurs the line between the dealership 
 
 `src/Integrations/` is a sibling of business modules. It owns external protocols, credentials, mapping, inbox and outbox processing, checkpoints, and connector health. It owns no dealership business rules.
 
+## Correction, 2026-08-15 — the address changed, the decision did not
+
+The path above is stale. [ADR-017](0017-three-projects-flat-features.md)
+collapsed the tree to three projects, so the edge now lives at
+`src/App/Integrations/` — a flat capability folder like every other.
+
+**What this ADR decided is unaffected**: the edge is a *sibling* of business
+capabilities rather than a layer beneath them, it owns transport and credentials
+and mapping, and it owns no dealership business rules. All of that holds. Only
+the folder moved.
+
 ## Alternatives considered
 
 - **A connector module beside Sales and Service.** Rejected: it implies external systems are a business capability.

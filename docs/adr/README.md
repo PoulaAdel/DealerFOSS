@@ -1,8 +1,23 @@
 # Architecture Decision Records
 
-Each Accepted decision has an immutable one-topic file here. [02 — Architecture & Decisions](../02-Architecture-and-Decisions.md) carries the same decisions as a readable summary; where the two differ in wording, the ADR file governs.
+Each Accepted decision has an immutable one-topic file here. [02 — Architecture & Decisions](../02-Architecture-and-Decisions.md) carries the same decisions as a readable summary.
 
 Statuses are **Proposed**, **Accepted**, **Superseded**, or **Rejected**. A material change creates a new dated ADR that supersedes the old one; it never silently rewrites history.
+
+**Which governs when an ADR and doc 02 differ.** The rule used to be "the ADR
+file governs", full stop, and that sent readers to the wrong text twice — ADR-007
+names a folder that moved and ADR-009 names a library that was never used. So the
+rule is now split:
+
+- On the **decision** — what was chosen and why — the ADR governs. That is what
+  it is for, and it is immutable so that the reasoning survives.
+- On a **fact about the code** — a path, a library, a type name — whichever text
+  matches the repository governs, and the repository beats both.
+
+An ADR carrying a stale fact gets a dated **Correction** section appended, saying
+what is now true and confirming the decision is unaffected. It is never rewritten.
+Two carry one today: [ADR-007](0007-integration-platform-edge.md) and
+[ADR-009](0009-browser-sessions-and-api-tokens.md).
 
 | ADR | Decision | Status |
 |---|---|---|

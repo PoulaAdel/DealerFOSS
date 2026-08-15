@@ -10,28 +10,37 @@ DealerFOSS is an AGPLv3 open-source Dealer Management System for independent dea
 
 ### 1. Source of truth
 
-Before changing code, read all files under `docs/` in this order:
+**Do not read all of `docs/` before changing code.** That instruction used to sit
+here as an eleven-item list, and it contradicted both
+[`ONBOARDING.md`](ONBOARDING.md) — which says explicitly not to start with the
+documents — and [`00-Workbook.md`](00-Workbook.md), which routes by what you came
+for. Reading nearly fifty reference documents cold is the slowest way into any of
+them and produces a confident memory of things that are no longer true.
 
-1. `00-Workbook.md`
-2. `01-Vision-and-Scope.md`
-3. `02-Architecture-and-Decisions.md`
-4. `03-Project-Structure.md`
-5. `04-Data-and-Tenancy.md`
-6. `05-Integration-Framework.md`
-7. `06-Security-and-API.md`
-8. `07-Delivery-Roadmap.md`
-9. `08-Governance-and-Standards.md`
-10. `adr/README.md` and relevant diagrams
-11. this roadmap
+Read, in this order:
 
-Also read the existing source and tests before acting.
+1. [`implementation/STATUS.md`](implementation/STATUS.md) — what is actually
+   built, and the "Does it exist?" table at the top. **Start here**, because
+   every design document below describes the target rather than the state.
+2. [`00-Workbook.md`](00-Workbook.md) — the reading rule, and which document owns
+   the topic you are about to touch.
+3. **That owning document, and only it.**
+4. The existing source and tests for the area, including the file headers —
+   which carry the rules that are easy to break, written where they can be
+   broken.
 
 When documents conflict:
 
-1. the document that owns the topic in `00-Workbook.md` governs;
-2. an Accepted ADR governs architecture;
-3. the narrower, security-preserving interpretation wins until the contradiction is corrected;
-4. never silently choose between conflicting rules - fix the owning docs or record an ADR in the same change.
+1. **on a fact about the code, whichever text matches the repository wins, and
+   the repository beats both** — this is the most common conflict by far, and
+   the sweep of 2026-08-15 found eleven of them;
+2. on ownership of a topic, the document `00-Workbook.md` names as owner governs;
+3. on architecture, an Accepted ADR governs the *decision* (see
+   [`adr/README.md`](adr/README.md) for the fact-versus-decision split);
+4. where it is genuinely ambiguous, the narrower, security-preserving reading
+   wins until the contradiction is corrected;
+5. never silently choose between conflicting rules — fix the owning docs, or
+   record an ADR, in the same change.
 
 Do not redesign the product from memory or introduce a fashionable architecture that is not required by measured needs.
 

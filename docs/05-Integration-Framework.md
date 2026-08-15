@@ -97,7 +97,9 @@ The coexistence release commits to one production- or sandbox-certified connecto
 6. Advance a poll cursor only after the full page commits, and only across the range the provider actually covered.
 7. Update counts, timing, lag, warnings, and reconciliation status.
 
-Steps 4 through 7 are built, in `src/App/Integrations/ConnectorRuntime.cs`, along with the cursor, run-history and quarantine tables behind them. Steps 1 and 2 are not: there is no inbox, no webhook path and no poll lease, so the only thing that can start a run today is a caller holding a connector instance. Nothing implements `IRecordSink` either, which means step 5 has no capability to apply through and a real deployment reports every run as misconfigured. `src/App/Integrations/README.md` keeps the current list.
+Steps 3 through 7 are built, in `src/App/Integrations/ConnectorRuntime.cs`, along with the cursor, run-history and quarantine tables behind them, and **step 5 now has one capability to apply through**: `src/App/Customers/CustomerRecordSink.cs` implements `IRecordSink` for customers. This paragraph said "nothing implements `IRecordSink`" for several days after that stopped being true.
+
+Steps 1 and 2 are still absent: there is no inbox, no webhook path and no poll lease, so the only thing that can start a run today is a caller holding a connector instance, and every capability other than Customers still reports a run as misconfigured. `src/App/Integrations/README.md` keeps the current list, and is the one to correct first when this changes.
 
 Two details of the built runtime are worth stating here because they are easy to get wrong later. **The run row is written before the fetch**, so a process killed mid-run leaves an unfinished row rather than no row at all. And **a held cursor is recorded separately from the run's outcome**: a run can succeed, apply every record, and still not move, which is a different fact from a failure and has to stay visible as one.
 

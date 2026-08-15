@@ -29,6 +29,53 @@ path working, with a screen.
 > is wrong — correct it. A file existing is not evidence that a workflow works.
 > Every checked item below names the command that proves it.
 
+## Does it exist? — the whole product on one screen
+
+The rest of this file is chronological, which answers "what happened" and not
+"is X built". This table answers the second question and is the **single home**
+for it — the specification documents link here instead of each hedging their own
+claims ([Workbook](../00-Workbook.md), reading rule). Checked 2026-08-15.
+
+**API** means the endpoint works and is tested. **Screen** means a person can
+reach it in the browser. **Spec** means it is designed in docs 01–08 and no code
+exists.
+
+| Area | State | Where |
+|---|---|---|
+| Dealer organizations kept apart, one database each | API · proven by `verify-e2e.ps1` | `App/Tenancy` |
+| Organization → legal entity → rooftop → department | API · Screen | `App/Organization` |
+| Sign in, sessions, two-step (TOTP), recovery codes | API · Screen | `src/Identity` |
+| **Passkeys** — enrol, sign in, forget | API · Screen | `src/Identity`, `/security/passkeys` |
+| Roles, permissions, staff administration | API · Screen | `src/Identity`, `/staff` |
+| Control plane: dealerships, suspend/resume, support access | API · Screen | `App/Administration`, `/admin` |
+| Customers, with a duplicate check | API · Screen | `App/Customers` |
+| Vehicles, VIN and its documented exceptions | API · Screen | `App/Vehicles` |
+| **Public safety-recall lookup** — the one outbound call | API · Screen | `App/Vehicles`, stock detail |
+| Stock: units, status history, cost, aging | API · Screen | `App/Inventory` |
+| Enquiries and their status history | API · Screen | `App/Leads` |
+| Deals: pricing, trade-ins, approval, delivery | API · Screen | `App/Deals` |
+| F&I products sold with the car, and their profit | API · Screen | `App/Finance` |
+| Workshop: repair orders, lines, authorization, invoicing | API · Screen | `App/RepairOrders` |
+| Booking diary, and arrival opening a job | API · Screen | `App/RepairOrders` |
+| **Pay type** — customer, warranty, internal | API · Screen | `App/RepairOrders` |
+| **Labour report** — hours sold, effective rate | API · Screen | `/workshop/labour` |
+| Parts: catalogue, receipts, costed issue to a job | API · Screen | `App/Parts` |
+| Ledger, chart of accounts, fiscal close and reopen | API · Screen | `App/Accounting` |
+| Month in review, stock aging | API · Screen | `App/Reporting` |
+| Printable paperwork (HTML, print stylesheet) | API · Screen | `App/Documents` |
+| Import from a file; export a dealership's records | API · Screen | `App/DataMigration` |
+| Connector runtime: cursors, runs, quarantine | API · Screen | `App/Integrations` |
+| Six languages, RTL for Arabic | Screen | `shared/i18n` |
+| A live connector to any real DMS | **Spec** — needs a provider agreement | doc 05 |
+| OIDC / SAML federation | **Spec** — needs an identity provider to test against | doc 06 §2 |
+| Scheduled background work (Quartz) | **Spec** — one in-process worker exists, nothing runs on a schedule | doc 07 §6 |
+| Idempotency keys, ETags on the HTTP surface | **Spec** | doc 06 §6 |
+| `[rpt]` analytical projections | **Spec** — reporting is live queries today | doc 04 §6 |
+| A CLI | **Spec, and doc 04 §8 claimed it existed until 2026-08-15** | — |
+| Warranty claim submission, manufacturer APIs, CSI | **Spec** — blocked on an OEM relationship | doc 11 §3 |
+| Credit reports, auctions, title history, plate lookup | **Spec** — blocked on commercial contracts | doc 11 §3 |
+| Tax by jurisdiction, titling and registration | **Spec** — blocked on decision D2 | doc 11 §11 |
+
 ## Exit criteria
 
 ### I0 — repository and engineering baseline
@@ -423,6 +470,15 @@ evidence. These used to accumulate under "Next milestone" — a heading they
 outgrew — which made the document read as if a year of finished work were still
 to come.
 
+> **Every entry is a dated snapshot and is never revised.** A "still not built"
+> note records what was missing *that day*, and several have since been built —
+> the 2026-08-14 recall entry says "no screen", and there is one now. That is the
+> log working as intended: it is the history, not the state.
+>
+> **For the state, use the "Does it exist?" table at the top of this file.** It
+> is the single home for that question, and it is what the specification
+> documents link to instead of each keeping their own answer.
+
 - **2026-08-08 — The application speaks five languages, and Arabic turns the page round.** English, French, German, Russian and Arabic, with the direction of the page derived from the language rather than chosen beside it. There used to be an LTR/RTL toggle next to the theme, which made "Arabic, left to right" a selectable combination — a broken layout with a switch in front of it. Choosing a language now sets both `lang` and `dir` on `<html>`, and because the stylesheet was already written in logical properties, that one attribute mirrors every margin, border and table column at once.
 
   **Three properties make the translations hold up rather than merely exist.** English is the schema: the other four catalogues are typed against `keyof typeof en`, so a key added and not translated fails `npm run typecheck` instead of surfacing an English sentence mid-screen. A test additionally reads the files and fails on a translation that is character-for-character the English — which typecheck cannot see, and which is how a translation actually rots; the genuine loanwords (`GAP`, `VIN`, `Stock` in French, `Status` in German) are listed with their reason rather than the check being weakened. Plurals go through `Intl.PluralRules` and never `n === 1`: Russian needs four forms and Arabic six, and `1 vehicles in stock` was already wrong in English on a screen the dashboard links to. Numbers, money and dates go through the active locale, and **API enum values are translated rather than printed raw** — the stock list used to render `OnHold`, which nobody writes in any language.
@@ -704,3 +760,19 @@ to come.
   **What this is not.** Attestation is still unverified by choice — the browser is asked for `attestation: 'none'`, so nothing is requested that would then go unchecked. No policy lets a passkey replace a password; every account still has one. The recall data is still by model, and the screen says so above the list every time.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **664/664**, `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **303/303** (was 257), `npm run build`. All four screens driven in a real browser in English, German and Arabic, with no horizontal page scroll in any of them.
+
+- **2026-08-15 — The documentation set stopped disagreeing with itself.** Eighteen prose documents grew one milestone at a time and were being asked to serve as a single comprehensive account of the product. A sweep of the whole set — every prose document, every ADR, the diagrams, and the two files that are git-ignored — found **fifteen contradictions**, and each is corrected in place with a dated note saying what was wrong.
+
+  **The root cause was one thing, and naming it is the real fix.** Documents 01–08 are a specification written in the present tense, which is normal for a specification and indistinguishable from a description of a working system. "Commands accept an idempotency key" is a design decision; no endpoint has ever read one. Eleven of the fifteen were this. [`00-Workbook.md`](../00-Workbook.md) now opens with the reading rule — the specification says what should be, PROGRESS and STATUS say what is, and where they disagree the latter two win — and the gaps large enough to mislead are marked in place with the reason.
+
+  **The four that were not that were genuine self-contradictions**, where two documents made incompatible claims about the same thing: doc 02 said ASP.NET Core Identity supplies local identity while its own §4 said the opposite; doc 04 described a CLI while doc 02 said there is no CLI; doc 06 said OIDC federation "is supported" while doc 02 had it as Selected-not-built; and doc 08 sent contributors to a second entry point that disagreed with `ONBOARDING.md`'s "one door".
+
+  **Three duplicated facts were collapsed to one home each.** Identity's exported type list had been copied into doc 03, `LOCAL-DEVELOPMENT.md` and `CLAUDE.md`, and was three names short in all three — it now lives only in `BoundaryTests.cs`, which asserts it, and the copies were replaced with a pointer. Doc 03's hand-written source tree was eight capability folders behind; it now says `ls src/App` is the authority. And the question "does X exist?" gets a **single table at the top of this file**, which the specification documents link to instead of each hedging separately.
+
+  **The worst single entry was doc 02's frontend stack**, which listed Material UI, MUI DataGrid, TanStack Query, React Hook Form, Zod, and a generated OpenAPI client. None has ever been installed. The real answer is four runtime dependencies, and `contracts.ts` is hand written and says so in its own header. Replaced with a table in the same Adopted/Selected form the backend already used, verified against `package.json`.
+
+  **ADRs were corrected without being rewritten.** Two carried stale facts — ADR-007 names a folder that moved in ADR-017, ADR-009 names a library never used. Both get a dated Correction section confirming the *decision* is unaffected, and `adr/README.md`'s conflict rule is split accordingly: on a decision the ADR governs, on a fact about the code whichever text matches the repository governs, and the repository beats both.
+
+  **Doc 09's "read all files under `docs/` before changing code"** contradicted `ONBOARDING.md`'s "do not start with the documents" and produced a confident memory of things no longer true. Replaced with four steps that start at this file.
+
+  Evidence: every relative link in `docs/` resolves (checked by script); `dotnet build` 0/0; `dotnet test` 664/664; frontend typecheck and 303/303 unchanged, since nothing outside `docs/`, `CLAUDE.md` and the progress generator was touched.
