@@ -295,7 +295,45 @@ Outside engineering, recorded so they are not lost:
 | **D4** | Which accounts warranty and internal work post to | Blocks §5, which blocks four other items |
 | **D5** | Whether to hold credit data at all | Changes the security posture of the whole product (§4) |
 
-## 12. What was done rather than only written down
+## 12. Scope register
+
+The index to §3, in one shape a machine can read — the local dashboard renders
+this table directly rather than having the same list typed into it a second
+time. **§3 is the detail; this is the summary.** Keep them in step: if a row
+here disagrees with the section above it, the section is right.
+
+`Blocker` is the single thing that has to change first, and is one of:
+**OEM** (a manufacturer relationship), **Contract** (a commercial agreement),
+**Market** (decision D1/D2), **Decision** (one of ours, D3–D5), **Build** (only
+engineering time), or **Done**.
+
+| Item | Area | Blocker | State |
+|---|---|---|---|
+| DMS certification per manufacturer | Business | OEM | Not started |
+| Manufacturer APIs, brand by brand | Integration | OEM | Not started |
+| Warranty claim submission | Service | OEM | Not started |
+| Per-manufacturer sales and financial reporting | Reporting | OEM | Not started |
+| Customer satisfaction surveys (CSI) | Customer | OEM | Not started |
+| Per-VIN recall completion status | Vehicle | OEM | Not started |
+| Auction platforms (Manheim, ADESA, ACV) | Inventory | Contract | Not started |
+| Credit reports via an aggregator | Finance | Contract | Not started |
+| Title history checks (NMVTIS) | Vehicle | Contract | Not started |
+| Plate to VIN lookup | Vehicle | Contract | Not started |
+| Registration and titling (EVR/ERT) | Compliance | Market | Not started |
+| Sales tax by state, county and city | Accounting | Market | Not started |
+| Ambassadors to dealers | Business | Market | Not started |
+| Adopt STAR vocabulary for contracts | Integration | Decision | Not started |
+| Pay type on service work | Service | Decision | Not started |
+| Technician load balancing | Service | Decision | Not started |
+| Equity mining and next-vehicle prediction | Sales | Decision | Not started |
+| Labour reports: hours sold, effective rate | Reporting | Build | Not started |
+| Passkeys alongside passwords | Security | Build | Not started |
+| Workflow triggers on data we already hold | Platform | Build | Not started |
+| Contributor on-ramp: issues and first tasks | Business | Build | Not started |
+| Public safety recall lookup | Vehicle | Done | Built |
+| Spanish as a sixth language | Product | Done | Built |
+
+## 13. What was done rather than only written down
 
 - **Recall and VIN data from NHTSA** — the one item on the list with no
   approval, no contract and no market decision in front of it. See
