@@ -20,6 +20,8 @@ This workbook is the single source of truth for product scope, architecture, str
 | 07 | [Delivery Roadmap](07-Delivery-Roadmap.md) | phases, exit gates, testing, operations, and risks |
 | 08 | [Governance & Standards](08-Governance-and-Standards.md) | licensing, contribution, releases, and coding standards |
 | 09 | [Implementation Roadmap](09-Implementation-Roadmap.md) | implementation workflow, phase roadmap, completion rules, and progress reporting |
+| 11 | [Franchise & External Scope](11-Franchise-and-External-Scope.md) | what a franchised dealer needs that we do not have, and what blocks each piece |
+| — | [Progress](PROGRESS.md) | the plain-language account of what works today, for a reader who is not a developer |
 | — | [Local Development](LOCAL-DEVELOPMENT.md) | prerequisites, canonical commands, and the environment facts that are easy to get wrong |
 | — | [Operating](OPERATING.md) | **for whoever runs the installation** — first start, setting a dealership up, backups, and what to check when something is wrong |
 

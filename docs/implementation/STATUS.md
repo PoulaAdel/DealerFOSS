@@ -3,10 +3,11 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the five-band screen shape is real, and the sixth language
-is Spanish**. Every band ADR-020 names now has CSS behind it and a screen using
-it. Still nothing talks to a network
-Last verified: 2026-08-14 · `dotnet build` 0 warnings/0 errors, `dotnet test` 622/622,
+Current milestone: **the workshop knows who is paying, and can be measured**.
+Service work carries a pay type — customer, manufacturer warranty, or the
+dealership itself — and the ledger tells the three apart. A labour report gives
+hours sold and the effective rate, and names the two figures it cannot produce
+Last verified: 2026-08-15 · `dotnet build` 0 warnings/0 errors, `dotnet test` 636/636,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
 `npm run typecheck`, `npm test` 257/257, and `npm run build` all pass
 
@@ -616,3 +617,29 @@ to come.
   **Still not built, and named:** no screen — the endpoint is reachable by API only. No VIN decode, though the same regulator offers one free. No per-vehicle recall status, which is the manufacturer's to give.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **629/629** (was 623), `verify-e2e.ps1` PASS.
+
+- **2026-08-15 — Work knows who is paying for it, and the ledger tells the three apart.** A repair order line carries a **pay type**: Customer Pay, Warranty, or Internal. Every line was implicitly customer-pay before, which meant a warranty repair and the dealership's own reconditioning both landed on the customer's invoice. It is per line, not per job, because one job routinely mixes all three — the customer came in for a service, the water pump turned out to be under warranty, and the workshop changed a wiper blade off its own stock while the car was up.
+
+  **`AmountDue` is now the customer's share alone**, with `WarrantyTotal` and `InternalTotal` beside it and `WorkTotal` for everything the workshop did. **The ledger separates them**: warranty debits a new receivable (1200) because the claim has not been paid and booking it as cash shows money the dealership has not got; internal debits its own charge (5400). Revenue is credited with all of it either way, because the workshop sold all of it.
+
+  **Work the customer is not paying for needs no answer from them.** Asking somebody to authorise a repair they are not funding is a question with no meaning — and an unanswered line blocks the invoice, so it would have stopped the job as well. **An unknown pay type is refused**, not defaulted: a typo silently becoming `CustomerPay` would bill somebody for warranty work.
+
+  **The posting carries the same money split two ways** — by what was sold and by who settles it — and refuses if they disagree, naming the caller rather than reporting an unbalanced entry and sending somebody hunting through account mappings.
+
+  **Two pre-existing defects, both found by this change.** The chart of accounts was written out **twice**, in the development seeder and in tenant provisioning; adding two accounts to one broke the other, and the symptom was a newly provisioned dealership unable to invoice a repair order on its first day. There is now one shared catalogue, for exactly the reason the roles catalogue is already shared. And EF generated the new column with `defaultValue: ""`, which is not a member of the enum — every service line written before the migration would have thrown on read. Fixed in the model so the migration carries `CustomerPay`.
+
+  **Rehearsed:** restoring `AmountDue` to bill everything fails exactly the three tests that demand the split.
+
+  **Not done, and it is the other half of D4:** reconditioning is charged to 5400 rather than capitalised onto the car in stock, so a used vehicle's recorded cost still misses its recon. That couples the workshop to inventory and needs a decision. No screen yet.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **633/633** (was 629), `verify-e2e.ps1` PASS.
+
+- **2026-08-15 — The workshop can be measured, and the report says what it cannot measure.** `GET /api/v1/repair-orders/labour` gives hours sold, labour revenue, and the **effective labour rate** — what an hour actually realised, as against the rate on the wall — per technician and per payer, from invoiced jobs only. Work in progress is not revenue, and counting it flatters the month and then contradicts itself when a job is cancelled.
+
+  **Every pay type counts towards hours sold.** A technician who spent Tuesday on warranty work sold those hours; who settles the bill changes the accounting, not whether the work happened.
+
+  **The part that matters is what it refuses to give.** The trade benchmarks technicians on **efficiency** (hours produced ÷ hours available, NADA guideline 125%) and **productivity** (hours billed ÷ hours clocked, 87.5%). This system stores neither denominator — no roster, no time clock — so both are named in a `notMeasured` list rather than quietly omitted. A report that leaves them out invites a manager to assume they were fine, and these are numbers people are judged on.
+
+  **Rehearsed:** dropping the labour-kind filter lets a $500 part count as an hour, and fails exactly the test guarding the realised rate.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **636/636** (was 633).

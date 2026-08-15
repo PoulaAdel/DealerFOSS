@@ -9,9 +9,11 @@ several of them mean something narrower — or wider — than they sound. Where 
 research contradicted the original phrasing, the correction is stated plainly
 rather than quietly applied.
 
-> Nothing in this document is built. It is scope, with each item labelled by
-> **what actually blocks it**. Read [`implementation/STATUS.md`](implementation/STATUS.md)
-> for what exists.
+> This is scope, with each item labelled by **what actually blocks it**. Most of
+> it is not built. Four items now are — the public recall lookup, Spanish, pay
+> type on service work, and the labour report — and each is marked `Done` in the
+> register at §12. Read [`implementation/STATUS.md`](implementation/STATUS.md)
+> for the evidence behind any of it.
 
 ## 1. The finding that reframes everything else
 
@@ -169,9 +171,17 @@ usage a repair order carries a **pay type**, and there are three.
 | **Warranty** | The manufacturer | Manufacturer's agreed labour rate, and a claim to submit |
 | **Internal** | Another department of the dealership | Reconditioning stock, demos. No external revenue at all |
 
-**We do not have this.** `ServiceLine` carries kind (labour, part, sublet),
-authorisation, hours, rate and cost — but nothing recording *who pays*. Every
-line is implicitly customer-pay.
+**Built on 2026-08-15.** `ServiceLine` now carries a pay type, set per line
+because one job routinely mixes all three. The customer is billed for their
+share alone; warranty debits a receivable (1200) because the manufacturer has
+not paid yet; internal debits its own charge account (5400). Revenue is credited
+with all of it, because the workshop sold all of it.
+
+**What is still open**, and it is the half of decision D4 that was not settled:
+reconditioning is charged to `5400` rather than capitalised onto the car in
+stock. That means a used vehicle's recorded cost still misses its recon, so
+used-vehicle gross reads slightly better than it is. Doing it properly couples
+the workshop to inventory and needs the maintainer's answer.
 
 That single missing field is underneath four separate items on the manager's
 list: warranty claims to the manufacturer, per-manufacturer reporting, honest
@@ -183,8 +193,8 @@ receivable from the manufacturer, internal work is a cost moved between
 departments, and only customer-pay work is money the customer owes. Adding the
 field without teaching the ledger the difference would let somebody mark a line
 "Warranty" and still bill the customer for it — a field that lies is worse than
-a field that is missing. It needs new accounts in the chart of accounts, which
-is an accounting decision, so it is written up here rather than started.
+a field that lies is worse than a field that is missing — which is why the
+ledger learned the difference in the same change rather than after it.
 
 ## 6. Labour reports: what is computable and what is not
 
@@ -204,8 +214,13 @@ technician, so **hours sold and effective labour rate are computable today**.
 clocked exists anywhere in the model, and there is no time clock. Reporting
 either would mean inventing the denominator.
 
-A report of hours sold and effective labour rate per technician is worth
-building and is honest. It should say what it is not measuring.
+**Built on 2026-08-15** at `GET /api/v1/repair-orders/labour`: hours sold,
+labour revenue and effective labour rate, per technician and per payer, counted
+from invoiced jobs only. The response carries a `notMeasured` list naming
+efficiency and productivity, so a screen states the gap rather than leaving a
+manager to assume those numbers were fine. Both stay unmeasurable until there is
+a roster and a time clock — and both are used to judge individual people, which
+is exactly why guessing at them would be worse than omitting them.
 
 ## 7. Getting rid of passwords
 
@@ -323,10 +338,10 @@ engineering time), or **Done**.
 | Sales tax by state, county and city | Accounting | Market | Not started |
 | Ambassadors to dealers | Business | Market | Not started |
 | Adopt STAR vocabulary for contracts | Integration | Decision | Not started |
-| Pay type on service work | Service | Decision | Not started |
+| Pay type on service work | Service | Done | Built |
 | Technician load balancing | Service | Decision | Not started |
 | Equity mining and next-vehicle prediction | Sales | Decision | Not started |
-| Labour reports: hours sold, effective rate | Reporting | Build | Not started |
+| Labour reports: hours sold, effective rate | Reporting | Done | Built |
 | Passkeys alongside passwords | Security | Build | Not started |
 | Workflow triggers on data we already hold | Platform | Build | Not started |
 | Contributor on-ramp: issues and first tasks | Business | Build | Not started |
