@@ -185,6 +185,52 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
         (await StoredAsync()).Should().BeEmpty();
     }
 
+    /// <summary>
+    /// A background job carries the permissions of whoever asked for it, and
+    /// cannot exceed them.
+    ///
+    /// <para>
+    /// This is the property that makes running work outside a request safe at
+    /// all. The tempting shortcut is for background work to run privileged —
+    /// there is no browser to refuse, and it always succeeds, which looks like
+    /// it is working. What it actually does is create a second way into every
+    /// record that ignores the permission system: ask for a job as somebody with
+    /// almost no access, and have it done with all of it.
+    /// </para>
+    /// <para>
+    /// So the run is made as the rooftop-scoped advisor, who may read stock and
+    /// may not write customers. The provider behaves perfectly and the records
+    /// are fine. It must still write nothing.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task A_run_asked_for_by_somebody_without_the_permission_writes_nothing()
+    {
+        await using var scope = await OpenScopeAsync(signIn: false);
+        scope.Services.GetRequiredService<ICurrentUser>()
+            .Set(DevelopmentSeeder.DevUsers.FirstRooftopOnly);
+
+        var runtime = new ConnectorRuntime(
+            scope.Services.GetRequiredService<TenantDb>(),
+            [new CustomerRecordSink(scope.Services.GetRequiredService<ICustomers>())],
+            scope.Services.GetRequiredService<ICurrentUser>(),
+            new FixedClock(Start));
+
+        var run = await runtime.RunAsync(
+            new FixtureConnector(FixtureBehaviour.Wellbehaved, 2, _prefix),
+            _rooftop,
+            Customers,
+            Settings,
+            TimeSpan.FromDays(7),
+            CancellationToken.None);
+
+        run.RecordsApplied.Should().Be(0,
+            because: "a job cannot do what the person who asked for it may not do");
+
+        (await StoredAsync()).Should().BeEmpty(
+            because: "no customer may exist that this caller could not have created by hand");
+    }
+
     // --- Mapping ------------------------------------------------------------
 
     [Fact]
