@@ -246,6 +246,18 @@ passkeys **alongside** passwords first, then password-optional for accounts that
 have registered two, with recovery codes retained — a dealership that locks out
 a service advisor at 8am on a Saturday will not forgive it.
 
+**Built on 2026-08-15, API only.** Registration and sign-in both work end to end;
+no screen offers either yet. Two interface decisions are already settled for when
+one does:
+
+- **The passkey button sits beside the password field, not before it.** The
+  password stays the primary path until a policy says otherwise, and putting a
+  new control in front of the one everybody uses would make the common case feel
+  like the exception.
+- **The recall check runs on request, not when the screen opens.** It is an
+  outbound call to somebody else's service, and a screen left open on a desk all
+  afternoon must not keep asking.
+
 ## 8. Workflows and triggers
 
 The manager asked for automated workflows and for research into which triggers
