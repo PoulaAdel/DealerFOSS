@@ -23,19 +23,33 @@
 //       permission. A technician can write work up and not answer for it. They
 //       are deliberately not forbidden from being the same person — in a small
 //       shop the advisor who spots it is usually the one who telephones.
+//
+//       (5) WHO PAYS IS CHOSEN PER LINE AND SHOWN PER LINE. One job routinely
+//       carries all three: the customer's brake pads, a warranty claim for the
+//       part that failed, and an internal charge for the courtesy wash. That is
+//       why the totals block has four figures rather than one — "Due" is what
+//       the CUSTOMER owes and nothing else, and a screen that adds warranty
+//       work into it would put a number on an invoice that nobody agreed to.
+//
+//       Warranty and internal work needs no customer authorization and the
+//       server marks it authorized on arrival, so the "Agreed?" column says so
+//       rather than claiming somebody was asked.
 
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { ApiError, api, openDocument, post, remove } from '../../shared/api';
 import { DiaryPanel } from './DiaryPanel';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
-import type {
-  RepairOrderDetail,
-  RepairOrderStatus,
-  RepairOrderSummary,
-  ServiceLineKind,
-  ServiceLineView,
-  StaffMember,
+import {
+  servicePayTypes,
+  type RepairOrderDetail,
+  type RepairOrderStatus,
+  type RepairOrderSummary,
+  type ServiceLineKind,
+  type ServiceLineView,
+  type ServicePayType,
+  type StaffMember,
 } from '../../shared/contracts';
 
 const PageSize = 50;
@@ -105,8 +119,19 @@ export function WorkshopPage() {
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [selected, setSelected] = useState<RepairOrderDetail | null>(null);
 
-  const find = useCallback(async (open: boolean) => {
-    setLoad({ kind: 'loading' });
+  // `quiet` keeps the list and the open job on screen while the list is
+  // refetched. Without it, every act on a job — answering a line, assigning a
+  // technician, writing work up — replaced the WHOLE screen with "Loading the
+  // workshop…" for the length of a request, then rebuilt it: the detail band
+  // was unmounted and remounted, the write-up form lost what was half typed,
+  // and the page jumped. Found by driving it in a browser, not by a test.
+  //
+  // A first load and a filter change still show the loading state, because
+  // then there is genuinely nothing to look at.
+  const find = useCallback(async (open: boolean, quiet = false) => {
+    if (!quiet) {
+      setLoad({ kind: 'loading' });
+    }
 
     try {
       setLoad({
@@ -178,6 +203,10 @@ export function WorkshopPage() {
           />
           {t('workshop.openOnly')}
         </label>
+        {/* A route rather than a band: the report is a different QUESTION over a
+            different period, not a detail of anything in this list. ADR-020
+            keeps routes for areas, and "how did the workshop do" is one. */}
+        <Link to="/workshop/labour">{t('workshop.labourReport')}</Link>
       </header>
 
       {/* What is coming, above what is here. A service manager's day is both
@@ -186,7 +215,7 @@ export function WorkshopPage() {
       <DiaryPanel
         onArrived={(job) => {
           setSelected(job);
-          void find(openOnly);
+          void find(openOnly, true);
         }}
       />
 
@@ -220,7 +249,7 @@ export function WorkshopPage() {
           onClose={() => setSelected(null)}
           onChanged={async (updated) => {
             setSelected(updated);
-            await find(openOnly);
+            await find(openOnly, true);
           }}
         />
       )}
@@ -243,7 +272,7 @@ export function WorkshopPage() {
                 <th scope="col">{t('workshop.colCameInFor')}</th>
                 <th scope="col">{t('workshop.colWaiting')}</th>
                 <th scope="col" className="num">
-                  Due
+                  {t('workshop.colDue')}
                 </th>
                 <th scope="col">{t('workshop.colStage')}</th>
               </tr>
@@ -263,7 +292,9 @@ export function WorkshopPage() {
                     {job.linesAwaitingAnswer === 0 ? (
                       ''
                     ) : (
-                      <span className="chip chip--warn">{job.linesAwaitingAnswer} to ask</span>
+                      <span className="chip chip--warn">
+                        {t('workshop.toAsk', { count: job.linesAwaitingAnswer })}
+                      </span>
                     )}
                   </td>
                   <td className="num">{money(job.amountDue, job.currency)}</td>
@@ -280,9 +311,7 @@ export function WorkshopPage() {
       )}
 
       {load.jobs.length >= PageSize ? (
-        <p className="note">
-          The first {PageSize}, newest first — there may be more.
-        </p>
+        <p className="note note--footer">{t('workshop.cappedNote', { limit: PageSize })}</p>
       ) : null}
     </section>
   );
@@ -416,9 +445,10 @@ function Lines({
               <tr>
                 <th scope="col">{t('workshop.colWhat')}</th>
                 <th scope="col">{t('workshop.colDetail')}</th>
+                <th scope="col">{t('workshop.colWhoPays')}</th>
                 <th scope="col">{t('workshop.colAgreed')}</th>
                 <th scope="col" className="num">
-                  Amount
+                  {t('workshop.colAmount')}
                 </th>
                 <th scope="col">&nbsp;</th>
               </tr>
@@ -483,7 +513,20 @@ function Line({
           )}
         </td>
         <td>
-          {line.authorization === 'Pending' ? (
+          <span className={`chip chip--pay-${line.payType.toLowerCase()}`}>
+            {t(`enum.servicePayType.${line.payType}` as MessageKey)}
+          </span>
+        </td>
+        <td>
+          {/*
+            Only customer-pay work is the customer's to agree to. Showing
+            "Agreed" against a warranty claim would be a record of a
+            conversation that never happened — and the server marks those
+            authorized on arrival precisely because nobody needs to be asked.
+          */}
+          {line.payType !== 'CustomerPay' ? (
+            <span className="muted">{t('workshop.notCustomersCall')}</span>
+          ) : line.authorization === 'Pending' ? (
             <span className="chip chip--warn">{t('workshop.nobodyAsked')}</span>
           ) : line.authorization === 'Declined' ? (
             <span className="chip chip--lost">{t('workshop.saidNo')}</span>
@@ -524,7 +567,7 @@ function Line({
                 )
               }
             >
-              Remove
+              {t('workshop.removeLine')}
             </button>
           ) : null}
         </td>
@@ -532,7 +575,7 @@ function Line({
 
       {answering ? (
         <tr>
-          <td colSpan={5}>
+          <td colSpan={6}>
             <div className="field">
               <label htmlFor={`answer-${line.id}`}>{t('workshop.howObtained')}</label>
               <input
@@ -541,10 +584,7 @@ function Line({
                 placeholder={t('workshop.howObtainedPlaceholder')}
                 onChange={(event) => setAnswerNote(event.target.value)}
               />
-              <p className="hint">
-                This is the part that matters if the bill is ever questioned. Say who
-                you spoke to and when.
-              </p>
+              <p className="hint">{t('workshop.howObtainedHint')}</p>
             </div>
             <div className="actions">
               <button
@@ -553,10 +593,10 @@ function Line({
                 disabled={busy}
                 onClick={() => void answer(true)}
               >
-                They agreed
+                {t('workshop.theySaidYes')}
               </button>
               <button type="button" disabled={busy} onClick={() => void answer(false)}>
-                They said no
+                {t('workshop.theySaidNo')}
               </button>
             </div>
           </td>
@@ -577,6 +617,7 @@ function AddLine({
 }) {
   const { t } = useI18n();
   const [kind, setKind] = useState<ServiceLineKind>('Labour');
+  const [payType, setPayType] = useState<ServicePayType>('CustomerPay');
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState('');
   const [rate, setRate] = useState('');
@@ -592,6 +633,7 @@ function AddLine({
         hours: isLabour && hours !== '' ? Number(hours) : null,
         rate: isLabour && rate !== '' ? Number(rate) : null,
         unitAmount: isLabour ? 0 : Number(amount || 0),
+        payType,
       });
 
       setDescription('');
@@ -605,9 +647,10 @@ function AddLine({
   return (
     <>
       <h4>{t('workshop.writeUpMore')}</h4>
+      {/* True only of customer-pay work, which is why the sentence changes with
+          the picker below rather than standing as one permanent claim. */}
       <p className="note">
-        Anything added now needs the customer’s answer before it can be billed —
-        which is the point. Write it down while you are looking at it.
+        {payType === 'CustomerPay' ? t('workshop.writeUpNote') : t('workshop.writeUpNoteOther')}
       </p>
 
       <div className="row">
@@ -621,6 +664,28 @@ function AddLine({
             <option value="Labour">{t('enum.serviceLineKind.Labour')}</option>
             <option value="Part">{t('enum.serviceLineKind.Part')}</option>
             <option value="Sublet">{t('enum.serviceLineKind.Sublet')}</option>
+          </select>
+        </div>
+
+        {/*
+          Defaulted to CustomerPay, which is the overwhelming majority and what
+          the server assumes when told nothing. Offered here rather than derived
+          from anything: a warranty claim and a customer repair can be the same
+          words, the same hours and the same part, and only a person knows which
+          one they are looking at.
+        */}
+        <div className="field">
+          <label htmlFor="line-pay">{t('workshop.linePayType')}</label>
+          <select
+            id="line-pay"
+            value={payType}
+            onChange={(event) => setPayType(event.target.value as ServicePayType)}
+          >
+            {servicePayTypes.map((option) => (
+              <option key={option} value={option}>
+                {t(`enum.servicePayType.${option}` as MessageKey)}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -673,7 +738,7 @@ function AddLine({
           disabled={busy || description.trim() === ''}
           onClick={add}
         >
-          Write it up
+          {t('workshop.addLine')}
         </button>
       </div>
     </>
@@ -704,6 +769,36 @@ function Totals({ job }: { job: RepairOrderDetail }) {
           <th scope="row">{t('workshop.totalSublet')}</th>
           <td className="num">{money(job.subletTotal, job.currency)}</td>
         </tr>
+
+        {/*
+          Who settles it, under what it is. These two rows appear only when there
+          is something in them — a permanent "Warranty 0.00" on every ordinary
+          customer job is noise, and this block is read at the moment somebody
+          decides what to charge.
+
+          `totalDue` stays LAST and stays the emphasised one, because it is the
+          figure that goes on the customer's invoice. Warranty and internal work
+          is money the workshop earns and the customer never sees.
+        */}
+        {job.warrantyTotal === 0 ? null : (
+          <tr>
+            <th scope="row">{t('workshop.totalWarranty')}</th>
+            <td className="num">{money(job.warrantyTotal, job.currency)}</td>
+          </tr>
+        )}
+        {job.internalTotal === 0 ? null : (
+          <tr>
+            <th scope="row">{t('workshop.totalInternal')}</th>
+            <td className="num">{money(job.internalTotal, job.currency)}</td>
+          </tr>
+        )}
+        {job.warrantyTotal === 0 && job.internalTotal === 0 ? null : (
+          <tr>
+            <th scope="row">{t('workshop.totalWork')}</th>
+            <td className="num">{money(job.workTotal, job.currency)}</td>
+          </tr>
+        )}
+
         <tr className="strong">
           <th scope="row">{t('workshop.totalDue')}</th>
           <td className="num">{money(job.amountDue, job.currency)}</td>
@@ -784,10 +879,7 @@ function Technician({
         ))}
       </select>
       {job.technicianUserId !== null && current === undefined ? (
-        <p className="hint">
-          Assigned to somebody who is not on your staff list — they may work at
-          another location.
-        </p>
+        <p className="hint">{t('workshop.assignedElsewhere')}</p>
       ) : null}
     </div>
   );
@@ -822,7 +914,7 @@ function Moves({
   return (
     <>
       <div className="field">
-        <label htmlFor="move-note">Note (goes on the record)</label>
+        <label htmlFor="move-note">{t('workshop.moveNote')}</label>
         <input id="move-note" value={note} onChange={(event) => onNote(event.target.value)} />
       </div>
 

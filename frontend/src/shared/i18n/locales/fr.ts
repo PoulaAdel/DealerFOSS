@@ -72,6 +72,7 @@ export const fr: Catalogue = {
   'nav.records': 'Données',
   'nav.staff': 'Personnel',
   'nav.secondFactor': 'Connexion en deux étapes',
+  'nav.passkeys': 'Clés d’accès',
 
   'appearance.auto': 'Auto',
   'appearance.autoHint': 'Suivre cet appareil',
@@ -194,6 +195,10 @@ export const fr: Catalogue = {
   'enum.serviceLineKind.Labour': 'Main-d’œuvre',
   'enum.serviceLineKind.Part': 'Pièce',
   'enum.serviceLineKind.Sublet': 'Sous-traité',
+
+  'enum.servicePayType.CustomerPay': 'Le client paie',
+  'enum.servicePayType.Warranty': 'Garantie',
+  'enum.servicePayType.Internal': 'Interne',
 
   'enum.financeProductKind.Warranty': 'Garantie',
   'enum.financeProductKind.Gap': 'GAP',
@@ -859,6 +864,126 @@ export const fr: Catalogue = {
   'workshop.jobFinished': 'Cet ordre de réparation est terminé.',
   'workshop.assignedElsewhere':
     'Attribué à quelqu’un qui ne figure pas dans votre liste de personnel — cette personne travaille peut-être sur un autre site.',
+  'workshop.removeLine': 'Retirer',
+  'workshop.moveNote': 'Note (inscrite au dossier)',
+  'workshop.howObtainedHint':
+    'C’est ce qui compte si la facture est un jour contestée. Indiquez à qui vous avez parlé et quand.',
+  'workshop.cappedNote':
+    'Les {limit} premiers, du plus récent au plus ancien — il y en a peut-être d’autres.',
+  'workshop.toAsk': {
+    one: '{count} à demander',
+    other: '{count} à demander',
+  },
+  'workshop.labourReport': 'Rapport de main-d’œuvre',
+
+  'workshop.colWhoPays': 'Qui paie',
+  'workshop.linePayType': 'Qui paie',
+  'workshop.notCustomersCall': 'Ce n’est pas au client de l’accepter',
+  'workshop.totalWarranty': 'Garantie',
+  'workshop.totalInternal': 'Interne',
+  'workshop.totalWork': 'Ensemble des travaux',
+  'workshop.writeUpNote':
+    'Tout ce qui est ajouté maintenant exige la réponse du client avant de pouvoir être facturé — c’est justement le but. Notez-le pendant que vous l’avez sous les yeux.',
+  'workshop.writeUpNoteOther':
+    'Personne n’a besoin d’appeler le client à ce sujet, puisque ce n’est pas lui qui paie. Cela figure quand même sur l’ordre de réparation, pour que le travail soit consigné et les heures comptées.',
+
+  // --- Ce que l’atelier a vendu ---------------------------------------------
+  'labour.title': 'Main-d’œuvre',
+  'labour.from': 'Du',
+  'labour.to': 'Au',
+  'labour.backToWorkshop': 'Retour à l’atelier',
+  'labour.loading': 'Calcul des chiffres de main-d’œuvre…',
+  'labour.denied':
+    'Vous n’avez pas accès aux chiffres de cet atelier. Voyez avec un responsable si cela vous semble anormal.',
+
+  'labour.headlineCaption':
+    'Heures vendues, chiffre d’affaires de main-d’œuvre et ce qu’une heure a réellement rapporté.',
+  'labour.hoursSold': 'Heures vendues',
+  'labour.revenue': 'Chiffre d’affaires main-d’œuvre',
+  'labour.effectiveRate': 'Ce qu’une heure a rapporté',
+
+  'labour.byTechnician': 'Par technicien',
+  'labour.technicianCaption':
+    'Heures et chiffre d’affaires de chaque technicien sur la période.',
+  'labour.colWho': 'Technicien',
+  'labour.colHours': 'Heures',
+  'labour.colRevenue': 'Chiffre d’affaires',
+  'labour.colRate': 'Par heure',
+  'labour.nobodyCredited': 'Personne de crédité',
+  'labour.notNamed': 'Sans nom',
+  'labour.namesUnavailable':
+    'Les techniciens ne sont pas nommés ici parce que vous ne pouvez pas consulter la liste du personnel. Les heures et les montants restent exacts.',
+  'labour.nothingInvoiced':
+    'Rien n’a été facturé sur cette période, il n’y a donc aucune heure à présenter.',
+
+  'labour.byPayer': 'Qui a payé',
+  'labour.payerCaption':
+    'Heures et chiffre d’affaires, répartis selon qui règle les travaux.',
+  'labour.colPayer': 'Réglé par',
+
+  'labour.notMeasuredTitle': 'Ce que ceci ne mesure pas',
+  'labour.notMeasuredWhy':
+    'Ce sont les deux chiffres sur lesquels un atelier est habituellement jugé, et aucun des deux ne peut être produit honnêtement à partir de ce que ce système enregistre. Tous deux exigent une donnée que personne n’a jamais saisie ici.',
+  'labour.noEfficiency':
+    'Efficacité — heures produites rapportées aux heures disponibles. Il n’y a pas de planning, donc rien par quoi diviser.',
+  'labour.noProductivity':
+    'Productivité — heures facturées rapportées aux heures pointées. Il n’y a pas de pointeuse, donc rien par quoi diviser.',
+  'labour.period':
+    'Calculé sur les travaux facturés entre le {from} et le {to}. Les travaux en cours ne sont pas du chiffre d’affaires.',
+
+  // --- Rappels de sécurité ---------------------------------------------------
+  'recalls.title': 'Rappels de sécurité',
+  'recalls.onRequest':
+    'Ceci interroge l’autorité de sécurité routière : la recherche ne part que lorsque vous la demandez.',
+  'recalls.check': 'Rechercher les rappels',
+  'recalls.checkAgain': 'Rechercher à nouveau',
+  'recalls.checking': 'Interrogation de l’autorité…',
+  'recalls.caveat':
+    'Voici les campagnes publiées pour une {make} {model} de {year}. Le registre est tenu par modèle et non par véhicule : il ne dit pas si celui-ci a déjà reçu l’intervention — seul le constructeur le sait.',
+  'recalls.noneFound':
+    'Aucune campagne n’est publiée pour ce modèle. Ce n’est pas la même chose que d’avoir fait vérifier ce véhicule.',
+  'recalls.doNotDrive': 'Ne pas rouler',
+  'recalls.parkOutside': 'Stationner dehors',
+  'recalls.remedy': 'Intervention : {remedy}',
+
+  // --- Clés d’accès ----------------------------------------------------------
+  'passkey.useOne': 'Utiliser une clé d’accès',
+  'passkey.needDealerGroup':
+    'Saisissez d’abord votre groupe : c’est lui qui détermine dans quelle concession vous entrez.',
+  'passkey.ceremonyFailed':
+    'Votre appareil n’a pas pu terminer l’opération. Réessayez ou connectez-vous avec votre mot de passe.',
+
+  'passkey.title': 'Clés d’accès',
+  'passkey.lede':
+    'Une clé d’accès vous connecte avec le téléphone ou l’ordinateur que vous déverrouillez déjà, à la place d’un mot de passe. Votre mot de passe reste valable et rien sur cet écran ne le supprime.',
+  'passkey.addTitle': 'Ajouter une clé d’accès',
+  'passkey.addNote':
+    'Votre appareil vous demandera de confirmer. Rien de secret n’en sort — seulement une clé publique, sans intérêt pour qui en prendrait copie.',
+  'passkey.label': 'Comment l’appeler',
+  'passkey.labelPlaceholder': 'Ordinateur du bureau',
+  'passkey.labelHint':
+    'Ce nom s’affichera au moment de la supprimer : nommez l’appareil plutôt que vous-même.',
+  'passkey.add': 'Ajouter',
+  'passkey.adding': 'En attente de votre appareil…',
+  'passkey.added': '{label} est enregistrée.',
+  'passkey.unsupported':
+    'Ce navigateur ne peut pas utiliser de clés d’accès. La plupart le peuvent, sur une connexion qui n’est pas en http simple.',
+
+  'passkey.yoursTitle': 'Vos clés d’accès',
+  'passkey.loading': 'Chargement de vos clés d’accès…',
+  'passkey.none': 'Vous n’avez encore aucune clé d’accès.',
+  'passkey.caption': {
+    one: '{count} clé d’accès sur ce compte',
+    other: '{count} clés d’accès sur ce compte',
+  },
+  'passkey.colLabel': 'Nom',
+  'passkey.colAdded': 'Ajoutée',
+  'passkey.colLastUsed': 'Dernière utilisation',
+  'passkey.neverUsed': 'Jamais utilisée',
+  'passkey.forget': 'L’oublier',
+  'passkey.forgetConfirm':
+    'Oublier {label} ? Cet appareil ne pourra plus vous connecter, et c’est irréversible.',
+  'passkey.forgot': '{label} a été supprimée.',
 
   // --- Retrouver l’accès à son compte ---------------------------------------------
   'recover.link': 'J’ai oublié mon mot de passe',

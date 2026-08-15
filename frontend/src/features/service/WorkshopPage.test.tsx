@@ -46,6 +46,7 @@ const line = (over: Partial<ServiceLineView> = {}): ServiceLineView => ({
   hours: 1.5,
   rate: 120,
   amount: 180,
+  payType: 'CustomerPay',
   authorization: 'Authorized',
   authorizedAt: '2026-08-01T09:05:00Z',
   authorizedByUserId: 'u1',
@@ -69,6 +70,9 @@ const detail = (over: Partial<RepairOrderDetail> = {}): RepairOrderDetail => ({
   partsTotal: 0,
   subletTotal: 0,
   amountDue: 180,
+  warrantyTotal: 0,
+  internalTotal: 0,
+  workTotal: 180,
   advisorUserId: null,
   technicianUserId: null,
   openedAt: '2026-08-01T09:00:00Z',
@@ -395,6 +399,166 @@ describe('work nobody has agreed to', () => {
     await userEvent.click(invoice);
 
     expect(await screen.findByText(/still waiting on the customer/i)).toBeVisible();
+  });
+});
+
+describe('who pays for the work', () => {
+  // A job with all three payers on it, which is the ordinary case rather than a
+  // contrived one: the customer's brake pads, a warranty claim for the part that
+  // failed, and an internal charge for getting the car ready.
+  const mixed = detail({
+    lines: [
+      line({ id: 'l1', description: 'Replace front pads', amount: 180 }),
+      line({ id: 'l2', description: 'Replace failed caliper', payType: 'Warranty', amount: 240 }),
+      line({ id: 'l3', description: 'Valet before handover', payType: 'Internal', amount: 40 }),
+    ],
+    // Deliberately all different, so an assertion on one figure cannot pass by
+    // matching a different row that happens to hold the same number.
+    labourTotal: 400,
+    partsTotal: 60,
+    amountDue: 180,
+    warrantyTotal: 240,
+    internalTotal: 40,
+    workTotal: 460,
+  });
+
+  const arrange = () =>
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: mixed },
+      '/repair-orders': { ok: true, body: [summary()] },
+      '/staff': noStaff,
+    });
+
+  it('says who settles each line', async () => {
+    arrange();
+    renderWorkshop();
+    await openJob();
+
+    // Scoped to each line's own row. "Warranty" and "Internal" also appear in
+    // the totals block below, and an unscoped getByText would be satisfied by
+    // the wrong one — which would let the line column disappear entirely
+    // without this test noticing.
+    const caliper = (await screen.findByText('Replace failed caliper')).closest('tr')!;
+    expect(within(caliper).getByText('Warranty')).toBeVisible();
+
+    const valet = screen.getByText('Valet before handover').closest('tr')!;
+    expect(within(valet).getByText('Internal')).toBeVisible();
+
+    const pads = screen.getByText('Replace front pads').closest('tr')!;
+    expect(within(pads).getByText('Customer pays')).toBeVisible();
+  });
+
+  it('does not claim the customer agreed to work they are not paying for', async () => {
+    // The server marks warranty and internal lines authorized on arrival, so
+    // they arrive as 'Authorized' — and printing "Agreed" against them would be
+    // a record of a conversation that never happened.
+    arrange();
+    renderWorkshop();
+    await openJob();
+
+    await screen.findByText('Replace failed caliper');
+    expect(screen.getAllByText('Not the customer’s to agree')).toHaveLength(2);
+    // ...and the one line that IS the customer's still says so.
+    expect(screen.getByText('Agreed')).toBeVisible();
+  });
+
+  it('keeps Due to what the customer owes, and shows the rest apart from it', async () => {
+    // The defect this test exists to stop: 460 on the customer's invoice.
+    arrange();
+    renderWorkshop();
+    await openJob();
+
+    const totals = await screen.findByRole('table', { name: /what the job comes to/i });
+    const due = within(totals).getByRole('row', { name: /^Due/ });
+
+    expect(within(due).getByText('$180.00')).toBeVisible();
+    expect(within(totals).getByText('$240.00')).toBeVisible();
+    expect(within(totals).getByText('$40.00')).toBeVisible();
+    expect(within(totals).getByText('$460.00')).toBeVisible();
+  });
+
+  it('leaves the payer rows out of an ordinary customer job', async () => {
+    // A permanent "Warranty 0.00" on every job is noise on the one block
+    // somebody reads while deciding what to charge.
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders': { ok: true, body: [summary()] },
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    const totals = await screen.findByRole('table', { name: /what the job comes to/i });
+    expect(within(totals).queryByRole('row', { name: /Warranty/ })).toBeNull();
+    expect(within(totals).queryByRole('row', { name: /All the work/ })).toBeNull();
+  });
+
+  it('keeps the open job on screen while the list is refetched', async () => {
+    // Found by driving the real screen: every act on a job replaced the WHOLE
+    // page with "Loading the workshop…" while the list refetched, then rebuilt
+    // it — unmounting the detail band and losing half-typed input.
+    //
+    // The delay is what makes this test real. With an instant reply the refetch
+    // finishes inside the same act() and the blank never becomes observable,
+    // so the assertion would pass against the broken code too.
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders/ro1/lines': { ok: true, body: detail() },
+      '/repair-orders': [
+        { ok: true, body: [summary()] },
+        { ok: true, body: [summary()], delayMs: 50 },
+      ],
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    await userEvent.type(await screen.findByLabelText('Description'), 'Wiper blades');
+    await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
+
+    // Mid-refetch: the job is still there and the page has not blanked.
+    expect(screen.getByRole('heading', { name: /RO-1001/ })).toBeVisible();
+    expect(screen.queryByText('Loading the workshop…')).toBeNull();
+  });
+
+  it('sends who pays when work is written up', async () => {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders/ro1/lines': { ok: true, body: detail() },
+      '/repair-orders': { ok: true, body: [summary()] },
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    await userEvent.selectOptions(await screen.findByLabelText('Who pays'), 'Warranty');
+    await userEvent.type(screen.getByLabelText('Description'), 'Replace failed caliper');
+    await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
+
+    const call = apiCalls().find((c) => c.path === '/repair-orders/ro1/lines');
+    expect(JSON.parse(String(call?.init?.body)).payType).toBe('Warranty');
+  });
+
+  it('defaults to the customer, so silence never produces a warranty claim', async () => {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders/ro1/lines': { ok: true, body: detail() },
+      '/repair-orders': { ok: true, body: [summary()] },
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    await userEvent.type(await screen.findByLabelText('Description'), 'Wiper blades');
+    await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
+
+    const call = apiCalls().find((c) => c.path === '/repair-orders/ro1/lines');
+    expect(JSON.parse(String(call?.init?.body)).payType).toBe('CustomerPay');
   });
 });
 

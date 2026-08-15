@@ -83,6 +83,7 @@ export const ar: Catalogue = {
   'nav.records': 'السجلات',
   'nav.staff': 'الموظفون',
   'nav.secondFactor': 'الدخول بخطوتين',
+  'nav.passkeys': 'مفاتيح المرور',
 
   'appearance.auto': 'تلقائي',
   'appearance.autoHint': 'اتّبع إعداد الجهاز',
@@ -201,6 +202,10 @@ export const ar: Catalogue = {
   'enum.serviceLineKind.Labour': 'أجور العمل',
   'enum.serviceLineKind.Part': 'قطعة غيار',
   'enum.serviceLineKind.Sublet': 'عمل خارجي',
+
+  'enum.servicePayType.CustomerPay': 'يدفع العميل',
+  'enum.servicePayType.Warranty': 'ضمان',
+  'enum.servicePayType.Internal': 'داخلي',
 
   'enum.financeProductKind.Warranty': 'ضمان',
   'enum.financeProductKind.Gap': 'GAP',
@@ -914,6 +919,127 @@ export const ar: Catalogue = {
   'workshop.jobFinished': 'انتهى أمر الشغل هذا.',
   'workshop.assignedElsewhere':
     'مُسنَد إلى شخص ليس في قائمة موظفيك — ربما يعمل في فرع آخر.',
+  'workshop.removeLine': 'إزالة',
+  'workshop.moveNote': 'ملاحظة (تُحفَظ في السجل)',
+  'workshop.howObtainedHint':
+    'هذا ما يهم إذا اعتُرِض على الفاتورة يومًا ما. اذكر مع مَن تحدَّثت ومتى.',
+  'workshop.cappedNote': 'أول {limit}، الأحدث أولًا — وقد يكون هناك المزيد.',
+  'workshop.toAsk': {
+    zero: 'لا شيء للسؤال عنه',
+    one: 'بند واحد للسؤال عنه',
+    two: 'بندان للسؤال عنهما',
+    few: '{count} بنود للسؤال عنها',
+    many: '{count} بندًا للسؤال عنها',
+    other: '{count} بند للسؤال عنه',
+  },
+  'workshop.labourReport': 'تقرير أجور العمل',
+
+  'workshop.colWhoPays': 'مَن يدفع',
+  'workshop.linePayType': 'مَن يدفع',
+  'workshop.notCustomersCall': 'ليست موافقة العميل',
+  'workshop.totalWarranty': 'ضمان',
+  'workshop.totalInternal': 'داخلي',
+  'workshop.totalWork': 'العمل كله',
+  'workshop.writeUpNote':
+    'أي شيء يُضاف الآن يحتاج إلى ردِّ العميل قبل أن يمكن تحصيله — وهذا هو المقصود. دوِّنه وأنت تنظر إليه.',
+  'workshop.writeUpNoteOther':
+    'لا داعي لأن يتصل أحد بالعميل بشأن هذا، فليس هو مَن يدفع. ويبقى مع ذلك في أمر الشغل، ليُسجَّل العمل وتُحسَب الساعات.',
+
+  // --- ما باعته الورشة -------------------------------------------------------
+  'labour.title': 'أجور العمل',
+  'labour.from': 'من',
+  'labour.to': 'إلى',
+  'labour.backToWorkshop': 'العودة إلى الورشة',
+  'labour.loading': 'يجري حساب أرقام العمل…',
+  'labour.denied':
+    'ليس لديك صلاحية للاطِّلاع على أرقام هذه الورشة. راجِع مديرًا إن كنت ترى أن هذا خطأ.',
+
+  'labour.headlineCaption': 'الساعات المُباعة، وإيراد العمل، وما حقَّقته الساعة فعلًا.',
+  'labour.hoursSold': 'الساعات المُباعة',
+  'labour.revenue': 'إيراد العمل',
+  'labour.effectiveRate': 'ما حقَّقته الساعة',
+
+  'labour.byTechnician': 'حسب الفني',
+  'labour.technicianCaption': 'ساعات كل فني وإيراده خلال المدة.',
+  'labour.colWho': 'الفني',
+  'labour.colHours': 'الساعات',
+  'labour.colRevenue': 'الإيراد',
+  'labour.colRate': 'للساعة',
+  'labour.nobodyCredited': 'غير منسوب لأحد',
+  'labour.notNamed': 'بلا اسم',
+  'labour.namesUnavailable':
+    'أسماء الفنيين غير معروضة هنا لأنك لا تستطيع الاطِّلاع على قائمة الموظفين. أما الساعات والمبالغ فصحيحة.',
+  'labour.nothingInvoiced': 'لم تُصدَر أي فاتورة في هذه المدة، فلا ساعات لعرضها.',
+
+  'labour.byPayer': 'مَن دفع',
+  'labour.payerCaption': 'الساعات والإيراد موزَّعة حسب مَن يسدِّد قيمة العمل.',
+  'labour.colPayer': 'يدفعه',
+
+  'labour.notMeasuredTitle': 'ما لا يقيسه هذا التقرير',
+  'labour.notMeasuredWhy':
+    'هذان هما الرقمان اللذان تُقاس بهما الورشة عادةً، ولا يمكن استخراج أيٍّ منهما بأمانة مما يسجِّله هذا النظام. كلاهما يحتاج إلى شيء لم يُدخِله أحد هنا قط.',
+  'labour.noEfficiency':
+    'الكفاءة — الساعات المُنتَجة منسوبةً إلى الساعات المتاحة. لا يوجد جدول ورديات، فلا شيء نقسم عليه.',
+  'labour.noProductivity':
+    'الإنتاجية — الساعات المُحصَّلة منسوبةً إلى ساعات الحضور. لا توجد ساعة حضور، فلا شيء نقسم عليه.',
+  'labour.period':
+    'محسوب من الأعمال التي صدرت فواتيرها بين {from} و{to}. والعمل الجاري ليس إيرادًا.',
+
+  // --- حملات استدعاء السلامة -------------------------------------------------
+  'recalls.title': 'حملات استدعاء السلامة',
+  'recalls.onRequest': 'هذا يسأل جهة سلامة الطرق، فلا يعمل إلا حين تطلبه أنت.',
+  'recalls.check': 'ابحث عن حملات استدعاء',
+  'recalls.checkAgain': 'ابحث مرة أخرى',
+  'recalls.checking': 'يجري سؤال الجهة…',
+  'recalls.caveat':
+    'هذه هي الحملات المنشورة لـ {make} {model} موديل {year}. السجل يُحفَظ حسب الطراز لا حسب السيارة، فهو لا يقول إن كانت هذه السيارة قد أُجري لها العمل — لا يعرف ذلك إلا الصانع.',
+  'recalls.noneFound':
+    'لا توجد حملات منشورة لهذا الطراز. وهذا ليس مثل أن تكون هذه السيارة قد فُحِصت.',
+  'recalls.doNotDrive': 'لا تُقَد',
+  'recalls.parkOutside': 'أوقِفها في العراء',
+  'recalls.remedy': 'الإجراء: {remedy}',
+
+  // --- مفاتيح المرور ---------------------------------------------------------
+  'passkey.useOne': 'استخدم مفتاح مرور',
+  'passkey.needDealerGroup':
+    'اكتب اسم مجموعتك أولًا — فهو الذي يحدِّد أي وكالة تدخل إليها.',
+  'passkey.ceremonyFailed':
+    'لم يتمكَّن جهازك من إتمام ذلك. حاوِل مرة أخرى، أو ادخل بكلمة المرور.',
+
+  'passkey.title': 'مفاتيح المرور',
+  'passkey.lede':
+    'مفتاح المرور يُدخِلك بالهاتف أو الحاسوب الذي تفتح قفله أصلًا، بدلًا من كلمة المرور. وكلمة مرورك تظل صالحة، ولا شيء في هذه الشاشة يُلغيها.',
+  'passkey.addTitle': 'أضِف مفتاح مرور',
+  'passkey.addNote':
+    'سيطلب منك جهازك التأكيد. ولا يخرج منه شيء سري — بل مفتاح عام فقط، لا ينفع مَن يأخذ نسخة منه.',
+  'passkey.label': 'بماذا تسمِّيه',
+  'passkey.labelPlaceholder': 'حاسوب العمل',
+  'passkey.labelHint': 'سترى هذا الاسم حين تحذفه، فسمِّ الجهاز لا نفسك.',
+  'passkey.add': 'أضِفه',
+  'passkey.adding': 'في انتظار جهازك…',
+  'passkey.added': 'تم تسجيل {label}.',
+  'passkey.unsupported':
+    'هذا المتصفِّح لا يستطيع استخدام مفاتيح المرور. ومعظم المتصفِّحات تستطيع، على اتصال غير http العادي.',
+
+  'passkey.yoursTitle': 'مفاتيح مرورك',
+  'passkey.loading': 'يجري تحميل مفاتيح مرورك…',
+  'passkey.none': 'ليس لديك مفاتيح مرور بعد.',
+  'passkey.caption': {
+    zero: 'لا مفاتيح مرور في هذا الحساب',
+    one: 'مفتاح مرور واحد في هذا الحساب',
+    two: 'مفتاحا مرور في هذا الحساب',
+    few: '{count} مفاتيح مرور في هذا الحساب',
+    many: '{count} مفتاح مرور في هذا الحساب',
+    other: '{count} مفتاح مرور في هذا الحساب',
+  },
+  'passkey.colLabel': 'الاسم',
+  'passkey.colAdded': 'أُضيف',
+  'passkey.colLastUsed': 'آخر استخدام',
+  'passkey.neverUsed': 'لم يُستخدَم قط',
+  'passkey.forget': 'احذفه',
+  'passkey.forgetConfirm':
+    'هل تحذف {label}؟ لن يعود هذا الجهاز قادرًا على إدخالك، ولا يمكن التراجع عن ذلك.',
+  'passkey.forgot': 'حُذِف {label}.',
 
   // --- استعادة الوصول إلى الحساب -----------------------------------------------------
   'recover.link': 'نسيت كلمة المرور',

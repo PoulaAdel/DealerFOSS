@@ -6,15 +6,27 @@
 //       Errors are announced to assistive technology, and focus moves to the
 //       code field when it appears — a screen reader user must be told the form
 //       changed under them.
+//
+//       THE PASSKEY BUTTON SITS BESIDE THE PASSWORD FIELD, NOT ABOVE THE FORM
+//       (decided 2026-08-15, doc 11 §7). The password is still how almost
+//       everybody gets in, and putting a newer control in front of it would make
+//       the common case read as the exception. Beside it, it is offered to
+//       anybody who has one and ignored by everybody who has not.
+//
+//       It needs the dealer group and nothing else — no email. That is not an
+//       oversight: the credential identifies the account, so asking for one
+//       first would make this screen able to answer "does this person work
+//       here", which the sign-in ceremony is deliberately built not to do.
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { currentTenant, post, setCurrentTenant } from '../../shared/api';
-import type { SignInResponse } from '../../shared/contracts';
+import type { PasskeySignInChallenge, SignInResponse } from '../../shared/contracts';
 import { useSession } from '../../app/session';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { AppearanceControls } from '../../app/AppearanceControls';
+import { passkeysAvailable, usePasskey } from './webauthn';
 
 type Stage = { kind: 'credentials' } | { kind: 'code'; challengeToken: string };
 
@@ -35,6 +47,10 @@ export function SignIn() {
   const [stage, setStage] = useState<Stage>({ kind: 'credentials' });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Read once. Whether this browser can do WebAuthn cannot change while the
+  // screen is open, and re-asking on every render would only add noise.
+  const [canUsePasskey] = useState(passkeysAvailable);
 
   const codeInput = useRef<HTMLInputElement>(null);
 
@@ -61,6 +77,49 @@ export function SignIn() {
         return;
       }
 
+      await refresh();
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /**
+   * The whole ceremony, in one button. No email is collected and none is sent:
+   * the authenticator picks the credential, and the credential names the
+   * account.
+   */
+  async function signInWithPasskey() {
+    setError(null);
+
+    // The dealer group decides which database this asks, so it is needed before
+    // anything else. Said plainly rather than left to a 400 from the server.
+    if (tenant.trim() === '') {
+      setError(t('passkey.needDealerGroup'));
+      return;
+    }
+
+    setCurrentTenant(tenant);
+    setBusy(true);
+
+    try {
+      const challenge = await post<PasskeySignInChallenge>('/auth/passkeys/sign-in/begin', {});
+      const ceremony = await usePasskey(challenge);
+
+      if (ceremony.kind === 'cancelled' || ceremony.kind === 'unsupported') {
+        // Nothing happened. Putting an error on screen for somebody who simply
+        // dismissed their operating system's prompt would be shouting at them
+        // for changing their mind.
+        return;
+      }
+
+      if (ceremony.kind === 'failed') {
+        setError(t('passkey.ceremonyFailed'));
+        return;
+      }
+
+      await post<{ expiresAt: string }>('/auth/passkeys/sign-in/finish', ceremony.response);
       await refresh();
     } catch (failure) {
       setError(describe(failure));
@@ -133,15 +192,31 @@ export function SignIn() {
           />
 
           <label htmlFor="password">{t('signIn.password')}</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
+          {/* Beside, not before. See the file header. The button is omitted
+              entirely — not disabled — on a browser that cannot do WebAuthn:
+              a greyed-out control invites somebody to work out why. */}
+          <div className="signin__beside">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+            />
+
+            {canUsePasskey ? (
+              <button
+                type="button"
+                className="signin__passkey"
+                disabled={busy}
+                onClick={() => void signInWithPasskey()}
+              >
+                {t('passkey.useOne')}
+              </button>
+            ) : null}
+          </div>
 
           <Error message={error} />
 

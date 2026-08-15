@@ -74,6 +74,7 @@ export const de: Catalogue = {
   'nav.records': 'Datensätze',
   'nav.staff': 'Mitarbeiter',
   'nav.secondFactor': 'Anmeldung in zwei Schritten',
+  'nav.passkeys': 'Passkeys',
 
   'appearance.auto': 'Auto',
   'appearance.autoHint': 'Diesem Gerät folgen',
@@ -195,6 +196,10 @@ export const de: Catalogue = {
   'enum.serviceLineKind.Labour': 'Arbeitslohn',
   'enum.serviceLineKind.Part': 'Teil',
   'enum.serviceLineKind.Sublet': 'Fremdleistung',
+
+  'enum.servicePayType.CustomerPay': 'Kunde zahlt',
+  'enum.servicePayType.Warranty': 'Garantie',
+  'enum.servicePayType.Internal': 'Intern',
 
   'enum.financeProductKind.Warranty': 'Garantie',
   'enum.financeProductKind.Gap': 'GAP',
@@ -862,6 +867,126 @@ export const de: Catalogue = {
   'workshop.jobFinished': 'Dieser Auftrag ist abgeschlossen.',
   'workshop.assignedElsewhere':
     'Jemandem zugewiesen, der nicht auf Ihrer Mitarbeiterliste steht — die Person arbeitet möglicherweise an einem anderen Standort.',
+  'workshop.removeLine': 'Entfernen',
+  'workshop.moveNote': 'Notiz (kommt in die Akte)',
+  'workshop.howObtainedHint':
+    'Darauf kommt es an, falls die Rechnung je bestritten wird. Halten Sie fest, mit wem Sie wann gesprochen haben.',
+  'workshop.cappedNote':
+    'Die ersten {limit}, neueste zuerst — es können mehr sein.',
+  'workshop.toAsk': {
+    one: '{count} nachzufragen',
+    other: '{count} nachzufragen',
+  },
+  'workshop.labourReport': 'Arbeitsbericht',
+
+  'workshop.colWhoPays': 'Wer zahlt',
+  'workshop.linePayType': 'Wer zahlt',
+  'workshop.notCustomersCall': 'Nicht Sache des Kunden',
+  'workshop.totalWarranty': 'Garantie',
+  'workshop.totalInternal': 'Intern',
+  'workshop.totalWork': 'Gesamte Arbeit',
+  'workshop.writeUpNote':
+    'Alles, was jetzt hinzukommt, braucht die Antwort des Kunden, bevor es berechnet werden darf — genau darum geht es. Schreiben Sie es auf, solange Sie es vor sich haben.',
+  'workshop.writeUpNoteOther':
+    'Dafür muss niemand beim Kunden anrufen, denn er zahlt es nicht. Es steht trotzdem im Auftrag, damit die Arbeit erfasst und die Stunden gezählt werden.',
+
+  // --- Was die Werkstatt verkauft hat ---------------------------------------
+  'labour.title': 'Arbeitsleistung',
+  'labour.from': 'Von',
+  'labour.to': 'Bis',
+  'labour.backToWorkshop': 'Zurück zur Werkstatt',
+  'labour.loading': 'Arbeitszahlen werden berechnet…',
+  'labour.denied':
+    'Sie haben keinen Zugriff auf die Zahlen dieser Werkstatt. Fragen Sie eine Führungskraft, wenn Ihnen das falsch vorkommt.',
+
+  'labour.headlineCaption':
+    'Verkaufte Stunden, Umsatz aus Arbeitsleistung und was eine Stunde tatsächlich erbracht hat.',
+  'labour.hoursSold': 'Verkaufte Stunden',
+  'labour.revenue': 'Umsatz Arbeitsleistung',
+  'labour.effectiveRate': 'Was eine Stunde erbracht hat',
+
+  'labour.byTechnician': 'Nach Mechaniker',
+  'labour.technicianCaption':
+    'Stunden und Umsatz je Mechaniker über den Zeitraum.',
+  'labour.colWho': 'Mechaniker',
+  'labour.colHours': 'Stunden',
+  'labour.colRevenue': 'Umsatz',
+  'labour.colRate': 'Pro Stunde',
+  'labour.nobodyCredited': 'Niemandem zugerechnet',
+  'labour.notNamed': 'Ohne Namen',
+  'labour.namesUnavailable':
+    'Die Mechaniker werden hier nicht namentlich genannt, weil Sie die Mitarbeiterliste nicht lesen dürfen. Stunden und Beträge stimmen trotzdem.',
+  'labour.nothingInvoiced':
+    'In diesem Zeitraum wurde nichts berechnet, es gibt also keine Stunden zu berichten.',
+
+  'labour.byPayer': 'Wer gezahlt hat',
+  'labour.payerCaption':
+    'Stunden und Umsatz, aufgeteilt danach, wer die Arbeit begleicht.',
+  'labour.colPayer': 'Bezahlt von',
+
+  'labour.notMeasuredTitle': 'Was hier nicht gemessen wird',
+  'labour.notMeasuredWhy':
+    'An diesen beiden Zahlen wird eine Werkstatt üblicherweise gemessen, und keine von beiden lässt sich aus dem, was dieses System erfasst, ehrlich berechnen. Beide brauchen etwas, das hier nie eingegeben wurde.',
+  'labour.noEfficiency':
+    'Effizienz — geleistete Stunden im Verhältnis zu verfügbaren Stunden. Es gibt keinen Dienstplan, also nichts, wodurch geteilt werden könnte.',
+  'labour.noProductivity':
+    'Produktivität — berechnete Stunden im Verhältnis zu gestempelten Stunden. Es gibt keine Stempeluhr, also nichts, wodurch geteilt werden könnte.',
+  'labour.period':
+    'Gezählt aus Arbeiten, die zwischen {from} und {to} berechnet wurden. Laufende Arbeit ist kein Umsatz.',
+
+  // --- Sicherheitsrückrufe ---------------------------------------------------
+  'recalls.title': 'Sicherheitsrückrufe',
+  'recalls.onRequest':
+    'Dies fragt die Verkehrssicherheitsbehörde, läuft also nur, wenn Sie es anstoßen.',
+  'recalls.check': 'Nach Rückrufen suchen',
+  'recalls.checkAgain': 'Erneut suchen',
+  'recalls.checking': 'Behörde wird gefragt…',
+  'recalls.caveat':
+    'Dies sind die Kampagnen, die für einen {make} {model} aus {year} veröffentlicht sind. Das Verzeichnis wird nach Modell geführt, nicht nach Fahrzeug: Es sagt nicht, ob bei diesem Wagen die Arbeit erledigt wurde — das weiß nur der Hersteller.',
+  'recalls.noneFound':
+    'Für dieses Modell ist keine Kampagne veröffentlicht. Das ist nicht dasselbe, wie dieses Fahrzeug geprüft zu haben.',
+  'recalls.doNotDrive': 'Nicht fahren',
+  'recalls.parkOutside': 'Im Freien abstellen',
+  'recalls.remedy': 'Abhilfe: {remedy}',
+
+  // --- Passkeys --------------------------------------------------------------
+  'passkey.useOne': 'Passkey verwenden',
+  'passkey.needDealerGroup':
+    'Geben Sie zuerst Ihre Händlergruppe ein — sie entscheidet, bei welchem Autohaus Sie sich anmelden.',
+  'passkey.ceremonyFailed':
+    'Ihr Gerät konnte das nicht abschließen. Versuchen Sie es erneut oder melden Sie sich mit Ihrem Passwort an.',
+
+  'passkey.title': 'Passkeys',
+  'passkey.lede':
+    'Ein Passkey meldet Sie mit dem Telefon oder Rechner an, den Sie ohnehin entsperren, statt mit einem Passwort. Ihr Passwort gilt weiterhin, und nichts auf diesem Bildschirm nimmt es Ihnen weg.',
+  'passkey.addTitle': 'Passkey hinzufügen',
+  'passkey.addNote':
+    'Ihr Gerät bittet Sie um Bestätigung. Nichts Geheimes verlässt es — nur ein öffentlicher Schlüssel, mit dem niemand etwas anfangen kann, der ihn kopiert.',
+  'passkey.label': 'Wie soll er heißen',
+  'passkey.labelPlaceholder': 'Arbeitsrechner',
+  'passkey.labelHint':
+    'Diesen Namen sehen Sie, wenn Sie ihn wieder entfernen: Benennen Sie das Gerät, nicht sich selbst.',
+  'passkey.add': 'Hinzufügen',
+  'passkey.adding': 'Warten auf Ihr Gerät…',
+  'passkey.added': '{label} ist registriert.',
+  'passkey.unsupported':
+    'Dieser Browser kann keine Passkeys verwenden. Die meisten können es, über eine Verbindung, die nicht einfaches http ist.',
+
+  'passkey.yoursTitle': 'Ihre Passkeys',
+  'passkey.loading': 'Ihre Passkeys werden geladen…',
+  'passkey.none': 'Sie haben noch keine Passkeys.',
+  'passkey.caption': {
+    one: '{count} Passkey in diesem Konto',
+    other: '{count} Passkeys in diesem Konto',
+  },
+  'passkey.colLabel': 'Name',
+  'passkey.colAdded': 'Hinzugefügt',
+  'passkey.colLastUsed': 'Zuletzt verwendet',
+  'passkey.neverUsed': 'Nie verwendet',
+  'passkey.forget': 'Entfernen',
+  'passkey.forgetConfirm':
+    '{label} entfernen? Dieses Gerät kann Sie dann nicht mehr anmelden, und das lässt sich nicht rückgängig machen.',
+  'passkey.forgot': '{label} ist entfernt.',
 
   // --- Wieder Zugang zum Konto bekommen ----------------------------------------
   'recover.link': 'Ich habe mein Passwort vergessen',

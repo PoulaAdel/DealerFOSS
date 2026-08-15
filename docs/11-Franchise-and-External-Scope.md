@@ -246,17 +246,33 @@ passkeys **alongside** passwords first, then password-optional for accounts that
 have registered two, with recovery codes retained — a dealership that locks out
 a service advisor at 8am on a Saturday will not forgive it.
 
-**Built on 2026-08-15, API only.** Registration and sign-in both work end to end;
-no screen offers either yet. Two interface decisions are already settled for when
-one does:
+**Built on 2026-08-15, with screens.** Registration and sign-in both work end to
+end. `/security/passkeys` enrols and removes them; the sign-in screen offers one
+as a way in. Two interface decisions were settled before the screens existed, and
+both are kept:
 
 - **The passkey button sits beside the password field, not before it.** The
   password stays the primary path until a policy says otherwise, and putting a
   new control in front of the one everybody uses would make the common case feel
   like the exception.
+
+  *How it renders, measured 2026-08-15 in all six languages at 1280px:* on one
+  line in English, and wrapped to the line immediately below the password field
+  in the other five. "Use a passkey" is three short words in English and five
+  long ones in French, and forcing one line inside the 380px card squeezed the
+  password box to 140px — narrower than the button beside it, which inverts
+  which control is primary. It stays attached to the password field either way,
+  which is what the decision was about.
+
 - **The recall check runs on request, not when the screen opens.** It is an
   outbound call to somebody else's service, and a screen left open on a desk all
-  afternoon must not keep asking.
+  afternoon must not keep asking. Built as a band on the stock detail, with a
+  button and no automatic fetch.
+
+Two things named here are still not built, and neither is implied by the screens:
+**attestation is not verified** (the browser is asked for `attestation: 'none'`,
+so nothing is requested that would then go unchecked), and **no policy yet lets a
+passkey replace a password** — every account still has one.
 
 ## 8. Workflows and triggers
 
@@ -352,16 +368,16 @@ engineering time), or **Done**.
 | Sales tax by state, county and city | Accounting | Market | Not started |
 | Ambassadors to dealers | Business | Market | Not started |
 | Adopt STAR vocabulary for contracts | Integration | Decision | Not started |
-| Pay type on service work | Service | Done | Built |
+| Pay type on service work | Service | Done | Built, with a screen |
 | Reconditioning capitalised onto the car | Accounting | Done | Built |
 | Technician load balancing | Service | Decision | Not started |
 | Equity mining and next-vehicle prediction | Sales | Decision | Not started |
-| Labour reports: hours sold, effective rate | Reporting | Done | Built |
-| Passkeys alongside passwords | Security | Done | Built (API only) |
+| Labour reports: hours sold, effective rate | Reporting | Done | Built, with a screen |
+| Passkeys alongside passwords | Security | Done | Built, with a screen |
 | Workflow triggers on data we already hold | Platform | Build | Not started |
 | Contributor on-ramp: issues and first tasks | Business | Build | Not started |
 | Documentation restructure: reorganise all 18 docs | Product | Build | Planned |
-| Public safety recall lookup | Vehicle | Done | Built |
+| Public safety recall lookup | Vehicle | Done | Built, with a screen |
 | Spanish as a sixth language | Product | Done | Built |
 
 ## 13. What was done rather than only written down

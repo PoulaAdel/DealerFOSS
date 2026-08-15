@@ -217,6 +217,12 @@ describe('the catalogues', () => {
       ['admin.colStatus', 'the same word in German'],
       ['admin.colSchema', 'the same word in German'],
       ['stock.moved', 'two placeholders and an arrow; only Arabic turns the arrow round'],
+      // German browsers, German banks and the German Wikipedia all say
+      // "Passkey". Inventing a native compound here would be a word the reader
+      // has never seen on the prompt their own operating system shows them.
+      ['nav.passkeys', 'the term German itself uses'],
+      ['passkey.title', 'the term German itself uses'],
+      ['passkey.colLabel', 'the same word in German'],
     ]);
 
     for (const [name, catalogue] of Object.entries(catalogues)) {

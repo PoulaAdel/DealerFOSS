@@ -35,6 +35,8 @@ import { LeadsPage } from '../features/leads/LeadsPage';
 import { DealsPage } from '../features/deals/DealsPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { WorkshopPage } from '../features/service/WorkshopPage';
+import { LabourPage } from '../features/service/LabourPage';
+import { PasskeysPage } from '../features/auth/PasskeysPage';
 import { PartsPage } from '../features/parts/PartsPage';
 import { PeriodsPage } from '../features/accounting/PeriodsPage';
 import { SetFirstPassword } from '../features/auth/SetFirstPassword';
@@ -132,9 +134,16 @@ function AppRoutes() {
         <Route path="/accounting/periods" element={<PeriodsPage />} />
         <Route path="/records" element={<RecordsPage />} />
         <Route path="/workshop" element={<WorkshopPage />} />
+        {/* An area, not a record: a different question over a different period.
+            ADR-020 keeps routes for areas and bands for records. */}
+        <Route path="/workshop/labour" element={<LabourPage />} />
         <Route path="/parts" element={<PartsPage />} />
         <Route path="/staff" element={<StaffPage />} />
         <Route path="/security/second-factor" element={<SecondFactorSetup />} />
+        {/* Deliberately NOT reachable while somebody owes a second factor: the
+            server allows such a session to reach enrolment and nothing else, so
+            this screen would answer 403 on every call it makes. */}
+        <Route path="/security/passkeys" element={<PasskeysPage />} />
         {/* The dashboard is the landing screen: "how did we do" is the question
             somebody opening this at 8am is actually asking. */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -201,6 +210,7 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
             <NavLink to="/records">{t('nav.records')}</NavLink>
             <NavLink to="/staff">{t('nav.staff')}</NavLink>
             <NavLink to="/security/second-factor">{t('nav.secondFactor')}</NavLink>
+            <NavLink to="/security/passkeys">{t('nav.passkeys')}</NavLink>
           </nav>
         )}
 

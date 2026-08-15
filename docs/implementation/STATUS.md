@@ -3,13 +3,14 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the workshop knows who is paying, and can be measured**.
-Service work carries a pay type — customer, manufacturer warranty, or the
-dealership itself — and the ledger tells the three apart. A labour report gives
-hours sold and the effective rate, and names the two figures it cannot produce
-Last verified: 2026-08-15 · `dotnet build` 0 warnings/0 errors, `dotnet test` 636/636,
+Current milestone: **four API-only features became screens somebody can use**.
+Pay type is chosen and shown per line and the totals name each payer; the labour
+report is a screen that says which two figures it will not invent; the recall
+check is a button on the stock detail; and a passkey can be enrolled and used to
+sign in. Six languages, verified in a real browser.
+Last verified: 2026-08-15 · `dotnet build` 0 warnings/0 errors, `dotnet test` 664/664,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 257/257, and `npm run build` all pass
+`npm run typecheck`, `npm test` 303/303, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -683,3 +684,23 @@ to come.
   **What this is not.** No screen offers a passkey, so it is reachable by API only. Attestation is still unverified by choice. And there is no policy making a passkey sufficient on its own — passwords and recovery codes remain, because a dealership locked out of its service desk on a Saturday morning does not forgive it.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **664/664** (was 658), `verify-e2e.ps1` PASS.
+
+- **2026-08-15 — Four features that only an API could reach became screens.** Pay type, the labour report, the recall check and passkeys were all built and tested during the day and none of them was usable by a person. That gap is closed: `WorkshopPage` carries who pays, `/workshop/labour` is the report, the stock detail has a recall band, and `/security/passkeys` enrols one while the sign-in screen accepts it.
+
+  **The totals block is the part that matters.** "Due" now means what the *customer* owes and nothing else, with warranty and internal shown apart from it and a combined "all the work" figure when there is one. A job carrying £240 of warranty repair used to add that to the customer's invoice on screen. The warranty and internal rows are omitted entirely when they are zero — a permanent "Warranty 0.00" on every ordinary job is noise on the one block somebody reads while deciding what to charge.
+
+  **Warranty and internal lines no longer claim the customer agreed.** The server marks them authorised on arrival because nobody needs asking, and the screen was about to print "Agreed" against them — a record of a conversation that never happened. It says "Not the customer's to agree" instead.
+
+  **The labour report's "what this does not measure" band is not decoration.** Efficiency and productivity are what a service manager comes to a report like this for, and neither can be produced from what this system stores — there is no roster and no time clock. The server names them in `notMeasured` and the screen explains each one and what it would need. A report that showed three numbers and stayed silent about the missing two would invite somebody to assume they were fine, and both are used to judge individual people.
+
+  **Both interface decisions from earlier in the day were kept, and one had to bend to six languages.** The recall check asks nothing until the button is pressed — asserted by a test, because the failure mode is a screen left open on a desk quietly polling a regulator all afternoon. The passkey button sits beside the password field; measured at 1280px it shares the line in English and wraps to the line immediately below in the other five, because "Use a passkey" is three short words in English and five long ones in French, and forcing one line squeezed the password box to 140px — narrower than the button beside it. Recorded in doc 11 §7 rather than left as a surprise.
+
+  **A defect found by driving the screen, not by a test.** Every act on a repair order — answering a line, assigning a technician, writing work up — replaced the whole workshop with "Loading the workshop…" while the list refetched, then rebuilt it: the detail band was unmounted, half-typed input was lost, and the page jumped. A refresh now keeps what is on screen; a first load and a filter change still show the loading state, because then there is genuinely nothing to look at.
+
+  **Three CSS classes were being written in JSX with no rule behind them** — the exact drift ADR-020 exists to stop. `chip--warn` was landing on the neutral grey in three screens; it now reads as something to act on, with the word still carrying the meaning.
+
+  **Rehearsed, five ways.** Making the recall check fetch on mount, making "Due" show the total work, dropping the not-measured band, moving the passkey button out of the password row, and restoring the loading flash each failed exactly the test written for it and nothing unrelated.
+
+  **What this is not.** Attestation is still unverified by choice — the browser is asked for `attestation: 'none'`, so nothing is requested that would then go unchecked. No policy lets a passkey replace a password; every account still has one. The recall data is still by model, and the screen says so above the list every time.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **664/664**, `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **303/303** (was 257), `npm run build`. All four screens driven in a real browser in English, German and Arabic, with no horizontal page scroll in any of them.

@@ -430,6 +430,20 @@ export type RepairOrderStatus = 'Booked' | 'InProgress' | 'Completed' | 'Invoice
 
 export type ServiceLineKind = 'Labour' | 'Part' | 'Sublet';
 
+/**
+ * Who settles a line. Not a discount and not a status: the work happened either
+ * way, and this says who is invoiced for it. Warranty goes to the manufacturer,
+ * Internal is carried by the dealership — reconditioning its own stock, most
+ * often — and only CustomerPay ever reaches the customer's bill.
+ */
+export type ServicePayType = 'CustomerPay' | 'Warranty' | 'Internal';
+
+export const servicePayTypes: readonly ServicePayType[] = [
+  'CustomerPay',
+  'Warranty',
+  'Internal',
+];
+
 /** Whether the customer has agreed to pay. Pending is what blocks an invoice. */
 export type LineAuthorization = 'Pending' | 'Authorized' | 'Declined';
 
@@ -507,6 +521,8 @@ export interface ServiceLineView {
   hours: number | null;
   rate: number | null;
   amount: number;
+  /** Who is invoiced for this line. See ServicePayType. */
+  payType: ServicePayType;
   authorization: LineAuthorization;
   authorizedAt: string | null;
   authorizedByUserId: string | null;
@@ -538,7 +554,14 @@ export interface RepairOrderDetail {
   labourTotal: number;
   partsTotal: number;
   subletTotal: number;
+  /** What the CUSTOMER owes. Warranty and internal work is not in this figure. */
   amountDue: number;
+  /** Owed by the manufacturer once a claim is accepted. */
+  warrantyTotal: number;
+  /** Carried by the dealership itself, never billed out. */
+  internalTotal: number;
+  /** Everything the job is worth, whoever settles it. */
+  workTotal: number;
   advisorUserId: string | null;
   technicianUserId: string | null;
   openedAt: string;
@@ -549,6 +572,102 @@ export interface RepairOrderDetail {
   availableMoves: RepairOrderStatus[];
   lines: ServiceLineView[];
   history: RepairOrderHistoryEntry[];
+}
+
+/**
+ * What the workshop sold over a period.
+ *
+ * `notMeasured` is not an error list — it names the figures the trade expects
+ * that this system cannot honestly produce, so the screen can say so out loud
+ * instead of leaving a gap somebody fills in with an assumption.
+ */
+export interface LabourPerformance {
+  from: string;
+  to: string;
+  hoursSold: number;
+  labourRevenue: number;
+  /** Revenue ÷ hours sold: what an hour realised, as against the posted rate. */
+  effectiveLabourRate: number;
+  byTechnician: TechnicianLabour[];
+  byPayer: LabourByPayer[];
+  /** 'Efficiency', 'Productivity' — see UnmeasurableLabourFigure on the server. */
+  notMeasured: string[];
+}
+
+/** Null `technicianUserId` is work invoiced with nobody assigned. Kept, not dropped. */
+export interface TechnicianLabour {
+  technicianUserId: string | null;
+  hoursSold: number;
+  revenue: number;
+  effectiveLabourRate: number;
+}
+
+export interface LabourByPayer {
+  payType: ServicePayType;
+  hoursSold: number;
+  revenue: number;
+}
+
+/**
+ * Safety recall campaigns for a car's YEAR, MAKE AND MODEL.
+ *
+ * Read `appliesToModelNotVehicle` — it is always true, and it is the whole
+ * honesty of this shape. The public record carries no note of whether any
+ * particular car has had the work done, so a screen that renders these as "this
+ * car needs four repairs" is stating something nobody knows.
+ */
+export interface RecallReport {
+  vehicleId: string;
+  modelYear: number;
+  make: string;
+  model: string;
+  campaigns: RecallCampaign[];
+  appliesToModelNotVehicle: boolean;
+}
+
+export interface RecallCampaign {
+  campaignNumber: string;
+  manufacturer: string;
+  component: string;
+  summary: string;
+  remedy: string;
+  reportedOn: string | null;
+  /** The regulator's judgement that the car should not be driven. */
+  doNotDrive: boolean;
+  /** The regulator's judgement that the car should be parked outdoors. */
+  parkOutside: boolean;
+}
+
+/**
+ * What the browser hands to `navigator.credentials.create`. Every byte-valued
+ * field arrives base64url encoded, because that is what survives JSON — see
+ * `fromBase64Url` in features/auth/webauthn.ts.
+ */
+export interface PasskeyRegistrationChallenge {
+  challengeId: string;
+  challenge: string;
+  relyingPartyId: string;
+  relyingPartyName: string;
+  userHandle: string;
+  userName: string;
+  userDisplayName: string;
+  /** Credentials this account already has, so an authenticator is not enrolled twice. */
+  alreadyRegistered: string[];
+}
+
+/** A sign-in challenge. Carries nothing about any account, deliberately. */
+export interface PasskeySignInChallenge {
+  challengeId: string;
+  challenge: string;
+  relyingPartyId: string;
+}
+
+/** A registered passkey as its owner sees it. No key material. */
+export interface RegisteredPasskey {
+  id: string;
+  label: string;
+  createdAt: string;
+  lastUsedAt: string | null;
 }
 
 /** One colleague, as the staff screen sees them. Carries no credential material. */

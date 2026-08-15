@@ -204,6 +204,39 @@ textarea {
   font-size: 0.9rem;
 }
 
+/* The password field and the passkey button, together — the decision of
+   2026-08-15 (doc 11 §7) made visible: BESIDE the password, not ahead of the
+   form.
+
+   It wraps, and that is deliberate. "Use a passkey" is three short words in
+   English and five long ones in French ("Utiliser une clé d'accès"); forcing
+   one line inside a 380px card either truncates the label or squeezes the
+   password box to 140px — narrower than the button next to it, which inverts
+   which control is the primary one. Measured in a browser at 1280px in all six
+   languages. So the basis below reserves the password its share first, and the
+   button drops to the line immediately underneath when the language is long.
+   Either way it stays attached to the password field rather than in front of
+   the form, which is what the decision was about.
+
+   `min-width: 0` because a flex item defaults to `min-width: auto` and refuses
+   to shrink below its intrinsic width, pushing the button off the card edge. */
+.signin__beside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.signin__beside input {
+  min-width: 0;
+  flex: 1 1 55%;
+}
+
+.signin__passkey {
+  margin-top: 4px;
+  flex: 0 1 auto;
+}
+
 .signin button[type='submit'] {
   width: 100%;
   margin-top: 20px;
@@ -424,6 +457,37 @@ tbody tr:last-child td {
 .chip--provisioning {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+/* "Nobody has asked yet", "park it outside". Written in three screens before it
+   had any rule at all — exactly the drift ADR-020 exists to stop — so it landed
+   on the bare `.chip` grey and read as neutral. It is not neutral: it is the
+   state somebody has to do something about. The word still carries the meaning
+   on its own, because colour is never the only signal here. */
+.chip--warn {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Who settles a service line. Deliberately NOT a red/amber/green scale — none of
+   the three is a problem and none is a success, they are three different payers.
+   Customer-pay is the ordinary case and so gets the quietest treatment; the
+   other two are distinguished because mistaking one for the other is what puts
+   a warranty claim on a customer's invoice. The word carries the meaning; the
+   colour only helps somebody scanning a long job. */
+.chip--pay-customerpay {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--pay-warranty {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip--pay-internal {
+  background: var(--done-soft);
+  color: var(--done);
 }
 
 .num {
@@ -1476,6 +1540,39 @@ tbody tr[aria-selected='true'] {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 6px;
+}
+
+/* --- Safety recalls -------------------------------------------------------
+   Inside a detail band, so it needs a rule of its own rather than borrowing
+   `.panel` — a panel nested in a panel reads as a second record. The border is
+   what separates "this car's history" above from "what the regulator says"
+   below, which are answers from two different places. */
+
+.recalls {
+  margin-block-start: 16px;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--line);
+}
+
+/* NOT `.calls`. That list lays each item out as a baseline-aligned row, which is
+   right for a one-line phone call and wrong for a campaign carrying a summary
+   and a remedy underneath it. */
+.recalls__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.recalls__list > li {
+  padding-inline-start: 12px;
+  border-inline-start: 3px solid var(--line);
+}
+
+.recalls__list p {
+  margin: 4px 0;
 }
 
 /* A button that reads as a link, because it navigates within the screen rather

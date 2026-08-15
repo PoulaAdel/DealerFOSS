@@ -76,6 +76,7 @@ export const en = {
   'nav.records': 'Records',
   'nav.staff': 'People',
   'nav.secondFactor': 'Two-step sign-in',
+  'nav.passkeys': 'Passkeys',
 
   // --- Appearance -----------------------------------------------------------
   'appearance.auto': 'Auto',
@@ -202,6 +203,14 @@ export const en = {
   'enum.serviceLineKind.Labour': 'Labour',
   'enum.serviceLineKind.Part': 'Part',
   'enum.serviceLineKind.Sublet': 'Sent out',
+
+  // Who settles a piece of service work. Translators: these are the three
+  // PAYERS, not three kinds of work — the same repair is any of them depending
+  // on who is invoiced. "Internal" is the dealership charging itself, most often
+  // for getting its own stock ready to sell.
+  'enum.servicePayType.CustomerPay': 'Customer pays',
+  'enum.servicePayType.Warranty': 'Warranty',
+  'enum.servicePayType.Internal': 'Internal',
 
   'enum.financeProductKind.Warranty': 'Warranty',
   'enum.financeProductKind.Gap': 'GAP',
@@ -859,7 +868,7 @@ export const en = {
   'workshop.notNow': 'Not now',
   'workshop.howObtained': 'How it was obtained',
   'workshop.howObtainedPlaceholder': 'Phoned 10:40, spoke to Mrs Okafor',
-  'workshop.theySaidYes': 'They said yes',
+  'workshop.theySaidYes': 'They agreed',
   'workshop.theySaidNo': 'They said no',
   'workshop.hoursAtRate': '{hours} h at {rate}',
 
@@ -869,7 +878,6 @@ export const en = {
   'workshop.hours': 'Hours',
   'workshop.rate': 'Rate',
   'workshop.amount': 'Amount',
-  'workshop.addLine': 'Add it',
 
   'workshop.totalsCaption': 'What the job comes to.',
   'workshop.totalLabour': 'Labour',
@@ -884,6 +892,137 @@ export const en = {
   'workshop.jobFinished': 'This job is finished.',
   'workshop.assignedElsewhere':
     'Assigned to somebody who is not on your staff list — they may work at another location.',
+  'workshop.addLine': 'Write it up',
+  'workshop.removeLine': 'Remove',
+  'workshop.moveNote': 'Note (goes on the record)',
+  'workshop.howObtainedHint':
+    'This is the part that matters if the bill is ever questioned. Say who you spoke to and when.',
+  'workshop.cappedNote': 'The first {limit}, newest first — there may be more.',
+  'workshop.toAsk': {
+    one: '{count} to ask',
+    other: '{count} to ask',
+  },
+  'workshop.labourReport': 'Labour report',
+
+  // Who settles the work. The distinction the workshop screen turns on: only
+  // customer-pay work reaches the customer's bill, and only customer-pay work
+  // needs anybody to ring them.
+  'workshop.colWhoPays': 'Who pays',
+  'workshop.linePayType': 'Who pays',
+  'workshop.notCustomersCall': 'Not the customer’s to agree',
+  'workshop.totalWarranty': 'Warranty',
+  'workshop.totalInternal': 'Internal',
+  'workshop.totalWork': 'All the work',
+  'workshop.writeUpNote':
+    'Anything added now needs the customer’s answer before it can be billed — which is the point. Write it down while you are looking at it.',
+  'workshop.writeUpNoteOther':
+    'Nobody has to ring the customer about this, because they are not the one paying. It still goes on the job, so the work is recorded and the hours are counted.',
+
+  // --- What the workshop sold ------------------------------------------------
+  // Read by a service manager. Translators — the two figures under "what this
+  // does not measure" are the heart of this screen and their honesty is the
+  // point: they are the numbers the reader came looking for, and this system
+  // cannot produce them. Do not soften those sentences into "coming soon".
+  'labour.title': 'Labour',
+  'labour.from': 'From',
+  'labour.to': 'To',
+  'labour.backToWorkshop': 'Back to the workshop',
+  'labour.loading': 'Working out the labour figures…',
+  'labour.denied':
+    'You do not have access to this workshop’s figures. Ask a manager if you think that is wrong.',
+
+  'labour.headlineCaption': 'Hours sold, labour revenue, and what an hour realised.',
+  'labour.hoursSold': 'Hours sold',
+  'labour.revenue': 'Labour revenue',
+  'labour.effectiveRate': 'What an hour realised',
+
+  'labour.byTechnician': 'By technician',
+  'labour.technicianCaption': 'Hours and revenue for each technician over the period.',
+  'labour.colWho': 'Technician',
+  'labour.colHours': 'Hours',
+  'labour.colRevenue': 'Revenue',
+  'labour.colRate': 'Per hour',
+  'labour.nobodyCredited': 'Nobody credited',
+  'labour.notNamed': 'Not named',
+  'labour.namesUnavailable':
+    'Technicians are not named here because you cannot read the staff list. The hours and the money are still right.',
+  'labour.nothingInvoiced': 'Nothing was invoiced in this period, so there are no hours to report.',
+
+  'labour.byPayer': 'Who paid',
+  'labour.payerCaption': 'Hours and revenue, split by who settles the work.',
+  'labour.colPayer': 'Paid by',
+
+  'labour.notMeasuredTitle': 'What this does not measure',
+  'labour.notMeasuredWhy':
+    'These are the two figures a workshop is usually judged on, and neither can be produced honestly from what this system records. Both need something nobody has ever entered here.',
+  'labour.noEfficiency':
+    'Efficiency — hours produced against hours available. There is no roster, so there is nothing to divide by.',
+  'labour.noProductivity':
+    'Productivity — hours billed against hours clocked. There is no time clock, so there is nothing to divide by.',
+  'labour.period':
+    'Counted from work invoiced between {from} and {to}. Work still in progress is not revenue.',
+
+  // --- Safety recalls --------------------------------------------------------
+  // Translators — `recalls.caveat` and `recalls.noneFound` are about somebody's
+  // brakes. Both say the same careful thing: the public record is about a MODEL
+  // and says nothing about whether THIS car has had the work done. Keep that
+  // distinction; a shorter sentence that loses it is worse than a long one.
+  'recalls.title': 'Safety recalls',
+  'recalls.onRequest': 'This asks the road-safety regulator, so it runs only when you ask it to.',
+  'recalls.check': 'Check for recalls',
+  'recalls.checkAgain': 'Check again',
+  'recalls.checking': 'Asking the regulator…',
+  'recalls.caveat':
+    'These are the campaigns published for a {year} {make} {model}. The record is kept by model and not by car, so it does not say whether this one has had the work done — only the manufacturer knows that.',
+  'recalls.noneFound':
+    'No campaigns are published for this model. That is not the same as this car having been checked.',
+  'recalls.doNotDrive': 'Do not drive',
+  'recalls.parkOutside': 'Park it outside',
+  'recalls.remedy': 'Remedy: {remedy}',
+
+  // --- Passkeys --------------------------------------------------------------
+  // A passkey is the credential on somebody's phone or laptop, unlocked with a
+  // fingerprint, a face or a PIN. Translators: use whatever your language's
+  // browsers call it, and keep `passkey.lede`'s promise that the password still
+  // works — somebody who reads this as a replacement will register one on a
+  // phone they are about to trade in.
+  'passkey.useOne': 'Use a passkey',
+  'passkey.needDealerGroup':
+    'Type your dealer group first — it decides which dealership this signs you in to.',
+  'passkey.ceremonyFailed':
+    'Your device could not finish that. Try again, or sign in with your password.',
+
+  'passkey.title': 'Passkeys',
+  'passkey.lede':
+    'A passkey signs you in with the phone or laptop you already unlock, instead of a password. Your password still works, and nothing on this screen takes it away.',
+  'passkey.addTitle': 'Add a passkey',
+  'passkey.addNote':
+    'Your device will ask you to confirm. Nothing secret leaves it — only a public key, which is no use to anybody who takes a copy.',
+  'passkey.label': 'What to call it',
+  'passkey.labelPlaceholder': 'Work laptop',
+  'passkey.labelHint':
+    'You will see this name when you come to remove it, so name the device rather than yourself.',
+  'passkey.add': 'Add it',
+  'passkey.adding': 'Waiting for your device…',
+  'passkey.added': '{label} is registered.',
+  'passkey.unsupported':
+    'This browser cannot use passkeys. Most can, on a connection that is not plain http.',
+
+  'passkey.yoursTitle': 'Your passkeys',
+  'passkey.loading': 'Loading your passkeys…',
+  'passkey.none': 'You have no passkeys yet.',
+  'passkey.caption': {
+    one: '{count} passkey on this account',
+    other: '{count} passkeys on this account',
+  },
+  'passkey.colLabel': 'Name',
+  'passkey.colAdded': 'Added',
+  'passkey.colLastUsed': 'Last used',
+  'passkey.neverUsed': 'Never used',
+  'passkey.forget': 'Forget it',
+  'passkey.forgetConfirm':
+    'Forget {label}? That device stops being able to sign you in, and this cannot be undone.',
+  'passkey.forgot': '{label} is gone.',
 
   // --- Getting back into an account -----------------------------------------
   // Read by somebody locked out and probably annoyed. Every sentence says what

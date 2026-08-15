@@ -540,6 +540,38 @@ but sends nobody a reminder, because there is no way to send a message yet.
   empty list. "We could not ask" and "there is nothing to worry about" must never
   look the same on a screen about somebody's brakes
 
+### Four things you could not see, you can now use — 15 Aug
+
+Everything above under "who is paying", the labour figures, and the recall
+register was built during the day and reachable only by a program. Now a person
+can do all of it.
+
+- **The job sheet says who is paying for each line**, and the totals keep them
+  apart. "Due" is what the *customer* owes; warranty and internal work are shown
+  separately and only when there is something in them. A job with a £240 warranty
+  repair on it used to put that on the customer's bill on screen
+- **Work the customer is not funding no longer says they agreed to it.** It says
+  "not the customer's to agree", which is what actually happened
+- **The labour report is a screen**, with a period you choose, the figures per
+  technician and per payer — and a plain statement of the two numbers it will not
+  give you and why. Efficiency and productivity are what people usually look for
+  on a report like this, and this system has neither a roster nor a clocking
+  machine to work them out from. Saying nothing would have implied they were fine
+- **Checking a car for recalls is a button on the car**, not something that
+  happens when you open the screen. It asks somebody else's service, and a screen
+  left open on a desk all afternoon should not keep asking on your behalf. The
+  caveat about it being *the model* and not *this car* sits above the answer
+  every single time
+- **A passkey is a way in.** You can add one from your own screen, name it, see
+  when it was last used, and remove it — and the sign-in screen offers it beside
+  the password box. Your password still works and nothing here takes it away.
+  Signing in this way never asks for your email: the key on your device is what
+  says who you are, which is also why the sign-in screen cannot be used to find
+  out whether somebody works here
+- **A rough edge, found by using it and fixed.** Every action on a job used to
+  blank the whole workshop for a moment and rebuild it, losing anything half
+  typed. It does not any more
+
 ## What does not exist
 
 - **A full set of books.** The month closes and locks, but there is no year-end,
@@ -578,10 +610,9 @@ but sends nobody a reminder, because there is no way to send a message yet.
 - ~~Resetting a forgotten password~~ — **built, 9 Aug.** See "Getting back in"
   above. Two ways, neither needing anything bought in. An emailed link and a
   text message are still to come
-- **Signing in with a passkey.** The hard half is built and proven — the
-  cryptography that makes a passkey impossible to phish, and somewhere to keep
-  one — but nothing is wired to it yet. **No screen offers a passkey and nobody
-  can sign in with one.** What remains is the plumbing between the two halves
+- ~~Signing in with a passkey~~ — **built, 15 Aug.** See "A passkey is a way in"
+  below. What is still to come is a policy that lets a passkey *replace* a
+  password rather than sit alongside one
 - Cancelling an import once it has started, or watching its progress while it
   runs — it reports when it finishes
 - Moving anything beyond customers and cars. Enquiries, deals and the books have

@@ -18,6 +18,7 @@ import {
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { RecallCheck } from '../vehicles/RecallCheck';
 
 /**
  * What the server will return at most, however many are asked for — it clamps
@@ -199,6 +200,12 @@ function UnitDetail({ unit, onClose }: { unit: InventoryUnitDetail; onClose: () 
           ))}
         </ol>
       )}
+
+      {/* Below the history, because "what the regulator says" is a different
+          kind of answer from "what we did with this car" — it comes from
+          somebody else's records and is about the MODEL. It asks nothing until
+          somebody presses the button; see RecallCheck's header. */}
+      <RecallCheck vehicleId={unit.vehicleId} />
 
       <div className="actions">
         <button type="button" onClick={onClose}>
