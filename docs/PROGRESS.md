@@ -502,6 +502,44 @@ but sends nobody a reminder, because there is no way to send a message yet.
   now you had no way to see it existed. It is on the roles list like everything
   else, with exactly what it can reach spelled out
 
+### The workshop knows who is paying — 15 Aug
+
+- **Every line of work says who pays for it**: the customer, the manufacturer
+  under warranty, or the dealership itself. It is set per line because one job
+  routinely mixes all three — a customer came in for a service, the water pump
+  turned out to be under warranty, and somebody changed a wiper blade off your
+  own stock while the car was up
+- **The customer is billed for their share and nobody else's.** Before this,
+  warranty work and your own reconditioning both landed on the customer's invoice
+- **Warranty money is shown as owed, not as taken.** A claim has to be submitted
+  and accepted before any of it arrives, and some never is. Treating it as cash
+  on the day the car leaves shows money you have not got
+- **Reconditioning your own stock goes onto that car's cost**, so a used car that
+  needed nine hundred pounds of work really did cost nine hundred pounds more.
+  Without that, used-car profit reads better than it is by exactly the recon bill
+- **Work the customer is not paying for does not wait for their permission.**
+  Asking somebody to authorise a repair they are not funding would be a question
+  with no meaning — and an unanswered line stops the invoice, so it would have
+  stopped the job too
+- **You can see what the workshop sold and what an hour actually earned** — hours
+  sold and the effective rate, per technician and per payer. It deliberately does
+  **not** report technician efficiency or productivity, and says so on the
+  response rather than leaving a gap: both need a roster or a clocking system
+  that does not exist here, and both are numbers people are judged on
+
+### A car can be checked against the recall register — 14 Aug
+
+- **Any vehicle can be checked against the public safety-recall register**, free
+  and with nothing to sign up for
+- **It says what it does not know.** The register lists campaigns for a year,
+  make and model — it has no record of whether *this particular car* has had the
+  work done, because only the manufacturer holds that. So the answer is worded as
+  "campaigns that apply to this model", never "this car is clear". It tells you
+  which cars on the lot to check before you sell them
+- **If the register cannot be reached you are told so**, rather than shown an
+  empty list. "We could not ask" and "there is nothing to worry about" must never
+  look the same on a screen about somebody's brakes
+
 ## What does not exist
 
 - **A full set of books.** The month closes and locks, but there is no year-end,
@@ -538,8 +576,12 @@ but sends nobody a reminder, because there is no way to send a message yet.
   runs the installation still cannot**, and that gap is deliberate for now:
   there is nobody above them to hand out a code, so it needs a different answer
 - ~~Resetting a forgotten password~~ — **built, 9 Aug.** See "Getting back in"
-  above. Two ways, neither needing anything bought in. A passkey, an emailed
-  link and a text message are still to come
+  above. Two ways, neither needing anything bought in. An emailed link and a
+  text message are still to come
+- **Signing in with a passkey.** The hard half is built and proven — the
+  cryptography that makes a passkey impossible to phish, and somewhere to keep
+  one — but nothing is wired to it yet. **No screen offers a passkey and nobody
+  can sign in with one.** What remains is the plumbing between the two halves
 - Cancelling an import once it has started, or watching its progress while it
   runs — it reports when it finishes
 - Moving anything beyond customers and cars. Enquiries, deals and the books have
