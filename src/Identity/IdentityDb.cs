@@ -40,6 +40,10 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
 
     public DbSet<StaffEnrolment> StaffEnrolments => Set<StaffEnrolment>();
 
+    public DbSet<Passkey> Passkeys => Set<Passkey>();
+
+    public DbSet<PasskeyChallenge> PasskeyChallenges => Set<PasskeyChallenge>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -106,6 +110,37 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
             builder.Property(x => x.DeviceSummary).HasMaxLength(200);
             // Looked up by hash on every second-factor attempt.
             builder.HasIndex(x => x.TokenHash).IsUnique();
+            builder.HasIndex(x => x.ExpiresAt);
+        });
+
+        modelBuilder.Entity<Passkey>(builder =>
+        {
+            builder.ToTable("Passkeys");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
+
+            // 1023 is the ceiling the specification puts on a credential id.
+            builder.Property(x => x.CredentialId).HasMaxLength(1023).IsRequired();
+            builder.Property(x => x.PublicKeySpki).HasMaxLength(1024).IsRequired();
+            builder.Property(x => x.Algorithm).HasConversion<string>().HasMaxLength(20);
+            builder.Property(x => x.Label).HasMaxLength(100).IsRequired();
+
+            // Unique, and that is the sign-in path: a response names a credential
+            // id and this index turns it into an account. Two users holding the
+            // same credential id would make that lookup ambiguous, which is a
+            // question nobody should have to answer at a sign-in screen.
+            builder.HasIndex(x => x.CredentialId).IsUnique();
+            builder.HasIndex(x => x.UserId);
+        });
+
+        modelBuilder.Entity<PasskeyChallenge>(builder =>
+        {
+            builder.ToTable("PasskeyChallenges");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
+            builder.Property(x => x.Challenge).HasMaxLength(64).IsRequired();
+
+            // Swept by expiry: a challenge table nobody prunes grows for ever.
             builder.HasIndex(x => x.ExpiresAt);
         });
 
