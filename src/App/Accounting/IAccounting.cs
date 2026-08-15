@@ -193,6 +193,14 @@ public sealed record ServiceInvoicePosting(
     decimal Warranty,
     /// <summary>The dealership's own work, charged to itself.</summary>
     decimal Internal,
+
+    /// <summary>
+    /// The part of <see cref="Internal"/> spent on a car this rooftop owns, which
+    /// belongs in that car's cost rather than in an expense account. The
+    /// remainder — work on a demo, a courtesy car, anything not in stock — stays
+    /// a charge. Never greater than <see cref="Internal"/>.
+    /// </summary>
+    decimal InternalCapitalised,
     decimal PartsCost,
     string Memo);
 

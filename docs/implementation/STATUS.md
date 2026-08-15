@@ -659,3 +659,13 @@ to come.
   **Still not built:** the credential table, registration and sign-in endpoints, and the session issuance that would make a passkey actually sign somebody in. Until those exist **passkeys are not usable**, and no screen offers them.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **649/649** (was 636).
+
+- **2026-08-15 — Reconditioning lands on the car, and D4 is settled.** Internal work on a vehicle the rooftop owns is now capitalised onto that vehicle (1300) instead of charged to 5400. It was the deliberately-unfinished half of the pay-type change, and while it stood a used car's recorded cost missed the money spent making it saleable — **used-vehicle gross flattered itself by exactly the recon bill**, which is the classic way a used department looks profitable and is not.
+
+  **The workshop asks rather than guesses.** `IInventory.FindOwnedAsync` answers whether this rooftop owns this vehicle, excluding sold and removed units — a car that has left is not somewhere to put more cost. Work on anything not in stock (a courtesy car, a director's vehicle, a customer's car the dealership decided to cover) still lands on 5400, because there is no unit to put it on. The only difference between the two paths is whether that answer is null.
+
+  It returns a `Guid?` rather than a summary: the caller needs to know *whether*, not *what*, and the fuller shape would have dragged a vehicle lookup into Inventory to populate fields nobody reads.
+
+  **Rehearsed:** never capitalising fails exactly the new test and nothing else.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **658/658** (was 657), `verify-e2e.ps1` PASS.

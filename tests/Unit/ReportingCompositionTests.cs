@@ -258,6 +258,11 @@ public sealed class ReportingCompositionTests
 
         public bool Refuse { get; init; }
 
+        /// <summary>Reporting never asks this; the dashboard does not care about stock ownership.</summary>
+        public Task<Result<Guid?>> FindOwnedAsync(
+            Guid vehicleId, RooftopId rooftopId, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task<Result<StockAging>> AgingAsync(
             StockAgingQuery query,
             CancellationToken cancellationToken)

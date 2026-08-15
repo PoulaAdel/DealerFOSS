@@ -10,8 +10,9 @@ research contradicted the original phrasing, the correction is stated plainly
 rather than quietly applied.
 
 > This is scope, with each item labelled by **what actually blocks it**. Most of
-> it is not built. Four items now are — the public recall lookup, Spanish, pay
-> type on service work, and the labour report — and each is marked `Done` in the
+> it is not built. Five items now are — the public recall lookup, Spanish, pay
+> type on service work, reconditioning onto the car, and the labour report — and
+> each is marked `Done` in the
 > register at §12. Read [`implementation/STATUS.md`](implementation/STATUS.md)
 > for the evidence behind any of it.
 
@@ -177,11 +178,12 @@ share alone; warranty debits a receivable (1200) because the manufacturer has
 not paid yet; internal debits its own charge account (5400). Revenue is credited
 with all of it, because the workshop sold all of it.
 
-**What is still open**, and it is the half of decision D4 that was not settled:
-reconditioning is charged to `5400` rather than capitalised onto the car in
-stock. That means a used vehicle's recorded cost still misses its recon, so
-used-vehicle gross reads slightly better than it is. Doing it properly couples
-the workshop to inventory and needs the maintainer's answer.
+**D4 is now settled in full.** Reconditioning a car the rooftop owns is
+capitalised onto that car (1300) instead of charged to 5400, so used-vehicle
+gross no longer flatters itself by the amount spent making the car saleable. The
+workshop asks Inventory whether the vehicle is owned rather than guessing;
+anything not in stock - a courtesy car, a director-s vehicle - still lands on
+5400, because there is no unit to put it on.
 
 That single missing field is underneath four separate items on the manager's
 list: warranty claims to the manufacturer, per-manufacturer reporting, honest
@@ -339,6 +341,7 @@ engineering time), or **Done**.
 | Ambassadors to dealers | Business | Market | Not started |
 | Adopt STAR vocabulary for contracts | Integration | Decision | Not started |
 | Pay type on service work | Service | Done | Built |
+| Reconditioning capitalised onto the car | Accounting | Done | Built |
 | Technician load balancing | Service | Decision | Not started |
 | Equity mining and next-vehicle prediction | Sales | Decision | Not started |
 | Labour reports: hours sold, effective rate | Reporting | Done | Built |

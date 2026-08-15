@@ -23,6 +23,7 @@ using DealerFOSS.Accounting;
 using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.Identity;
+using DealerFOSS.Inventory;
 using DealerFOSS.Data;
 using DealerFOSS.Parts;
 using DealerFOSS.Vehicles;
@@ -36,6 +37,7 @@ public sealed class RepairOrderService(
     IVehicles vehicles,
     IAccounting accounting,
     IParts parts,
+    IInventory inventory,
     ICurrentUser currentUser,
     IAuditSink audit,
     IClock clock)
@@ -56,6 +58,7 @@ public sealed class RepairOrderService(
     private readonly IVehicles _vehicles = vehicles;
     private readonly IAccounting _accounting = accounting;
     private readonly IParts _parts = parts;
+    private readonly IInventory _inventory = inventory;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
@@ -599,8 +602,31 @@ public sealed class RepairOrderService(
                 }
             }
 
+            // Internal work on a car we own belongs in that car's cost. On
+            // anything else — a courtesy car, a director's vehicle, a customer's
+            // car the dealership decided to cover — there is no unit to put it
+            // on, and it stays a charge. Asking Inventory rather than guessing is
+            // the difference between the two.
+            var capitalised = 0m;
+            if (order.InternalTotal.Amount > 0m)
+            {
+                var owned = await _inventory.FindOwnedAsync(
+                    order.VehicleId, order.RooftopId, cancellationToken);
+
+                if (owned.IsFailure)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return Result.Failure<RepairOrderDetail>(owned.Error);
+                }
+
+                if (owned.Value is not null)
+                {
+                    capitalised = order.InternalTotal.Amount;
+                }
+            }
+
             var posted = await _accounting.PostServiceInvoiceAsync(
-                BuildPosting(order, issued.Value.TotalCost), cancellationToken);
+                BuildPosting(order, issued.Value.TotalCost, capitalised), cancellationToken);
 
             if (posted.IsFailure)
             {
@@ -635,7 +661,8 @@ public sealed class RepairOrderService(
     /// know what a service line is and RepairOrders never has to know what an
     /// account is.
     /// </summary>
-    private static ServiceInvoicePosting BuildPosting(RepairOrder order, decimal partsCost) =>
+    private static ServiceInvoicePosting BuildPosting(
+        RepairOrder order, decimal partsCost, decimal internalCapitalised) =>
         new(
             order.RooftopId,
             order.Id.ToString(),
@@ -647,6 +674,7 @@ public sealed class RepairOrderService(
             AmountDue: order.AmountDue.Amount,
             Warranty: order.WarrantyTotal.Amount,
             Internal: order.InternalTotal.Amount,
+            InternalCapitalised: internalCapitalised,
             // Zero when nothing on the job came off a shelf — a workshop selling
             // only labour has no parts cost, which is different from having an
             // unknown one.

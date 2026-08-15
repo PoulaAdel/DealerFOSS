@@ -170,6 +170,55 @@ public sealed class RepairOrderTests(HostFixture fixture)
         (Credit(lines, "4200") + Credit(lines, "4300")).Should().Be(220m);
     }
 
+    /// <summary>
+    /// Reconditioning our own stock is part of what that car cost us, not an
+    /// expense of the month. Putting it anywhere else lets used-vehicle gross
+    /// flatter itself by exactly the amount spent making the car saleable — the
+    /// classic way a used department looks profitable and is not.
+    /// </summary>
+    [Fact]
+    public async Task Reconditioning_a_car_we_own_lands_on_that_car_rather_than_on_an_expense()
+    {
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var vehicleId = await AddVehicleAsync();
+
+        // Take it into stock first: that is the only thing separating this from
+        // the identical job on a customer's car.
+        using (var received = await PostAsync("/api/v1/inventory", Manager, new
+        {
+            vehicleId,
+            rooftopId = rooftop,
+            stockNumber = $"R{Guid.NewGuid():N}"[..10].ToUpperInvariant(),
+            costAmount = 9_000m,
+            costCurrency = "USD",
+        }))
+        {
+            received.StatusCode.Should().Be(HttpStatusCode.Created);
+        }
+
+        var jobId = await OpenJobAsync(Manager, rooftop, vehicleId);
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Recon before it goes on the lot",
+            hours = 3m, rate = 60m, payType = "Internal",
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
+        var posted = (await entries.Content.ReadFromJsonAsync<JsonElement>())
+            .EnumerateArray().Should().ContainSingle().Subject;
+
+        using var detail = await SendAsync(
+            HttpMethod.Get, $"{Ledger}/{posted.GetProperty("id").GetString()}", Manager);
+        var lines = (await detail.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("lines");
+
+        Debit(lines, "1300").Should().Be(180m, because: "the car cost 180 more than it did this morning");
+        Debit(lines, "5400").Should().Be(0m, because: "it is not an expense; it is stock");
+    }
+
     [Fact]
     public async Task A_line_with_an_unknown_pay_type_is_refused_rather_than_billed_to_the_customer()
     {
@@ -530,13 +579,13 @@ public sealed class RepairOrderTests(HostFixture fixture)
             .GetProperty("id").GetString()!;
     }
 
-    private async Task<string> OpenJobAsync(string email, string rooftopId)
+    private async Task<string> OpenJobAsync(string email, string rooftopId, string? vehicleId = null)
     {
         using var response = await PostAsync(Jobs, email, new
         {
             rooftopId,
             customerId = await AddCustomerAsync(),
-            vehicleId = await AddVehicleAsync(),
+            vehicleId = vehicleId ?? await AddVehicleAsync(),
             complaint = "Squealing from the front when braking.",
             currency = "USD",
             odometerReading = 48_210,

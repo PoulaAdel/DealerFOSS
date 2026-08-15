@@ -923,7 +923,12 @@ public sealed class AccountingService(
         // dealership rather than to anybody at all.
         Line(AccountCodes.Cash, invoice.AmountDue, 0m, "Taken from the customer");
         Line(AccountCodes.WarrantyReceivable, invoice.Warranty, 0m, "Claimed from the manufacturer");
-        Line(AccountCodes.InternalServiceCharge, invoice.Internal, 0m, "Work done for the dealership itself");
+        // Reconditioning a car we own is not an expense — it is part of what that
+        // car cost us, and putting it anywhere else makes used-vehicle gross
+        // flatter itself by exactly the amount spent making the car saleable.
+        Line(AccountCodes.VehicleInventory, invoice.InternalCapitalised, 0m, "Reconditioning, onto the car");
+        Line(AccountCodes.InternalServiceCharge,
+            invoice.Internal - invoice.InternalCapitalised, 0m, "Work done for the dealership itself");
 
         Line(AccountCodes.LabourRevenue, 0m, invoice.Labour, "Labour sold");
         Line(AccountCodes.PartsRevenue, 0m, invoice.Parts, "Parts sold");

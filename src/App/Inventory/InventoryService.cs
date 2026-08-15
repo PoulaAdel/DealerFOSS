@@ -319,6 +319,33 @@ public sealed class InventoryService(
         return Result.Success(Describe(unit, vehicle, history));
     }
 
+    public async Task<Result<Guid?>> FindOwnedAsync(
+        Guid vehicleId,
+        RooftopId rooftopId,
+        CancellationToken cancellationToken)
+    {
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, rooftopId, cancellationToken))
+        {
+            return Result.Failure<Guid?>(InventoryErrors.Forbidden);
+        }
+
+        // Ordered so the answer is the same every time a job is re-read. A
+        // vehicle should not be in stock twice at one rooftop, but if a bad
+        // import ever puts it there, silently picking a different unit on
+        // different days would be worse than picking a predictable one.
+        var unitId = await _db.InventoryUnits
+            .AsNoTracking()
+            .Where(u => u.VehicleId == vehicleId
+                && u.RooftopId == rooftopId
+                && u.Status != InventoryStatus.Sold
+                && u.Status != InventoryStatus.Removed)
+            .OrderBy(u => u.StockNumber)
+            .Select(u => (Guid?)u.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return Result.Success(unitId);
+    }
+
     public async Task<Result<StockAging>> AgingAsync(
         StockAgingQuery query,
         CancellationToken cancellationToken)

@@ -53,6 +53,25 @@ public interface IInventory
     /// when nobody recorded an acquisition date. Both are Inventory's business.
     /// </remarks>
     Task<Result<StockAging>> AgingAsync(StockAgingQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The unit for this vehicle that this rooftop currently owns, or null.
+    ///
+    /// <para>
+    /// Exists so the workshop can tell "our own car" from "a customer's car"
+    /// without knowing anything about stock. Reconditioning belongs in the car's
+    /// cost; the identical job on a customer's vehicle does not, and the only
+    /// difference between them is whether the answer here is null.
+    /// </para>
+    /// <para>
+    /// Sold and removed units are not owned, so they do not count. A car that has
+    /// left is not somewhere to put more cost.
+    /// </para>
+    /// </summary>
+    Task<Result<Guid?>> FindOwnedAsync(
+        Guid vehicleId,
+        RooftopId rooftopId,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Which stock to age, and as at when.</summary>
