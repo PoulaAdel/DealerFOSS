@@ -111,7 +111,18 @@ public sealed record RepairOrderDetail(
     decimal LabourTotal,
     decimal PartsTotal,
     decimal SubletTotal,
+
+    /// <summary>What the customer owes — customer-pay lines only.</summary>
     decimal AmountDue,
+
+    /// <summary>Owed by the manufacturer once a claim is accepted.</summary>
+    decimal WarrantyTotal,
+
+    /// <summary>Carried by the dealership itself, never billed out.</summary>
+    decimal InternalTotal,
+
+    /// <summary>Everything the job is worth, whoever settles it.</summary>
+    decimal WorkTotal,
     Guid? AdvisorUserId,
     Guid? TechnicianUserId,
 
@@ -141,6 +152,7 @@ public sealed record ServiceLineView(
     decimal? Hours,
     decimal? Rate,
     decimal Amount,
+    string PayType,
     string Authorization,
     DateTimeOffset? AuthorizedAt,
     Guid? AuthorizedByUserId,
@@ -188,7 +200,14 @@ public sealed record NewServiceLine(
     /// mean is that nothing comes off a shelf and the line carries no cost.
     /// </summary>
     Guid? PartId = null,
-    decimal? PartQuantity = null);
+    decimal? PartQuantity = null,
+
+    /// <summary>
+    /// Who pays: "CustomerPay", "Warranty" or "Internal". Defaults to the
+    /// customer, because that is the overwhelming majority and because a caller
+    /// that says nothing should not silently produce a warranty claim.
+    /// </summary>
+    string PayType = "CustomerPay");
 
 /// <summary>
 /// What the customer said. <paramref name="Note"/> is how it was obtained —

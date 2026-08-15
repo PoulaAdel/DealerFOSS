@@ -108,4 +108,66 @@ public static class AccountCodes
 
     /// <summary>What those products cost the dealership — what the provider charges.</summary>
     public const string CostOfFinanceProducts = "5500";
+
+    /// <summary>
+    /// Warranty work done and not yet paid for by the manufacturer. An asset: the
+    /// work is finished and the money is owed, but a claim has to be submitted and
+    /// accepted before any of it arrives — and some of it never will.
+    ///
+    /// Keeping it out of Cash is the whole point. A workshop that books warranty
+    /// as cash on the day the car leaves shows money it has not got, and nobody
+    /// notices the claims nobody submitted.
+    /// </summary>
+    public const string WarrantyReceivable = "1200";
+
+    /// <summary>
+    /// Work the dealership did for itself — reconditioning its own stock, demos,
+    /// company vehicles. The workshop is still credited with the sale, so its
+    /// people are measured on the work they actually did; this account carries the
+    /// matching charge, so the two net to nothing at the dealership level.
+    ///
+    /// <para>
+    /// <b>Deliberately not capitalised onto the vehicle.</b> Reconditioning a used
+    /// car properly belongs in that car's cost, which is what stops used-vehicle
+    /// gross from flattering itself. Doing that means the workshop reaching into
+    /// stock to find the unit, and it is a decision the maintainer has not made
+    /// (doc 11, D4). This account is the honest interim: the charge lands
+    /// somewhere real and visible rather than on the customer.
+    /// </para>
+    /// </summary>
+    public const string InternalServiceCharge = "5400";
+
+    /// <summary>
+    /// The chart every dealership starts with, in one place.
+    ///
+    /// It used to be written out twice — once in the development seeder and once
+    /// in tenant provisioning — and the two drifted the moment an account was
+    /// added: warranty and internal service went into the development copy, and
+    /// the next real dealership provisioned without them could not invoice a
+    /// repair order at all. The failure surfaced as "the chart of accounts is
+    /// missing 1200, 5400" on somebody's first day.
+    ///
+    /// The roles catalogue learned this lesson already and is shared for exactly
+    /// the same reason: the version a paying dealership receives must be the
+    /// version the tests exercise.
+    /// </summary>
+    public static IReadOnlyList<(string Code, string Name, AccountKind Kind)> Standard { get; } =
+    [
+        (Cash, "Cash", AccountKind.Asset),
+        (WarrantyReceivable, "Warranty claims receivable", AccountKind.Asset),
+        (VehicleInventory, "Vehicle inventory", AccountKind.Asset),
+        (TradeInventory, "Trade-in inventory", AccountKind.Asset),
+        (PartsInventory, "Parts inventory", AccountKind.Asset),
+        (VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
+        (FeeRevenue, "Fee income", AccountKind.Revenue),
+        (LabourRevenue, "Labour sales", AccountKind.Revenue),
+        (PartsRevenue, "Parts sales", AccountKind.Revenue),
+        (SubletRevenue, "Sublet sales", AccountKind.Revenue),
+        (FinanceProductRevenue, "Finance product sales", AccountKind.Revenue),
+        (SalesDiscounts, "Sales discounts", AccountKind.Revenue),
+        (CostOfVehicleSales, "Cost of vehicle sales", AccountKind.Expense),
+        (CostOfPartsSales, "Cost of parts sales", AccountKind.Expense),
+        (InternalServiceCharge, "Internal service charge", AccountKind.Expense),
+        (CostOfFinanceProducts, "Cost of finance products", AccountKind.Expense),
+    ];
 }

@@ -93,6 +93,14 @@ internal sealed class ServiceLineConfiguration : IEntityTypeConfiguration<Servic
         builder.Property(x => x.Hours).HasPrecision(9, 2);
         builder.Property(x => x.Rate).HasPrecision(18, 2);
         builder.Property(x => x.UnitAmount).HasPrecision(18, 2);
+        // The default is spelled out so the MIGRATION carries it. Without it EF
+        // back-fills existing rows with an empty string, which is not a member of
+        // the enum — every service line written before this column existed would
+        // then throw on read. Caught by reading the generated migration.
+        builder.Property(x => x.PayType)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(ServicePayType.CustomerPay);
         builder.Property(x => x.Authorization).HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.AuthorizationNote).HasMaxLength(1000);
 

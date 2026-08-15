@@ -560,26 +560,8 @@ public static class DevelopmentSeeder
 
     private static async Task SeedChartOfAccountsAsync(TenantDb db)
     {
-        (string Code, string Name, AccountKind Kind)[] chart =
-        [
-            (AccountCodes.Cash, "Cash", AccountKind.Asset),
-            (AccountCodes.VehicleInventory, "Vehicle inventory", AccountKind.Asset),
-            (AccountCodes.TradeInventory, "Trade-in inventory", AccountKind.Asset),
-            (AccountCodes.VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
-            (AccountCodes.FeeRevenue, "Fee income", AccountKind.Revenue),
-            (AccountCodes.LabourRevenue, "Labour sales", AccountKind.Revenue),
-            (AccountCodes.PartsRevenue, "Parts sales", AccountKind.Revenue),
-            (AccountCodes.SubletRevenue, "Sublet sales", AccountKind.Revenue),
-            (AccountCodes.SalesDiscounts, "Sales discounts", AccountKind.Revenue),
-            (AccountCodes.CostOfVehicleSales, "Cost of vehicle sales", AccountKind.Expense),
-            (AccountCodes.PartsInventory, "Parts inventory", AccountKind.Asset),
-            (AccountCodes.CostOfPartsSales, "Cost of parts sales", AccountKind.Expense),
-            (AccountCodes.FinanceProductRevenue, "Finance product sales", AccountKind.Revenue),
-            (AccountCodes.CostOfFinanceProducts, "Cost of finance products", AccountKind.Expense),
-        ];
-
         var existing = await db.Accounts.Select(a => a.Code).ToListAsync();
-        var missing = chart.Where(a => !existing.Contains(a.Code)).ToList();
+        var missing = AccountCodes.Standard.Where(a => !existing.Contains(a.Code)).ToList();
 
         if (missing.Count == 0)
         {

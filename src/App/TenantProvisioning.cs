@@ -205,27 +205,9 @@ public sealed class TenantProvisioning(
     /// </summary>
     private static async Task SeedChartOfAccountsAsync(TenantDb db, CancellationToken cancellationToken)
     {
-        (string Code, string Name, AccountKind Kind)[] chart =
-        [
-            (AccountCodes.Cash, "Cash", AccountKind.Asset),
-            (AccountCodes.VehicleInventory, "Vehicle inventory", AccountKind.Asset),
-            (AccountCodes.TradeInventory, "Trade-in inventory", AccountKind.Asset),
-            (AccountCodes.PartsInventory, "Parts inventory", AccountKind.Asset),
-            (AccountCodes.VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
-            (AccountCodes.FeeRevenue, "Fee income", AccountKind.Revenue),
-            (AccountCodes.LabourRevenue, "Labour sales", AccountKind.Revenue),
-            (AccountCodes.PartsRevenue, "Parts sales", AccountKind.Revenue),
-            (AccountCodes.SubletRevenue, "Sublet sales", AccountKind.Revenue),
-            (AccountCodes.FinanceProductRevenue, "Finance product sales", AccountKind.Revenue),
-            (AccountCodes.SalesDiscounts, "Sales discounts", AccountKind.Revenue),
-            (AccountCodes.CostOfVehicleSales, "Cost of vehicle sales", AccountKind.Expense),
-            (AccountCodes.CostOfPartsSales, "Cost of parts sales", AccountKind.Expense),
-            (AccountCodes.CostOfFinanceProducts, "Cost of finance products", AccountKind.Expense),
-        ];
-
         var existing = await db.Accounts.Select(a => a.Code).ToListAsync(cancellationToken);
 
-        foreach (var account in chart.Where(a => !existing.Contains(a.Code)))
+        foreach (var account in AccountCodes.Standard.Where(a => !existing.Contains(a.Code)))
         {
             db.Accounts.Add(new Account(Guid.NewGuid(), account.Code, account.Name, account.Kind));
         }

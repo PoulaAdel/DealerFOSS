@@ -81,6 +81,34 @@ public enum ServiceLineKind
 }
 
 /// <summary>
+/// Who pays for a line of work. The dealership term is "pay type", and a workshop
+/// runs on all three every day.
+///
+/// This is not a billing detail — it decides which department carries the money
+/// and which ledger account it lands in. Getting it wrong overstates service
+/// revenue, hides what warranty is owed, and makes a used car look more
+/// profitable than it was. It is also what a warranty claim to the manufacturer
+/// is built from (doc 11 §5).
+/// </summary>
+public enum ServicePayType
+{
+    /// <summary>The vehicle owner pays, at the retail rate. Most of the revenue.</summary>
+    CustomerPay = 0,
+
+    /// <summary>
+    /// The manufacturer pays, at its own agreed rate, once a claim is submitted
+    /// and accepted. Until then it is money owed to the dealership, not cash.
+    /// </summary>
+    Warranty = 1,
+
+    /// <summary>
+    /// The dealership pays itself: reconditioning its own stock, demos, company
+    /// vehicles. No outside money changes hands at all.
+    /// </summary>
+    Internal = 2,
+}
+
+/// <summary>
 /// Whether the customer has agreed to pay for a line.
 ///
 /// This is the control the whole capability exists to hold. A technician who

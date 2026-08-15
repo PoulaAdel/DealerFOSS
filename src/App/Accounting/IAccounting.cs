@@ -169,6 +169,17 @@ public sealed record DeliveryPosting(
 /// which is not the same as having an unknown one.
 /// </para>
 /// </remarks>
+/// <remarks>
+/// <para>
+/// <b>Two different splits of the same money, and they must agree.</b>
+/// <see cref="Labour"/>, <see cref="Parts"/> and <see cref="Sublet"/> divide the
+/// work by WHAT was sold, and are credited to revenue. <see cref="AmountDue"/>,
+/// <see cref="Warranty"/> and <see cref="Internal"/> divide the same work by WHO
+/// settles it, and are debited. The two sides balance because they are the same
+/// total counted twice — if they ever disagree the entry is refused rather than
+/// posted, because a ledger that does not balance is worse than a missing entry.
+/// </para>
+/// </remarks>
 public sealed record ServiceInvoicePosting(
     RooftopId RooftopId,
     string Reference,
@@ -176,7 +187,12 @@ public sealed record ServiceInvoicePosting(
     decimal Labour,
     decimal Parts,
     decimal Sublet,
+    /// <summary>The customer's share, and only theirs.</summary>
     decimal AmountDue,
+    /// <summary>Owed by the manufacturer. Lands in a receivable, never in cash.</summary>
+    decimal Warranty,
+    /// <summary>The dealership's own work, charged to itself.</summary>
+    decimal Internal,
     decimal PartsCost,
     string Memo);
 

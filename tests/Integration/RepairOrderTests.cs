@@ -55,6 +55,134 @@ public sealed class RepairOrderTests(HostFixture fixture)
         job.GetProperty("number").GetString().Should().StartWith("RO-");
     }
 
+    /// <summary>
+    /// One job, three payers &mdash; the ordinary case in a franchised workshop.
+    ///
+    /// What matters is that the customer is billed for their share and nobody
+    /// else's. Before pay type existed every line was implicitly customer-pay, so
+    /// a warranty repair and the dealership's own reconditioning both landed on
+    /// the customer's invoice.
+    /// </summary>
+    [Fact]
+    public async Task A_job_can_be_paid_for_by_three_different_people_and_the_customer_owes_only_their_share()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Full service", hours = 1.5m, rate = 120m,
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Water pump, under warranty",
+            hours = 2m, rate = 95m, payType = "Warranty",
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Part", description = "Wiper blade for our own demo",
+            unitAmount = 22m, payType = "Internal",
+        });
+
+        var job = await GetJobAsync(jobId, Manager);
+
+        job.GetProperty("amountDue").GetDecimal().Should().Be(180m,
+            because: "the customer pays for their service and nothing else");
+        job.GetProperty("warrantyTotal").GetDecimal().Should().Be(190m);
+        job.GetProperty("internalTotal").GetDecimal().Should().Be(22m);
+        job.GetProperty("workTotal").GetDecimal().Should().Be(392m,
+            because: "the workshop did all of it, whoever settles the bill");
+    }
+
+    /// <summary>
+    /// Warranty and internal work needs no answer from the customer, and must not
+    /// block the invoice waiting for one. Asking somebody to authorise a repair
+    /// they are not paying for is a question with no meaning attached to it.
+    /// </summary>
+    [Fact]
+    public async Task Work_the_customer_is_not_paying_for_does_not_wait_on_their_answer()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Full service", hours = 1m, rate = 100m,
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+
+        // Found mid-job, so a customer-pay line here would be Pending.
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Recall work", hours = 1m, rate = 95m, payType = "Warranty",
+        });
+
+        var job = await GetJobAsync(jobId, Manager);
+        var warranty = job.GetProperty("lines").EnumerateArray()
+            .Single(l => l.GetProperty("payType").GetString() == "Warranty");
+
+        warranty.GetProperty("authorization").GetString().Should().Be("Authorized");
+
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK,
+            because: "nothing is waiting on the customer, so the job can be billed");
+    }
+
+    /// <summary>
+    /// The ledger has to tell the three apart. Warranty is a receivable because
+    /// the manufacturer has not paid yet; internal is a charge the dealership
+    /// carries itself; only the customer's share is cash.
+    /// </summary>
+    [Fact]
+    public async Task The_ledger_puts_warranty_in_a_receivable_and_internal_in_its_own_charge()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Service", hours = 1m, rate = 100m,
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 1m, rate = 80m, payType = "Warranty",
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Part", description = "Recon part for stock", unitAmount = 40m, payType = "Internal",
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
+        var posted = (await entries.Content.ReadFromJsonAsync<JsonElement>())
+            .EnumerateArray().Should().ContainSingle().Subject;
+
+        using var detail = await SendAsync(
+            HttpMethod.Get, $"{Ledger}/{posted.GetProperty("id").GetString()}", Manager);
+        var lines = (await detail.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("lines");
+
+        Debit(lines, "1000").Should().Be(100m, because: "only the customer's share is cash");
+        Debit(lines, "1200").Should().Be(80m, because: "the manufacturer owes it until the claim is paid");
+        Debit(lines, "5400").Should().Be(40m, because: "the dealership carries its own work");
+
+        // Revenue is credited with everything, whoever settles it: the workshop
+        // sold all of it, and its people did all of it.
+        (Credit(lines, "4200") + Credit(lines, "4300")).Should().Be(220m);
+    }
+
+    [Fact]
+    public async Task A_line_with_an_unknown_pay_type_is_refused_rather_than_billed_to_the_customer()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        using var response = await PostAsync($"{Jobs}/{jobId}/lines", Manager, new
+        {
+            kind = "Labour", description = "Something", hours = 1m, rate = 100m, payType = "Guarantee",
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("service.unknown_pay_type");
+    }
+
     [Fact]
     public async Task Work_found_during_the_job_cannot_be_invoiced_until_the_customer_answers()
     {

@@ -273,11 +273,18 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.UnknownLineKind);
         }
 
+        // Refused rather than defaulted. A typo in the pay type silently becoming
+        // "CustomerPay" would bill somebody for warranty work.
+        if (!Enum.TryParse<ServicePayType>(line.PayType, ignoreCase: true, out var payType))
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.UnknownPayType);
+        }
+
         try
         {
             order.AddLine(
                 kind, line.Description, line.Hours, line.Rate, line.UnitAmount,
-                _clock.UtcNow, _currentUser.Id, line.PartId, line.PartQuantity);
+                _clock.UtcNow, _currentUser.Id, line.PartId, line.PartQuantity, payType);
         }
         catch (ArgumentException ex)
         {
@@ -532,10 +539,13 @@ public sealed class RepairOrderService(
             order.RooftopId,
             order.Id.ToString(),
             order.Currency,
+            // What was sold, then who settles it. Both sides total the same work.
             Labour: order.LabourTotal.Amount,
             Parts: order.PartsTotal.Amount,
             Sublet: order.SubletTotal.Amount,
             AmountDue: order.AmountDue.Amount,
+            Warranty: order.WarrantyTotal.Amount,
+            Internal: order.InternalTotal.Amount,
             // Zero when nothing on the job came off a shelf — a workshop selling
             // only labour has no parts cost, which is different from having an
             // unknown one.
@@ -659,6 +669,9 @@ public sealed class RepairOrderService(
             order.PartsTotal.Amount,
             order.SubletTotal.Amount,
             order.AmountDue.Amount,
+            order.WarrantyTotal.Amount,
+            order.InternalTotal.Amount,
+            order.WorkTotal.Amount,
             order.AdvisorUserId,
             order.TechnicianUserId,
             // The same field the summary reports as OpenedAt: an audit stamp, and
@@ -675,6 +688,7 @@ public sealed class RepairOrderService(
                     l.Hours,
                     l.Rate,
                     l.Amount,
+                    l.PayType.ToString(),
                     l.Authorization.ToString(),
                     l.AuthorizedAt,
                     l.AuthorizedByUserId,
@@ -711,6 +725,10 @@ internal static class ServiceErrors
     public static Error UnknownLineKind { get; } = Error.Validation(
         "service.unknown_line_kind",
         "A line is Labour, a Part, or Sublet work.");
+
+    public static Error UnknownPayType { get; } = Error.Validation(
+        "service.unknown_pay_type",
+        "Work is paid for by the customer, by the manufacturer under warranty, or by the dealership itself.");
 
     public static Error CustomerNotFound { get; } = Error.NotFound(
         "service.customer_not_found",

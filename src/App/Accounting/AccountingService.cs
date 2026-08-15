@@ -496,6 +496,19 @@ public sealed class AccountingService(
             return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
         }
 
+        // The two splits of the same money have to agree before anything is
+        // posted. JournalEntry.Post would catch the imbalance anyway, but it would
+        // report it as "the entry will not balance", which sends whoever reads it
+        // hunting through account mappings. The real fault is upstream — a caller
+        // whose payer split does not add up to what it says it sold — and saying
+        // so by name is the difference between a five-minute fix and an afternoon.
+        var byKind = invoice.Labour + invoice.Parts + invoice.Sublet;
+        var byPayer = invoice.AmountDue + invoice.Warranty + invoice.Internal;
+        if (byKind != byPayer)
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.PayerSplitDisagrees(byKind, byPayer));
+        }
+
         var rooftop = await _organization.GetRooftopAsync(invoice.RooftopId, cancellationToken);
         if (rooftop.IsFailure)
         {
@@ -905,7 +918,13 @@ public sealed class AccountingService(
             lines.Add((account.Code, account.Id, debit, credit, memo));
         }
 
+        // The three payers, debited. Warranty is a receivable rather than cash
+        // because the claim has not been paid — and internal is a charge to the
+        // dealership rather than to anybody at all.
         Line(AccountCodes.Cash, invoice.AmountDue, 0m, "Taken from the customer");
+        Line(AccountCodes.WarrantyReceivable, invoice.Warranty, 0m, "Claimed from the manufacturer");
+        Line(AccountCodes.InternalServiceCharge, invoice.Internal, 0m, "Work done for the dealership itself");
+
         Line(AccountCodes.LabourRevenue, 0m, invoice.Labour, "Labour sold");
         Line(AccountCodes.PartsRevenue, 0m, invoice.Parts, "Parts sold");
         Line(AccountCodes.SubletRevenue, 0m, invoice.Sublet, "Sublet work");
@@ -934,6 +953,7 @@ public sealed class AccountingService(
             AccountCodes.LabourRevenue, AccountCodes.PartsRevenue, AccountCodes.SubletRevenue,
             AccountCodes.PartsInventory, AccountCodes.CostOfPartsSales,
             AccountCodes.FinanceProductRevenue, AccountCodes.CostOfFinanceProducts,
+            AccountCodes.WarrantyReceivable, AccountCodes.InternalServiceCharge,
         ];
 
         var missing = required.Where(code => !accounts.ContainsKey(code)).ToList();
@@ -1014,6 +1034,16 @@ internal static class LedgerErrors
     public static Error ChartIncomplete(IEnumerable<string> missing) => Error.Validation(
         "accounting.chart_incomplete",
         $"The chart of accounts is missing: {string.Join(", ", missing)}.");
+
+    /// <summary>
+    /// The work sold and the work paid for are not the same number. Reported
+    /// against the caller rather than as a balancing failure, because the ledger
+    /// mapping is fine — what arrived was already inconsistent.
+    /// </summary>
+    public static Error PayerSplitDisagrees(decimal byKind, decimal byPayer) => Error.Validation(
+        "accounting.payer_split_disagrees",
+        $"Work sold totals {byKind} but the customer, warranty and internal shares total {byPayer}. " +
+        "Every line has to be paid for by exactly one of them.");
 
     public static Error MixedCurrencies(IEnumerable<string> currencies) => Error.Validation(
         "accounting.mixed_currencies",

@@ -33,6 +33,14 @@ public sealed class ServiceLine
     /// <summary>What a part or a sublet job costs the customer. Zero for labour.</summary>
     public decimal UnitAmount { get; private set; }
 
+    /// <summary>
+    /// Who pays for this line. Set per line, not per job, because one job
+    /// routinely mixes them: the customer came in for a service, the water pump
+    /// turned out to be under warranty, and the workshop replaced a wiper blade
+    /// off its own stock while the car was up.
+    /// </summary>
+    public ServicePayType PayType { get; private set; }
+
     public LineAuthorization Authorization { get; private set; }
 
     public DateTimeOffset? AuthorizedAt { get; private set; }
@@ -91,7 +99,8 @@ public sealed class ServiceLine
         DateTimeOffset? authorizedAt,
         Guid? authorizedByUserId,
         Guid? partId = null,
-        decimal? partQuantity = null)
+        decimal? partQuantity = null,
+        ServicePayType payType = ServicePayType.CustomerPay)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
@@ -138,6 +147,7 @@ public sealed class ServiceLine
         Hours = kind == ServiceLineKind.Labour ? hours : null;
         Rate = kind == ServiceLineKind.Labour ? rate : null;
         UnitAmount = kind == ServiceLineKind.Labour ? 0m : unitAmount;
+        PayType = payType;
         Authorization = authorization;
         AuthorizedAt = authorizedAt;
         AuthorizedByUserId = authorizedByUserId;

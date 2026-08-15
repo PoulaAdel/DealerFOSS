@@ -72,8 +72,32 @@ public sealed class RepairOrder : AuditableEntity
 
     public Money SubletTotal => TotalOf(ServiceLineKind.Sublet);
 
-    /// <summary>What the customer owes: every line the customer did not decline.</summary>
-    public Money AmountDue => new(_lines.Sum(l => l.Amount), Currency);
+    /// <summary>
+    /// What the CUSTOMER owes — customer-pay lines only.
+    ///
+    /// It used to be every line on the job, which was right only while every line
+    /// was implicitly customer-pay. Now that a job can carry warranty and internal
+    /// work, billing the customer for those would be charging them for something
+    /// the manufacturer or the dealership itself is paying for.
+    /// </summary>
+    public Money AmountDue => PayableBy(ServicePayType.CustomerPay);
+
+    /// <summary>Owed by the manufacturer, once a claim is accepted.</summary>
+    public Money WarrantyTotal => PayableBy(ServicePayType.Warranty);
+
+    /// <summary>Carried by the dealership itself. Never billed out.</summary>
+    public Money InternalTotal => PayableBy(ServicePayType.Internal);
+
+    /// <summary>
+    /// Everything the job is worth, whoever settles it. This is what the revenue
+    /// accounts are credited with, and it is the figure the workshop is measured
+    /// on — a technician's day is no less productive because the manufacturer is
+    /// paying for it.
+    /// </summary>
+    public Money WorkTotal => new(_lines.Sum(l => l.Amount), Currency);
+
+    private Money PayableBy(ServicePayType payType) =>
+        new(_lines.Where(l => l.PayType == payType).Sum(l => l.Amount), Currency);
 
     public bool LinesAreOpen => RepairOrderStatusRules.LinesAreOpen(Status);
 
@@ -169,11 +193,18 @@ public sealed class RepairOrder : AuditableEntity
         DateTimeOffset addedAt,
         Guid? addedByUserId,
         Guid? partId = null,
-        decimal? partQuantity = null)
+        decimal? partQuantity = null,
+        ServicePayType payType = ServicePayType.CustomerPay)
     {
         EnsureLinesAreOpen();
 
-        var authorizedOnArrival = Status == RepairOrderStatus.Booked;
+        // Work the customer is not paying for needs no answer from them. Asking a
+        // customer to authorise a warranty repair, or the dealership to authorise
+        // its own reconditioning, is a question with no meaning — and an
+        // unanswered line blocks the invoice, so it would be a question that
+        // stops the job as well.
+        var authorizedOnArrival =
+            Status == RepairOrderStatus.Booked || payType != ServicePayType.CustomerPay;
 
         var line = new ServiceLine(
             Guid.NewGuid(),
@@ -187,7 +218,8 @@ public sealed class RepairOrder : AuditableEntity
             authorizedOnArrival ? addedAt : null,
             authorizedOnArrival ? addedByUserId : null,
             partId,
-            partQuantity);
+            partQuantity,
+            payType);
 
         _lines.Add(line);
         return line;
