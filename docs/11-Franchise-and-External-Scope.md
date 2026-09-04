@@ -337,7 +337,7 @@ Outside engineering, recorded so they are not lost:
 | **D1** | Franchised or independent dealers first | Governs §3.1, §3.2, §3.3 and both roles in §10. Already overdue as **N3** |
 | **D2** | Which jurisdiction | Tax, titling and privacy all follow from it. Six languages and US-only compliance point in different directions |
 | **D3** | Adopt STAR vocabulary for `ContractFields`, or keep our own | Cheap now, expensive once several connectors exist |
-| **D4** | Which accounts warranty and internal work post to | Blocks §5, which blocks four other items |
+| ~~**D4**~~ | ~~Which accounts warranty and internal work post to~~ | **Settled 2026-08-15.** Warranty is a receivable from the manufacturer (`1200`), internal work is a charge against the dealership (`5400`), and reconditioning on a car we own is capitalised onto the unit rather than expensed — so used-vehicle cost carries its recon. Built and proven; see `4f0073c` |
 | **D5** | Whether to hold credit data at all | Changes the security posture of the whole product (§4) |
 
 ## 12. Scope register
