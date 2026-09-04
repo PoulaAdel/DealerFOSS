@@ -776,3 +776,15 @@ to come.
   **Doc 09's "read all files under `docs/` before changing code"** contradicted `ONBOARDING.md`'s "do not start with the documents" and produced a confident memory of things no longer true. Replaced with four steps that start at this file.
 
   Evidence: every relative link in `docs/` resolves (checked by script); `dotnet build` 0/0; `dotnet test` 664/664; frontend typecheck and 303/303 unchanged, since nothing outside `docs/`, `CLAUDE.md` and the progress generator was touched.
+
+- **2026-08-15 — A second person could now start.** The contributor path existed as three documents that disagreed about where to begin and no answer at all to "what should I do first". Both are fixed.
+
+  **`docs/FIRST-TASKS.md` is the new part, and its value is that every item was checked against the code rather than imagined.** Eight tasks, each saying where it lives, why it is a reasonable place to start, what "done" looks like, and what to watch out for. Verified absent before being listed: the VIN decode, session list-and-revoke, import cancellation, passkey challenge pruning, ETags, and any route that creates a second administrator. Two items are marked **claimed** so nobody duplicates work in flight, and three more are named as deliberately unbuilt with a pointer to why.
+
+  **CONTRIBUTING stopped being a third entry point.** It opened with its own reading list — after `README.md` sends people to ONBOARDING, and after doc 08 §8 was corrected this morning to do the same. It now assumes ONBOARDING has been read and covers only what is different about contributing: the loop, the four gates including the frontend four, the rehearsal habit, and a definition of done that names the four-part header, the catalogue rule and the five-band screen shape. Its branching section says plainly that the policy it describes is not how the repository currently runs.
+
+  **Issue templates ask for the evidence this project runs on.** The bug form asks for the stable error code rather than the message, which document or file header made the claim, which seeded account was used — several are *meant* to get 403 — and which of the six languages was on screen, because defects have been specific to one before. The proposal form asks which of the five blockers applies, because for two thirds of the backlog that matters more than the idea. A config file routes security reports away from public issues.
+
+  Evidence: every relative link in `docs/` and `.github/` resolves, checked by script.
+
+- **2026-08-15 — The frontend gate that could not run, ran.** The header conversion's fourth pass was committed with the frontend unverified: Docker had stopped on this host, so `npm audit`, `typecheck`, `test` and `build` could not execute against the 83 changed frontend files, and the commit said so rather than implying otherwise. With Docker back, all four pass — `npm audit` clean, typecheck clean, **303 tests**, production build clean. The first attempt failed on a socket hang-up reaching the npm registry from a container that had just started, which is worth knowing: that failure looks like an audit finding and is not one.

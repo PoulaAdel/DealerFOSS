@@ -51,13 +51,14 @@ existed.
 
 ## Where to start, by what you came for
 
-Reading eighteen documents in numerical order is nobody's best route into any of
+Reading nineteen documents in numerical order is nobody’s best route into any of
 them.
 
 | You want to know | Read, in this order |
 |---|---|
 | **What this thing does today** | [Progress](PROGRESS.md) — plain language, no code. Then [STATUS](implementation/STATUS.md) for the evidence behind each claim |
 | **How to get it running and start changing it** | [Onboarding](ONBOARDING.md) — **the one door**, and it does not start with documents. Then [Local Development](LOCAL-DEVELOPMENT.md) when your environment fights you |
+| **Something to actually work on** | [First tasks](FIRST-TASKS.md) — scoped, checked against the code, each saying what "done" means. Then [CONTRIBUTING](../.github/CONTRIBUTING.md) for the gates |
 | **Whether to build on it** | [02 Architecture](02-Architecture-and-Decisions.md) → [03 Structure](03-Project-Structure.md) → [the ADRs](adr/README.md). The ADRs are the *why*; the code is the *what* |
 | **Whether it can be sold, and to whom** | [11 Franchise & External Scope](11-Franchise-and-External-Scope.md) — start at §1, which reframes the rest, then the register at §12 |
 | **What is safe to change** | [06 Security & API](06-Security-and-API.md) and [08 Governance](08-Governance-and-Standards.md). Then the file header of whatever you are about to edit: the load-bearing rules are written where they can be broken, not only here |
@@ -74,9 +75,9 @@ one door rather than three that disagree.
 
 ## Document index
 
-Eighteen prose documents, plus the ADRs and diagrams. Doc 10 is the coding
+Nineteen prose documents, plus the ADRs and diagrams. Doc 10 is the coding
 agent's working instructions and is git-ignored, so a published checkout has
-seventeen.
+eighteen.
 
 ### The specification — what the product is meant to be
 
@@ -104,6 +105,7 @@ seventeen.
 | # | Document | Owns |
 |---|---|---|
 | — | [Onboarding](ONBOARDING.md) | **start here** — how to read, run, and change the project |
+| — | [First tasks](FIRST-TASKS.md) | open work with nothing blocking it but engineering time, each checked against the code |
 | — | [Local Development](LOCAL-DEVELOPMENT.md) | prerequisites, canonical commands, and the environment facts that are easy to get wrong |
 | — | [Operating](OPERATING.md) | **for whoever runs the installation** — first start, setting a dealership up, backups, diagnosis |
 | 09 | [Implementation Roadmap](09-Implementation-Roadmap.md) | implementation workflow, phase roadmap, completion rules, and progress reporting |

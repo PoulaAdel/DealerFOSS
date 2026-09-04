@@ -26,6 +26,11 @@ code before the documents, gets the app running, and lists the traps worth knowi
 Then [Local Development](docs/LOCAL-DEVELOPMENT.md) for prerequisites, the
 canonical commands, and the environment facts that are easy to get wrong.
 
+**Want something to work on?** [First tasks](docs/FIRST-TASKS.md) is a short list
+of real, scoped work — each item checked against the code, saying where it lives,
+why it is a reasonable place to start, and what "done" looks like. Then
+[CONTRIBUTING](.github/CONTRIBUTING.md) for the gates a change has to pass.
+
 **Running an installation rather than changing it?** [Operating](docs/OPERATING.md)
 is the runbook: first start, setting a dealership up, backups, and what to check
 when something is wrong.

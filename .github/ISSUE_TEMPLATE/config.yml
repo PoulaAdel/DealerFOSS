@@ -1,0 +1,34 @@
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Overview: Purpose, File Design, and Engineering
+#   Routes people away from the issue tracker when the issue tracker is the
+#   wrong place. Only one of these is a hard rule — a security report must not
+#   arrive as a public issue — and the rest exist because a first-time reader
+#   asking "where do I start" is better served by a document than by a thread.
+#
+# Usage:
+#   Read by GitHub when somebody presses New issue. Nothing invokes it.
+#
+# Coding Instructions:
+#   blank_issues_enabled stays true. A contributor with something real to say
+#   and no template that fits should not be turned away by a form.
+
+blank_issues_enabled: true
+
+contact_links:
+  - name: Reporting a security vulnerability
+    url: https://github.com/PoulaAdel/DealerFOSS/security/policy
+    about: Never as a public issue. Use private vulnerability reporting.
+
+  - name: Looking for something to work on
+    url: https://github.com/PoulaAdel/DealerFOSS/blob/main/docs/FIRST-TASKS.md
+    about: Scoped tasks, each checked against the code, with what "done" means.
+
+  - name: New to the project
+    url: https://github.com/PoulaAdel/DealerFOSS/blob/main/docs/ONBOARDING.md
+    about: Thirty minutes, and it reads the code before the documents.
+
+  - name: What actually works today
+    url: https://github.com/PoulaAdel/DealerFOSS/blob/main/docs/PROGRESS.md
+    about: Plain language. Much of docs/ is specification, not description.
