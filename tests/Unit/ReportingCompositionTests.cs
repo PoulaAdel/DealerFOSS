@@ -1,12 +1,19 @@
-// ReportingCompositionTests — the rules ReportingService applies when one of the
-// capabilities it composes says no.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no database.
-// Edit: the valuable assertions here are the three about failure. A dashboard
-//       that turns every refusal into a blank panel is lying by omission, and a
-//       dashboard that turns a data problem into a blank panel is hiding a
-//       problem somebody needs to fix. The difference between those two is the
-//       whole of this class.
+// Overview: Purpose, File Design, and Engineering
+//   ReportingCompositionTests — the rules ReportingService applies when one of the
+//   capabilities it composes says no.
+//
+// Usage:
+//   Runs with the normal test suite; no database.
+//
+// Coding Instructions:
+//   The valuable assertions here are the three about failure. A dashboard
+//   that turns every refusal into a blank panel is lying by omission, and a
+//   dashboard that turns a data problem into a blank panel is hiding a
+//   problem somebody needs to fix. The difference between those two is the
+//   whole of this class.
 
 using FluentAssertions;
 using DealerFOSS.Accounting;

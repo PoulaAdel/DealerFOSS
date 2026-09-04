@@ -1,10 +1,17 @@
-// LeadTests — the lead life-cycle rules, which are the part most likely to be
-// broken by a well-meaning change.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the reopen path matters most. A lost lead coming back is a real and
-//       common event, and the alternative — capturing a second record — loses
-//       the history of the first attempt.
+// Overview: Purpose, File Design, and Engineering
+//   LeadTests — the lead life-cycle rules, which are the part most likely to be
+//   broken by a well-meaning change.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The reopen path matters most. A lost lead coming back is a real and
+//   common event, and the alternative — capturing a second record — loses
+//   the history of the first attempt.
 
 using FluentAssertions;
 using DealerFOSS.Core;

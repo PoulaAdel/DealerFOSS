@@ -1,10 +1,17 @@
-// CustomerTests (integration) — proves adding and finding a customer works
-// against a real database, and that permissions are enforced per action.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the advisor account holds Customers.Read but not Customers.Create, which
-//       is what makes "can look up, cannot add" a real assertion rather than a
-//       theory. Keep that asymmetry in the seeder.
+// Overview: Purpose, File Design, and Engineering
+//   CustomerTests (integration) — proves adding and finding a customer works
+//   against a real database, and that permissions are enforced per action.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The advisor account holds Customers.Read but not Customers.Create, which
+//   is what makes "can look up, cannot add" a real assertion rather than a
+//   theory. Keep that asymmetry in the seeder.
 
 using System.Net;
 using System.Net.Http.Json;

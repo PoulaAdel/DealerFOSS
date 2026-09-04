@@ -1,11 +1,18 @@
-// AuthorizationScopeTests — proves the scope rules that rooftop isolation rests
-// on, at the unit level. The end-to-end proof lives in tests/Integration; these
-// pin the logic itself so a refactor cannot quietly invert it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: "empty means deny" and "organization-wide is not a list of rooftops" are
-//       the two rules that keep a future rooftop safe by default. Do not relax
-//       either without changing the security documentation first.
+// Overview: Purpose, File Design, and Engineering
+//   AuthorizationScopeTests — proves the scope rules that rooftop isolation rests
+//   on, at the unit level. The end-to-end proof lives in tests/Integration; these
+//   pin the logic itself so a refactor cannot quietly invert it.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   "empty means deny" and "organization-wide is not a list of rooftops" are
+//   the two rules that keep a future rooftop safe by default. Do not relax
+//   either without changing the security documentation first.
 
 using FluentAssertions;
 using DealerFOSS.Core;

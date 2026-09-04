@@ -1,12 +1,19 @@
-// IntegrationMappingTests — ADR-021, and the two payload shapes that break mapping.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: every assertion of the form "should not be zero" is load-bearing. The
-//       natural implementation of a coercion pass returns 0 for an unparseable
-//       amount and a fixed date for an unparseable date, because then the caller
-//       always has something to write. Both are indistinguishable from real
-//       values downstream, which is the whole reason ADR-021 exists — so a test
-//       that only checked "it did not throw" would pass against the bug.
+// Overview: Purpose, File Design, and Engineering
+//   IntegrationMappingTests — ADR-021, and the two payload shapes that break mapping.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   Every assertion of the form "should not be zero" is load-bearing. The
+//   natural implementation of a coercion pass returns 0 for an unparseable
+//   amount and a fixed date for an unparseable date, because then the caller
+//   always has something to write. Both are indistinguishable from real
+//   values downstream, which is the whole reason ADR-021 exists — so a test
+//   that only checked "it did not throw" would pass against the bug.
 
 using FluentAssertions;
 using DealerFOSS.Integrations;

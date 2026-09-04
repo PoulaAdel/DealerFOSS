@@ -1,9 +1,16 @@
-// RoleTests — proves a role can only grant permissions that actually exist.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the catalogue check is what turns a typo into a loud failure instead of
-//       a permission nobody holds. Keep it, and keep Grant idempotent so
-//       re-running a seeder cannot produce duplicate rows.
+// Overview: Purpose, File Design, and Engineering
+//   RoleTests — proves a role can only grant permissions that actually exist.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The catalogue check is what turns a typo into a loud failure instead of
+//   a permission nobody holds. Keep it, and keep Grant idempotent so
+//   re-running a seeder cannot produce duplicate rows.
 
 using FluentAssertions;
 using DealerFOSS.Identity;

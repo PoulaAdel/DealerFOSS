@@ -1,11 +1,18 @@
-// FeatureBoundaryTests — rules about what the features inside App may reference.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; a violation fails the build.
-// Edit: these are the only thing keeping the features apart, because they share
-//       one project and the compiler will happily let Customers reach into
-//       Vehicles (ADR-017). Every new feature needs its own row in the table
-//       below: entities free of EF and ASP.NET, and no dependency on a sibling
-//       except through that sibling's I<Feature> contract.
+// Overview: Purpose, File Design, and Engineering
+//   FeatureBoundaryTests — rules about what the features inside App may reference.
+//
+// Usage:
+//   Runs with the normal test suite; a violation fails the build.
+//
+// Coding Instructions:
+//   These are the only thing keeping the features apart, because they share
+//   one project and the compiler will happily let Customers reach into
+//   Vehicles (ADR-017). Every new feature needs its own row in the table
+//   below: entities free of EF and ASP.NET, and no dependency on a sibling
+//   except through that sibling's I<Feature> contract.
 
 using System.Reflection;
 using FluentAssertions;

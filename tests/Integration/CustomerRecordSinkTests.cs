@@ -1,19 +1,26 @@
-// CustomerRecordSinkTests — the first capability that can actually receive a
-// record from a connector, proven end to end against real SQL.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the integration suite.
-// Edit: the test that matters most is the double-delivery one. The cursor
-//       refuses to advance whenever a provider will not account for its window,
-//       so the same records arrive again tomorrow BY DESIGN — routinely, not
-//       exceptionally. If the sink is not idempotent that safety feature becomes
-//       a duplicate-customer generator, and it does so quietly.
+// Overview: Purpose, File Design, and Engineering
+//   CustomerRecordSinkTests — the first capability that can actually receive a
+//   record from a connector, proven end to end against real SQL.
 //
-//       These run through the real ConnectorRuntime inside a real tenant scope,
-//       as a real seeded user. Calling ApplyAsync directly with a stub would
-//       prove the mapping works and say nothing about whether the runtime finds
-//       the sink, whether the permission check passes, whether the transaction
-//       holds, or whether the counts reach the run record — which is the only
-//       place an operator would ever look.
+// Usage:
+//   Runs with the integration suite.
+//
+// Coding Instructions:
+//   The test that matters most is the double-delivery one. The cursor
+//   refuses to advance whenever a provider will not account for its window,
+//   so the same records arrive again tomorrow BY DESIGN — routinely, not
+//   exceptionally. If the sink is not idempotent that safety feature becomes
+//   a duplicate-customer generator, and it does so quietly.
+//
+//   These run through the real ConnectorRuntime inside a real tenant scope,
+//   as a real seeded user. Calling ApplyAsync directly with a stub would
+//   prove the mapping works and say nothing about whether the runtime finds
+//   the sink, whether the permission check passes, whether the transaction
+//   holds, or whether the counts reach the run record — which is the only
+//   place an operator would ever look.
 
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;

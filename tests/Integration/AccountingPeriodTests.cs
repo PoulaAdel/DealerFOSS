@@ -1,15 +1,22 @@
-// AccountingPeriodTests — closing the month, and what a closed month refuses.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: every test that closes the current month reopens it in a finally block.
-//       The period is a row shared by the whole suite, and a test that left this
-//       month closed would fail every other test's postings with a message about
-//       the books being locked — a confusing way to learn that cleanup was
-//       skipped. The same trap as SecondFactorPolicyTests.
+// Overview: Purpose, File Design, and Engineering
+//   AccountingPeriodTests — closing the month, and what a closed month refuses.
 //
-//       Note what is NOT tested here: that a date rule locks the month. There
-//       isn't one, deliberately. Locking is an act somebody performs, because the
-//       close runs over however many business days the work takes.
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   Every test that closes the current month reopens it in a finally block.
+//   The period is a row shared by the whole suite, and a test that left this
+//   month closed would fail every other test's postings with a message about
+//   the books being locked — a confusing way to learn that cleanup was
+//   skipped. The same trap as SecondFactorPolicyTests.
+//
+//   Note what is NOT tested here: that a date rule locks the month. There
+//   isn't one, deliberately. Locking is an act somebody performs, because the
+//   close runs over however many business days the work takes.
 
 using System.Net;
 using System.Net.Http.Json;

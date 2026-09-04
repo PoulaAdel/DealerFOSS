@@ -1,11 +1,18 @@
-// WebAuthnTests — proves the passkey verification refuses what it must refuse.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal unit suite. No database, no HTTP.
-// Edit: the happy path is one test. The other nine are the point. Each one
-//       breaks exactly one property of the ceremony and asserts the specific
-//       refusal, because "it rejected something" is not evidence that it
-//       rejected it for the right reason — a verifier that returns
-//       MalformedResponse for everything would pass a sloppier suite.
+// Overview: Purpose, File Design, and Engineering
+//   WebAuthnTests — proves the passkey verification refuses what it must refuse.
+//
+// Usage:
+//   Runs with the normal unit suite. No database, no HTTP.
+//
+// Coding Instructions:
+//   The happy path is one test. The other nine are the point. Each one
+//   breaks exactly one property of the ceremony and asserts the specific
+//   refusal, because "it rejected something" is not evidence that it
+//   rejected it for the right reason — a verifier that returns
+//   MalformedResponse for everything would pass a sloppier suite.
 
 using System.Security.Cryptography;
 using System.Text;

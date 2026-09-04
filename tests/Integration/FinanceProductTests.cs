@@ -1,13 +1,20 @@
-// FinanceProductTests — selling warranties and cover with a car, and the gross
-// that comes off them.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the test that matters most is
-//       Repricing_the_catalogue_does_not_touch_a_deal_already_done. F&I is
-//       negotiated per deal, so the price and cost are copied onto the sale — if
-//       either were ever read live from the catalogue, next month's price list
-//       would silently rewrite last month's gross. That is the same hazard as a
-//       part's cost, and it is the reason this capability is shaped the way it is.
+// Overview: Purpose, File Design, and Engineering
+//   FinanceProductTests — selling warranties and cover with a car, and the gross
+//   that comes off them.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The test that matters most is
+//   Repricing_the_catalogue_does_not_touch_a_deal_already_done. F&I is
+//   negotiated per deal, so the price and cost are copied onto the sale — if
+//   either were ever read live from the catalogue, next month's price list
+//   would silently rewrite last month's gross. That is the same hazard as a
+//   part's cost, and it is the reason this capability is shaped the way it is.
 
 using System.Net;
 using System.Net.Http.Json;

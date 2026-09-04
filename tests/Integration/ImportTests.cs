@@ -1,12 +1,19 @@
-// ImportTests — a dealership's existing records arriving from a file, through
-// the background worker that actually does it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the four properties worth protecting are (1) a trial changes nothing,
-//       (2) importing the same file twice does not duplicate anything,
-//       (3) a bad row is reported by the number a person sees in their
-//       spreadsheet and does not stop the others, and (4) the counts add up.
-//       A reconciliation report nobody can trust is worse than no report.
+// Overview: Purpose, File Design, and Engineering
+//   ImportTests — a dealership's existing records arriving from a file, through
+//   the background worker that actually does it.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The four properties worth protecting are (1) a trial changes nothing,
+//   (2) importing the same file twice does not duplicate anything,
+//   (3) a bad row is reported by the number a person sees in their
+//   spreadsheet and does not stop the others, and (4) the counts add up.
+//   A reconciliation report nobody can trust is worse than no report.
 
 using System.Net;
 using System.Net.Http.Json;

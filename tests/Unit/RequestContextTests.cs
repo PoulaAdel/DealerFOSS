@@ -1,10 +1,17 @@
-// RequestContextTests — proves the per-request tenant and caller holders fail
-// loudly rather than defaulting.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: these two types are small but security-relevant. Reading before
-//       resolution must throw, and resolving twice must throw, or a request
-//       could silently act as the wrong tenant or the wrong user.
+// Overview: Purpose, File Design, and Engineering
+//   RequestContextTests — proves the per-request tenant and caller holders fail
+//   loudly rather than defaulting.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   These two types are small but security-relevant. Reading before
+//   resolution must throw, and resolving twice must throw, or a request
+//   could silently act as the wrong tenant or the wrong user.
 
 using FluentAssertions;
 using DealerFOSS.Core;

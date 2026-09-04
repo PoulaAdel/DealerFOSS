@@ -1,13 +1,20 @@
-// HostFixture — boots the real application against a real database and seeds the
-// sample dealer organizations, once, for the whole integration suite.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  take it as a constructor parameter on a class marked
-//       [Collection(nameof(HostCollection))].
-// Edit: configuration must arrive as environment variables. Program.cs reads
-//       configuration while its top-level statements run, before
-//       WebApplicationFactory can add an in-memory source. If SQL is
-//       unreachable this fails loudly on purpose — a skipped isolation test is
-//       not evidence of isolation.
+// Overview: Purpose, File Design, and Engineering
+//   HostFixture — boots the real application against a real database and seeds the
+//   sample dealer organizations, once, for the whole integration suite.
+//
+// Usage:
+//   Take it as a constructor parameter on a class marked
+//   [Collection(nameof(HostCollection))].
+//
+// Coding Instructions:
+//   Configuration must arrive as environment variables. Program.cs reads
+//   configuration while its top-level statements run, before
+//   WebApplicationFactory can add an in-memory source. If SQL is
+//   unreachable this fails loudly on purpose — a skipped isolation test is
+//   not evidence of isolation.
 
 using System.Net.Http.Json;
 using System.Text.Json;

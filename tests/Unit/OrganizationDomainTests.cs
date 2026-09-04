@@ -1,10 +1,17 @@
-// OrganizationDomainTests — proves the structure entities cannot be constructed
-// in an invalid state.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: invariants belong in constructors so an invalid record cannot exist at
-//       all, rather than being caught later by validation. Add a case here when
-//       you add an invariant.
+// Overview: Purpose, File Design, and Engineering
+//   OrganizationDomainTests — proves the structure entities cannot be constructed
+//   in an invalid state.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   Invariants belong in constructors so an invalid record cannot exist at
+//   all, rather than being caught later by validation. Add a case here when
+//   you add an invariant.
 
 using FluentAssertions;
 using DealerFOSS.Core;

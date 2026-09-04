@@ -1,18 +1,25 @@
-// FakeAuthenticator — a passkey authenticator in software, for the tests.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  new FakeAuthenticator(relyingPartyId), then Register(...) and Sign(...).
-// Edit: this exists because the alternative was worthless. A passkey test built
-//       on hand-written byte arrays and a stubbed verifier proves that the stub
-//       returns what it was told to; it cannot fail when the real verification
-//       is broken, which is the only thing worth testing here.
+// Overview: Purpose, File Design, and Engineering
+//   FakeAuthenticator — a passkey authenticator in software, for the tests.
 //
-//       So this holds a real P-256 key, writes real CBOR, assembles real
-//       authenticator data, and produces real ECDSA signatures. Breaking a check
-//       in WebAuthn.cs makes tests using this fail, and that is the whole point.
+// Usage:
+//   New FakeAuthenticator(relyingPartyId), then Register(...) and Sign(...).
 //
-//       It is deliberately capable of misbehaving — wrong origin, wrong relying
-//       party, a counter that goes backwards, a signature over the wrong bytes —
-//       because a verifier is only proven by what it refuses.
+// Coding Instructions:
+//   This exists because the alternative was worthless. A passkey test built
+//   on hand-written byte arrays and a stubbed verifier proves that the stub
+//   returns what it was told to; it cannot fail when the real verification
+//   is broken, which is the only thing worth testing here.
+//
+//   So this holds a real P-256 key, writes real CBOR, assembles real
+//   authenticator data, and produces real ECDSA signatures. Breaking a check
+//   in WebAuthn.cs makes tests using this fail, and that is the whole point.
+//
+//   It is deliberately capable of misbehaving — wrong origin, wrong relying
+//   party, a counter that goes backwards, a signature over the wrong bytes —
+//   because a verifier is only proven by what it refuses.
 
 using System.Formats.Cbor;
 using System.Security.Cryptography;

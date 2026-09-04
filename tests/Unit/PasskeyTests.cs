@@ -1,10 +1,17 @@
-// PasskeyTests — the rules the credential record enforces on its own.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal unit suite.
-// Edit: the counter rule is duplicated here and in WebAuthn.cs on purpose. The
-//       verifier checks it on the sign-in path; this checks it on any path at
-//       all. Two copies of a rule is usually a defect — this one is a deliberate
-//       second lock on the only clone detection the standard offers.
+// Overview: Purpose, File Design, and Engineering
+//   PasskeyTests — the rules the credential record enforces on its own.
+//
+// Usage:
+//   Runs with the normal unit suite.
+//
+// Coding Instructions:
+//   The counter rule is duplicated here and in WebAuthn.cs on purpose. The
+//   verifier checks it on the sign-in path; this checks it on any path at
+//   all. Two copies of a rule is usually a defect — this one is a deliberate
+//   second lock on the only clone detection the standard offers.
 
 using System.Security.Cryptography;
 using FluentAssertions;

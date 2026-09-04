@@ -1,12 +1,19 @@
-// TrustedProxyTests — the credential rate limiter only believes a forwarded
-// address when the operator said which proxy may send one.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  dotnet test
-// Edit: the property worth guarding is the DEFAULT. With nothing configured
-//       nothing must be trusted, because an unconditionally honoured
-//       X-Forwarded-For lets an attacker write a fresh address on every request
-//       and never share a rate-limit bucket with themselves — which is worse
-//       than the shared-bucket problem it would be fixing.
+// Overview: Purpose, File Design, and Engineering
+//   TrustedProxyTests — the credential rate limiter only believes a forwarded
+//   address when the operator said which proxy may send one.
+//
+// Usage:
+//   Dotnet test
+//
+// Coding Instructions:
+//   The property worth guarding is the DEFAULT. With nothing configured
+//   nothing must be trusted, because an unconditionally honoured
+//   X-Forwarded-For lets an attacker write a fresh address on every request
+//   and never share a rate-limit bucket with themselves — which is worse
+//   than the shared-bucket problem it would be fixing.
 
 using DealerFOSS.Tenancy;
 using Microsoft.AspNetCore.Builder;

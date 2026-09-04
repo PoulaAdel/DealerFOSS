@@ -1,12 +1,19 @@
-// PartsCostingTests — the three costing methods, and the property that makes
-// switching between them safe.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no database needed.
-// Edit: the test that matters most is
-//       Every_method_reads_the_same_layers_so_switching_needs_no_migration. It is
-//       the justification for keeping receipt layers even when an organization
-//       only ever uses moving average — without them, switching to FIFO later
-//       would silently produce wrong costs from the day it was switched.
+// Overview: Purpose, File Design, and Engineering
+//   PartsCostingTests — the three costing methods, and the property that makes
+//   switching between them safe.
+//
+// Usage:
+//   Runs with the normal test suite; no database needed.
+//
+// Coding Instructions:
+//   The test that matters most is
+//   Every_method_reads_the_same_layers_so_switching_needs_no_migration. It is
+//   the justification for keeping receipt layers even when an organization
+//   only ever uses moving average — without them, switching to FIFO later
+//   would silently produce wrong costs from the day it was switched.
 
 using FluentAssertions;
 using DealerFOSS.Core;

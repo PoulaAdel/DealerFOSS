@@ -1,12 +1,19 @@
-// IntegrationWindowTests — the cursor rules, which are the expensive ones to get wrong.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the tests worth guarding hardest are the two that refuse to move the
-//       cursor. A cursor advanced across a period the provider never served
-//       produces no exception, no missing-record warning, and no failed run —
-//       the hole is found by a reconciliation months later, when the provider
-//       no longer has the data. There is no louder signal available, so the
-//       refusal has to be the signal.
+// Overview: Purpose, File Design, and Engineering
+//   IntegrationWindowTests — the cursor rules, which are the expensive ones to get wrong.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The tests worth guarding hardest are the two that refuse to move the
+//   cursor. A cursor advanced across a period the provider never served
+//   produces no exception, no missing-record warning, and no failed run —
+//   the hole is found by a reconciliation months later, when the provider
+//   no longer has the data. There is no louder signal available, so the
+//   refusal has to be the signal.
 
 using FluentAssertions;
 using DealerFOSS.Integrations;

@@ -1,11 +1,18 @@
-// SupportAccessTests — proves the one door from operating the deployment into a
-// dealership's data is deliberate, limited, visible, and closable.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: four properties are what make this a control rather than a back door, and
-//       each has a test below. It needs a written reason. It is read-only. It
-//       appears in the dealership's own audit trail, not only in ours. And ending
-//       it stops the session on the very next request.
+// Overview: Purpose, File Design, and Engineering
+//   SupportAccessTests — proves the one door from operating the deployment into a
+//   dealership's data is deliberate, limited, visible, and closable.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   Four properties are what make this a control rather than a back door, and
+//   each has a test below. It needs a written reason. It is read-only. It
+//   appears in the dealership's own audit trail, not only in ours. And ending
+//   it stops the session on the very next request.
 
 using System.Net;
 using System.Net.Http.Json;

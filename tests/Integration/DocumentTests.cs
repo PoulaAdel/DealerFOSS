@@ -1,12 +1,19 @@
-// DocumentTests — the paperwork a customer is handed.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the test that matters most is
-//       No_dealership_only_figure_reaches_a_customers_copy. It reads the raw HTML
-//       rather than a model, because the risk is a field somebody adds later
-//       without thinking about who sees the document — and a typed assertion can
-//       only catch fields somebody remembered to declare. Keep it looking at the
-//       wire.
+// Overview: Purpose, File Design, and Engineering
+//   DocumentTests — the paperwork a customer is handed.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The test that matters most is
+//   No_dealership_only_figure_reaches_a_customers_copy. It reads the raw HTML
+//   rather than a model, because the risk is a field somebody adds later
+//   without thinking about who sees the document — and a typed assertion can
+//   only catch fields somebody remembered to declare. Keep it looking at the
+//   wire.
 
 using System.Net;
 using System.Net.Http.Json;

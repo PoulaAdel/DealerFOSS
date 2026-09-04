@@ -1,10 +1,17 @@
-// SecondFactorTests — proves the password alone stops being enough once a second
-// factor is on, and that the way back in without a phone works exactly once.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: these run against mfa@dev.local, an account reserved for this file so
-//       switching MFA on cannot stop every other test signing in. Each test puts
-//       it back afterwards.
+// Overview: Purpose, File Design, and Engineering
+//   SecondFactorTests — proves the password alone stops being enough once a second
+//   factor is on, and that the way back in without a phone works exactly once.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   These run against mfa@dev.local, an account reserved for this file so
+//   switching MFA on cannot stop every other test signing in. Each test puts
+//   it back afterwards.
 
 using System.Net;
 using System.Net.Http.Json;

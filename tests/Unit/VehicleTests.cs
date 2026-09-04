@@ -1,11 +1,18 @@
-// VehicleTests — proves the vehicle and inventory rules the rest of the system
-// will rely on.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the VIN rules matter most. A VIN that fails the standard shape must be
-//       recordable with a reason, because refusing it outright is what pushes
-//       staff into inventing a fake number — the exact data problem the rule was
-//       meant to prevent.
+// Overview: Purpose, File Design, and Engineering
+//   VehicleTests — proves the vehicle and inventory rules the rest of the system
+//   will rely on.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The VIN rules matter most. A VIN that fails the standard shape must be
+//   recordable with a reason, because refusing it outright is what pushes
+//   staff into inventing a fake number — the exact data problem the rule was
+//   meant to prevent.
 
 using FluentAssertions;
 using DealerFOSS.Core;

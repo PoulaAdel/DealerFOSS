@@ -1,18 +1,25 @@
-// PackagedShellTests (integration) — the application serving its own frontend,
-// which is what makes an installation one thing to install rather than two.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: this boots its OWN host with a web root, because the shared fixture has
-//       none — a checkout has no built frontend and must still start. The files
-//       here are a stand-in for a Vite build: an index.html and one fingerprinted
-//       asset, which is all the behaviour under test depends on.
+// Overview: Purpose, File Design, and Engineering
+//   PackagedShellTests (integration) — the application serving its own frontend,
+//   which is what makes an installation one thing to install rather than two.
 //
-//       The valuable test is "a mistyped API route is not the shell". Rehearsed
-//       2026-08-07 against the real published package: with the /api fallback
-//       removed, a signed-in caller asking for /api/v1/organisation gets the
-//       application shell and HTTP 200 — because the shell fallback matches any
-//       path without a dot in it, and every mistyped API route is one. A client
-//       then parses HTML looking for JSON, and nothing reports an error.
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   This boots its OWN host with a web root, because the shared fixture has
+//   none — a checkout has no built frontend and must still start. The files
+//   here are a stand-in for a Vite build: an index.html and one fingerprinted
+//   asset, which is all the behaviour under test depends on.
+//
+//   The valuable test is "a mistyped API route is not the shell". Rehearsed
+//   2026-08-07 against the real published package: with the /api fallback
+//   removed, a signed-in caller asking for /api/v1/organisation gets the
+//   application shell and HTTP 200 — because the shell fallback matches any
+//   path without a dot in it, and every mistyped API route is one. A client
+//   then parses HTML looking for JSON, and nothing reports an error.
 
 using System.Net;
 using System.Net.Http.Json;

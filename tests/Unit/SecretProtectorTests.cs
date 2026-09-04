@@ -1,10 +1,17 @@
-// SecretProtectorTests — proves the thing that stands between a stolen database
-// file and every dealer's connection string.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the tamper test is the one that matters most. Authenticated encryption
-//       means an altered value must FAIL rather than decrypt to something wrong,
-//       and that property is easy to lose by switching cipher mode.
+// Overview: Purpose, File Design, and Engineering
+//   SecretProtectorTests — proves the thing that stands between a stolen database
+//   file and every dealer's connection string.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The tamper test is the one that matters most. Authenticated encryption
+//   means an altered value must FAIL rather than decrypt to something wrong,
+//   and that property is easy to lose by switching cipher mode.
 
 using System.Security.Cryptography;
 using FluentAssertions;

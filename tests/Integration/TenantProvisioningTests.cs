@@ -1,16 +1,23 @@
-// TenantProvisioningTests — creating a dealership without a developer.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the test that matters most is
-//       A_new_dealership_can_record_a_sale_immediately. Provisioning that
-//       produces a dealership which cannot post is the failure mode this whole
-//       milestone exists to prevent, and it is not obvious from the outside —
-//       the tenant resolves, sign-in works, screens load, and only the first
-//       sale fails. Keep it end-to-end.
+// Overview: Purpose, File Design, and Engineering
+//   TenantProvisioningTests — creating a dealership without a developer.
 //
-//       Each test provisions its own slug. The databases it creates are dropped
-//       by the fixture's sweep along with the run's own, because they are named
-//       from the run's host catalog.
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The test that matters most is
+//   A_new_dealership_can_record_a_sale_immediately. Provisioning that
+//   produces a dealership which cannot post is the failure mode this whole
+//   milestone exists to prevent, and it is not obvious from the outside —
+//   the tenant resolves, sign-in works, screens load, and only the first
+//   sale fails. Keep it end-to-end.
+//
+//   Each test provisions its own slug. The databases it creates are dropped
+//   by the fixture's sweep along with the run's own, because they are named
+//   from the run's host catalog.
 
 using System.Net;
 using System.Net.Http.Json;

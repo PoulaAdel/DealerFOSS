@@ -1,11 +1,18 @@
-// CsvTests — the three things that break naive splitting, and the row numbering
-// an error message depends on.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  dotnet test
-// Edit: every case here came from what a real dealer export looks like. A comma
-//       in an address, a quote in a trading name, a line break inside a field.
-//       If any of these regress, an import silently puts the wrong value in the
-//       wrong column, which is worse than refusing the file.
+// Overview: Purpose, File Design, and Engineering
+//   CsvTests — the three things that break naive splitting, and the row numbering
+//   an error message depends on.
+//
+// Usage:
+//   Dotnet test
+//
+// Coding Instructions:
+//   Every case here came from what a real dealer export looks like. A comma
+//   in an address, a quote in a trading name, a line break inside a field.
+//   If any of these regress, an import silently puts the wrong value in the
+//   wrong column, which is worse than refusing the file.
 
 using FluentAssertions;
 using DealerFOSS.DataMigration;

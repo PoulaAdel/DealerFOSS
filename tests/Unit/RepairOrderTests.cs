@@ -1,10 +1,17 @@
-// RepairOrderTests — the authorization rule and the arithmetic, which are the two
-// things a workshop gets complaints about.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the unanswered-work rule matters most. Billing a customer for work they
-//       were never asked about is a consumer-protection problem, not a bug, and
-//       it happens by accident far more often than by dishonesty.
+// Overview: Purpose, File Design, and Engineering
+//   RepairOrderTests — the authorization rule and the arithmetic, which are the two
+//   things a workshop gets complaints about.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The unanswered-work rule matters most. Billing a customer for work they
+//   were never asked about is a consumer-protection problem, not a bug, and
+//   it happens by accident far more often than by dishonesty.
 
 using FluentAssertions;
 using DealerFOSS.Core;

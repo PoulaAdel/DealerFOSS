@@ -1,11 +1,18 @@
-// ControlPlaneTests — proves that running the deployment and reading a
-// dealership's records are different jobs held by different identities.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the assertions to protect are the two crossings. An administrator cookie
-//       must not authenticate a business endpoint, and a dealership cookie must
-//       not authenticate the control plane. Both are refused before any endpoint
-//       runs, so a capability added next year is covered without being told.
+// Overview: Purpose, File Design, and Engineering
+//   ControlPlaneTests — proves that running the deployment and reading a
+//   dealership's records are different jobs held by different identities.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The assertions to protect are the two crossings. An administrator cookie
+//   must not authenticate a business endpoint, and a dealership cookie must
+//   not authenticate the control plane. Both are refused before any endpoint
+//   runs, so a capability added next year is covered without being told.
 
 using System.Net;
 using System.Net.Http.Json;

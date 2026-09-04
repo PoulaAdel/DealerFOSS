@@ -1,10 +1,17 @@
-// DealTests (integration) — proves a car can be sold once, that a salesperson
-// cannot approve their own deal, and that one rooftop cannot see another's.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the two controls worth guarding here are the inventory hold and the
-//       approval split. Both must fail loudly if the checks in DealService are
-//       removed.
+// Overview: Purpose, File Design, and Engineering
+//   DealTests (integration) — proves a car can be sold once, that a salesperson
+//   cannot approve their own deal, and that one rooftop cannot see another's.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The two controls worth guarding here are the inventory hold and the
+//   approval split. Both must fail loudly if the checks in DealService are
+//   removed.
 
 using System.Net;
 using System.Net.Http.Json;

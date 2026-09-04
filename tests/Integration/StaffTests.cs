@@ -1,16 +1,23 @@
-// StaffTests — proves a dealership can see and manage its own people, and that
-// opening Identity's fourth public surface did not open anything else.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the test that matters most is
-//       No_credential_material_ever_appears_in_a_staff_response. It reads the raw
-//       JSON rather than a typed model on purpose — a typed model can only fail
-//       on fields somebody remembered to declare, and the risk here is a field
-//       nobody remembered. Keep it looking at the wire.
+// Overview: Purpose, File Design, and Engineering
+//   StaffTests — proves a dealership can see and manage its own people, and that
+//   opening Identity's fourth public surface did not open anything else.
 //
-//       Several tests grant and remove roles. Every one of them cleans up in a
-//       finally block: an assignment left behind changes what a later test's user
-//       can reach, which surfaces as an unrelated failure somewhere else.
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The test that matters most is
+//   No_credential_material_ever_appears_in_a_staff_response. It reads the raw
+//   JSON rather than a typed model on purpose — a typed model can only fail
+//   on fields somebody remembered to declare, and the risk here is a field
+//   nobody remembered. Keep it looking at the wire.
+//
+//   Several tests grant and remove roles. Every one of them cleans up in a
+//   finally block: an assignment left behind changes what a later test's user
+//   can reach, which surfaces as an unrelated failure somewhere else.
 
 using System.Net;
 using System.Net.Http.Json;

@@ -1,12 +1,19 @@
-// DashboardTests (integration) — proves the month a dealer principal reads is the
-// same month the ledger holds.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: every money assertion here is a DELTA, measured either side of a real
-//       delivery. The suite shares one database and other classes deliver cars
-//       into it, so an absolute figure would be a test that passes until somebody
-//       writes an unrelated one. The delta is also the stronger claim: it says
-//       this sale moved the dashboard by exactly what this sale made.
+// Overview: Purpose, File Design, and Engineering
+//   DashboardTests (integration) — proves the month a dealer principal reads is the
+//   same month the ledger holds.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   Every money assertion here is a DELTA, measured either side of a real
+//   delivery. The suite shares one database and other classes deliver cars
+//   into it, so an absolute figure would be a test that passes until somebody
+//   writes an unrelated one. The delta is also the stronger claim: it says
+//   this sale moved the dashboard by exactly what this sale made.
 
 using System.Globalization;
 using System.Net;

@@ -1,13 +1,20 @@
-// AppointmentTests — the promise, and the one rule that makes a diary reconcile.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the rule worth guarding hardest is that a booking becomes a job exactly
-//       once. A workshop whose diary can produce two jobs for one arrival will
-//       bill one visit twice, and the mistake is invisible until a customer
-//       complains — which is the definition of a control worth a test.
+// Overview: Purpose, File Design, and Engineering
+//   AppointmentTests — the promise, and the one rule that makes a diary reconcile.
 //
-//       The three endings are guarded separately on purpose. Collapsing NoShow
-//       into Cancelled would still pass a test that only checked "it closed".
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The rule worth guarding hardest is that a booking becomes a job exactly
+//   once. A workshop whose diary can produce two jobs for one arrival will
+//   bill one visit twice, and the mistake is invisible until a customer
+//   complains — which is the definition of a control worth a test.
+//
+//   The three endings are guarded separately on purpose. Collapsing NoShow
+//   into Cancelled would still pass a test that only checked "it closed".
 
 using FluentAssertions;
 using DealerFOSS.Core;

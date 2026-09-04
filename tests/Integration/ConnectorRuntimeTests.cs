@@ -1,15 +1,22 @@
-// ConnectorRuntimeTests — the cursor rules against a real database.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the integration suite; needs SQL, like the rest of it.
-// Edit: these exist because the unit tests prove the ARITHMETIC and prove
-//       nothing about what is written down. A cursor rule that is correct in
-//       memory and lost on save is worth nothing: the whole point of refusing to
-//       advance is that tomorrow's run re-reads the same window, and "tomorrow"
-//       means a different process against the same row.
+// Overview: Purpose, File Design, and Engineering
+//   ConnectorRuntimeTests — the cursor rules against a real database.
 //
-//       Each test therefore builds a fresh TenantDb per run — the same context
-//       reused would let a passing test rely on the change tracker rather than
-//       on anything having reached SQL.
+// Usage:
+//   Runs with the integration suite; needs SQL, like the rest of it.
+//
+// Coding Instructions:
+//   These exist because the unit tests prove the ARITHMETIC and prove
+//   nothing about what is written down. A cursor rule that is correct in
+//   memory and lost on save is worth nothing: the whole point of refusing to
+//   advance is that tomorrow's run re-reads the same window, and "tomorrow"
+//   means a different process against the same row.
+//
+//   Each test therefore builds a fresh TenantDb per run — the same context
+//   reused would let a passing test rely on the change tracker rather than
+//   on anything having reached SQL.
 
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;

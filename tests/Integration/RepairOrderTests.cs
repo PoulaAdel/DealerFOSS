@@ -1,13 +1,20 @@
-// RepairOrderTests (integration) — proves a car can be booked in, worked on, and
-// billed; that work nobody asked the customer about cannot reach an invoice; and
-// that one workshop cannot see another's jobs.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the control worth guarding here is the authorization gate. A technician
-//       who can record "the customer agreed" is not a control at all, and an
-//       invoice that goes out with unanswered work on it is a complaint, not a
-//       bug. Both must fail loudly if the checks in RepairOrderService or
-//       RepairOrder are removed.
+// Overview: Purpose, File Design, and Engineering
+//   RepairOrderTests (integration) — proves a car can be booked in, worked on, and
+//   billed; that work nobody asked the customer about cannot reach an invoice; and
+//   that one workshop cannot see another's jobs.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The control worth guarding here is the authorization gate. A technician
+//   who can record "the customer agreed" is not a control at all, and an
+//   invoice that goes out with unanswered work on it is a complaint, not a
+//   bug. Both must fail loudly if the checks in RepairOrderService or
+//   RepairOrder are removed.
 
 using System.Globalization;
 using System.Net;

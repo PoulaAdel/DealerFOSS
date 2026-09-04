@@ -1,12 +1,19 @@
-// ExportTests — a dealership taking its own records away, and the round trip
-// that proves the file is worth something.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the headline test is Records_survive_a_round_trip_into_another_dealership.
-//       It exports from one tenant and imports into a different one through the
-//       ordinary API, then compares. That is the promise an open DMS makes — you
-//       can leave, and take your data — and it is worth nothing as a sentence in
-//       a README. If it ever fails, the export has stopped being an export.
+// Overview: Purpose, File Design, and Engineering
+//   ExportTests — a dealership taking its own records away, and the round trip
+//   that proves the file is worth something.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The headline test is Records_survive_a_round_trip_into_another_dealership.
+//   It exports from one tenant and imports into a different one through the
+//   ordinary API, then compares. That is the promise an open DMS makes — you
+//   can leave, and take your data — and it is worth nothing as a sentence in
+//   a README. If it ever fails, the export has stopped being an export.
 
 using System.Globalization;
 using System.Net;

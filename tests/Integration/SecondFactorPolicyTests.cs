@@ -1,11 +1,18 @@
-// SecondFactorPolicyTests — proves a dealership can demand a second factor of a
-// role, and that demanding it locks nobody out.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: every test here turns the policy off again in a finally block. The policy
-//       is a row shared by the whole suite, and a test that left it on would
-//       refuse every other test's requests with a message about authenticator
-//       apps — which is a confusing way to learn that cleanup was skipped.
+// Overview: Purpose, File Design, and Engineering
+//   SecondFactorPolicyTests — proves a dealership can demand a second factor of a
+//   role, and that demanding it locks nobody out.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   Every test here turns the policy off again in a finally block. The policy
+//   is a row shared by the whole suite, and a test that left it on would
+//   refuse every other test's requests with a message about authenticator
+//   apps — which is a confusing way to learn that cleanup was skipped.
 
 using System.Net;
 using System.Net.Http.Json;

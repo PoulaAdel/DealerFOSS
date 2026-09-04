@@ -1,10 +1,17 @@
-// AntiForgeryTests — proves a write needs more than the session cookie.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the case that matters most is "valid session, no token" — that is
-//       exactly the shape of a request a malicious site can cause a signed-in
-//       browser to send. If that one ever returns anything other than 403, the
-//       protection is gone regardless of what the other tests say.
+// Overview: Purpose, File Design, and Engineering
+//   AntiForgeryTests — proves a write needs more than the session cookie.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The case that matters most is "valid session, no token" — that is
+//   exactly the shape of a request a malicious site can cause a signed-in
+//   browser to send. If that one ever returns anything other than 403, the
+//   protection is gone regardless of what the other tests say.
 
 using System.Net;
 using System.Net.Http.Json;

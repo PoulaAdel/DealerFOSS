@@ -1,10 +1,17 @@
-// TotpTests — proves the code generation matches RFC 6238, because the other
-// implementation is on somebody's phone and cannot be adjusted to agree with us.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the RFC test vector is the important one. If it fails, every
-//       authenticator app in the world disagrees with this code, and no amount
-//       of local testing would have told us.
+// Overview: Purpose, File Design, and Engineering
+//   TotpTests — proves the code generation matches RFC 6238, because the other
+//   implementation is on somebody's phone and cannot be adjusted to agree with us.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The RFC test vector is the important one. If it fails, every
+//   authenticator app in the world disagrees with this code, and no amount
+//   of local testing would have told us.
 
 using FluentAssertions;
 using DealerFOSS.Identity;

@@ -1,10 +1,17 @@
-// LedgerTests — the two rules that make a ledger trustworthy: it balances, and
-// it is never rewritten.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: if you find yourself relaxing one of these to make something else pass,
-//       the something else is wrong. An entry that does not balance is not a
-//       record of anything.
+// Overview: Purpose, File Design, and Engineering
+//   LedgerTests — the two rules that make a ledger trustworthy: it balances, and
+//   it is never rewritten.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   If you find yourself relaxing one of these to make something else pass,
+//   the something else is wrong. An entry that does not balance is not a
+//   record of anything.
 
 using FluentAssertions;
 using DealerFOSS.Accounting;

@@ -1,15 +1,22 @@
-// AccountRecoveryTests — the way back into an account, and everything it must
-// refuse to tell you on the way.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: this is the softest surface in the application — unauthenticated, names
-//       an account by email, and succeeds by setting a password on somebody's
-//       login. The tests are weighted accordingly: most of them assert on what
-//       the endpoint REFUSES to reveal rather than on the happy path.
+// Overview: Purpose, File Design, and Engineering
+//   AccountRecoveryTests — the way back into an account, and everything it must
+//   refuse to tell you on the way.
 //
-//       The two that matter most are the enumeration test (every failure is one
-//       indistinguishable error) and the crossover test (an enrolment code is not
-//       a reset code). Both fail loudly if the checks are relaxed.
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   This is the softest surface in the application — unauthenticated, names
+//   an account by email, and succeeds by setting a password on somebody's
+//   login. The tests are weighted accordingly: most of them assert on what
+//   the endpoint REFUSES to reveal rather than on the happy path.
+//
+//   The two that matter most are the enumeration test (every failure is one
+//   indistinguishable error) and the crossover test (an enrolment code is not
+//   a reset code). Both fail loudly if the checks are relaxed.
 
 using System.Net;
 using System.Net.Http.Json;

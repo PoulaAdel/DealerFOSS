@@ -1,15 +1,22 @@
-// PasskeyTests — the whole ceremony, over HTTP, against a real database.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite.
-// Edit: the unit tests prove the cryptography refuses what it must. These prove
-//       the WIRING — that a real registration reaches the table, that a real
-//       assertion produces a real session cookie, and that the refusals survive
-//       the trip through the endpoint instead of being swallowed into a 500 or,
-//       worse, a success.
+// Overview: Purpose, File Design, and Engineering
+//   PasskeyTests — the whole ceremony, over HTTP, against a real database.
 //
-//       The fake authenticator is linked from the unit project rather than
-//       copied. Its relying party must match what the host is configured with,
-//       which is "localhost" by default.
+// Usage:
+//   Runs with the normal test suite.
+//
+// Coding Instructions:
+//   The unit tests prove the cryptography refuses what it must. These prove
+//   the WIRING — that a real registration reaches the table, that a real
+//   assertion produces a real session cookie, and that the refusals survive
+//   the trip through the endpoint instead of being swallowed into a 500 or,
+//   worse, a success.
+//
+//   The fake authenticator is linked from the unit project rather than
+//   copied. Its relying party must match what the host is configured with,
+//   which is "localhost" by default.
 
 using System.Net;
 using System.Net.Http.Json;

@@ -1,10 +1,17 @@
-// LeadTests (integration) — proves an enquiry can be captured and worked, and
-// that one rooftop cannot see or touch another rooftop's enquiries.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: kept deliberately small. The rooftop-scope cases are the ones that must
-//       fail if the check in LeadService is removed — everything else here is
-//       just enough to show the workflow reaching the database.
+// Overview: Purpose, File Design, and Engineering
+//   LeadTests (integration) — proves an enquiry can be captured and worked, and
+//   that one rooftop cannot see or touch another rooftop's enquiries.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   Kept deliberately small. The rooftop-scope cases are the ones that must
+//   fail if the check in LeadService is removed — everything else here is
+//   just enough to show the workflow reaching the database.
 
 using System.Net;
 using System.Net.Http.Json;

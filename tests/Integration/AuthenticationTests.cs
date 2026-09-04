@@ -1,10 +1,17 @@
-// AuthenticationTests — proves signing in works, and that revoking a session
-// stops it immediately rather than whenever a token would have expired.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the "wrong password and unknown email look identical" case is a privacy
-//       control, not a nicety — distinguishing them tells an attacker which
-//       email addresses are real. Keep them indistinguishable.
+// Overview: Purpose, File Design, and Engineering
+//   AuthenticationTests — proves signing in works, and that revoking a session
+//   stops it immediately rather than whenever a token would have expired.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The "wrong password and unknown email look identical" case is a privacy
+//   control, not a nicety — distinguishing them tells an attacker which
+//   email addresses are real. Keep them indistinguishable.
 
 using System.Net;
 using System.Net.Http.Json;

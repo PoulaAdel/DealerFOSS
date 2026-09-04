@@ -1,10 +1,17 @@
-// HealthTests — liveness and readiness are separate signals and must stay so
-// (doc 07 §6).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite.
-// Edit: health must never require a tenant or a user; load balancers and probes
-//       call it without either. Readiness gains a check whenever a new
-//       must-be-available dependency is introduced.
+// Overview: Purpose, File Design, and Engineering
+//   HealthTests — liveness and readiness are separate signals and must stay so
+//   (doc 07 §6).
+//
+// Usage:
+//   Runs with the normal test suite.
+//
+// Coding Instructions:
+//   Health must never require a tenant or a user; load balancers and probes
+//   call it without either. Readiness gains a check whenever a new
+//   must-be-available dependency is introduced.
 
 using System.Net;
 using FluentAssertions;

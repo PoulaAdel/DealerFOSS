@@ -1,10 +1,17 @@
-// InventoryTests — proves a vehicle can be recorded and found, and that one
-// rooftop cannot see or move another rooftop's stock.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the scope tests must fail if the rooftop check in InventoryService is
-//       removed — that is the point of them. Cover both routes: filtering the
-//       list is not enough if the unit can still be fetched by id.
+// Overview: Purpose, File Design, and Engineering
+//   InventoryTests — proves a vehicle can be recorded and found, and that one
+//   rooftop cannot see or move another rooftop's stock.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The scope tests must fail if the rooftop check in InventoryService is
+//   removed — that is the point of them. Cover both routes: filtering the
+//   list is not enough if the unit can still be fetched by id.
 
 using System.Net;
 using System.Net.Http.Json;

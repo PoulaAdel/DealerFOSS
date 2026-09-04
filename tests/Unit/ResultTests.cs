@@ -1,9 +1,16 @@
-// ResultTests — proves a Result cannot misrepresent an outcome.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the invariants here are what let calling code trust IsSuccess without
-//       also null-checking. Loosening them would let a "successful failure"
-//       through, which is worse than an exception.
+// Overview: Purpose, File Design, and Engineering
+//   ResultTests — proves a Result cannot misrepresent an outcome.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The invariants here are what let calling code trust IsSuccess without
+//   also null-checking. Loosening them would let a "successful failure"
+//   through, which is worse than an exception.
 
 using FluentAssertions;
 using DealerFOSS.Core;

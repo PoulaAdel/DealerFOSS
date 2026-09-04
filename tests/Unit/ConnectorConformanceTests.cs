@@ -1,11 +1,18 @@
-// ConnectorConformanceTests — the doc 05 §7 list, run against the fixture.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite. When a real connector lands, it takes
-//       the same theory data — that is the point of driving these from
-//       IConnector rather than from a concrete class.
-// Edit: a passing suite here means "fixture-tested" and nothing more (doc 05
-//       §3). It is not sandbox evidence and it is certainly not a production
-//       promise; only a real vendor run changes a certification label.
+// Overview: Purpose, File Design, and Engineering
+//   ConnectorConformanceTests — the doc 05 §7 list, run against the fixture.
+//
+// Usage:
+//   Runs with the normal test suite. When a real connector lands, it takes
+//   the same theory data — that is the point of driving these from
+//   IConnector rather than from a concrete class.
+//
+// Coding Instructions:
+//   A passing suite here means "fixture-tested" and nothing more (doc 05
+//   §3). It is not sandbox evidence and it is certainly not a production
+//   promise; only a real vendor run changes a certification label.
 
 using FluentAssertions;
 using DealerFOSS.Integrations;

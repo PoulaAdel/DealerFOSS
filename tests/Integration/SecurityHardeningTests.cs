@@ -1,17 +1,24 @@
-// SecurityHardeningTests — the headers every response carries, and the limit on
-// guessing a secret.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite.
-// Edit: the headers are asserted on a REFUSED response as well as a successful
-//       one. A security header set only on the happy path is not a control, and
-//       that is exactly the mistake that is easy to make by registering the
-//       middleware too late in the pipeline.
+// Overview: Purpose, File Design, and Engineering
+//   SecurityHardeningTests — the headers every response carries, and the limit on
+//   guessing a secret.
 //
-//       The credential RATE LIMITER is deliberately not tested here. This suite
-//       runs in-process and makes hundreds of sign-ins in seconds down one
-//       connection, so HostFixture raises the limit to keep it out of the way.
-//       verify-e2e.ps1 proves the limiter instead, against a real host over a
-//       real socket — where a real caller actually lives.
+// Usage:
+//   Runs with the normal test suite.
+//
+// Coding Instructions:
+//   The headers are asserted on a REFUSED response as well as a successful
+//   one. A security header set only on the happy path is not a control, and
+//   that is exactly the mistake that is easy to make by registering the
+//   middleware too late in the pipeline.
+//
+//   The credential RATE LIMITER is deliberately not tested here. This suite
+//   runs in-process and makes hundreds of sign-ins in seconds down one
+//   connection, so HostFixture raises the limit to keep it out of the way.
+//   verify-e2e.ps1 proves the limiter instead, against a real host over a
+//   real socket — where a real caller actually lives.
 
 using System.Net;
 using System.Net.Http.Json;

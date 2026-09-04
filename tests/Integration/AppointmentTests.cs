@@ -1,13 +1,20 @@
-// AppointmentTests (integration) — proves a car can be booked in before it
-// arrives, that arriving produces exactly one job linked to the booking, and that
-// one workshop cannot read another's diary.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the exit criterion this file exists for is roadmap I5's "Appointment -> RO
-//       visibility reconciles to its source". Reconciling means two things and
-//       both are tested: the booking names the job it produced, and the job
-//       exists with the booking's customer and car on it. A test that only
-//       checked the status moved to Arrived would pass with no job at all.
+// Overview: Purpose, File Design, and Engineering
+//   AppointmentTests (integration) — proves a car can be booked in before it
+//   arrives, that arriving produces exactly one job linked to the booking, and that
+//   one workshop cannot read another's diary.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The exit criterion this file exists for is roadmap I5's "Appointment -> RO
+//   visibility reconciles to its source". Reconciling means two things and
+//   both are tested: the booking names the job it produced, and the job
+//   exists with the booking's customer and car on it. A test that only
+//   checked the status moved to Arrived would pass with no job at all.
 
 using System.Globalization;
 using System.Net;

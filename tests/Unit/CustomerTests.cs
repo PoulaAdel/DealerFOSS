@@ -1,9 +1,16 @@
-// CustomerTests — proves the customer rules that later modules will rely on.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the contact-point rules matter most. Normalization is what makes search
-//       work at all, and the deliberate absence of uniqueness is what lets a
-//       couple share a phone number without staff inventing fake data.
+// Overview: Purpose, File Design, and Engineering
+//   CustomerTests — proves the customer rules that later modules will rely on.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The contact-point rules matter most. Normalization is what makes search
+//   work at all, and the deliberate absence of uniqueness is what lets a
+//   couple share a phone number without staff inventing fake data.
 
 using FluentAssertions;
 using DealerFOSS.Core;

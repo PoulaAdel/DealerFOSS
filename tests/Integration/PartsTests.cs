@@ -1,17 +1,24 @@
-// PartsTests — parts as real stock, and the service profit figure that depends
-// on it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the test that matters most is
-//       Invoicing_a_job_relieves_stock_and_posts_what_the_parts_cost. Before
-//       parts existed, invoicing recorded revenue and no cost, so the workshop
-//       had no profit figure at all. That test is the whole justification for
-//       this capability — if it ever goes green for the wrong reason, the books
-//       are lying about what service earned.
+// Overview: Purpose, File Design, and Engineering
+//   PartsTests — parts as real stock, and the service profit figure that depends
+//   on it.
 //
-//       Tests here add their own parts with generated numbers rather than
-//       sharing a fixture. Stock is consumed by the tests that sell it, and a
-//       shared part would make every test depend on the order they ran in.
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The test that matters most is
+//   Invoicing_a_job_relieves_stock_and_posts_what_the_parts_cost. Before
+//   parts existed, invoicing recorded revenue and no cost, so the workshop
+//   had no profit figure at all. That test is the whole justification for
+//   this capability — if it ever goes green for the wrong reason, the books
+//   are lying about what service earned.
+//
+//   Tests here add their own parts with generated numbers rather than
+//   sharing a fixture. Stock is consumed by the tests that sell it, and a
+//   shared part would make every test depend on the order they ran in.
 
 using System.Net;
 using System.Net.Http.Json;

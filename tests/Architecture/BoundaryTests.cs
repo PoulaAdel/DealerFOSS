@@ -1,16 +1,23 @@
-// BoundaryTests — the dependency rules the compiler cannot express (ADR-014,
-// ADR-017).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; a violation fails the build.
-// Edit: add a rule whenever a boundary breach reaches code review — a breach a
-//       human had to catch is a missing test. Rehearse new rules by breaking
-//       them deliberately; see the README in this folder.
+// Overview: Purpose, File Design, and Engineering
+//   BoundaryTests — the dependency rules the compiler cannot express (ADR-014,
+//   ADR-017).
 //
-//       Two walls exist for two different reasons. Core and Identity are
-//       separate PROJECTS, so the compiler enforces them and these tests only
-//       confirm. The features inside App share one project, so these tests are
-//       the only thing holding them apart — which is why the feature rules below
-//       matter more than the project ones.
+// Usage:
+//   Runs with the normal test suite; a violation fails the build.
+//
+// Coding Instructions:
+//   Add a rule whenever a boundary breach reaches code review — a breach a
+//   human had to catch is a missing test. Rehearse new rules by breaking
+//   them deliberately; see the README in this folder.
+//
+//   Two walls exist for two different reasons. Core and Identity are
+//   separate PROJECTS, so the compiler enforces them and these tests only
+//   confirm. The features inside App share one project, so these tests are
+//   the only thing holding them apart — which is why the feature rules below
+//   matter more than the project ones.
 
 using System.Reflection;
 using FluentAssertions;

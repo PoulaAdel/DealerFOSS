@@ -1,9 +1,16 @@
-// MoneyTests — proves money carries its currency and refuses to lose it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the cross-currency refusals are the point. If a change makes mixed
-//       arithmetic "just work", that is a silent financial bug, not a
-//       convenience — these tests exist to stop it.
+// Overview: Purpose, File Design, and Engineering
+//   MoneyTests — proves money carries its currency and refuses to lose it.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The cross-currency refusals are the point. If a change makes mixed
+//   arithmetic "just work", that is a silent financial bug, not a
+//   convenience — these tests exist to stop it.
 
 using FluentAssertions;
 using DealerFOSS.Core;

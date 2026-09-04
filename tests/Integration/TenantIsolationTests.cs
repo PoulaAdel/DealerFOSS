@@ -1,10 +1,17 @@
-// TenantIsolationTests — proves two dealer organizations live in separate
-// databases and that a request resolves exactly one of them.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: these assert the tenant boundary, so they act as an organization-wide
-//       user deliberately. Rooftop scope within a tenant is covered separately
-//       by RooftopAuthorizationTests.
+// Overview: Purpose, File Design, and Engineering
+//   TenantIsolationTests — proves two dealer organizations live in separate
+//   databases and that a request resolves exactly one of them.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   These assert the tenant boundary, so they act as an organization-wide
+//   user deliberately. Rooftop scope within a tenant is covered separately
+//   by RooftopAuthorizationTests.
 
 using System.Net;
 using System.Net.Http.Json;

@@ -1,10 +1,17 @@
-// DealTests — the money and approval rules, which are the ones that cost real
-// arguments when they are wrong.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; no infrastructure required.
-// Edit: the frozen-terms rule matters most. A price that can change after a
-//       manager approved it makes the approval worthless, and that is a control
-//       failure rather than a bug.
+// Overview: Purpose, File Design, and Engineering
+//   DealTests — the money and approval rules, which are the ones that cost real
+//   arguments when they are wrong.
+//
+// Usage:
+//   Runs with the normal test suite; no infrastructure required.
+//
+// Coding Instructions:
+//   The frozen-terms rule matters most. A price that can change after a
+//   manager approved it makes the approval worthless, and that is a control
+//   failure rather than a bug.
 
 using FluentAssertions;
 using DealerFOSS.Core;

@@ -1,15 +1,22 @@
-// SafetyRecallTests — proves the one outbound call in the product behaves when
-// the other end does not.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite.
-// Edit: THESE TESTS MUST NEVER REACH THE REAL REGULATOR. Every case swaps in a
-//       stub handler. A suite that quietly depends on a public service being up
-//       fails on a train, and a suite that hammers a government endpoint on
-//       every CI run deserves to be blocked.
+// Overview: Purpose, File Design, and Engineering
+//   SafetyRecallTests — proves the one outbound call in the product behaves when
+//   the other end does not.
 //
-//       The case that matters most is Unreachable: a lookup failure must read as
-//       "we do not know", never as "this car is clear". Somebody decides whether
-//       to hand a car over on the strength of it.
+// Usage:
+//   Runs with the normal test suite.
+//
+// Coding Instructions:
+//   THESE TESTS MUST NEVER REACH THE REAL REGULATOR. Every case swaps in a
+//   stub handler. A suite that quietly depends on a public service being up
+//   fails on a train, and a suite that hammers a government endpoint on
+//   every CI run deserves to be blocked.
+//
+//   The case that matters most is Unreachable: a lookup failure must read as
+//   "we do not know", never as "this car is clear". Somebody decides whether
+//   to hand a car over on the strength of it.
 
 using System.Net;
 using System.Net.Http.Json;

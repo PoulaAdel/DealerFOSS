@@ -1,10 +1,17 @@
-// LedgerTests (integration) — proves that delivering a car writes a balanced
-// entry, that it cannot be written twice, and that a mistake is corrected by
-// reversal rather than by editing.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs with the normal test suite; needs a reachable SQL engine.
-// Edit: the arithmetic assertion is the valuable one. If the posting map in
-//       AccountingService drifts, this is what catches it.
+// Overview: Purpose, File Design, and Engineering
+//   LedgerTests (integration) — proves that delivering a car writes a balanced
+//   entry, that it cannot be written twice, and that a mistake is corrected by
+//   reversal rather than by editing.
+//
+// Usage:
+//   Runs with the normal test suite; needs a reachable SQL engine.
+//
+// Coding Instructions:
+//   The arithmetic assertion is the valuable one. If the posting map in
+//   AccountingService drifts, this is what catches it.
 
 using System.Net;
 using System.Net.Http.Json;
