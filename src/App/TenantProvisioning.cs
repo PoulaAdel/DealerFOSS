@@ -172,7 +172,7 @@ public sealed class TenantProvisioning(
             .UseSqlServer(tenantConnection)
             .Options;
 
-        await using var db = new TenantDb(options, _clock);
+        await using var db = new TenantDb(options, _clock, new CurrentUser());
         await db.Database.MigrateAsync(cancellationToken);
 
         if (!await db.Organizations.AnyAsync(cancellationToken))

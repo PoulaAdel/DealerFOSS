@@ -353,7 +353,8 @@ public sealed class ConnectorRuntimeTests
             new DbContextOptionsBuilder<TenantDb>()
                 .UseSqlServer(HostFixture.TenantConnectionString(Tenant))
                 .Options,
-            new FixedClock(now));
+            new FixedClock(now),
+            new CurrentUser());
 
     /// <summary>
     /// A run happens on behalf of a named user, whose permissions apply to

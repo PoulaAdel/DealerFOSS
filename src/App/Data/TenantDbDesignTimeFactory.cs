@@ -31,6 +31,6 @@ public sealed class TenantDbDesignTimeFactory : IDesignTimeDbContextFactory<Tena
             .UseSqlServer(connection)
             .Options;
 
-        return new TenantDb(options, new SystemClock());
+        return new TenantDb(options, new SystemClock(), new CurrentUser());
     }
 }

@@ -802,3 +802,21 @@ to come.
   Evidence: every relative link in `docs/` and `.github/` resolves, checked by script.
 
 - **2026-09-04 — The frontend gate that could not run, ran.** The header conversion's fourth pass was committed with the frontend unverified: Docker had stopped on this host, so `npm audit`, `typecheck`, `test` and `build` could not execute against the 83 changed frontend files, and the commit said so rather than implying otherwise. With Docker back, all four pass — `npm audit` clean, typecheck clean, **303 tests**, production build clean. The first attempt failed on a socket hang-up reaching the npm registry from a container that had just started, which is worth knowing: that failure looks like an audit finding and is not one.
+
+- **2026-09-04 — A row now records who wrote it.** `TenantDb` stamps `CreatedBy` and `ModifiedBy` from `ICurrentUser` on save, alongside the timestamps it already stamped.
+
+  **What was wrong.** `AuditableEntity.CreatedBy` defaulted to `"system"` and **nothing ever assigned it**. A query across the development database found `system` in every row of every table — 1,450 across 21 tables, including 134 deals and 185 repair orders created by signed-in people through the API. `ModifiedBy` was empty everywhere. Meanwhile [doc 03 §5](../03-Project-Structure.md) said "audit columns and the concurrency stamp are set on save" and `AuditableEntity`'s own header said "never set CreatedAt / ModifiedAt / CreatedBy / ModifiedBy by hand", which implies something else does. Both sentences are now true; neither was.
+
+  **This was never blindness.** The audit trail records real actors and always has — `identity.AuditEvents` carries `ActorUserId`, and permission checks read `ICurrentUser` directly, so nothing ran unauthorised. What was missing is the ability to answer "who last touched this record" **from the record**, which is the question somebody asks with a customer on the phone rather than with a log viewer open.
+
+  **`"system"` is kept as the fallback rather than throwing**, because three callers legitimately have no person behind them: the development seeder, tenant provisioning, and `dotnet ef` at design time. A row nobody asked for should say so, and a test asserts that it still does — so the fallback cannot quietly start naming somebody who was not there.
+
+  **`CreatedBy` is never restamped on modify.** It answers a different question from `ModifiedBy` and is the more valuable of the two; overwriting it would destroy the only record of who originated a row.
+
+  **Rehearsed twice.** Reverting the stamp to the constant fails exactly three of the four tests — the fourth expects `system` for seeded rows and correctly still passes. Restamping `CreatedBy` on modify fails exactly the one test that guards it, which is the subtle break the obvious test would have missed.
+
+  **Not backfilled, and it cannot be.** The 1,450 existing rows keep `system`, because nobody recorded who wrote them and inventing an author would be worse than the gap.
+
+  **Named and not done: `IdentityDb` has the same gap.** Its rows say `system` too. It is deliberately left for its own change, because the interesting case is a session row — written at the moment somebody signs in, when `ICurrentUser` is by definition not yet set — and that needs a decision rather than the same mechanical fix.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **668/668** (was 664), `verify-e2e.ps1` PASS. Confirmed against the real database afterwards: rows written by `gm@dev.local` during the e2e run carry `11111111-1111-1111-1111-111111111111`.

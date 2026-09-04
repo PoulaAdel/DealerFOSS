@@ -40,9 +40,23 @@ namespace DealerFOSS.Data;
 /// project (the <c>identity</c> schema lives in the same database but is
 /// physically unreachable from here); routing lives in the host catalog.
 /// </summary>
-public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) : DbContext(options)
+public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, ICurrentUser currentUser)
+    : DbContext(options)
 {
+    /// <summary>
+    /// What a row says when no person asked for it. Matches the default on
+    /// AuditableEntity, so a row written outside a request reads the same
+    /// whether or not it passed through here.
+    /// </summary>
+    private const string SystemAuthor = "system";
+
     private readonly IClock _clock = clock;
+
+    /// <summary>
+    /// Who is writing. Unauthenticated for the seeder, tenant provisioning and
+    /// design-time tooling — all of which genuinely are the system.
+    /// </summary>
+    private readonly ICurrentUser _currentUser = currentUser;
 
     public DbSet<DealerOrganization> Organizations => Set<DealerOrganization>();
 
@@ -125,17 +139,38 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock) :
 
         var now = _clock.UtcNow;
 
+        // Who, as well as when. Until 2026-09-04 only the timestamps were
+        // stamped: CreatedBy kept the "system" default it was born with, so
+        // every row in the database claimed the system wrote it — including
+        // deals and repair orders made by people who were signed in at the time.
+        //
+        // "system" is retained as the fallback rather than throwing, because
+        // three callers legitimately have no person behind them: the development
+        // seeder, tenant provisioning, and `dotnet ef` at design time. A row
+        // nobody asked for should say so.
+        var author = _currentUser.IsAuthenticated
+            ? _currentUser.Id.ToString()
+            : SystemAuthor;
+
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
             switch (entry.State)
             {
                 case EntityState.Added:
                     entry.Entity.CreatedAt = now;
+                    entry.Entity.CreatedBy = author;
                     entry.Entity.ConcurrencyStamp = Guid.NewGuid();
                     break;
                 case EntityState.Modified:
                     entry.Entity.ModifiedAt = now;
+                    entry.Entity.ModifiedBy = author;
                     entry.Entity.ConcurrencyStamp = Guid.NewGuid();
+
+                    // CreatedBy is never restamped. It answers a different
+                    // question from ModifiedBy, and it is the more valuable of
+                    // the two — overwriting it would lose the only record of who
+                    // originated the row.
+                    entry.Property(e => e.CreatedBy).IsModified = false;
                     break;
                 default:
                     break;

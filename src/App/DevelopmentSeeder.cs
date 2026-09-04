@@ -193,7 +193,7 @@ public static class DevelopmentSeeder
             .UseSqlServer(tenantConnection)
             .Options;
 
-        await using var tenantDb = new TenantDb(options, clock);
+        await using var tenantDb = new TenantDb(options, clock, new CurrentUser());
         await tenantDb.Database.MigrateAsync();
 
         if (!await tenantDb.Organizations.AnyAsync())

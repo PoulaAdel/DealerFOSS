@@ -327,7 +327,8 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
             new DbContextOptionsBuilder<TenantDb>()
                 .UseSqlServer(HostFixture.TenantConnectionString(Tenant))
                 .Options,
-            new FixedClock(Start));
+            new FixedClock(Start),
+            new CurrentUser());
 
     private sealed class FixedClock(DateTimeOffset now) : IClock
     {
