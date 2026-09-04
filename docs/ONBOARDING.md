@@ -178,9 +178,13 @@ against the code on 2026-08-15.
   is deliberate, and it means a cross-feature `using` compiles and fails later.
   Only `Core` and `Identity` have compiler walls, because breaching those two is
   a security or correctness incident rather than a mess.
-- **CI has never executed.** A remote *is* configured and the workflow exists,
-  but nothing has been pushed, so `.github/workflows/ci.yml` is an untested
-  claim. Local verification is the real gate.
+- **Local verification is the real gate, not CI.** The maintainer pushes by hand,
+  and `main` was pushed as far as `c55dcd7` on 2026-08-15 — so
+  `.github/workflows/ci.yml` has had the chance to run, and its result is worth
+  checking rather than assuming. This entry read "nothing has been pushed" for
+  the few hours between the docs sweep and the push that overtook it. Whatever CI
+  says, every milestone here is gated locally first: `dotnet build`,
+  `dotnet test`, `verify-e2e.ps1`, and the frontend four.
 - **Federation (OIDC) does not exist**, and cannot be honestly built until there
   is a real identity provider to test against. Passwords, TOTP and **passkeys**
   are the whole of sign-in today.
