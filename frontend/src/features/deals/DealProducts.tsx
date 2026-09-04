@@ -1,19 +1,26 @@
-// DealProducts — the F&I menu on a deal: warranties, GAP, service plans.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mounted by DealsPage while the deal's terms are open.
-// Edit: three things here are deliberate.
+// Overview: Purpose, File Design, and Engineering
+//   DealProducts — the F&I menu on a deal: warranties, GAP, service plans.
 //
-//       (1) The price and cost boxes are seeded from the catalogue and then
-//       EDITABLE. F&I is negotiated — the same warranty goes out at different
-//       prices on different deals — and the figure typed here is the one that
-//       gets recorded. A read-only price would make the whole capability wrong.
+// Usage:
+//   Mounted by DealsPage while the deal's terms are open.
 //
-//       (2) Cost and gross are shown to staff and belong on no customer-facing
-//       output. When a printed deal summary arrives, it takes `price` only.
+// Coding Instructions:
+//   Three things here are deliberate.
 //
-//       (3) Saving replaces the whole set, like the charges editor, so this is
-//       seeded from what the deal already sold. An empty form would mean ticking
-//       one product deleted the rest.
+//   (1) The price and cost boxes are seeded from the catalogue and then
+//   EDITABLE. F&I is negotiated — the same warranty goes out at different
+//   prices on different deals — and the figure typed here is the one that
+//   gets recorded. A read-only price would make the whole capability wrong.
+//
+//   (2) Cost and gross are shown to staff and belong on no customer-facing
+//   output. When a printed deal summary arrives, it takes `price` only.
+//
+//   (3) Saving replaces the whole set, like the charges editor, so this is
+//   seeded from what the deal already sold. An empty form would mean ticking
+//   one product deleted the rest.
 
 import { useEffect, useState } from 'react';
 import { api, post } from '../../shared/api';

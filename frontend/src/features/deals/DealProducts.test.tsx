@@ -1,10 +1,17 @@
-// DealProducts.test — the F&I menu on a deal.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: the test that matters most is "the price is editable, and what is typed
-//       is what is sent". F&I is negotiated: if a future change made the price
-//       read-only or sent the catalogue default instead, the recorded gross would
-//       be wrong on every discounted deal and nothing else would notice.
+// Overview: Purpose, File Design, and Engineering
+//   DealProducts.test — the F&I menu on a deal.
+//
+// Usage:
+//   npm test.
+//
+// Coding Instructions:
+//   The test that matters most is "the price is editable, and what is typed
+//   is what is sent". F&I is negotiated: if a future change made the price
+//   read-only or sent the catalogue default instead, the recorded gross would
+//   be wrong on every discounted deal and nothing else would notice.
 
 import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

@@ -1,14 +1,21 @@
-// CaptureLead — taking down an enquiry: who asked, how they reached us, and
-// what they are after.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  rendered by LeadsPage behind "Take an enquiry".
-// Edit: the rooftop is the thing to be careful with. A lead belongs to one lot,
-//       and LeadService filters every read to the caller's authorized rooftops.
-//       So this asks the server which lots this person actually has, and when
-//       there is only one it says which rather than offering a choice of one.
-//       An empty picker at a single-lot dealership reads as a broken screen; a
-//       full picker at a group implies you may file an enquiry anywhere, which
-//       the server will refuse.
+// Overview: Purpose, File Design, and Engineering
+//   CaptureLead — taking down an enquiry: who asked, how they reached us, and
+//   what they are after.
+//
+// Usage:
+//   Rendered by LeadsPage behind "Take an enquiry".
+//
+// Coding Instructions:
+//   The rooftop is the thing to be careful with. A lead belongs to one lot,
+//   and LeadService filters every read to the caller's authorized rooftops.
+//   So this asks the server which lots this person actually has, and when
+//   there is only one it says which rather than offering a choice of one.
+//   An empty picker at a single-lot dealership reads as a broken screen; a
+//   full picker at a group implies you may file an enquiry anywhere, which
+//   the server will refuse.
 
 import { useEffect, useState } from 'react';
 import { api, post } from '../../shared/api';

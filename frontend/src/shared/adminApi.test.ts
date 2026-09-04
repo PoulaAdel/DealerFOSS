@@ -1,11 +1,18 @@
-// adminApi.test — the rule that keeps the two worlds apart in the browser.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the header names are the point. During a support visit this browser
-//       holds a dealership session *and* an administrator session at the same
-//       time, so a client that guessed which to send would eventually guess
-//       wrong. These tests are what stop the two clients being "simplified"
-//       back into one.
+// Overview: Purpose, File Design, and Engineering
+//   adminApi.test — the rule that keeps the two worlds apart in the browser.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The header names are the point. During a support visit this browser
+//   holds a dealership session *and* an administrator session at the same
+//   time, so a client that guessed which to send would eventually guess
+//   wrong. These tests are what stop the two clients being "simplified"
+//   back into one.
 
 import { describe, expect, it } from 'vitest';
 import { adminApi, adminPost } from './adminApi';

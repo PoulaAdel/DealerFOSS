@@ -1,20 +1,26 @@
-# new-key.ps1 — generate a secret-protection key.
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Use:  & .\deploy\new-key.ps1
-#       & .\deploy\new-key.ps1 -KeyId 2026-10 -Format env
+# Overview: Purpose, File Design, and Engineering
+#   new-key.ps1 — generate a secret-protection key.
 #
-# Edit: this exists as a script rather than as a snippet in the README because it
-#       is the one step of an installation that cannot be repeated. The key
-#       encrypts every tenant's connection string. Lose it and the databases are
-#       still there and still unreadable — a backup without the key is not a
-#       backup, and nobody discovers that until the day they need it.
+# Usage:
+#   & .\deploy\new-key.ps1
+#   & .\deploy\new-key.ps1 -KeyId 2026-10 -Format env
 #
-#       So the script prints the warning next to the key, every time, rather
-#       than trusting that whoever ran it also read the manual.
+# Coding Instructions:
+#   This exists as a script rather than as a snippet in the README because it
+#   is the one step of an installation that cannot be repeated. The key
+#   encrypts every tenant's connection string. Lose it and the databases are
+#   still there and still unreadable — a backup without the key is not a
+#   backup, and nobody discovers that until the day they need it.
 #
-#       Nothing is written to disk here on purpose. A key in a file in the
-#       repository folder is a key in a backup, in a screen share, and
-#       eventually in a commit.
+#   So the script prints the warning next to the key, every time, rather
+#   than trusting that whoever ran it also read the manual.
+#
+#   Nothing is written to disk here on purpose. A key in a file in the
+#   repository folder is a key in a backup, in a screen share, and
+#   eventually in a commit.
 
 [CmdletBinding()]
 param(

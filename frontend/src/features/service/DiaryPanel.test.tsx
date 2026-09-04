@@ -1,12 +1,19 @@
-// DiaryPanel.test — the cars that are coming, and the one click that turns a
-// promise into a job.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: the test that matters most is "marking a car in opens the job and hands
-//       it straight over". That single call is the reconciliation point of the
-//       whole capability (roadmap I5) — if the screen ever splits it into "mark
-//       arrived" then "open a job", the two can disagree, and the diary stops
-//       being able to account for what the workshop did.
+// Overview: Purpose, File Design, and Engineering
+//   DiaryPanel.test — the cars that are coming, and the one click that turns a
+//   promise into a job.
+//
+// Usage:
+//   npm test.
+//
+// Coding Instructions:
+//   The test that matters most is "marking a car in opens the job and hands
+//   it straight over". That single call is the reconciliation point of the
+//   whole capability (roadmap I5) — if the screen ever splits it into "mark
+//   arrived" then "open a job", the two can disagree, and the diary stops
+//   being able to account for what the workshop did.
 
 import { render, screen, waitForElementToBeRemoved } from '../../test/render';
 import userEvent from '@testing-library/user-event';

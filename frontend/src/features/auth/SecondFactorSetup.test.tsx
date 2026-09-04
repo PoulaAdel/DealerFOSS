@@ -1,11 +1,18 @@
-// SecondFactorSetup.test — the three steps, and the two properties that stop
-// this screen locking somebody out of their own account.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the two worth guarding hardest are (1) nothing changes about signing in
-//       until a code is accepted, and (2) a wrong code leaves the person on the
-//       same screen able to try again. Both are what make it safe for a
-//       dealership to switch the requirement on.
+// Overview: Purpose, File Design, and Engineering
+//   SecondFactorSetup.test — the three steps, and the two properties that stop
+//   this screen locking somebody out of their own account.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The two worth guarding hardest are (1) nothing changes about signing in
+//   until a code is accepted, and (2) a wrong code leaves the person on the
+//   same screen able to try again. Both are what make it safe for a
+//   dealership to switch the requirement on.
 
 import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

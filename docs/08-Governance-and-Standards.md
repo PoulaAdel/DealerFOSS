@@ -38,32 +38,8 @@ Experimental community connectors are welcome but cannot be labeled certified wi
 
 ## 5. Coding standards
 
-**Every hand-written source file opens with a header.** Three parts, kept short —
-a reader should learn whether this file concerns them before scrolling:
-
-```csharp
-// Money — an amount together with its ISO currency.
-//
-// Use:  new Money(24995.00m, "USD"). Add/Subtract refuse mixed currencies on
-//       purpose; there is no implicit conversion anywhere in the system.
-// Edit: only add operations that are true for every currency. Conversion needs
-//       a rate and a date, so it belongs to the module that owns those.
-```
-
-`Use` is for the caller; `Edit` is for whoever changes the file — what belongs
-here, what does not, and the trap that is not visible from the code. Write the
-`Edit` line for the person who will get it wrong. It complements the XML
-`<summary>` on the type, which serves IntelliSense, rather than repeating it.
-Generated files (anything under `Migrations/`) are exempt.
-
-### The agreed successor — decided 2026-08-15, not yet applied
-
-The maintainer has settled a four-part header that adds a copyright notice and
-splits the prose more explicitly. **It is not in the tree yet**: all 347
-hand-written source files still carry the three-part form above, and that remains
-the standard until the change is scheduled and applied in one pass. Recorded here
-so the decision does not evaporate between sessions, and so nobody applies half
-of it.
+**Every hand-written source file opens with a four-part header.** Applied to all
+347 of them on 2026-08-15; `.cs`, `.ts`, `.tsx`, `.css`, `.ps1` and `.yml` alike.
 
 ```csharp
 // Copyright (c) 2026 The DealerFOSS contributors.
@@ -71,9 +47,8 @@ of it.
 //
 // Overview: Purpose, File Design, and Engineering
 //   What this file is for, why it is shaped the way it is, and the engineering
-//   judgement behind it. Absorbs the old one-line summary and grows it: a
-//   reader should learn whether this file concerns them, and why it exists as
-//   a separate thing, before scrolling.
+//   judgement behind it. A reader should learn whether this file concerns them,
+//   and why it exists as a separate thing, before scrolling.
 //
 // Usage:
 //   new Money(24995.00m, "USD")
@@ -84,46 +59,37 @@ of it.
 //   Written for the person who will get it wrong.
 ```
 
-**Mapping from the current form**, so nothing is lost in the reformat: the
-summary line and its reasoning become `Overview`, `Use:` becomes `Usage:`, and
-`Edit:` becomes `Coding Instructions:`. The existing headers carry the most
-specific reasoning in the repository and are to be **restructured, never
-replaced with boilerplate** — a generic four-section header repeated 347 times is
-noise people learn to skip, which is worse than the three-part header it replaced.
+`Usage` is for the caller; `Coding Instructions` is for whoever changes the
+file. Write the latter for the person who will get it wrong. Both complement the
+XML `<summary>` on the type, which serves IntelliSense, rather than repeating it.
 
-**Scope when it is applied:** `.cs`, `.ts`, `.tsx`, `.css`, `.ps1` and `.yml`.
-Two exclusions, both load-bearing:
+`#` replaces `//` in PowerShell and YAML; `/* … */` in CSS. The four section
+names do not change.
+
+**Two exclusions, both load-bearing:**
 
 - **Anything under `Migrations/`** — generated, forbidden to hand-edit, and EF
-  overwrites it.
+  overwrites it. 50 files.
 - **`.json`** — `package.json` cannot carry comments at all.
 
-**This supersedes the SPDX rule below when it lands**, and not before.
+**Licensing follows from this.** SPDX is declared per file in the header AND once
+at assembly level in `Directory.Build.props` (`AGPL-3.0-or-later`). The per-file
+line is the authority for a file copied out of the tree; the assembly attribute
+is what a package consumer sees. Neither is redundant.
 
-### Licence headers — the rule that holds today
-
-SPDX is applied **once at assembly level** in `Directory.Build.props`
-(`AGPL-3.0-or-later`), and per-file licence headers are not used. The four-part
-header above reverses this deliberately; until it is applied, do not add a
-copyright line to an individual file, because a repository where some files carry
-one and most do not is worse than either consistent answer.
-
-- Nullable reference types and warnings-as-errors are enabled.
-- Async I/O accepts `CancellationToken`; no `async void` outside true event handlers.
-- Domain code has no EF/ASP.NET/provider dependency.
-- Expected business failures use typed results; unexpected failures use centralized exception handling and Problem Details.
-- No `IQueryable`, entity type, connection string, secret, or vendor DTO crosses a module/public API boundary.
-- Commands that may be retried are idempotent.
-- Every business write produces the required audit event through shared transaction behavior, not an easily forgotten manual line.
-- Monetary arithmetic uses `decimal` plus currency; dates distinguish instant, local date, and dealership time zone.
-- User-visible strings are localizable. Accessible semantics and keyboard behavior are part of definition of done.
-- Database migrations are forward-safe, reviewed, tested from every supported version, and never modify posted immutable history.
+> **On the history of this rule.** Until 2026-08-15 the header was three parts
+> with no copyright line, and this section said explicitly *"do not add per-file
+> licence headers"*. The maintainer reversed that. The conversion restructured
+> the existing prose rather than replacing it — summary to `Overview`, `Use:` to
+> `Usage:`, `Edit:` to `Coding Instructions:` — because those headers carry the
+> most specific reasoning in the repository and a generic four-section header
+> repeated 347 times would be noise people learn to skip.
 
 ## 6. Adding a feature
 
 - [ ] Confirm the owning module and rooftop/legal-entity scope.
 - [ ] Define state transition, authorization, audit, retention, and concurrency behavior.
-- [ ] Add or update domain model and feature handler; every new file opens with a Use/Edit header (§5).
+- [ ] Add or update domain model and feature handler; every new file opens with the four-part header (§5).
 - [ ] Add EF mapping/migration and indexes based on query use.
 - [ ] Change a public contract only with compatibility/version review.
 - [ ] Add unit, integration, authorization, migration, and relevant accessibility/print tests.

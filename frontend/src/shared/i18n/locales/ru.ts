@@ -1,17 +1,27 @@
-// ru — Russian.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Edit: the vocabulary is what a Russian дилерский центр uses, not a dictionary
-//       rendering of the English. A lead is an *обращение* (the CRM word), the
-//       service department is *сервис* rather than "мастерская", and vehicle
-//       stock is *склад* — which means warehouse elsewhere but is the trade word
-//       for cars on the lot. Accounting follows РСБУ usage:
-//       *оборотно-сальдовая ведомость* is the trial balance.
+// Overview: Purpose, File Design, and Engineering
+//   ru — Russian.
 //
-//       Formal *вы*, lower case, as Russian business software writes it.
+// Usage:
+//   Loaded by shared/i18n/index.tsx and selected by the language
+//   picker. Never imported by a screen — a screen calls t(key), and
+//   which catalogue answers is not its business.
 //
-//       Russian has FOUR plural categories and they are not optional. `2 сделки`
-//       and `5 сделок` differ, and so do `21 сделка` and `22 сделки`. Every
-//       counted noun in this file is a plural entry, chosen by Intl.PluralRules.
+// Coding Instructions:
+//   The vocabulary is what a Russian дилерский центр uses, not a dictionary
+//   rendering of the English. A lead is an *обращение* (the CRM word), the
+//   service department is *сервис* rather than "мастерская", and vehicle
+//   stock is *склад* — which means warehouse elsewhere but is the trade word
+//   for cars on the lot. Accounting follows РСБУ usage:
+//   *оборотно-сальдовая ведомость* is the trial balance.
+//
+//   Formal *вы*, lower case, as Russian business software writes it.
+//
+//   Russian has FOUR plural categories and they are not optional. `2 сделки`
+//   and `5 сделок` differ, and so do `21 сделка` and `22 сделки`. Every
+//   counted noun in this file is a plural entry, chosen by Intl.PluralRules.
 
 import type { Catalogue } from '../index';
 

@@ -1,16 +1,23 @@
-// SupportAccessPage — opening the one door into a dealership's data, and closing
-// it again.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the console's second screen.
-// Edit: three things here are safeguards rather than decoration, and each has a
-//       test. The reason field is required before the button does anything. The
-//       requested minutes are shown as "an hour at most" because the server
-//       clamps regardless of what is asked, and a form that implies otherwise
-//       lies. And the list is the installation's whole record — closed visits
-//       stay visible, because a log you can empty is not a log.
+// Overview: Purpose, File Design, and Engineering
+//   SupportAccessPage — opening the one door into a dealership's data, and closing
+//   it again.
 //
-//       Opening a visit puts *dealership* cookies in this browser alongside the
-//       administrator's. That is why the two clients are separate; see adminApi.
+// Usage:
+//   The console's second screen.
+//
+// Coding Instructions:
+//   Three things here are safeguards rather than decoration, and each has a
+//   test. The reason field is required before the button does anything. The
+//   requested minutes are shown as "an hour at most" because the server
+//   clamps regardless of what is asked, and a form that implies otherwise
+//   lies. And the list is the installation's whole record — closed visits
+//   stay visible, because a log you can empty is not a log.
+//
+//   Opening a visit puts *dealership* cookies in this browser alongside the
+//   administrator's. That is why the two clients are separate; see adminApi.
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { adminApi, adminPost } from '../../shared/adminApi';

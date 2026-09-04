@@ -1,13 +1,20 @@
-// TenantsPage — which dealerships exist, and whether each is in service.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the console's landing screen.
-// Edit: look at what a row carries — a name, a key, a state, a schema version,
-//       a date. Nothing about the dealership's business, because that is the
-//       whole point of this screen existing separately from the product.
+// Overview: Purpose, File Design, and Engineering
+//   TenantsPage — which dealerships exist, and whether each is in service.
 //
-//       Suspending is a real outage for a real dealership, so it asks first.
-//       Confirmation lives here rather than in the API: the server is right to
-//       do exactly what a properly authorized request tells it to.
+// Usage:
+//   The console's landing screen.
+//
+// Coding Instructions:
+//   Look at what a row carries — a name, a key, a state, a schema version,
+//   a date. Nothing about the dealership's business, because that is the
+//   whole point of this screen existing separately from the product.
+//
+//   Suspending is a real outage for a real dealership, so it asks first.
+//   Confirmation lives here rather than in the API: the server is right to
+//   do exactly what a properly authorized request tells it to.
 
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi, adminPost } from '../../shared/adminApi';

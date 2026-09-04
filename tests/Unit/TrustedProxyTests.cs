@@ -6,7 +6,7 @@
 //   address when the operator said which proxy may send one.
 //
 // Usage:
-//   Dotnet test
+//   dotnet test
 //
 // Coding Instructions:
 //   The property worth guarding is the DEFAULT. With nothing configured

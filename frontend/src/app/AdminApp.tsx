@@ -1,11 +1,18 @@
-// AdminApp — the console for whoever runs the installation.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mounted at /admin/* by App.tsx, above the dealership's session provider
-//       so the two never exist at once.
-// Edit: the shell here is visually distinct from the dealership's on purpose.
-//       During a support visit one browser holds both sets of cookies, and the
-//       most valuable thing this screen can do is leave nobody in any doubt
-//       about which of the two they are looking at.
+// Overview: Purpose, File Design, and Engineering
+//   AdminApp — the console for whoever runs the installation.
+//
+// Usage:
+//   Mounted at /admin/* by App.tsx, above the dealership's session provider
+//   so the two never exist at once.
+//
+// Coding Instructions:
+//   The shell here is visually distinct from the dealership's on purpose.
+//   During a support visit one browser holds both sets of cookies, and the
+//   most valuable thing this screen can do is leave nobody in any doubt
+//   about which of the two they are looking at.
 
 import { NavLink, Navigate, Outlet, Route, Routes } from 'react-router';
 import { useI18n } from '../shared/i18n';

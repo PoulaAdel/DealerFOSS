@@ -1,10 +1,17 @@
-// adminSession — who is operating the installation, as far as the browser knows.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const { administrator } = useAdminSession() inside the console.
-// Edit: deliberately separate from `session.tsx`, and never mounted at the same
-//       time. They answer different questions of different servers-side stores,
-//       and a single "who am I?" context would make it possible to write a
-//       screen that does not know which one it got.
+// Overview: Purpose, File Design, and Engineering
+//   adminSession — who is operating the installation, as far as the browser knows.
+//
+// Usage:
+//   const { administrator } = useAdminSession() inside the console.
+//
+// Coding Instructions:
+//   Deliberately separate from `session.tsx`, and never mounted at the same
+//   time. They answer different questions of different servers-side stores,
+//   and a single "who am I?" context would make it possible to write a
+//   screen that does not know which one it got.
 
 import {
   createContext,

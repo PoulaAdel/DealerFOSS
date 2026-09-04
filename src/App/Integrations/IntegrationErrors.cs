@@ -5,7 +5,7 @@
 //   IntegrationErrors — the stable codes an integration refusal is identified by.
 //
 // Usage:
-//   Return Result.Failure<T>(IntegrationErrors.CoverageUnknown). Codes are
+//   return Result.Failure<T>(IntegrationErrors.CoverageUnknown). Codes are
 //   part of the API contract (doc 06 §6) and must not be reworded.
 //
 // Coding Instructions:

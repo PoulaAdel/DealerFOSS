@@ -1,19 +1,26 @@
-// api — the one place the browser talks to the backend.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  await api<InventoryUnit[]>('/inventory?openOnly=true')
-// Edit: every call carries the tenant header and the session cookie. The cookie
-//       is HttpOnly, so this code cannot read it and does not try — "am I signed
-//       in?" is answered by asking the server, not by inspecting storage.
+// Overview: Purpose, File Design, and Engineering
+//   api — the one place the browser talks to the backend.
 //
-//       Writes additionally carry the anti-forgery token, which the server hands
-//       over in a readable cookie at sign-in. Copying it into a header is the
-//       whole point: a cross-site form can send our cookies but cannot set a
-//       header. Do not move this into the body — it must apply to every write
-//       without each caller remembering.
+// Usage:
+//   await api<InventoryUnit[]>('/inventory?openOnly=true')
 //
-//       Errors arrive as RFC 7807 Problem Details with a stable `code`. Surface
-//       the server's message rather than inventing one: it was written to be
-//       read by the person who hit it.
+// Coding Instructions:
+//   Every call carries the tenant header and the session cookie. The cookie
+//   is HttpOnly, so this code cannot read it and does not try — "am I signed
+//   in?" is answered by asking the server, not by inspecting storage.
+//
+//   Writes additionally carry the anti-forgery token, which the server hands
+//   over in a readable cookie at sign-in. Copying it into a header is the
+//   whole point: a cross-site form can send our cookies but cannot set a
+//   header. Do not move this into the body — it must apply to every write
+//   without each caller remembering.
+//
+//   Errors arrive as RFC 7807 Problem Details with a stable `code`. Surface
+//   the server's message rather than inventing one: it was written to be
+//   read by the person who hit it.
 
 const TENANT_KEY = 'dfoss.tenant';
 const ANTI_FORGERY_COOKIE = 'dfoss_csrf';

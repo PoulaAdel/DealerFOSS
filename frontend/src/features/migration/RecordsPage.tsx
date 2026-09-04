@@ -1,18 +1,25 @@
-// RecordsPage — bringing a dealership's records in from a file, and taking them
-// out again.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /records.
-// Edit: one rule here is a safeguard rather than a preference. **The real import
-//       is not reachable until a practice run has finished on this exact file.**
-//       Somebody is about to write thousands of rows into their own business's
-//       history; making them look at what would happen first costs one click and
-//       prevents the mistake nobody can undo. The button re-locks whenever the
-//       file or the kind changes, because a trial of a different file says
-//       nothing about this one.
+// Overview: Purpose, File Design, and Engineering
+//   RecordsPage — bringing a dealership's records in from a file, and taking them
+//   out again.
 //
-//       The exception list is the other half. After nine thousand rows, what a
-//       person needs is the twelve that did not work — by the line number they
-//       can see in their own spreadsheet, with the row quoted back to them.
+// Usage:
+//   Reachable at /records.
+//
+// Coding Instructions:
+//   One rule here is a safeguard rather than a preference. **The real import
+//   is not reachable until a practice run has finished on this exact file.**
+//   Somebody is about to write thousands of rows into their own business's
+//   history; making them look at what would happen first costs one click and
+//   prevents the mistake nobody can undo. The button re-locks whenever the
+//   file or the kind changes, because a trial of a different file says
+//   nothing about this one.
+//
+//   The exception list is the other half. After nine thousand rows, what a
+//   person needs is the twelve that did not work — by the line number they
+//   can see in their own spreadsheet, with the row quoted back to them.
 
 import { useCallback, useRef, useState } from 'react';
 import { ApiError, api, download, post } from '../../shared/api';

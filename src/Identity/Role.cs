@@ -6,7 +6,7 @@
 //   directly, so access can be reasoned about and revoked as a unit.
 //
 // Usage:
-//   New Role(id, "Service Advisor"), then Grant(Permissions.X).
+//   new Role(id, "Service Advisor"), then Grant(Permissions.X).
 //
 // Coding Instructions:
 //   Grant deliberately rejects anything outside the Permissions catalogue.

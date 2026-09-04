@@ -1,16 +1,23 @@
-// adminApi — the browser's other conversation, with the control plane.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  await adminApi<TenantRow[]>('/tenants')
-// Edit: this is a second client on purpose, not a flag on `shared/api.ts`. The
-//       two worlds use different cookies and different anti-forgery headers
-//       because during a support visit one browser holds both sets at once, and
-//       a client that decided which to send from a boolean would eventually send
-//       a dealership's token to the control plane, or the reverse. Two functions
-//       cannot make that mistake.
+// Overview: Purpose, File Design, and Engineering
+//   adminApi — the browser's other conversation, with the control plane.
 //
-//       Note also what is absent: no tenant header. An administrator belongs to
-//       no dealership, and adding one here would be the first step towards the
-//       separation this whole area exists to keep.
+// Usage:
+//   await adminApi<TenantRow[]>('/tenants')
+//
+// Coding Instructions:
+//   This is a second client on purpose, not a flag on `shared/api.ts`. The
+//   two worlds use different cookies and different anti-forgery headers
+//   because during a support visit one browser holds both sets at once, and
+//   a client that decided which to send from a boolean would eventually send
+//   a dealership's token to the control plane, or the reverse. Two functions
+//   cannot make that mistake.
+//
+//   Note also what is absent: no tenant header. An administrator belongs to
+//   no dealership, and adding one here would be the first step towards the
+//   separation this whole area exists to keep.
 
 const ANTI_FORGERY_COOKIE = 'dfoss_admin_csrf';
 const ANTI_FORGERY_HEADER = 'X-Admin-CSRF-Token';

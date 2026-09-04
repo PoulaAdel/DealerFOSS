@@ -1,15 +1,22 @@
-// PeriodsPage.test — closing the month on screen.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: two tests are safeguards rather than coverage.
+// Overview: Purpose, File Design, and Engineering
+//   PeriodsPage.test — closing the month on screen.
 //
-//       "asks before closing" — closing locks real figures, and the server is
-//       right to do exactly what a properly authorized request tells it. So the
-//       check belongs here, the same reasoning as suspending a dealership.
+// Usage:
+//   npm test.
 //
-//       "will not reopen without a reason" — the reason is what makes a reopened
-//       month honest afterwards. The server demands one too; this stops somebody
-//       discovering that only after clicking.
+// Coding Instructions:
+//   Two tests are safeguards rather than coverage.
+//
+//   "asks before closing" — closing locks real figures, and the server is
+//   right to do exactly what a properly authorized request tells it. So the
+//   check belongs here, the same reasoning as suspending a dealership.
+//
+//   "will not reopen without a reason" — the reason is what makes a reopened
+//   month honest afterwards. The server demands one too; this stops somebody
+//   discovering that only after clicking.
 
 import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';

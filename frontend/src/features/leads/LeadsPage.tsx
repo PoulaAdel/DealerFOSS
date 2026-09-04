@@ -1,17 +1,24 @@
-// LeadsPage — the enquiries being chased, before any of them is a deal.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /leads. Selecting one opens it.
-// Edit: two things here are deliberate and easy to undo by accident.
+// Overview: Purpose, File Design, and Engineering
+//   LeadsPage — the enquiries being chased, before any of them is a deal.
 //
-//       (1) The moves offered come from the server's `availableMoves`, which is
-//       `LeadStatusRules` and nothing else. Do not add a transition table here —
-//       the deal desk was written the same way for the same reason, and a second
-//       copy of a rule drifts with the browser's copy being the wrong one.
+// Usage:
+//   Reachable at /leads. Selecting one opens it.
 //
-//       (2) There is no rooftop picker on the list. A lead is rooftop-scoped and
-//       LeadService already filters to the caller's authorized lots, so the list
-//       is *already* the right list. Offering a picker would imply a person can
-//       look at another location's enquiries, and the server would refuse.
+// Coding Instructions:
+//   Two things here are deliberate and easy to undo by accident.
+//
+//   (1) The moves offered come from the server's `availableMoves`, which is
+//   `LeadStatusRules` and nothing else. Do not add a transition table here —
+//   the deal desk was written the same way for the same reason, and a second
+//   copy of a rule drifts with the browser's copy being the wrong one.
+//
+//   (2) There is no rooftop picker on the list. A lead is rooftop-scoped and
+//   LeadService already filters to the caller's authorized lots, so the list
+//   is *already* the right list. Offering a picker would imply a person can
+//   look at another location's enquiries, and the server would refuse.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';

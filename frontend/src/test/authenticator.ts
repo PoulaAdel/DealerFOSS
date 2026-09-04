@@ -1,23 +1,30 @@
-// authenticator — a fake WebAuthn authenticator, for tests that walk a passkey.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const fake = stubAuthenticator(); ... fake.restore();
-// Edit: jsdom implements no part of WebAuthn — `window.PublicKeyCredential` is
-//       absent and `navigator.credentials` does not exist. That absence is
-//       itself worth testing (`passkeysAvailable()` must be false and the
-//       screens must degrade), so this stub is opt-in per test rather than
-//       installed globally in setup.ts.
+// Overview: Purpose, File Design, and Engineering
+//   authenticator — a fake WebAuthn authenticator, for tests that walk a passkey.
 //
-//       It does NOT sign anything. The cryptography is verified where it lives,
-//       in the .NET suite, against a real P-256 key and a real CBOR attestation
-//       object (tests/Unit/FakeAuthenticator.cs). What these tests are for is
-//       what the SCREEN does with each outcome — including the two that are not
-//       failures: somebody dismissing their own operating system's prompt, and a
-//       browser that cannot do this at all.
+// Usage:
+//   const fake = stubAuthenticator(); ... fake.restore();
 //
-//       `navigator.credentials` is defined on the existing navigator rather than
-//       replaced wholesale. Replacing it takes `navigator.languages` with it,
-//       and the i18n provider reads that at mount — so every test in the file
-//       would silently start in whatever language the fallback picked.
+// Coding Instructions:
+//   Jsdom implements no part of WebAuthn — `window.PublicKeyCredential` is
+//   absent and `navigator.credentials` does not exist. That absence is
+//   itself worth testing (`passkeysAvailable()` must be false and the
+//   screens must degrade), so this stub is opt-in per test rather than
+//   installed globally in setup.ts.
+//
+//   It does NOT sign anything. The cryptography is verified where it lives,
+//   in the .NET suite, against a real P-256 key and a real CBOR attestation
+//   object (tests/Unit/FakeAuthenticator.cs). What these tests are for is
+//   what the SCREEN does with each outcome — including the two that are not
+//   failures: somebody dismissing their own operating system's prompt, and a
+//   browser that cannot do this at all.
+//
+//   `navigator.credentials` is defined on the existing navigator rather than
+//   replaced wholesale. Replacing it takes `navigator.languages` with it,
+//   and the i18n provider reads that at mount — so every test in the file
+//   would silently start in whatever language the fallback picked.
 
 /** What the fake authenticator should do when a ceremony starts. */
 export type Behaviour =

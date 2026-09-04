@@ -1,28 +1,35 @@
-// webauthn — the browser half of a passkey ceremony.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const outcome = await createPasskey(challenge, 'Work laptop');
-//       if (outcome.kind === 'ready') await post('/auth/passkeys/register/finish', outcome.response);
-// Edit: three things here are load-bearing.
+// Overview: Purpose, File Design, and Engineering
+//   webauthn — the browser half of a passkey ceremony.
 //
-//       ONE. Everything on the wire is base64url, and everything the WebAuthn
-//       API touches is an ArrayBuffer. JSON cannot carry bytes, so the two
-//       converters below are the whole reason this file exists. Base64url is
-//       NOT base64: `-` and `_` replace `+` and `/`, and the padding is dropped.
-//       Feeding plain base64 to an authenticator produces a challenge mismatch
-//       the server reports as a forgery, which is a miserable thing to debug.
+// Usage:
+//   const outcome = await createPasskey(challenge, 'Work laptop');
+//   if (outcome.kind === 'ready') await post('/auth/passkeys/register/finish', outcome.response);
 //
-//       TWO. Registration asks for a RESIDENT (discoverable) credential, and
-//       must. The sign-in ceremony sends no email and no allowCredentials list —
-//       that is deliberate, so the server never confirms whether an account
-//       exists — which means the authenticator has to be able to find the
-//       credential on its own. A non-resident key registered here would work
-//       once, in the enrolment screen, and then never be usable to sign in.
+// Coding Instructions:
+//   Three things here are load-bearing.
 //
-//       THREE. A cancelled ceremony is not a failure. Somebody who dismisses
-//       the operating system's prompt, or walks away until it times out, gets
-//       `NotAllowedError` — and the honest response is to put the screen back
-//       the way it was, not to shout an error at them. Hence `kind: 'cancelled'`
-//       as a first-class outcome rather than a thrown exception.
+//   ONE. Everything on the wire is base64url, and everything the WebAuthn
+//   API touches is an ArrayBuffer. JSON cannot carry bytes, so the two
+//   converters below are the whole reason this file exists. Base64url is
+//   NOT base64: `-` and `_` replace `+` and `/`, and the padding is dropped.
+//   Feeding plain base64 to an authenticator produces a challenge mismatch
+//   the server reports as a forgery, which is a miserable thing to debug.
+//
+//   TWO. Registration asks for a RESIDENT (discoverable) credential, and
+//   must. The sign-in ceremony sends no email and no allowCredentials list —
+//   that is deliberate, so the server never confirms whether an account
+//   exists — which means the authenticator has to be able to find the
+//   credential on its own. A non-resident key registered here would work
+//   once, in the enrolment screen, and then never be usable to sign in.
+//
+//   THREE. A cancelled ceremony is not a failure. Somebody who dismisses
+//   the operating system's prompt, or walks away until it times out, gets
+//   `NotAllowedError` — and the honest response is to put the screen back
+//   the way it was, not to shout an error at them. Hence `kind: 'cancelled'`
+//   as a first-class outcome rather than a thrown exception.
 
 import type {
   PasskeyRegistrationChallenge,

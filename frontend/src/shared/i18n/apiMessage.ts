@@ -1,29 +1,36 @@
-// apiMessage — turning a refusal from the server into a sentence the reader's
-// language can carry.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const describe = useApiMessage(); ... catch (e) { setError(describe(e)) }
-// Edit: read what this deliberately does NOT do.
+// Overview: Purpose, File Design, and Engineering
+//   apiMessage — turning a refusal from the server into a sentence the reader's
+//   language can carry.
 //
-//       The API answers with a stable `code` and a human `detail`, and the
-//       detail is written in English by the server. Translating ALL ~100 of
-//       them would mean either shipping the whole API vocabulary into the
-//       browser — where it goes stale the first time a message is reworded —
-//       or teaching the server five languages, which is a different piece of
-//       work with a different owner (it would also have to translate the
-//       printed documents, which are records rather than UI).
+// Usage:
+//   const describe = useApiMessage(); ... catch (e) { setError(describe(e)) }
 //
-//       So the split is by WHO the message is about. Codes about the READER —
-//       your session ended, you may not see this, the server is unreachable —
-//       appear on every screen in the application and are translated here.
-//       Codes about the DATA — "a deal's terms are frozen once it is
-//       submitted" — keep the server's wording, which is precise, contextual,
-//       and the only copy of that sentence anywhere.
+// Coding Instructions:
+//   Read what this deliberately does NOT do.
 //
-//       An untranslated detail is therefore English text inside an otherwise
-//       Arabic screen. That is a known and named gap, not an oversight: it is
-//       recorded in docs/implementation/STATUS.md, and closing it is a backend
-//       change. Showing the server's accurate English beats showing a vague
-//       translated placeholder that loses which rule was broken.
+//   The API answers with a stable `code` and a human `detail`, and the
+//   detail is written in English by the server. Translating ALL ~100 of
+//   them would mean either shipping the whole API vocabulary into the
+//   browser — where it goes stale the first time a message is reworded —
+//   or teaching the server five languages, which is a different piece of
+//   work with a different owner (it would also have to translate the
+//   printed documents, which are records rather than UI).
+//
+//   So the split is by WHO the message is about. Codes about the READER —
+//   your session ended, you may not see this, the server is unreachable —
+//   appear on every screen in the application and are translated here.
+//   Codes about the DATA — "a deal's terms are frozen once it is
+//   submitted" — keep the server's wording, which is precise, contextual,
+//   and the only copy of that sentence anywhere.
+//
+//   An untranslated detail is therefore English text inside an otherwise
+//   Arabic screen. That is a known and named gap, not an oversight: it is
+//   recorded in docs/implementation/STATUS.md, and closing it is a backend
+//   change. Showing the server's accurate English beats showing a vague
+//   translated placeholder that loses which rule was broken.
 
 import { useCallback } from 'react';
 import { ApiError } from '../api';

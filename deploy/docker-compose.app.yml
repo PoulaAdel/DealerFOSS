@@ -1,18 +1,34 @@
-# A running DealerFOSS installation: the application and its database.
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# This is NOT docker-compose.yml. That one provides a development machine's
-# dependencies; this one runs the product.
+# Overview: Purpose, File Design, and Engineering
+#   A running DealerFOSS installation: the application and its database.
+#
+#   This is NOT docker-compose.yml. That one provides a development machine's
+#   dependencies; this one runs the product.
 #
 #   Build and start:  docker compose -f deploy/docker-compose.app.yml up -d --build
 #   Watch it start:   docker compose -f deploy/docker-compose.app.yml logs -f app
 #   Stop:             docker compose -f deploy/docker-compose.app.yml down
 #   Stop and erase:   docker compose -f deploy/docker-compose.app.yml down -v
 #
-# Before the first start, create deploy/.env from deploy/.env.example and put a
-# real key in it — the application refuses to start without one, on purpose.
-# Generate it with:  & .\deploy\new-key.ps1 -Format env
+#   Before the first start, create deploy/.env from deploy/.env.example and put a
+#   real key in it — the application refuses to start without one, on purpose.
+#   Generate it with:  & .\deploy\new-key.ps1 -Format env
 #
-# See deploy/README.md for what each of these creates and how to undo it.
+#   See deploy/README.md for what each of these creates and how to undo it.
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.app.yml up -d
+#
+#   Reads its secret-protection key and host connection from the environment;
+#   deploy/new-key.ps1 generates the key and deploy/README.md has the rest.
+#
+# Coding Instructions:
+#   This is the packaged installation, not the development one — that is
+#   docker-compose.yml beside it. Keep the two separate: a development
+#   convenience that leaks into this file becomes a production default nobody
+#   chose, and the SQL container here holds real dealership records.
 
 name: dealerfoss
 

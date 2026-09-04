@@ -1,18 +1,25 @@
-// languages — the six the application speaks, and what each one needs.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  LANGUAGES for a picker; languageFor(code) to resolve one safely.
-// Edit: direction is a property OF THE LANGUAGE, not a separate preference.
-//       Arabic runs right to left; the other five run left to right. Nobody
-//       reads Arabic in a left-to-right layout, and offering the combination as
-//       a choice invites somebody to pick the broken one. The old manual
-//       LTR/RTL toggle is gone for exactly that reason.
+// Overview: Purpose, File Design, and Engineering
+//   languages — the six the application speaks, and what each one needs.
 //
-//       `locale` is the BCP 47 tag handed to Intl for numbers and dates. It is
-//       kept separate from `code` because a catalogue key and a formatting
-//       locale are different things: `ar` selects Arabic words, and the region
-//       in the tag decides whether those words come with Arabic-Indic digits.
-//       We use `ar` (not `ar-EG`) so digits stay Western — a dealership's price
-//       list mixing ٣ and 3 is harder to read, not more authentic.
+// Usage:
+//   LANGUAGES for a picker; languageFor(code) to resolve one safely.
+//
+// Coding Instructions:
+//   Direction is a property OF THE LANGUAGE, not a separate preference.
+//   Arabic runs right to left; the other five run left to right. Nobody
+//   reads Arabic in a left-to-right layout, and offering the combination as
+//   a choice invites somebody to pick the broken one. The old manual
+//   LTR/RTL toggle is gone for exactly that reason.
+//
+//   `locale` is the BCP 47 tag handed to Intl for numbers and dates. It is
+//   kept separate from `code` because a catalogue key and a formatting
+//   locale are different things: `ar` selects Arabic words, and the region
+//   in the tag decides whether those words come with Arabic-Indic digits.
+//   We use `ar` (not `ar-EG`) so digits stay Western — a dealership's price
+//   list mixing ٣ and 3 is harder to read, not more authentic.
 
 /** The six languages the UI ships in. */
 export type LanguageCode = 'en' | 'es' | 'fr' | 'de' | 'ru' | 'ar';

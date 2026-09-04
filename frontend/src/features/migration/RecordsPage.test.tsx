@@ -1,11 +1,18 @@
-// RecordsPage.test — the safeguard, the exception list, and the download.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the one worth guarding hardest is that **the real import is unreachable
-//       until a practice run has finished on this exact file**. Somebody is
-//       about to write thousands of rows into their own business's history. If
-//       that lock ever comes off by accident, the mistake it prevents is one
-//       nobody can undo.
+// Overview: Purpose, File Design, and Engineering
+//   RecordsPage.test — the safeguard, the exception list, and the download.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The one worth guarding hardest is that **the real import is unreachable
+//   until a practice run has finished on this exact file**. Somebody is
+//   about to write thousands of rows into their own business's history. If
+//   that lock ever comes off by accident, the mistake it prevents is one
+//   nobody can undo.
 
 import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

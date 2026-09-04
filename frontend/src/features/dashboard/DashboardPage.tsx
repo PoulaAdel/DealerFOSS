@@ -1,15 +1,22 @@
-// DashboardPage — how did we do this month?
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  / and /dashboard. The screen somebody lands on.
-// Edit: everything on this page comes from ONE call. That is what makes it a
-//       single view rather than four panels arriving at four different times,
-//       each briefly showing a figure next to a stale one.
+// Overview: Purpose, File Design, and Engineering
+//   DashboardPage — how did we do this month?
 //
-//       Two rules worth keeping. A withheld section says so in words — a blank
-//       panel reads as "the dealership sold nothing", which is a very different
-//       statement from "this is not yours to see". And a comparison against a
-//       month that made nothing is not a percentage: dividing by zero produces
-//       "∞% up", which is worse than saying there is nothing to compare.
+// Usage:
+//   / and /dashboard. The screen somebody lands on.
+//
+// Coding Instructions:
+//   Everything on this page comes from ONE call. That is what makes it a
+//   single view rather than four panels arriving at four different times,
+//   each briefly showing a figure next to a stale one.
+//
+//   Two rules worth keeping. A withheld section says so in words — a blank
+//   panel reads as "the dealership sold nothing", which is a very different
+//   statement from "this is not yours to see". And a comparison against a
+//   month that made nothing is not a percentage: dividing by zero produces
+//   "∞% up", which is worse than saying there is nothing to compare.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../../shared/i18n';

@@ -1,12 +1,19 @@
-// RecoverPassword.test — the way back in, and what the screen must not do to be
-// helpful.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: the test worth guarding hardest is that the screen never asks the server
-//       about a specific email before the person commits to a reset. The server
-//       deliberately answers every failure identically; a screen that "helpfully"
-//       checked an address first would hand back exactly the answer the server
-//       spent effort withholding.
+// Overview: Purpose, File Design, and Engineering
+//   RecoverPassword.test — the way back in, and what the screen must not do to be
+//   helpful.
+//
+// Usage:
+//   npm test.
+//
+// Coding Instructions:
+//   The test worth guarding hardest is that the screen never asks the server
+//   about a specific email before the person commits to a reset. The server
+//   deliberately answers every failure identically; a screen that "helpfully"
+//   checked an address first would hand back exactly the answer the server
+//   spent effort withholding.
 
 import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';

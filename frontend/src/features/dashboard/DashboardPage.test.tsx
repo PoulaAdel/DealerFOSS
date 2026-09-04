@@ -1,17 +1,24 @@
-// DashboardPage.test — the screen somebody lands on, actually drawn.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: four of these are safeguards rather than coverage.
+// Overview: Purpose, File Design, and Engineering
+//   DashboardPage.test — the screen somebody lands on, actually drawn.
 //
-//       "nothing sold is not a margin of zero" and "up from nothing" both guard
-//       arithmetic that is only wrong in the months nobody tests by hand — a new
-//       dealership's first one, and the one after a quiet December.
+// Usage:
+//   npm test
 //
-//       "says what it is not showing" guards the difference between a dashboard
-//       that is empty and one that is withholding. Those look identical and mean
-//       opposite things.
+// Coding Instructions:
+//   Four of these are safeguards rather than coverage.
 //
-//       "moves month without leaving the page" is the whole claim of the screen.
+//   "nothing sold is not a margin of zero" and "up from nothing" both guard
+//   arithmetic that is only wrong in the months nobody tests by hand — a new
+//   dealership's first one, and the one after a quiet December.
+//
+//   "says what it is not showing" guards the difference between a dashboard
+//   that is empty and one that is withholding. Those look identical and mean
+//   opposite things.
+//
+//   "moves month without leaving the page" is the whole claim of the screen.
 
 import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

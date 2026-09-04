@@ -1,21 +1,35 @@
-/* app.css — the whole visual language, for now.
+/* Copyright (c) 2026 The DealerFOSS contributors.
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * Use:  imported once by main.tsx.
- * Edit: it stays one file until it genuinely stops scanning. Four rules are not
- *       taste:
+ * Overview: Purpose, File Design, and Engineering
+ *   app.css — the whole visual language, in one file. It stays one file until
+ *   it genuinely stops scanning: a component-per-file split would multiply the
+ *   places a colour can be written, which is the thing the token block below
+ *   exists to prevent.
  *
- *       - every interactive element keeps a visible focus ring;
- *       - colour never carries meaning on its own — a status chip says its own
- *         name, and an arrow is always beside a word;
- *       - nothing is styled by a physical side. `padding-left` breaks the moment
- *         the page runs right to left, and this application supports both. Use
- *         the logical property: inline-start, inline-end, margin-inline;
- *       - no colour is written outside the token block below. A hex code in a
- *         component rule is a colour that will be wrong in one of the two themes.
+ * Usage:
+ *   Imported once by main.tsx.
  *
- *       There is one dark palette, keyed off one attribute. "Follow the machine"
- *       is resolved to a real light or dark in appearance.tsx, so there is no
- *       second copy of these colours inside a media query to keep in step.
+ * Coding Instructions:
+ *   Four rules are not taste:
+ *
+ *   - every interactive element keeps a visible focus ring;
+ *   - colour never carries meaning on its own — a status chip says its own
+ *     name, and an arrow is always beside a word;
+ *   - nothing is styled by a physical side. `padding-left` breaks the moment
+ *     the page runs right to left, and this application supports both. Use
+ *     the logical property: inline-start, inline-end, margin-inline;
+ *   - no colour is written outside the token block below. A hex code in a
+ *     component rule is a colour that will be wrong in one of the two themes.
+ *
+ *   There is one dark palette, keyed off one attribute. "Follow the machine"
+ *   is resolved to a real light or dark in appearance.tsx, so there is no
+ *   second copy of these colours inside a media query to keep in step.
+ *
+ *   A class written in JSX with no rule here is the drift ADR-020 exists to
+ *   stop — `chip--warn` sat unstyled in three screens for weeks, reading as
+ *   neutral grey when it meant "somebody must act". If you add a class name,
+ *   add its rule in the same change.
  */
 
 :root,

@@ -1,19 +1,25 @@
-// enums — turning what the API says into what a person reads.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const label = useEnumLabel();
-//       label('inventoryStatus', unit.status)   → "On hold" / "Réservé"
+// Overview: Purpose, File Design, and Engineering
+//   enums — turning what the API says into what a person reads.
 //
-// Edit: the API answers with `"OnHold"`, and several screens used to print that
-//       straight into a table cell. That was already wrong in English — nobody
-//       writes "OnHold" — and it is wrong in a way that no amount of translating
-//       the surrounding page fixes, because the value never passed through a
-//       catalogue at all.
+// Usage:
+//   const label = useEnumLabel();
+//   label('inventoryStatus', unit.status)   → "On hold" / "Réservé"
 //
-//       The type parameter is what keeps this honest. `EnumName` is derived from
-//       the message keys themselves, so a family can only be asked for if it
-//       exists, and adding a value to a union in contracts.ts without adding its
-//       label here is a typecheck failure at the CALL SITE — not a screen that
-//       silently prints the raw value.
+// Coding Instructions:
+//   The API answers with `"OnHold"`, and several screens used to print that
+//   straight into a table cell. That was already wrong in English — nobody
+//   writes "OnHold" — and it is wrong in a way that no amount of translating
+//   the surrounding page fixes, because the value never passed through a
+//   catalogue at all.
+//
+//   The type parameter is what keeps this honest. `EnumName` is derived from
+//   the message keys themselves, so a family can only be asked for if it
+//   exists, and adding a value to a union in contracts.ts without adding its
+//   label here is a typecheck failure at the CALL SITE — not a screen that
+//   silently prints the raw value.
 
 import { useCallback } from 'react';
 import { useI18n, type MessageKey } from './index';

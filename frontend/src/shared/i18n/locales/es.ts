@@ -1,21 +1,28 @@
-// es — the Spanish catalogue.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  selected by `LANGUAGE es`. Typed as `Catalogue`, so a key added to en.ts
-//       fails the build here until it has one too.
-// Edit: neutral Spanish, not regional. This has to read naturally to a
-//       dealership in Madrid, Mexico City and Buenos Aires, so where a word
-//       splits — recambios / refacciones — the widely understood one wins:
-//       "repuestos". Same reasoning behind "vehículo" over "coche" or "carro".
+// Overview: Purpose, File Design, and Engineering
+//   es — the Spanish catalogue.
 //
-//       Spanish takes TWO plural forms, one and other, like English. It does
-//       not need the four Russian has or the six Arabic does, but the entries
-//       are still objects rather than a ternary at the call site — the shape is
-//       the contract, and a catalogue that varies its shape by language cannot
-//       be checked by the compiler.
+// Usage:
+//   Selected by `LANGUAGE es`. Typed as `Catalogue`, so a key added to en.ts
+//   fails the build here until it has one too.
 //
-//       Formal or informal address: this uses **usted** throughout, because the
-//       reader is at work and the application is talking to them about their
-//       employer's records. "Inicie sesión", never "inicia sesión".
+// Coding Instructions:
+//   Neutral Spanish, not regional. This has to read naturally to a
+//   dealership in Madrid, Mexico City and Buenos Aires, so where a word
+//   splits — recambios / refacciones — the widely understood one wins:
+//   "repuestos". Same reasoning behind "vehículo" over "coche" or "carro".
+//
+//   Spanish takes TWO plural forms, one and other, like English. It does
+//   not need the four Russian has or the six Arabic does, but the entries
+//   are still objects rather than a ternary at the call site — the shape is
+//   the contract, and a catalogue that varies its shape by language cannot
+//   be checked by the compiler.
+//
+//   Formal or informal address: this uses **usted** throughout, because the
+//   reader is at work and the application is talking to them about their
+//   employer's records. "Inicie sesión", never "inicia sesión".
 
 import type { Catalogue } from '../index';
 

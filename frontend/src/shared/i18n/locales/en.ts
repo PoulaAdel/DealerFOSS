@@ -1,19 +1,26 @@
-// en — the English catalogue, and the schema every other language is checked
-// against.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  t('nav.stock'). Keys are `area.thing`, lower case, dot separated.
-// Edit: adding a key here makes `npm run typecheck` fail for fr, de, ru and ar
-//       until each has one too. That is the point — a missing translation is a
-//       build failure rather than an English sentence surfacing mid-screen.
+// Overview: Purpose, File Design, and Engineering
+//   en — the English catalogue, and the schema every other language is checked
+//   against.
 //
-//       Write the ENGLISH first and write it well. Every other catalogue is
-//       translated from this text, so a vague or clipped phrase here becomes
-//       four vague or clipped phrases. Prefer a whole sentence over a fragment
-//       assembled at the call site: "{n} of {total}" cannot be reordered by a
-//       translator, and German and Arabic both need to reorder it.
+// Usage:
+//   T('nav.stock'). Keys are `area.thing`, lower case, dot separated.
 //
-//       A plural entry is an object, never an `if (n === 1)` at the call site.
-//       Russian needs four forms and Arabic six.
+// Coding Instructions:
+//   Adding a key here makes `npm run typecheck` fail for fr, de, ru and ar
+//   until each has one too. That is the point — a missing translation is a
+//   build failure rather than an English sentence surfacing mid-screen.
+//
+//   Write the ENGLISH first and write it well. Every other catalogue is
+//   translated from this text, so a vague or clipped phrase here becomes
+//   four vague or clipped phrases. Prefer a whole sentence over a fragment
+//   assembled at the call site: "{n} of {total}" cannot be reordered by a
+//   translator, and German and Arabic both need to reorder it.
+//
+//   A plural entry is an object, never an `if (n === 1)` at the call site.
+//   Russian needs four forms and Arabic six.
 
 export const en = {
   // --- Words the whole application uses -------------------------------------

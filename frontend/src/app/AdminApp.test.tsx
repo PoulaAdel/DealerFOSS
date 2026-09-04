@@ -1,11 +1,18 @@
-// AdminApp.test — the console, and the separation it must not blur.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the two worth guarding hardest are that the console never asks a
-//       dealership question of the control plane (no X-Tenant except on the one
-//       call that needs it), and that a support visit cannot be opened without a
-//       written reason. Both are the browser half of a property the server
-//       already enforces — belt and braces, and the belt is the server.
+// Overview: Purpose, File Design, and Engineering
+//   AdminApp.test — the console, and the separation it must not blur.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The two worth guarding hardest are that the console never asks a
+//   dealership question of the control plane (no X-Tenant except on the one
+//   call that needs it), and that a support visit cannot be opened without a
+//   written reason. Both are the browser half of a property the server
+//   already enforces — belt and braces, and the belt is the server.
 
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

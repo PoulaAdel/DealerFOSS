@@ -1,19 +1,30 @@
-# Restores an installation from a backup folder, alongside the original.
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Usage (from repo root, Windows PowerShell 5.1):
+# Overview: Purpose, File Design, and Engineering
+#   Restores an installation from a backup folder, alongside the original.
+#
+#   Everything is restored under a prefix, so the drill can be run on a machine
+#   that is already serving the originals without touching them. That is also the
+#   only way to *prove* a restore: a copy that overwrote the original tells you
+#   nothing about whether the backup was any good.
+#
+# Usage:
+#   From the repository root, Windows PowerShell 5.1:
+#
 #   & .\deploy\restore.ps1 -From .\local\backups\20260804-093000
 #   & .\deploy\restore.ps1 -From ... -Prefix Restored_ -Verify
 #
-# Everything is restored under a prefix, so the drill can be run on a machine
-# that is already serving the originals without touching them. That is also the
-# only way to *prove* a restore: a copy that overwrote the original tells you
-# nothing about whether the backup was any good.
+# Coding Instructions:
+#   THE STEP PEOPLE FORGET IS THE LAST ONE. Each tenant's connection string
+#   lives in the host catalog encrypted, so a freshly restored catalog still
+#   names the ORIGINAL databases — a "restored" installation would quietly read
+#   and write the live ones.
 #
-# The step people forget is the last one. Each tenant's connection string lives
-# in the host catalog encrypted, so a freshly restored catalog still names the
-# ORIGINAL databases — a "restored" installation would quietly read and write the
-# live ones. Only something holding the deployment's keys can rewrite them, so
-# this calls the application to do it rather than being handed the keys itself.
+#   Only something holding the deployment's keys can rewrite them, so this
+#   script calls the application to do it rather than being handed the keys
+#   itself. Do not "simplify" that into decrypting here: it would put the key
+#   that opens every dealership into a shell script's memory and its history.
 
 param(
     [Parameter(Mandatory = $true)][string]$From,

@@ -1,39 +1,46 @@
-// WorkshopPage — the jobs in the workshop, and what each of them is waiting on.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /workshop. Selecting a job opens it.
-// Edit: four things here are deliberate.
+// Overview: Purpose, File Design, and Engineering
+//   WorkshopPage — the jobs in the workshop, and what each of them is waiting on.
 //
-//       (1) The list leads with **work waiting on a customer**, not with a status
-//       filter. Every one of those is a phone call somebody owes and an invoice
-//       that cannot go out, and `linesAwaitingAnswer` exists on the summary
-//       precisely so it can be drawn without opening anything.
+// Usage:
+//   Reachable at /workshop. Selecting a job opens it.
 //
-//       (2) The moves offered come from the server's `availableMoves`, which is
-//       `RepairOrderStatusRules` and nothing else. The deal desk and the leads
-//       screen are both written this way. A third copy of a transition table
-//       would be the one that drifts, and the browser's copy is always the wrong
-//       one to trust.
+// Coding Instructions:
+//   Four things here are deliberate.
 //
-//       (3) Invoice is OFFERED even when a line is still Pending, and the
-//       server's refusal is shown. Predicting it here would be a second copy of
-//       the rule; worse, the refusal names the specific job you still need to
-//       ring about, which is more useful than a greyed-out button.
+//   (1) The list leads with **work waiting on a customer**, not with a status
+//   filter. Every one of those is a phone call somebody owes and an invoice
+//   that cannot go out, and `linesAwaitingAnswer` exists on the summary
+//   precisely so it can be drawn without opening anything.
 //
-//       (4) Recording what the customer said is its own act with its own
-//       permission. A technician can write work up and not answer for it. They
-//       are deliberately not forbidden from being the same person — in a small
-//       shop the advisor who spots it is usually the one who telephones.
+//   (2) The moves offered come from the server's `availableMoves`, which is
+//   `RepairOrderStatusRules` and nothing else. The deal desk and the leads
+//   screen are both written this way. A third copy of a transition table
+//   would be the one that drifts, and the browser's copy is always the wrong
+//   one to trust.
 //
-//       (5) WHO PAYS IS CHOSEN PER LINE AND SHOWN PER LINE. One job routinely
-//       carries all three: the customer's brake pads, a warranty claim for the
-//       part that failed, and an internal charge for the courtesy wash. That is
-//       why the totals block has four figures rather than one — "Due" is what
-//       the CUSTOMER owes and nothing else, and a screen that adds warranty
-//       work into it would put a number on an invoice that nobody agreed to.
+//   (3) Invoice is OFFERED even when a line is still Pending, and the
+//   server's refusal is shown. Predicting it here would be a second copy of
+//   the rule; worse, the refusal names the specific job you still need to
+//   ring about, which is more useful than a greyed-out button.
 //
-//       Warranty and internal work needs no customer authorization and the
-//       server marks it authorized on arrival, so the "Agreed?" column says so
-//       rather than claiming somebody was asked.
+//   (4) Recording what the customer said is its own act with its own
+//   permission. A technician can write work up and not answer for it. They
+//   are deliberately not forbidden from being the same person — in a small
+//   shop the advisor who spots it is usually the one who telephones.
+//
+//   (5) WHO PAYS IS CHOSEN PER LINE AND SHOWN PER LINE. One job routinely
+//   carries all three: the customer's brake pads, a warranty claim for the
+//   part that failed, and an internal charge for the courtesy wash. That is
+//   why the totals block has four figures rather than one — "Due" is what
+//   the CUSTOMER owes and nothing else, and a screen that adds warranty
+//   work into it would put a number on an invoice that nobody agreed to.
+//
+//   Warranty and internal work needs no customer authorization and the
+//   server marks it authorized on arrival, so the "Agreed?" column says so
+//   rather than claiming somebody was asked.
 
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';

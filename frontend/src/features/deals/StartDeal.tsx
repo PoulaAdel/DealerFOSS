@@ -1,16 +1,23 @@
-// StartDeal — beginning a deal: who is buying, and which car.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  rendered by DealsPage behind "Start a deal".
-// Edit: only cars that are actually **available** are offered. A car already on
-//       somebody else's deal is held, and the server refuses a second deal on it
-//       with a 409 — but offering it and then explaining the refusal wastes a
-//       salesperson's time in front of a customer. The list is filtered, and the
-//       server still refuses, because the list can go stale between loading it
-//       and pressing the button.
+// Overview: Purpose, File Design, and Engineering
+//   StartDeal — beginning a deal: who is buying, and which car.
 //
-//       The rooftop is taken from the chosen car rather than asked for. A car is
-//       on exactly one lot, and asking somebody to name it again is an invitation
-//       to pick the wrong one.
+// Usage:
+//   Rendered by DealsPage behind "Start a deal".
+//
+// Coding Instructions:
+//   Only cars that are actually **available** are offered. A car already on
+//   somebody else's deal is held, and the server refuses a second deal on it
+//   with a 409 — but offering it and then explaining the refusal wastes a
+//   salesperson's time in front of a customer. The list is filtered, and the
+//   server still refuses, because the list can go stale between loading it
+//   and pressing the button.
+//
+//   The rooftop is taken from the chosen car rather than asked for. A car is
+//   on exactly one lot, and asking somebody to name it again is an invitation
+//   to pick the wrong one.
 
 import { useEffect, useState } from 'react';
 import { api, post } from '../../shared/api';

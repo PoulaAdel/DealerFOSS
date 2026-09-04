@@ -1,12 +1,19 @@
-// PartsPage.test — the catalogue screen and the manager's costing control.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: the test that matters most is
-//       "says the costing choice applies to future sales only". A manager who
-//       believes switching to FIFO restates last month has been misled by the
-//       control, and the system cannot do it anyway — the ledger is immutable
-//       and a sold line's cost is frozen. That sentence is a safeguard, not
-//       decoration.
+// Overview: Purpose, File Design, and Engineering
+//   PartsPage.test — the catalogue screen and the manager's costing control.
+//
+// Usage:
+//   npm test.
+//
+// Coding Instructions:
+//   The test that matters most is
+//   "says the costing choice applies to future sales only". A manager who
+//   believes switching to FIFO restates last month has been misled by the
+//   control, and the system cannot do it anyway — the ledger is immutable
+//   and a sold line's cost is frozen. That sentence is a safeguard, not
+//   decoration.
 
 import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

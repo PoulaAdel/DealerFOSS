@@ -1,19 +1,26 @@
-// Shortcuts — the keyboard map, and the panel that admits it exists.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  rendered by the shell; opened with "?" or the button beside it.
-// Edit: an undiscoverable shortcut is a shortcut nobody uses. The list below is
-//       the only description of the bindings, and it is generated from the same
-//       table the shell binds — so a shortcut cannot be added without appearing
-//       here, and cannot be removed while still being advertised.
+// Overview: Purpose, File Design, and Engineering
+//   Shortcuts — the keyboard map, and the panel that admits it exists.
 //
-//       `says` is a message KEY, not a sentence. Holding the English here would
-//       have put one screen's worth of untranslated text inside a table that
-//       looks like configuration, which is exactly where it would have been
-//       missed — the key makes the omission a compile error instead.
+// Usage:
+//   Rendered by the shell; opened with "?" or the button beside it.
 //
-//       The key names are NOT translated. "g d" is what is physically printed
-//       on the keyboard, and localising it to a mnemonic in another language
-//       would describe a key the reader does not have.
+// Coding Instructions:
+//   An undiscoverable shortcut is a shortcut nobody uses. The list below is
+//   the only description of the bindings, and it is generated from the same
+//   table the shell binds — so a shortcut cannot be added without appearing
+//   here, and cannot be removed while still being advertised.
+//
+//   `says` is a message KEY, not a sentence. Holding the English here would
+//   have put one screen's worth of untranslated text inside a table that
+//   looks like configuration, which is exactly where it would have been
+//   missed — the key makes the omission a compile error instead.
+//
+//   The key names are NOT translated. "g d" is what is physically printed
+//   on the keyboard, and localising it to a mnemonic in another language
+//   would describe a key the reader does not have.
 
 import { useEffect, useRef } from 'react';
 import { useI18n, type MessageKey } from '../shared/i18n';

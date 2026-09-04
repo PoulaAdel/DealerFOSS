@@ -1,22 +1,29 @@
-// PasskeysPage — the passkeys on your own account, and how to add one.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /security/passkeys.
-// Edit: this screen only ever shows YOUR credentials. The API has no way to ask
-//       about anybody else's, which is why there is no filter and no search here
-//       — the absence is the contract, not an unfinished feature.
+// Overview: Purpose, File Design, and Engineering
+//   PasskeysPage — the passkeys on your own account, and how to add one.
 //
-//       Two things are said out loud rather than assumed.
+// Usage:
+//   Reachable at /security/passkeys.
 //
-//       (1) The password still works. A screen that lists passkeys without
-//       saying so reads like a replacement, and somebody will register one on a
-//       phone they are about to trade in. Nothing here takes the password away,
-//       and nothing here can.
+// Coding Instructions:
+//   This screen only ever shows YOUR credentials. The API has no way to ask
+//   about anybody else's, which is why there is no filter and no search here
+//   — the absence is the contract, not an unfinished feature.
 //
-//       (2) Forgetting is deletion, not disablement (see IPasskeys). The
-//       confirmation says the device stops working, because that is the part
-//       people are actually deciding about — and it is the one act on this
-//       screen the server will happily perform and cannot undo, which is exactly
-//       what ADR-020 allows a confirm step for.
+//   Two things are said out loud rather than assumed.
+//
+//   (1) The password still works. A screen that lists passkeys without
+//   saying so reads like a replacement, and somebody will register one on a
+//   phone they are about to trade in. Nothing here takes the password away,
+//   and nothing here can.
+//
+//   (2) Forgetting is deletion, not disablement (see IPasskeys). The
+//   confirmation says the device stops working, because that is the part
+//   people are actually deciding about — and it is the one act on this
+//   screen the server will happily perform and cannot undo, which is exactly
+//   what ADR-020 allows a confirm step for.
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post, remove } from '../../shared/api';

@@ -6,7 +6,7 @@
 //   that were actually restored.
 //
 // Usage:
-//   Dotnet run --project src/App -- --repoint-tenants --prefix Restored_
+//   dotnet run --project src/App -- --repoint-tenants --prefix Restored_
 //
 // Coding Instructions:
 //   This exists because of what a restore drill exposed. Each tenant's

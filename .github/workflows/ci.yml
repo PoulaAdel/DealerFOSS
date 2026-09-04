@@ -1,3 +1,24 @@
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Overview: Purpose, File Design, and Engineering
+#   The continuous-integration workflow: build, test and audit on every push.
+#   It is the SECOND gate, not the first — every milestone in this repository is
+#   verified locally before it is committed, because a red build discovered
+#   after a push is a red build somebody else may have already pulled.
+#
+#   The frontend runs as a separate job rather than a step, so a broken screen
+#   and a broken endpoint report as different failures instead of one.
+#
+# Usage:
+#   Runs automatically on push. Nothing invokes it by hand.
+#
+# Coding Instructions:
+#   Keep this in step with the canonical commands in docs/LOCAL-DEVELOPMENT.md.
+#   A gate that CI enforces and a contributor cannot run locally is a gate that
+#   fails for the first time in the wrong place — and `npm audit` here is the
+#   counterpart of NuGetAudit in the build, so a high advisory must fail both.
+
 name: CI
 
 # The project works on main only, so main is what CI watches. That makes CI a

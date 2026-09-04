@@ -1,12 +1,19 @@
-// LabourPage.test — the workshop's numbers, and the two it refuses to invent.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: "says which figures it cannot produce" is the test that matters here.
-//       Efficiency and productivity are what a service manager comes to a
-//       report like this for, and this system has neither a roster nor a time
-//       clock to produce them from. A future tidy-up that drops that band would
-//       leave a report which quietly implies the two missing numbers were fine,
-//       and both are used to judge individual people.
+// Overview: Purpose, File Design, and Engineering
+//   LabourPage.test — the workshop's numbers, and the two it refuses to invent.
+//
+// Usage:
+//   npm test.
+//
+// Coding Instructions:
+//   "says which figures it cannot produce" is the test that matters here.
+//   Efficiency and productivity are what a service manager comes to a
+//   report like this for, and this system has neither a roster nor a time
+//   clock to produce them from. A future tidy-up that drops that band would
+//   leave a report which quietly implies the two missing numbers were fine,
+//   and both are used to judge individual people.
 
 import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

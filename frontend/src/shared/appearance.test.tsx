@@ -1,14 +1,21 @@
-// appearance.test — the theme actually reaches the page.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: these assert on `<html>` rather than on a React tree, because that is
-//       where the setting genuinely lives — the whole design is that CSS does the
-//       work off an attribute. A test that only checked component state would
-//       pass with the stylesheet disconnected.
+// Overview: Purpose, File Design, and Engineering
+//   appearance.test — the theme actually reaches the page.
 //
-//       Direction is NOT tested here any more. It is a property of the chosen
-//       language rather than a setting of its own, and it is proven in
-//       i18n/i18n.test.tsx alongside the language that decides it.
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   These assert on `<html>` rather than on a React tree, because that is
+//   where the setting genuinely lives — the whole design is that CSS does the
+//   work off an attribute. A test that only checked component state would
+//   pass with the stylesheet disconnected.
+//
+//   Direction is NOT tested here any more. It is a property of the chosen
+//   language rather than a setting of its own, and it is proven in
+//   i18n/i18n.test.tsx alongside the language that decides it.
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

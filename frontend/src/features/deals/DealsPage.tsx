@@ -1,16 +1,23 @@
-// DealsPage — the deal desk: what is being sold, and what stage each one is at.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /deals. Selecting one opens it.
-// Edit: two server-side rules become visible here, and the screen's job is to
-//       *explain* them rather than to become the second place they live —
-//       a salesperson cannot approve their own deal, and the numbers freeze once
-//       a deal is submitted. Both are enforced in DealService. If this file ever
-//       starts deciding them instead of reflecting them, the two copies will
-//       disagree and the browser's copy will be the wrong one.
+// Overview: Purpose, File Design, and Engineering
+//   DealsPage — the deal desk: what is being sold, and what stage each one is at.
 //
-//       So: a button a caller may not use is *absent*, with a sentence saying
-//       why. A disabled button with no explanation teaches nobody anything, and
-//       a button that is present and then refused wastes somebody's time.
+// Usage:
+//   Reachable at /deals. Selecting one opens it.
+//
+// Coding Instructions:
+//   Two server-side rules become visible here, and the screen's job is to
+//   *explain* them rather than to become the second place they live —
+//   a salesperson cannot approve their own deal, and the numbers freeze once
+//   a deal is submitted. Both are enforced in DealService. If this file ever
+//   starts deciding them instead of reflecting them, the two copies will
+//   disagree and the browser's copy will be the wrong one.
+//
+//   So: a button a caller may not use is *absent*, with a sentence saying
+//   why. A disabled button with no explanation teaches nobody anything, and
+//   a button that is present and then refused wastes somebody's time.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';

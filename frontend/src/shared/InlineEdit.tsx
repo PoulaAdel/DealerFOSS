@@ -1,36 +1,42 @@
-// InlineEdit — changing one value where it is written, instead of opening a form
-// to change it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  <InlineEdit
-//         label={t('diary.colHours')}
-//         value={hours}
-//         display={hours === null ? t('diary.unestimated') : format.number(hours)}
-//         onSave={async (next) => post(...)}
-//       />
+// Overview: Purpose, File Design, and Engineering
+//   InlineEdit — changing one value where it is written, instead of opening a form
+//   to change it.
 //
-// Edit: five things here are the reason this is a component and not a pattern
-//       people re-type.
+// Usage:
+//   <InlineEdit
+//   label={t('diary.colHours')}
+//   value={hours}
+//   display={hours === null ? t('diary.unestimated') : format.number(hours)}
+//   onSave={async (next) => post(...)}
+//   />
 //
-//       IDLE IS A BUTTON, NOT A DIV WITH AN onClick. A value you can change has
-//       to be reachable by keyboard and has to announce itself as something that
-//       does anything. A div with a click handler is invisible to a screen
-//       reader and unreachable by Tab, which is how "inline editing" usually
-//       ships as a mouse-only feature.
+// Coding Instructions:
+//   Five things here are the reason this is a component and not a pattern
+//   people re-type.
 //
-//       ESCAPE CANCELS AND RESTORES. Somebody who starts typing in the wrong row
-//       needs a way out that is not "work out what it said before".
+//   IDLE IS A BUTTON, NOT A DIV WITH AN onClick. A value you can change has
+//   to be reachable by keyboard and has to announce itself as something that
+//   does anything. A div with a click handler is invisible to a screen
+//   reader and unreachable by Tab, which is how "inline editing" usually
+//   ships as a mouse-only feature.
 //
-//       BLUR SAVES, and so does Enter. Clicking away from a half-typed value and
-//       losing it is the single most annoying thing an inline editor does.
+//   ESCAPE CANCELS AND RESTORES. Somebody who starts typing in the wrong row
+//   needs a way out that is not "work out what it said before".
 //
-//       THE SAVE IS CONFIRMED, BRIEFLY AND IN WORDS. A value that changes back
-//       into text with no acknowledgement leaves somebody wondering whether it
-//       took. The tick carries role="status" so it is announced, and fades on
-//       the shared --beat so it reads as a change rather than a flicker.
+//   BLUR SAVES, and so does Enter. Clicking away from a half-typed value and
+//   losing it is the single most annoying thing an inline editor does.
 //
-//       A FAILED SAVE PUTS THE VALUE BACK AND SAYS WHY. It does not keep the
-//       typed value on screen as though it had been accepted — the record did
-//       not change, and the screen must not imply it did.
+//   THE SAVE IS CONFIRMED, BRIEFLY AND IN WORDS. A value that changes back
+//   into text with no acknowledgement leaves somebody wondering whether it
+//   took. The tick carries role="status" so it is announced, and fades on
+//   the shared --beat so it reads as a change rather than a flicker.
+//
+//   A FAILED SAVE PUTS THE VALUE BACK AND SAYS WHY. It does not keep the
+//   typed value on screen as though it had been accepted — the record did
+//   not change, and the screen must not imply it did.
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useI18n } from './i18n';

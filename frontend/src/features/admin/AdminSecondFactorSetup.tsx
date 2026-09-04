@@ -1,16 +1,23 @@
-// AdminSecondFactorSetup — the same three steps as the dealership's, minus the
-// recovery codes.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the only route an administrator who has not enrolled can reach.
-// Edit: it is a separate component from the dealership's rather than a shared
-//       one taking two endpoints as props. The two differ in what they return
-//       (no recovery codes here) and in what they mean if they go wrong, and a
-//       shared component would have to be told which world it is in — the same
-//       mistake `adminApi.ts` exists to avoid.
+// Overview: Purpose, File Design, and Engineering
+//   AdminSecondFactorSetup — the same three steps as the dealership's, minus the
+//   recovery codes.
 //
-//       An administrator has no recovery codes. That is a real gap, not an
-//       omission from this screen: nothing on the server issues them, so losing
-//       the phone means a database operation. It is named in STATUS.md.
+// Usage:
+//   The only route an administrator who has not enrolled can reach.
+//
+// Coding Instructions:
+//   It is a separate component from the dealership's rather than a shared
+//   one taking two endpoints as props. The two differ in what they return
+//   (no recovery codes here) and in what they mean if they go wrong, and a
+//   shared component would have to be told which world it is in — the same
+//   mistake `adminApi.ts` exists to avoid.
+//
+//   An administrator has no recovery codes. That is a real gap, not an
+//   omission from this screen: nothing on the server issues them, so losing
+//   the phone means a database operation. It is named in STATUS.md.
 
 import { useState, type FormEvent } from 'react';
 import { QRCodeSVG } from 'qrcode.react';

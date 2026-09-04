@@ -1,11 +1,18 @@
-// AdminSignIn — the other door.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the only route reachable at /admin while signed out of the control plane.
-// Edit: one form, not two steps. A second factor is mandatory here, so there is
-//       no branch where a password alone means anything and therefore nothing
-//       for a challenge to protect. The code field is optional only because a
-//       newly created administrator has not enrolled one yet — and they get a
-//       session that can reach enrolment and nothing else.
+// Overview: Purpose, File Design, and Engineering
+//   AdminSignIn — the other door.
+//
+// Usage:
+//   The only route reachable at /admin while signed out of the control plane.
+//
+// Coding Instructions:
+//   One form, not two steps. A second factor is mandatory here, so there is
+//   no branch where a password alone means anything and therefore nothing
+//   for a challenge to protect. The code field is optional only because a
+//   newly created administrator has not enrolled one yet — and they get a
+//   session that can reach enrolment and nothing else.
 
 import { useState, type FormEvent } from 'react';
 import { adminPost } from '../../shared/adminApi';

@@ -1,20 +1,27 @@
-// RecallCheck.test — the three properties that make this feature honest.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: none of these three is a style preference, and none should be relaxed
-//       to make a refactor easier.
+// Overview: Purpose, File Design, and Engineering
+//   RecallCheck.test — the three properties that make this feature honest.
 //
-//       (1) It asks nothing until somebody presses the button. Decided
-//       2026-08-15: this is an outbound call to a regulator, and a stock screen
-//       left open on a desk must not keep making it.
+// Usage:
+//   npm test.
 //
-//       (2) "Could not reach the service" is drawn differently from "no
-//       campaigns found". Collapsing the two would turn a network timeout into
-//       an all-clear on a screen somebody uses to decide whether a car is safe
-//       to hand over.
+// Coding Instructions:
+//   None of these three is a style preference, and none should be relaxed
+//   to make a refactor easier.
 //
-//       (3) The caveat rides with the data. The public record is by MODEL and
-//       says nothing about whether THIS car has had the work done.
+//   (1) It asks nothing until somebody presses the button. Decided
+//   2026-08-15: this is an outbound call to a regulator, and a stock screen
+//   left open on a desk must not keep making it.
+//
+//   (2) "Could not reach the service" is drawn differently from "no
+//   campaigns found". Collapsing the two would turn a network timeout into
+//   an all-clear on a screen somebody uses to decide whether a car is safe
+//   to hand over.
+//
+//   (3) The caveat rides with the data. The public record is by MODEL and
+//   says nothing about whether THIS car has had the work done.
 
 import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';

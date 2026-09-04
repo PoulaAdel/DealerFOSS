@@ -6,7 +6,7 @@
 //   registered and ordered here, and nowhere else.
 //
 // Usage:
-//   Dotnet run --project src/App. With no HostCatalog connection string it
+//   dotnet run --project src/App. With no HostCatalog connection string it
 //   still starts and serves health only, which keeps a bare checkout usable.
 //
 // Coding Instructions:

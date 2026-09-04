@@ -1,12 +1,19 @@
-// SetFirstPassword — a starter turns a one-time code into an account.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /set-password, without signing in. It has to be: not having
-//       a password is the state this screen exists to fix.
-// Edit: the refusal is deliberately vague — "that code is not usable" covers an
-//       unknown email, a wrong code, and an expired one, because the server
-//       answers identically for all three. Do not "improve" the message by
-//       guessing which one happened; the whole point is that somebody holding a
-//       code cannot learn whose account it opens.
+// Overview: Purpose, File Design, and Engineering
+//   SetFirstPassword — a starter turns a one-time code into an account.
+//
+// Usage:
+//   Reachable at /set-password, without signing in. It has to be: not having
+//   a password is the state this screen exists to fix.
+//
+// Coding Instructions:
+//   The refusal is deliberately vague — "that code is not usable" covers an
+//   unknown email, a wrong code, and an expired one, because the server
+//   answers identically for all three. Do not "improve" the message by
+//   guessing which one happened; the whole point is that somebody holding a
+//   code cannot learn whose account it opens.
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router';

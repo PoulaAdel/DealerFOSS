@@ -1,17 +1,27 @@
-# Backs up an installation: the host catalog and every tenant database.
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Usage (from repo root, Windows PowerShell 5.1):
+# Overview: Purpose, File Design, and Engineering
+#   Backs up an installation: the host catalog and every tenant database.
+#
+#   It writes one .bak per database plus a manifest.json naming them, with a
+#   SHA-256 of each file. The manifest is what restore.ps1 reads — it is not
+#   decoration, and a backup folder without one cannot be restored by the script.
+#
+# Usage:
+#   From the repository root, Windows PowerShell 5.1:
+#
 #   & .\deploy\backup.ps1
 #   & .\deploy\backup.ps1 -HostConnection "..." -Path D:\backups
 #
-# What it writes: one .bak per database plus a manifest.json naming them, with a
-# SHA-256 of each file. The manifest is what restore.ps1 reads — it is not
-# decoration, and a backup folder without one cannot be restored by the script.
+# Coding Instructions:
+#   What this deliberately does NOT do, because doc 08 owns these and a script
+#   that half-does them is worse than one that does not pretend: copy anything
+#   off this host, encrypt the files, schedule itself, or expire old backups.
 #
-# What it does NOT do (doc 08 owns these): copy anything off this host, encrypt
-# the files, schedule itself, or expire old backups. A .bak contains every
-# customer record in plain form, so where these files end up is a decision
-# somebody has to make deliberately.
+#   A .bak contains every customer record in plain form, so where these files
+#   end up is a decision somebody has to make deliberately rather than inherit
+#   from a default written here.
 
 param(
     [string]$HostConnection = "Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False",

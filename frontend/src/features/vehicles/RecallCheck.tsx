@@ -1,26 +1,33 @@
-// RecallCheck — what the public safety-recall record says about a car.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  <RecallCheck vehicleId={unit.vehicleId} />, inside a detail band.
-// Edit: THREE THINGS HERE ARE ABOUT SOMEBODY'S BRAKES, NOT ABOUT LAYOUT.
+// Overview: Purpose, File Design, and Engineering
+//   RecallCheck — what the public safety-recall record says about a car.
 //
-//       ONE. It runs ON REQUEST, never when the screen opens (decided
-//       2026-08-15, doc 11 §7). This is an outbound call to a regulator's
-//       service, and a stock screen left open on a desk all afternoon must not
-//       keep asking on somebody else's behalf. The button is the consent.
+// Usage:
+//   <RecallCheck vehicleId={unit.vehicleId} />, inside a detail band.
 //
-//       TWO. "Could not reach the service" and "no campaigns found" are drawn
-//       DIFFERENTLY and must stay that way. The server answers 503 for the
-//       first and an empty list for the second precisely so this screen can
-//       tell them apart; rendering a timeout as an all-clear would invent
-//       safety out of a network failure. That is the whole reason
-//       `RecallErrors.Unavailable` exists.
+// Coding Instructions:
+//   THREE THINGS HERE ARE ABOUT SOMEBODY'S BRAKES, NOT ABOUT LAYOUT.
 //
-//       THREE. The caveat is not fine print. The public record is indexed by
-//       MODEL, not by VIN, and carries no note of whether this particular car
-//       has had the work done — a car showing four campaigns may have had all
-//       four done years ago by a previous owner. `appliesToModelNotVehicle` is
-//       sent on every report so this screen has to be handed the caveat rather
-//       than remember it, and it is rendered above the list, not below.
+//   ONE. It runs ON REQUEST, never when the screen opens (decided
+//   2026-08-15, doc 11 §7). This is an outbound call to a regulator's
+//   service, and a stock screen left open on a desk all afternoon must not
+//   keep asking on somebody else's behalf. The button is the consent.
+//
+//   TWO. "Could not reach the service" and "no campaigns found" are drawn
+//   DIFFERENTLY and must stay that way. The server answers 503 for the
+//   first and an empty list for the second precisely so this screen can
+//   tell them apart; rendering a timeout as an all-clear would invent
+//   safety out of a network failure. That is the whole reason
+//   `RecallErrors.Unavailable` exists.
+//
+//   THREE. The caveat is not fine print. The public record is indexed by
+//   MODEL, not by VIN, and carries no note of whether this particular car
+//   has had the work done — a car showing four campaigns may have had all
+//   four done years ago by a previous owner. `appliesToModelNotVehicle` is
+//   sent on every report so this screen has to be handed the caveat rather
+//   than remember it, and it is rendered above the list, not below.
 
 import { useState } from 'react';
 import { ApiError, api } from '../../shared/api';

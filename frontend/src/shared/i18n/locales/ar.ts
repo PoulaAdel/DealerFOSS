@@ -1,28 +1,38 @@
-// ar — Arabic. The one language here that reads right to left.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Edit: three things make the difference between Arabic that reads naturally
-//       and Arabic that reads like a machine produced it.
+// Overview: Purpose, File Design, and Engineering
+//   ar — Arabic. The one language here that reads right to left.
 //
-//       PUNCTUATION IS ARABIC PUNCTUATION. The comma is ، not ',', the
-//       question mark is ؟ not '?', the semicolon is ؛. A Latin comma inside
-//       Arabic text sits on the wrong side of the baseline and breaks the line
-//       visually — it is the single most common tell of an untranslated string.
+// Usage:
+//   Loaded by shared/i18n/index.tsx and selected by the language
+//   picker. Never imported by a screen — a screen calls t(key), and
+//   which catalogue answers is not its business.
 //
-//       DIRECTION IS HANDLED BY THE LAYOUT, NOT BY THE TEXT. Nothing in this
-//       file contains a directional mark or a reordered sentence. `dir="rtl"`
-//       on <html> plus a stylesheet written in logical properties does the
-//       mirroring; the Unicode bidirectional algorithm handles the Latin
-//       fragments — a VIN, an email address, a price — that legitimately run
-//       left to right inside an Arabic sentence.
+// Coding Instructions:
+//   Three things make the difference between Arabic that reads naturally
+//   and Arabic that reads like a machine produced it.
 //
-//       ARABIC HAS SIX PLURAL CATEGORIES: zero, one, two, few (3–10), many
-//       (11–99) and other. `سيارة واحدة`, `سيارتان`, `٣ سيارات`, `١١ سيارة`
-//       are four different forms of the same noun. Intl.PluralRules picks
-//       between them; the call site never counts.
+//   PUNCTUATION IS ARABIC PUNCTUATION. The comma is ، not ',', the
+//   question mark is ؟ not '?', the semicolon is ؛. A Latin comma inside
+//   Arabic text sits on the wrong side of the baseline and breaks the line
+//   visually — it is the single most common tell of an untranslated string.
 //
-//       Digits stay Western (0–9), set by the `ar` locale in languages.ts. Most
-//       Arabic business software shows Western digits, and a price list that
-//       mixes ٣ and 3 is harder to read rather than more authentic.
+//   DIRECTION IS HANDLED BY THE LAYOUT, NOT BY THE TEXT. Nothing in this
+//   file contains a directional mark or a reordered sentence. `dir="rtl"`
+//   on <html> plus a stylesheet written in logical properties does the
+//   mirroring; the Unicode bidirectional algorithm handles the Latin
+//   fragments — a VIN, an email address, a price — that legitimately run
+//   left to right inside an Arabic sentence.
+//
+//   ARABIC HAS SIX PLURAL CATEGORIES: zero, one, two, few (3–10), many
+//   (11–99) and other. `سيارة واحدة`, `سيارتان`, `٣ سيارات`, `١١ سيارة`
+//   are four different forms of the same noun. Intl.PluralRules picks
+//   between them; the call site never counts.
+//
+//   Digits stay Western (0–9), set by the `ar` locale in languages.ts. Most
+//   Arabic business software shows Western digits, and a price list that
+//   mixes ٣ and 3 is harder to read rather than more authentic.
 
 import type { Catalogue } from '../index';
 

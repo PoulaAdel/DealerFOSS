@@ -1,21 +1,28 @@
-// StaffPage — who works here, and what each of them may reach.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /staff. Selecting somebody opens what they hold.
-// Edit: three things here are deliberate.
+// Overview: Purpose, File Design, and Engineering
+//   StaffPage — who works here, and what each of them may reach.
 //
-//       (1) The enrolment code is shown ONCE, in a panel that says so. There is
-//       no "show it again" — the server keeps only a hash, so there is nothing to
-//       show. A screen that implied otherwise would send somebody looking for a
-//       button that cannot exist.
+// Usage:
+//   Reachable at /staff. Selecting somebody opens what they hold.
 //
-//       (2) Adding a starter does not ask for a password, because nobody should
-//       ever type a password on somebody else's behalf. The account arrives
-//       unable to sign in, and the code is what fixes that.
+// Coding Instructions:
+//   Three things here are deliberate.
 //
-//       (3) Whether a grant is allowed is the server's answer, not a prediction
-//       made here. A rooftop-scoped manager sees the organization-wide option and
-//       is refused it on the way in — showing the refusal is honest, and hiding
-//       the option would make the rule invisible.
+//   (1) The enrolment code is shown ONCE, in a panel that says so. There is
+//   no "show it again" — the server keeps only a hash, so there is nothing to
+//   show. A screen that implied otherwise would send somebody looking for a
+//   button that cannot exist.
+//
+//   (2) Adding a starter does not ask for a password, because nobody should
+//   ever type a password on somebody else's behalf. The account arrives
+//   unable to sign in, and the code is what fixes that.
+//
+//   (3) Whether a grant is allowed is the server's answer, not a prediction
+//   made here. A rooftop-scoped manager sees the organization-wide option and
+//   is refused it on the way in — showing the refusal is honest, and hiding
+//   the option would make the rule invisible.
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post, remove } from '../../shared/api';

@@ -1,20 +1,27 @@
-// PartsPage — the parts catalogue, the stock on each shelf, and how it is costed.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /parts.
-// Edit: three things here are deliberate.
+// Overview: Purpose, File Design, and Engineering
+//   PartsPage — the parts catalogue, the stock on each shelf, and how it is costed.
 //
-//       (1) The costing choice is on this screen, and it says out loud that it
-//       applies to future sales only. A manager who thinks switching to FIFO
-//       will restate last month has been misled by the control, not by the
-//       system — the ledger is immutable and a sold line's cost is frozen.
+// Usage:
+//   Reachable at /parts.
 //
-//       (2) The options come from the server (`/parts/costing`), including their
-//       explanations. The screen keeps no copy of the list: a fourth method
-//       added later should appear here without anybody remembering to.
+// Coding Instructions:
+//   Three things here are deliberate.
 //
-//       (3) Layers are shown on a part, not hidden. "Why does this cost that?"
-//       is a question a parts manager asks constantly, and the deliveries still
-//       on the shelf are the honest answer.
+//   (1) The costing choice is on this screen, and it says out loud that it
+//   applies to future sales only. A manager who thinks switching to FIFO
+//   will restate last month has been misled by the control, not by the
+//   system — the ledger is immutable and a sold line's cost is frozen.
+//
+//   (2) The options come from the server (`/parts/costing`), including their
+//   explanations. The screen keeps no copy of the list: a fourth method
+//   added later should appear here without anybody remembering to.
+//
+//   (3) Layers are shown on a part, not hidden. "Why does this cost that?"
+//   is a question a parts manager asks constantly, and the deliveries still
+//   on the shelf are the honest answer.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useDebounced } from '../../shared/useDebounced';

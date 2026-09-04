@@ -1,13 +1,20 @@
-// DealsPage.test — the desk, and the two rules it has to explain without
-// re-implementing.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the trap this file guards is the screen quietly becoming the second
-//       place a rule lives. A salesperson cannot approve their own deal, and the
-//       numbers freeze on submission — both are enforced in DealService. The
-//       screen's job is to *show* the refusal the server gave, never to predict
-//       one. If these tests start asserting that a button is hidden from a
-//       particular person, the rule has been copied and the copies will drift.
+// Overview: Purpose, File Design, and Engineering
+//   DealsPage.test — the desk, and the two rules it has to explain without
+//   re-implementing.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The trap this file guards is the screen quietly becoming the second
+//   place a rule lives. A salesperson cannot approve their own deal, and the
+//   numbers freeze on submission — both are enforced in DealService. The
+//   screen's job is to *show* the refusal the server gave, never to predict
+//   one. If these tests start asserting that a button is hidden from a
+//   particular person, the rule has been copied and the copies will drift.
 
 import { render, screen, waitFor, within } from '../../test/render';
 import { MemoryRouter } from 'react-router';

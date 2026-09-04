@@ -1,9 +1,16 @@
-// api.test — the rules every call obeys, whether or not each caller remembers.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the anti-forgery rule is the one worth guarding hardest. It has to hold
-//       for every write without any screen opting in, because the screen added
-//       next year will not think about it.
+// Overview: Purpose, File Design, and Engineering
+//   api.test — the rules every call obeys, whether or not each caller remembers.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The anti-forgery rule is the one worth guarding hardest. It has to hold
+//   for every write without any screen opting in, because the screen added
+//   next year will not think about it.
 
 import { describe, expect, it } from 'vitest';
 import { ApiError, api, post, setCurrentTenant } from './api';

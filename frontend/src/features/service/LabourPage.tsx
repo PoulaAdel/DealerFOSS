@@ -1,22 +1,29 @@
-// LabourPage — what the workshop sold over a period, and what an hour realised.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /workshop/labour, linked from the workshop's head.
-// Edit: THE "WHAT THIS DOES NOT MEASURE" BAND IS NOT DECORATION AND MUST NOT BE
-//       QUIETLY DROPPED. Efficiency and productivity are the two figures a
-//       service manager is trained to look for on a report like this, and this
-//       system cannot produce either — there is no roster and no time clock, so
-//       neither denominator exists. A report that shows three numbers and stays
-//       silent about the missing two invites somebody to assume they were fine,
-//       and both are used to judge individual people. The server names them in
-//       `notMeasured` precisely so this screen can say so.
+// Overview: Purpose, File Design, and Engineering
+//   LabourPage — what the workshop sold over a period, and what an hour realised.
 //
-//       The other honesty here is the effective labour rate: revenue ÷ hours
-//       sold, which is what an hour ACTUALLY realised as against the posted
-//       rate. A workshop billing 120 and realising 94 is the single most useful
-//       thing on this screen, and the two figures next to each other are what
-//       make the gap visible.
+// Usage:
+//   Reachable at /workshop/labour, linked from the workshop's head.
 //
-//       Counted from invoiced work only. Work in progress is not revenue.
+// Coding Instructions:
+//   THE "WHAT THIS DOES NOT MEASURE" BAND IS NOT DECORATION AND MUST NOT BE
+//   QUIETLY DROPPED. Efficiency and productivity are the two figures a
+//   service manager is trained to look for on a report like this, and this
+//   system cannot produce either — there is no roster and no time clock, so
+//   neither denominator exists. A report that shows three numbers and stays
+//   silent about the missing two invites somebody to assume they were fine,
+//   and both are used to judge individual people. The server names them in
+//   `notMeasured` precisely so this screen can say so.
+//
+//   The other honesty here is the effective labour rate: revenue ÷ hours
+//   sold, which is what an hour ACTUALLY realised as against the posted
+//   rate. A workshop billing 120 and realising 94 is the single most useful
+//   thing on this screen, and the two figures next to each other are what
+//   make the gap visible.
+//
+//   Counted from invoiced work only. Work in progress is not revenue.
 
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';

@@ -1,25 +1,32 @@
-// RecoverPassword — the way back in for somebody who cannot sign in.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /recover, linked from the sign-in screen. No session, by
-//       definition — not having one is the problem this screen exists to fix.
-// Edit: four things here are deliberate.
+// Overview: Purpose, File Design, and Engineering
+//   RecoverPassword — the way back in for somebody who cannot sign in.
 //
-//       (1) THE METHODS COME FROM THE SERVER AND CARRY NO EMAIL. Asking "what can
-//       this account use" would answer whether the address exists and whether it
-//       has an authenticator. The list is a property of the installation, so this
-//       screen asks once, before anybody types anything.
+// Usage:
+//   Reachable at /recover, linked from the sign-in screen. No session, by
+//   definition — not having one is the problem this screen exists to fix.
 //
-//       (2) THE REFUSAL IS SHOWN, NEVER INTERPRETED. The server answers every
-//       failure identically on purpose, and any attempt here to be more helpful —
-//       "that email is not registered" — would undo exactly what it is protecting.
+// Coding Instructions:
+//   Four things here are deliberate.
 //
-//       (3) ONE SUBMIT SETS THE PASSWORD. There is no prove-then-redeem, because
-//       the server has no intermediate ticket; adding a second step here would be
-//       theatre suggesting a security property that does not exist.
+//   (1) THE METHODS COME FROM THE SERVER AND CARRY NO EMAIL. Asking "what can
+//   this account use" would answer whether the address exists and whether it
+//   has an authenticator. The list is a property of the installation, so this
+//   screen asks once, before anybody types anything.
 //
-//       (4) THE TWO PASSWORD BOXES ARE COMPARED IN THE BROWSER. That check is a
-//       typo-catcher and nothing else — the server never sees the second box —
-//       so it is done here where it costs nothing.
+//   (2) THE REFUSAL IS SHOWN, NEVER INTERPRETED. The server answers every
+//   failure identically on purpose, and any attempt here to be more helpful —
+//   "that email is not registered" — would undo exactly what it is protecting.
+//
+//   (3) ONE SUBMIT SETS THE PASSWORD. There is no prove-then-redeem, because
+//   the server has no intermediate ticket; adding a second step here would be
+//   theatre suggesting a security property that does not exist.
+//
+//   (4) THE TWO PASSWORD BOXES ARE COMPARED IN THE BROWSER. That check is a
+//   typo-catcher and nothing else — the server never sees the second box —
+//   so it is done here where it costs nothing.
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';

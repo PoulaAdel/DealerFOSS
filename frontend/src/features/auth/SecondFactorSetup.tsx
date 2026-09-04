@@ -1,16 +1,23 @@
-// SecondFactorSetup — turning on the six-digit code, in three steps.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /security/second-factor. It is also the *only* screen a
-//       person can reach when their role obliges them to have a second factor
-//       and they do not yet.
-// Edit: the order of the steps is the safety property, not a design preference.
-//       The secret is generated first and confirmed second, so somebody who
-//       mis-scans is not locked out of their own account — nothing about signing
-//       in changes until a working code proves the phone and the server agree.
+// Overview: Purpose, File Design, and Engineering
+//   SecondFactorSetup — turning on the six-digit code, in three steps.
 //
-//       The recovery codes are shown once and never fetched again, because the
-//       server keeps only their hashes. If this screen ever gains a "show them
-//       again" button, that button is a lie.
+// Usage:
+//   Reachable at /security/second-factor. It is also the *only* screen a
+//   person can reach when their role obliges them to have a second factor
+//   and they do not yet.
+//
+// Coding Instructions:
+//   The order of the steps is the safety property, not a design preference.
+//   The secret is generated first and confirmed second, so somebody who
+//   mis-scans is not locked out of their own account — nothing about signing
+//   in changes until a working code proves the phone and the server agree.
+//
+//   The recovery codes are shown once and never fetched again, because the
+//   server keeps only their hashes. If this screen ever gains a "show them
+//   again" button, that button is a lie.
 
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';

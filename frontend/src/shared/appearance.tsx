@@ -1,29 +1,36 @@
-// appearance — light or dark.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const { theme, setTheme } = useAppearance()
-// Edit: the setting is applied to <html> as an attribute, not to a React tree.
-//       CSS then does the work, which is what makes the switch instant — there is
-//       no re-render, no reflow of a component tree, and no flash of the wrong
-//       theme on the next screen.
+// Overview: Purpose, File Design, and Engineering
+//   appearance — light or dark.
 //
-//       Which way the page RUNS is not here. Direction is a property of the
-//       chosen language and lives in shared/i18n — Arabic runs right to left and
-//       there is no such thing as wanting it not to. It used to be a separate
-//       toggle beside the theme, which let somebody select "Arabic, left to
-//       right": a broken layout with a switch in front of it.
+// Usage:
+//   const { theme, setTheme } = useAppearance()
 //
-//       The stored choice is applied at module load, BEFORE React mounts, so the
-//       first paint is already right. Doing it in an effect would paint light and
-//       then correct itself, which is exactly the eye strain the dark theme is
-//       there to avoid.
+// Coding Instructions:
+//   The setting is applied to <html> as an attribute, not to a React tree.
+//   CSS then does the work, which is what makes the switch instant — there is
+//   no re-render, no reflow of a component tree, and no flash of the wrong
+//   theme on the next screen.
 //
-//       "Follow the machine" is resolved here to a real light or dark, so the
-//       stylesheet carries one dark palette rather than two copies of it.
+//   Which way the page RUNS is not here. Direction is a property of the
+//   chosen language and lives in shared/i18n — Arabic runs right to left and
+//   there is no such thing as wanting it not to. It used to be a separate
+//   toggle beside the theme, which let somebody select "Arabic, left to
+//   right": a broken layout with a switch in front of it.
 //
-//       Not an inline script in index.html, deliberately: the application is
-//       served under a Content-Security-Policy that forbids inline script, and a
-//       thing that works in development and is blocked in production is worse
-//       than the flash.
+//   The stored choice is applied at module load, BEFORE React mounts, so the
+//   first paint is already right. Doing it in an effect would paint light and
+//   then correct itself, which is exactly the eye strain the dark theme is
+//   there to avoid.
+//
+//   "Follow the machine" is resolved here to a real light or dark, so the
+//   stylesheet carries one dark palette rather than two copies of it.
+//
+//   Not an inline script in index.html, deliberately: the application is
+//   served under a Content-Security-Policy that forbids inline script, and a
+//   thing that works in development and is blocked in production is worse
+//   than the flash.
 
 import {
   createContext,

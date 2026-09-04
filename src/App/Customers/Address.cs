@@ -6,7 +6,7 @@
 //   separate record.
 //
 // Usage:
-//   New Address("12 Main St", null, "Springfield", "IL", "62704", "US").
+//   new Address("12 Main St", null, "Springfield", "IL", "62704", "US").
 //
 // Coding Instructions:
 //   Deliberately not US-shaped. "AdministrativeArea" covers a state, province,

@@ -1,11 +1,18 @@
-// App.test — does this application actually draw?
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: these mount the real components into a real DOM and read what a person
-//       would read. That is the whole point: before this file existed, "the
-//       frontend has never been seen rendering" was an honest limitation nobody
-//       could close without opening a browser. Assert on visible text and roles
-//       rather than class names, so a restyle does not read as a regression.
+// Overview: Purpose, File Design, and Engineering
+//   App.test — does this application actually draw?
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   These mount the real components into a real DOM and read what a person
+//   would read. That is the whole point: before this file existed, "the
+//   frontend has never been seen rendering" was an honest limitation nobody
+//   could close without opening a browser. Assert on visible text and roles
+//   rather than class names, so a restyle does not read as a regression.
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

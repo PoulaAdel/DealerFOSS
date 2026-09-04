@@ -5,7 +5,7 @@
 //   TenantScope — how work that is not a request reaches one dealer's database.
 //
 // Usage:
-//   Await using var scope = await factory.OpenAsync("northgroup", ct);
+//   await using var scope = await factory.OpenAsync("northgroup", ct);
 //   var db = scope.Services.GetRequiredService<TenantDb>();
 //
 // Coding Instructions:

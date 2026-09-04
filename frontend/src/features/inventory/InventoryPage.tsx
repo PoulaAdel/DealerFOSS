@@ -1,10 +1,17 @@
-// InventoryPage — what is on the lot.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the first screen worth showing somebody: it proves tenancy, rooftop
-//       scope, and the inventory life cycle all at once.
-// Edit: every state a real screen needs is here on purpose — loading, empty,
-//       permission-denied, failure, and retry (doc 10 §5). A screen that only
-//       renders the happy path is not finished.
+// Overview: Purpose, File Design, and Engineering
+//   InventoryPage — what is on the lot.
+//
+// Usage:
+//   The first screen worth showing somebody: it proves tenancy, rooftop
+//   scope, and the inventory life cycle all at once.
+//
+// Coding Instructions:
+//   Every state a real screen needs is here on purpose — loading, empty,
+//   permission-denied, failure, and retry (doc 10 §5). A screen that only
+//   renders the happy path is not finished.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';

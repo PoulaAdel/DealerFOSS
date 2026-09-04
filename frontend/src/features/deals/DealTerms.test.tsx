@@ -1,11 +1,18 @@
-// DealTerms.test — putting numbers on a deal, and the two ways that goes wrong.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the properties worth guarding are that saving **replaces** the whole set
-//       (so the form must start from what is already there, or editing one line
-//       deletes the rest), and that the editor is absent rather than disabled
-//       once a deal is submitted. Both are the kind of thing that looks like a
-//       tidy-up and loses somebody's work.
+// Overview: Purpose, File Design, and Engineering
+//   DealTerms.test — putting numbers on a deal, and the two ways that goes wrong.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The properties worth guarding are that saving **replaces** the whole set
+//   (so the form must start from what is already there, or editing one line
+//   deletes the rest), and that the editor is absent rather than disabled
+//   once a deal is submitted. Both are the kind of thing that looks like a
+//   tidy-up and loses somebody's work.
 
 import { render, screen, waitFor } from '../../test/render';
 import userEvent from '@testing-library/user-event';

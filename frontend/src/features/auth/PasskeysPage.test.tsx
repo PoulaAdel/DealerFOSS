@@ -1,15 +1,22 @@
-// PasskeysPage.test — enrolling a passkey, and the promises the screen makes.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: two assertions here are about safety rather than about pixels.
+// Overview: Purpose, File Design, and Engineering
+//   PasskeysPage.test — enrolling a passkey, and the promises the screen makes.
 //
-//       "says the password still works" — somebody who reads this screen as a
-//       replacement will register a passkey on a phone they are about to trade
-//       in, and then have nothing. The sentence is the mitigation.
+// Usage:
+//   npm test.
 //
-//       "asks before forgetting one" — deletion, not disablement, and the
-//       server will happily perform it. ADR-020 allows a confirm step for
-//       exactly this.
+// Coding Instructions:
+//   Two assertions here are about safety rather than about pixels.
+//
+//   "says the password still works" — somebody who reads this screen as a
+//   replacement will register a passkey on a phone they are about to trade
+//   in, and then have nothing. The sentence is the mitigation.
+//
+//   "asks before forgetting one" — deletion, not disablement, and the
+//   server will happily perform it. ADR-020 allows a confirm step for
+//   exactly this.
 
 import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

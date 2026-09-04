@@ -1,32 +1,38 @@
-// i18n — the application's words, in the language the reader chose.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const { t, format } = useI18n()
-//       t('nav.stock')                        → "Stock"
-//       t('stock.count', { count: 4 })        → "4 cars in stock"
-//       t('deal.owner', { name: person })     → "Sold by Ada"
-//       format.money(1250, 'USD')             → "$1,250.00" / "1 250,00 $US"
+// Overview: Purpose, File Design, and Engineering
+//   I18n — the application's words, in the language the reader chose.
 //
-// Edit: three rules hold this together.
+// Usage:
+//   const { t, format } = useI18n()
+//   t('nav.stock')                        → "Stock"
+//   t('stock.count', { count: 4 })        → "4 cars in stock"
+//   t('deal.owner', { name: person })     → "Sold by Ada"
+//   format.money(1250, 'USD')             → "$1,250.00" / "1 250,00 $US"
 //
-//       ONE. The language decides the direction. `dir` on <html> is derived
-//       from the chosen language and cannot be set independently, because
-//       "Arabic, left to right" is not a configuration anybody wants — it is a
-//       bug with a switch in front of it.
+// Coding Instructions:
+//   Three rules hold this together.
 //
-//       TWO. English is the schema. `MessageKey` is `keyof typeof en`, and the
-//       other five catalogues are typed as `Catalogue`, so a key added to
-//       English and forgotten in Russian fails `npm run typecheck` rather than
-//       shipping an English sentence into a Russian screen. Warnings are errors
-//       here, and this is the cheapest place to catch a missing translation.
+//   ONE. The language decides the direction. `dir` on <html> is derived
+//   from the chosen language and cannot be set independently, because
+//   "Arabic, left to right" is not a configuration anybody wants — it is a
+//   bug with a switch in front of it.
 //
-//       THREE. Plurals go through Intl.PluralRules, never through `n === 1`.
-//       Russian has four categories and Arabic six; picking between two of them
-//       is wrong for most numbers in both.
+//   TWO. English is the schema. `MessageKey` is `keyof typeof en`, and the
+//   other five catalogues are typed as `Catalogue`, so a key added to
+//   English and forgotten in Russian fails `npm run typecheck` rather than
+//   shipping an English sentence into a Russian screen. Warnings are errors
+//   here, and this is the cheapest place to catch a missing translation.
 //
-//       The chosen language is applied to <html> BEFORE React mounts, for the
-//       same reason the theme is: a page that paints left-to-right and then
-//       flips is worse than one that starts correct. Not an inline script in
-//       index.html, because the app is served under a CSP that forbids one.
+//   THREE. Plurals go through Intl.PluralRules, never through `n === 1`.
+//   Russian has four categories and Arabic six; picking between two of them
+//   is wrong for most numbers in both.
+//
+//   The chosen language is applied to <html> BEFORE React mounts, for the
+//   same reason the theme is: a page that paints left-to-right and then
+//   flips is worse than one that starts correct. Not an inline script in
+//   index.html, because the app is served under a CSP that forbids one.
 
 import {
   createContext,

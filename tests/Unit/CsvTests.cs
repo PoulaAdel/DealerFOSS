@@ -6,7 +6,7 @@
 //   an error message depends on.
 //
 // Usage:
-//   Dotnet test
+//   dotnet test
 //
 // Coding Instructions:
 //   Every case here came from what a real dealer export looks like. A comma

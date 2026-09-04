@@ -1,9 +1,16 @@
-// App — routing and the authenticated shell.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  rendered by main.tsx; owns every route.
-// Edit: the guard here is a convenience, not a control. Every screen calls an
-//       API that enforces the same rules server-side, and it is the server's
-//       answer that matters. Hiding a link protects nothing.
+// Overview: Purpose, File Design, and Engineering
+//   App — routing and the authenticated shell.
+//
+// Usage:
+//   Rendered by main.tsx; owns every route.
+//
+// Coding Instructions:
+//   The guard here is a convenience, not a control. Every screen calls an
+//   API that enforces the same rules server-side, and it is the server's
+//   answer that matters. Hiding a link protects nothing.
 
 // Imported from react-router rather than react-router-dom: in v8 the DOM
 // bindings moved into the main package and react-router-dom is a shim. The

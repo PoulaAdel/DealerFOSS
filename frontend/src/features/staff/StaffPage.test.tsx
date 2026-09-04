@@ -1,15 +1,22 @@
-// StaffPage.test — the staff screen, and the properties that make it safe.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: two tests are safeguards rather than coverage.
+// Overview: Purpose, File Design, and Engineering
+//   StaffPage.test — the staff screen, and the properties that make it safe.
 //
-//       "shows the code once and says it cannot be shown again" — if somebody
-//       later adds a convenient "show it again" button, that test should be what
-//       stops them, because the server keeps only a hash and there is nothing to
-//       show.
+// Usage:
+//   npm test.
 //
-//       "shows the server's refusal rather than predicting it" — the screen must
-//       not grow its own copy of the scoping rule. Ask, then show the answer.
+// Coding Instructions:
+//   Two tests are safeguards rather than coverage.
+//
+//   "shows the code once and says it cannot be shown again" — if somebody
+//   later adds a convenient "show it again" button, that test should be what
+//   stops them, because the server keeps only a hash and there is nothing to
+//   show.
+//
+//   "shows the server's refusal rather than predicting it" — the screen must
+//   not grow its own copy of the scoping rule. Ask, then show the answer.
 
 import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';

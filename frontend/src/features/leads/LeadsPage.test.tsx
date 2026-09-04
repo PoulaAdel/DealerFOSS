@@ -1,14 +1,21 @@
-// LeadsPage.test — the enquiry list, and the two things about it that are easy
-// to break by accident.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the trap this file guards is the screen growing its own opinions. The
-//       moves offered must come from the server's `availableMoves` — if a test
-//       here ever asserts that "Working leads offer an appointment", the
-//       transition table has been copied into the browser and the copies will
-//       drift. And there must be no rooftop picker on the list: the server
-//       already filters to the caller's lots, so a picker would promise access
-//       the server refuses.
+// Overview: Purpose, File Design, and Engineering
+//   LeadsPage.test — the enquiry list, and the two things about it that are easy
+//   to break by accident.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The trap this file guards is the screen growing its own opinions. The
+//   moves offered must come from the server's `availableMoves` — if a test
+//   here ever asserts that "Working leads offer an appointment", the
+//   transition table has been copied into the browser and the copies will
+//   drift. And there must be no rooftop picker on the list: the server
+//   already filters to the caller's lots, so a picker would promise access
+//   the server refuses.
 
 import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

@@ -1,22 +1,35 @@
-# End-to-end verification of the tenancy, sign-in, and authorization foundation:
-# two isolated dealer organizations, real sessions, and rooftop-scoped access
-# enforced server-side — over both the organization structure and the stock on
-# each lot.
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# The same assertions run in CI via tests/Integration. This script exists for a
-# manual check against a real running Host.
+# Overview: Purpose, File Design, and Engineering
+#   End-to-end verification of the tenancy, sign-in, and authorization
+#   foundation: two isolated dealer organizations, real sessions, and
+#   rooftop-scoped access enforced server-side — over both the organization
+#   structure and the stock on each lot.
 #
-# Prerequisites: a reachable SQL engine. On Windows, LocalDB is the verified
-# option (see docs/LOCAL-DEVELOPMENT.md):
+#   The same assertions run in CI via tests/Integration. This script exists for
+#   a manual check against a real running host, and it is the gate every
+#   milestone passes before it is committed. It prints PASS or it is not done.
+#
+# Usage:
+#   Prerequisite: a reachable SQL engine. On Windows, LocalDB is the verified
+#   option (see docs/LOCAL-DEVELOPMENT.md):
+#
 #   sqllocaldb start MSSQLLocalDB
 #
-# Usage (from repo root, Windows PowerShell 5.1):
+#   From the repository root, Windows PowerShell 5.1:
+#
 #   & .\deploy\verify-e2e.ps1
 #   & .\deploy\verify-e2e.ps1 -HostConnection "Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False"
 #
-# Pass -Port when something is already on 5080 — typically a development host
-# left running for the frontend. Without it the script's own host cannot bind,
-# and it silently measures whatever is already there instead.
+# Coding Instructions:
+#   PASS -Port WHEN SOMETHING IS ALREADY ON 5080 — typically a development host
+#   left running for the frontend. Without it the script's own host cannot bind,
+#   and it silently measures whatever is already there instead. A green run
+#   against the wrong process is the worst outcome this script can produce.
+#
+#   Every assertion prints what it expected next to what it got, so a failure
+#   reads as a fact rather than as a stack trace. Keep that when adding one.
 
 param(
     [string]$HostConnection = "Server=(localdb)\MSSQLLocalDB;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False",

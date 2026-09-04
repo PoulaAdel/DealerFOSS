@@ -5,7 +5,7 @@
 //   FakeAuthenticator — a passkey authenticator in software, for the tests.
 //
 // Usage:
-//   New FakeAuthenticator(relyingPartyId), then Register(...) and Sign(...).
+//   new FakeAuthenticator(relyingPartyId), then Register(...) and Sign(...).
 //
 // Coding Instructions:
 //   This exists because the alternative was worthless. A passkey test built

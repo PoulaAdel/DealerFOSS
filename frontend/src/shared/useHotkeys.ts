@@ -1,16 +1,23 @@
-// useHotkeys — single keys and two-key sequences, for people who would rather
-// not reach for the mouse.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  useHotkeys({ '?': showHelp, 'g d': goToDashboard })
-// Edit: two rules make the difference between a shortcut and a trap.
+// Overview: Purpose, File Design, and Engineering
+//   useHotkeys — single keys and two-key sequences, for people who would rather
+//   not reach for the mouse.
 //
-//       A key pressed while somebody is typing is a character, not a command.
-//       Anything with a modifier belongs to the browser or the operating system,
-//       and stealing it breaks copy, paste, and find.
+// Usage:
+//   UseHotkeys({ '?': showHelp, 'g d': goToDashboard })
 //
-//       Sequences ("g" then "d") expire after a second. Without that, a stray "g"
-//       leaves the next unrelated keypress armed, and the page jumps somewhere
-//       nobody asked for.
+// Coding Instructions:
+//   Two rules make the difference between a shortcut and a trap.
+//
+//   A key pressed while somebody is typing is a character, not a command.
+//   Anything with a modifier belongs to the browser or the operating system,
+//   and stealing it breaks copy, paste, and find.
+//
+//   Sequences ("g" then "d") expire after a second. Without that, a stray "g"
+//   leaves the next unrelated keypress armed, and the page jumps somewhere
+//   nobody asked for.
 
 import { useEffect, useRef } from 'react';
 

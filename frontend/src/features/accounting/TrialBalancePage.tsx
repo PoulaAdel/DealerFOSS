@@ -1,9 +1,16 @@
-// TrialBalancePage — what every account adds up to, and whether the books agree.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  /accounting.
-// Edit: the "balances" flag is the headline, not a footnote. A trial balance that
-//       does not balance means something was lost on the way in, and that is the
-//       most important thing this screen can tell somebody.
+// Overview: Purpose, File Design, and Engineering
+//   TrialBalancePage — what every account adds up to, and whether the books agree.
+//
+// Usage:
+//   /accounting.
+//
+// Coding Instructions:
+//   The "balances" flag is the headline, not a footnote. A trial balance that
+//   does not balance means something was lost on the way in, and that is the
+//   most important thing this screen can tell somebody.
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../../shared/api';

@@ -1,24 +1,30 @@
-# install-service.ps1 — register a published folder as a Windows service.
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Use (as Administrator, on the target machine):
+# Overview: Purpose, File Design, and Engineering
+#   install-service.ps1 — register a published folder as a Windows service.
+#
+# Usage:
+#   As Administrator, on the target machine:
 #   & .\deploy\install-service.ps1 -Path C:\DealerFOSS\app `
-#       -Connection "Server=.;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False" `
-#       -KeyId 2026-08 -Key "<base64 from new-key.ps1>"
+#   -Connection "Server=.;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False" `
+#   -KeyId 2026-08 -Key "<base64 from new-key.ps1>"
 #
 #   & .\deploy\install-service.ps1 -Uninstall
 #
-# Edit: two things here are deliberate and should not be "simplified".
+# Coding Instructions:
+#   Two things here are deliberate and should not be "simplified".
 #
-#       The key and the connection string are set as SERVICE-SCOPED environment
-#       variables, written into the service's own registry key rather than
-#       machine-wide with setx. Machine-wide means every process on the box can
-#       read the key that decrypts every dealership's connection string,
-#       including anything a person runs from a browser download.
+#   The key and the connection string are set as SERVICE-SCOPED environment
+#   variables, written into the service's own registry key rather than
+#   machine-wide with setx. Machine-wide means every process on the box can
+#   read the key that decrypts every dealership's connection string,
+#   including anything a person runs from a browser download.
 #
-#       The script refuses to install without a key. The application already
-#       refuses to start without one outside Development, so installing anyway
-#       produces a service that fails on boot with a message nobody sees. Better
-#       to fail here, where somebody is watching.
+#   The script refuses to install without a key. The application already
+#   refuses to start without one outside Development, so installing anyway
+#   produces a service that fails on boot with a message nobody sees. Better
+#   to fail here, where somebody is watching.
 
 [CmdletBinding(DefaultParameterSetName = "Install")]
 param(

@@ -1,35 +1,41 @@
-// useDebounced — a value that lags behind, so a keystroke does not become a
-// request.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const typed = useState('');
-//       const settled = useDebounced(typed);
+// Overview: Purpose, File Design, and Engineering
+//   useDebounced — a value that lags behind, so a keystroke does not become a
+//   request.
 //
-//       useEffect(() => {
-//         const stop = new AbortController();
-//         void find(settled, stop.signal);
-//         return () => stop.abort();
-//       }, [settled]);
+// Usage:
+//   const typed = useState('');
+//   const settled = useDebounced(typed);
 //
-// Edit: this is deliberately the SMALLER half of instant search. It only delays
-//       a value; the cancelling is done by the effect that reads it, aborting on
-//       cleanup. Those two together give the property that matters, which is not
-//       "fewer requests" but:
+//   useEffect(() => {
+//   const stop = new AbortController();
+//   void find(settled, stop.signal);
+//   return () => stop.abort();
+//   }, [settled]);
 //
-//         THE LIST NEVER SHOWS RESULTS FOR A QUERY THE BOX NO LONGER HOLDS.
+// Coding Instructions:
+//   This is deliberately the SMALLER half of instant search. It only delays
+//   a value; the cancelling is done by the effect that reads it, aborting on
+//   cleanup. Those two together give the property that matters, which is not
+//   "fewer requests" but:
 //
-//       That is the whole reason this is not a two-line change. Without
-//       cancellation, typing "focus" fires five searches whose answers arrive in
-//       whatever order the network chooses, and the one that lands last wins —
-//       so a slow reply for "f" can overwrite the right answer for "focus", and
-//       the screen sits there confidently showing the wrong list. An aborted
-//       request never resolves, so it can never win that race.
+//   THE LIST NEVER SHOWS RESULTS FOR A QUERY THE BOX NO LONGER HOLDS.
 //
-//       Debouncing alone would NOT fix it: it makes the race rarer, which is
-//       worse than leaving it obvious.
+//   That is the whole reason this is not a two-line change. Without
+//   cancellation, typing "focus" fires five searches whose answers arrive in
+//   whatever order the network chooses, and the one that lands last wins —
+//   so a slow reply for "f" can overwrite the right answer for "focus", and
+//   the screen sits there confidently showing the wrong list. An aborted
+//   request never resolves, so it can never win that race.
 //
-//       250ms is chosen to sit under the ~300ms at which a pause starts to feel
-//       like waiting, while still collapsing an ordinary typing burst into one
-//       request.
+//   Debouncing alone would NOT fix it: it makes the race rarer, which is
+//   worse than leaving it obvious.
+//
+//   250ms is chosen to sit under the ~300ms at which a pause starts to feel
+//   like waiting, while still collapsing an ordinary typing burst into one
+//   request.
 
 import { useEffect, useState } from 'react';
 

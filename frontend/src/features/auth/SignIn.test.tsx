@@ -1,14 +1,21 @@
-// SignIn.test — the passkey door, beside the password rather than in front of it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: the placement is a decision, not a layout accident (2026-08-15, doc 11
-//       §7), so it is asserted rather than left to a screenshot. The password
-//       remains the primary path; the passkey is offered to whoever has one.
+// Overview: Purpose, File Design, and Engineering
+//   SignIn.test — the passkey door, beside the password rather than in front of it.
 //
-//       The other property worth keeping: the ceremony sends NO email address.
-//       The credential identifies the account, and asking for an email first
-//       would make this screen able to answer "does this person work here",
-//       which the sign-in ceremony is deliberately built not to do.
+// Usage:
+//   npm test.
+//
+// Coding Instructions:
+//   The placement is a decision, not a layout accident (2026-08-15, doc 11
+//   §7), so it is asserted rather than left to a screenshot. The password
+//   remains the primary path; the passkey is offered to whoever has one.
+//
+//   The other property worth keeping: the ceremony sends NO email address.
+//   The credential identifies the account, and asking for an email first
+//   would make this screen able to answer "does this person work here",
+//   which the sign-in ceremony is deliberately built not to do.
 
 import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';

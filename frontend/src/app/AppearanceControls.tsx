@@ -1,22 +1,29 @@
-// AppearanceControls — the theme, and the language the application speaks.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  rendered in the shell bar and in the administration console's.
-// Edit: theme is a segmented control rather than a toggle. A toggle can only
-//       say "dark: on or off", and the third state — follow the machine — is
-//       the one most people actually want. It also cannot say which of the two
-//       it is currently showing you, which is precisely what somebody looking
-//       at the control wants to know.
+// Overview: Purpose, File Design, and Engineering
+//   AppearanceControls — the theme, and the language the application speaks.
 //
-//       Language is a <select> rather than five buttons: five segments do not
-//       fit the bar, and a select is the control every operating system already
-//       renders as a language picker. Each option names itself IN ITSELF —
-//       "العربية", not "Arabic" — because somebody who needs to switch to
-//       Arabic is, by definition, the person least able to find the word
-//       "Arabic" written in English.
+// Usage:
+//   Rendered in the shell bar and in the administration console's.
 //
-//       There is no direction control any more. Direction follows the language
-//       (see shared/i18n), because "Arabic, left to right" is not a preference
-//       anybody holds.
+// Coding Instructions:
+//   Theme is a segmented control rather than a toggle. A toggle can only
+//   say "dark: on or off", and the third state — follow the machine — is
+//   the one most people actually want. It also cannot say which of the two
+//   it is currently showing you, which is precisely what somebody looking
+//   at the control wants to know.
+//
+//   Language is a <select> rather than five buttons: five segments do not
+//   fit the bar, and a select is the control every operating system already
+//   renders as a language picker. Each option names itself IN ITSELF —
+//   "العربية", not "Arabic" — because somebody who needs to switch to
+//   Arabic is, by definition, the person least able to find the word
+//   "Arabic" written in English.
+//
+//   There is no direction control any more. Direction follows the language
+//   (see shared/i18n), because "Arabic, left to right" is not a preference
+//   anybody holds.
 
 import { useAppearance, type ThemeChoice } from '../shared/appearance';
 import { LANGUAGES, useI18n, type LanguageCode } from '../shared/i18n';

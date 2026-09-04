@@ -1,18 +1,28 @@
-// de — German.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Edit: the trade words are the ones a German Autohaus actually uses. A
-//       dealership is an *Autohaus*, not a "Händlerschaft"; stock is
-//       *Fahrzeugbestand*; a lead is an *Anfrage*. Accounting follows HGB
-//       usage — *Summen- und Saldenliste* is the trial balance, and
-//       *Buchungsperiode* is the period that gets closed.
+// Overview: Purpose, File Design, and Engineering
+//   de — German.
 //
-//       German compounds run long, and the shell's navigation is the tightest
-//       space in the application. Where the full term does not fit, the short
-//       form goes in `nav.*` and the full one in the page heading — the same
-//       word in both places would either overflow the bar or under-explain the
-//       screen. `Saldenliste` in the bar, `Summen- und Saldenliste` on the page.
+// Usage:
+//   Loaded by shared/i18n/index.tsx and selected by the language
+//   picker. Never imported by a screen — a screen calls t(key), and
+//   which catalogue answers is not its business.
 //
-//       Formal *Sie* throughout. This is software somebody uses at work.
+// Coding Instructions:
+//   The trade words are the ones a German Autohaus actually uses. A
+//   dealership is an *Autohaus*, not a "Händlerschaft"; stock is
+//   *Fahrzeugbestand*; a lead is an *Anfrage*. Accounting follows HGB
+//   usage — *Summen- und Saldenliste* is the trial balance, and
+//   *Buchungsperiode* is the period that gets closed.
+//
+//   German compounds run long, and the shell's navigation is the tightest
+//   space in the application. Where the full term does not fit, the short
+//   form goes in `nav.*` and the full one in the page heading — the same
+//   word in both places would either overflow the bar or under-explain the
+//   screen. `Saldenliste` in the bar, `Summen- und Saldenliste` on the page.
+//
+//   Formal *Sie* throughout. This is software somebody uses at work.
 
 import type { Catalogue } from '../index';
 

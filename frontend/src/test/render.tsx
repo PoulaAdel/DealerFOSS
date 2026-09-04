@@ -1,25 +1,31 @@
-// render — mounting a screen the way the application actually mounts it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  import { render, screen } from '../../test/render';
-//       ...exactly as you would from '@testing-library/react'.
+// Overview: Purpose, File Design, and Engineering
+//   render — mounting a screen the way the application actually mounts it.
 //
-// Edit: this exists because every screen now reads its words from I18nProvider,
-//       so `render(<CustomersPage />)` bare is not a lighter test — it is a tree
-//       the application never builds, and it throws.
+// Usage:
+//   import { render, screen } from '../../test/render';
+//   ...exactly as you would from '@testing-library/react'.
 //
-//       Overriding `render` rather than adding a wrapper at each of the ~60 call
-//       sites keeps the tests reading as they did, and means the next context
-//       the shell gains is added HERE instead of in seventeen files. That is the
-//       same argument the shell itself makes for putting providers above the
-//       router.
+// Coding Instructions:
+//   This exists because every screen now reads its words from I18nProvider,
+//   so `render(<CustomersPage />)` bare is not a lighter test — it is a tree
+//   the application never builds, and it throws.
 //
-//       The provider is NOT added silently to hide a design problem: a screen
-//       used outside the provider in the real application is a bug, and
-//       i18n.test.tsx still asserts that `useI18n` throws in that case. This
-//       file supplies the provider because the real tree has one.
+//   Overriding `render` rather than adding a wrapper at each of the ~60 call
+//   sites keeps the tests reading as they did, and means the next context
+//   the shell gains is added HERE instead of in seventeen files. That is the
+//   same argument the shell itself makes for putting providers above the
+//   router.
 //
-//       Tests that need the raw, unwrapped mount — the two that prove a
-//       provider is required — import from '@testing-library/react' directly.
+//   The provider is NOT added silently to hide a design problem: a screen
+//   used outside the provider in the real application is a bug, and
+//   i18n.test.tsx still asserts that `useI18n` throws in that case. This
+//   file supplies the provider because the real tree has one.
+//
+//   Tests that need the raw, unwrapped mount — the two that prove a
+//   provider is required — import from '@testing-library/react' directly.
 
 import { render as testingLibraryRender, type RenderOptions } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';

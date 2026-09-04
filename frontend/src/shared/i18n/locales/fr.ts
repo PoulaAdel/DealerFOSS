@@ -1,15 +1,25 @@
-// fr — French.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Edit: dealership vocabulary, not literal translation. A `lead` is a *demande*
-//       and a `deal` is a *vente*; "piste" and "affaire" are marketing and
-//       banking words that a French vehicle salesperson does not use for these.
-//       Accounting terms follow the plan comptable: *balance générale*, *grand
-//       livre*, *exercice*.
+// Overview: Purpose, File Design, and Engineering
+//   fr — French.
 //
-//       Typography is French typography: a narrow no-break space ( )
-//       before ? ! : and ; — a plain space lets the punctuation wrap onto the
-//       next line on its own, which looks like a rendering fault. Quotation
-//       marks are « ». The apostrophe is ’ and not '.
+// Usage:
+//   Loaded by shared/i18n/index.tsx and selected by the language
+//   picker. Never imported by a screen — a screen calls t(key), and
+//   which catalogue answers is not its business.
+//
+// Coding Instructions:
+//   Dealership vocabulary, not literal translation. A `lead` is a *demande*
+//   and a `deal` is a *vente*; "piste" and "affaire" are marketing and
+//   banking words that a French vehicle salesperson does not use for these.
+//   Accounting terms follow the plan comptable: *balance générale*, *grand
+//   livre*, *exercice*.
+//
+//   Typography is French typography: a narrow no-break space ( )
+//   before ? ! : and ; — a plain space lets the punctuation wrap onto the
+//   next line on its own, which looks like a rendering fault. Quotation
+//   marks are « ». The apostrophe is ’ and not '.
 
 import type { Catalogue } from '../index';
 

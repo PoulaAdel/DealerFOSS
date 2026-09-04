@@ -1,9 +1,16 @@
-// InventoryPage.test — every state a real screen needs, actually drawn.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the states are the contract (doc 10 §5). A screen that only renders the
-//       happy path is not finished, and this file is what stops that claim being
-//       taken on trust.
+// Overview: Purpose, File Design, and Engineering
+//   InventoryPage.test — every state a real screen needs, actually drawn.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The states are the contract (doc 10 §5). A screen that only renders the
+//   happy path is not finished, and this file is what stops that claim being
+//   taken on trust.
 
 import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';

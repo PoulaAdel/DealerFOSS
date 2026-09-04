@@ -1,18 +1,24 @@
-# publish.ps1 — build the thing an operator installs.
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Use:  & .\deploy\publish.ps1
-#       & .\deploy\publish.ps1 -Output D:\builds\dealerfoss -Runtime win-x64
+# Overview: Purpose, File Design, and Engineering
+#   publish.ps1 — build the thing an operator installs.
 #
-# Edit: the frontend build is the step that is easy to forget and impossible to
-#       notice. Without it the application starts, serves the API, answers health,
-#       and shows a blank page — because wwwroot is empty and the shell fallback
-#       is guarded. So this script builds the frontend FIRST and refuses to
-#       continue if it produced nothing, rather than publishing a package whose
-#       failure only appears in a browser.
+# Usage:
+#   & .\deploy\publish.ps1
+#   & .\deploy\publish.ps1 -Output D:\builds\dealerfoss -Runtime win-x64
 #
-#       Node is not installed on the development host and does not need to be:
-#       the toolchain lives in the dealerfoss-node container. The script uses
-#       whichever is available and says which it used.
+# Coding Instructions:
+#   The frontend build is the step that is easy to forget and impossible to
+#   notice. Without it the application starts, serves the API, answers health,
+#   and shows a blank page — because wwwroot is empty and the shell fallback
+#   is guarded. So this script builds the frontend FIRST and refuses to
+#   continue if it produced nothing, rather than publishing a package whose
+#   failure only appears in a browser.
+#
+#   Node is not installed on the development host and does not need to be:
+#   the toolchain lives in the dealerfoss-node container. The script uses
+#   whichever is available and says which it used.
 
 [CmdletBinding()]
 param(

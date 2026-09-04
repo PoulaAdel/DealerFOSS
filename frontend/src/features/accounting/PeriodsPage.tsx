@@ -1,20 +1,27 @@
-// PeriodsPage — the months of the books, and closing them.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /accounting/periods.
-// Edit: three things here are deliberate.
+// Overview: Purpose, File Design, and Engineering
+//   PeriodsPage — the months of the books, and closing them.
 //
-//       (1) There is no countdown, no "closes in N days", and no automatic
-//       anything. Locking is an act somebody performs, because the close runs
-//       over however many business days the work takes. A screen that implied a
-//       deadline would be describing a system that does not exist.
+// Usage:
+//   Reachable at /accounting/periods.
 //
-//       (2) Closing asks for confirmation and reopening demands a reason. They
-//       are not symmetrical acts: closing is the routine end of month-end work,
-//       reopening lets a figure somebody already reported move.
+// Coding Instructions:
+//   Three things here are deliberate.
 //
-//       (3) The entry count sits next to each month. Somebody about to close is
-//       checking it is the month they think it is, and a count is the cheapest
-//       version of that check.
+//   (1) There is no countdown, no "closes in N days", and no automatic
+//   anything. Locking is an act somebody performs, because the close runs
+//   over however many business days the work takes. A screen that implied a
+//   deadline would be describing a system that does not exist.
+//
+//   (2) Closing asks for confirmation and reopening demands a reason. They
+//   are not symmetrical acts: closing is the routine end of month-end work,
+//   reopening lets a figure somebody already reported move.
+//
+//   (3) The entry count sits next to each month. Somebody about to close is
+//   checking it is the month they think it is, and a count is the cheapest
+//   version of that check.
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';

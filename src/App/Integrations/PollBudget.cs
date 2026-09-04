@@ -5,7 +5,7 @@
 //   PollBudget — waiting on a job the provider has already accepted.
 //
 // Usage:
-//   Var budget = PollBudget.Start(timing, now); then budget.Next(now, hint)
+//   var budget = PollBudget.Start(timing, now); then budget.Next(now, hint)
 //   each time the provider says "check back in N seconds".
 //
 // Coding Instructions:

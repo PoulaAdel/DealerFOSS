@@ -1,26 +1,33 @@
-// DiaryPanel — the cars that are coming, on the same screen as the cars that are
-// here.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mounted at the top of WorkshopPage. Not a route of its own.
-// Edit: four things here are deliberate.
+// Overview: Purpose, File Design, and Engineering
+//   DiaryPanel — the cars that are coming, on the same screen as the cars that are
+//   here.
 //
-//       (1) It lives ON the workshop screen rather than behind a second tab. The
-//       question a service manager asks is "what have I got today" and the answer
-//       is both halves at once — what is on the ramps and what is still to come.
-//       Splitting them across two routes makes somebody hold the answer in their
-//       head.
+// Usage:
+//   Mounted at the top of WorkshopPage. Not a route of its own.
 //
-//       (2) "It's here" opens the job AND selects it, in one click. The server
-//       does both in one transaction; this screen would be lying to offer them as
-//       two steps.
+// Coding Instructions:
+//   Four things here are deliberate.
 //
-//       (3) The day's load comes from the server, not from summing the rows here.
-//       An arrived car's hours belong to its job, and a browser that re-derived
-//       the figure would be a second copy of that rule — the one that drifts.
+//   (1) It lives ON the workshop screen rather than behind a second tab. The
+//   question a service manager asks is "what have I got today" and the answer
+//   is both halves at once — what is on the ramps and what is still to come.
+//   Splitting them across two routes makes somebody hold the answer in their
+//   head.
 //
-//       (4) A refusal is shown, never predicted. Booking into a full day is
-//       allowed on purpose (see AppointmentService), so there is nothing for this
-//       screen to grey out.
+//   (2) "It's here" opens the job AND selects it, in one click. The server
+//   does both in one transaction; this screen would be lying to offer them as
+//   two steps.
+//
+//   (3) The day's load comes from the server, not from summing the rows here.
+//   An arrived car's hours belong to its job, and a browser that re-derived
+//   the figure would be a second copy of that rule — the one that drifts.
+//
+//   (4) A refusal is shown, never predicted. Booking into a full day is
+//   allowed on purpose (see AppointmentService), so there is nothing for this
+//   screen to grey out.
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';

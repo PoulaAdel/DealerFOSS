@@ -1,11 +1,18 @@
-// WorkshopPage.test — the workshop screen, and the safeguards on it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test.
-// Edit: the test that matters most is "offers Invoice even with work unanswered".
-//       It looks wrong at a glance, and it is the point: the screen must ASK and
-//       show the server's refusal, because that refusal names the specific job
-//       somebody still needs to ring about. A disabled button would be a second
-//       copy of the rule and a worse message.
+// Overview: Purpose, File Design, and Engineering
+//   WorkshopPage.test — the workshop screen, and the safeguards on it.
+//
+// Usage:
+//   npm test.
+//
+// Coding Instructions:
+//   The test that matters most is "offers Invoice even with work unanswered".
+//   It looks wrong at a glance, and it is the point: the screen must ASK and
+//   show the server's refusal, because that refusal names the specific job
+//   somebody still needs to ring about. A disabled button would be a second
+//   copy of the rule and a worse message.
 
 import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

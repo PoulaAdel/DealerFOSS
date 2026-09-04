@@ -1,16 +1,23 @@
-// DealTerms — putting the numbers on a deal while it is still a draft.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  rendered by DealsPage inside an open deal, only when termsAreOpen.
-// Edit: it is mounted on `termsAreOpen` rather than on the status string, and it
-//       **disappears** rather than being disabled once a deal is submitted. A
-//       disabled form still looks like somewhere to type; somebody fills it in,
-//       presses save, and finds out their work is gone. Absent is kinder and
-//       truer — the numbers really are frozen at that point.
+// Overview: Purpose, File Design, and Engineering
+//   DealTerms — putting the numbers on a deal while it is still a draft.
 //
-//       Saving replaces the whole set, because that is what the API does
-//       (`DealTerms` is not a patch). So the form is always seeded from what is
-//       already there — otherwise pressing save after editing one line would
-//       silently delete the rest.
+// Usage:
+//   Rendered by DealsPage inside an open deal, only when termsAreOpen.
+//
+// Coding Instructions:
+//   It is mounted on `termsAreOpen` rather than on the status string, and it
+//   **disappears** rather than being disabled once a deal is submitted. A
+//   disabled form still looks like somewhere to type; somebody fills it in,
+//   presses save, and finds out their work is gone. Absent is kinder and
+//   truer — the numbers really are frozen at that point.
+//
+//   Saving replaces the whole set, because that is what the API does
+//   (`DealTerms` is not a patch). So the form is always seeded from what is
+//   already there — otherwise pressing save after editing one line would
+//   silently delete the rest.
 
 import { useState } from 'react';
 import { post } from '../../shared/api';

@@ -1,11 +1,18 @@
-// CustomersPage.test — searching, and the duplicate check that stands in front
-// of every new customer.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the one worth guarding hardest is that **adding somebody always looks
-//       for them first**. Two records for the same person splits their service
-//       history and their deals, and nobody notices until it matters. If that
-//       check is ever removed as friction, these tests are what says so.
+// Overview: Purpose, File Design, and Engineering
+//   CustomersPage.test — searching, and the duplicate check that stands in front
+//   of every new customer.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The one worth guarding hardest is that **adding somebody always looks
+//   for them first**. Two records for the same person splits their service
+//   history and their deals, and nobody notices until it matters. If that
+//   check is ever removed as friction, these tests are what says so.
 
 import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';

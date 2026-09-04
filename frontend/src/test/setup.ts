@@ -1,9 +1,16 @@
-// Test setup — the shared arrangements every component test relies on.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  loaded automatically by vitest (see vite.config.ts).
-// Edit: fetch is stubbed rather than intercepted at the network layer, because
-//       what these tests are for is proving the components paint. A test that
-//       needs a real server is an integration test and lives in tests/Integration.
+// Overview: Purpose, File Design, and Engineering
+//   Test setup — the shared arrangements every component test relies on.
+//
+// Usage:
+//   Loaded automatically by vitest (see vite.config.ts).
+//
+// Coding Instructions:
+//   Fetch is stubbed rather than intercepted at the network layer, because
+//   what these tests are for is proving the components paint. A test that
+//   needs a real server is an integration test and lives in tests/Integration.
 
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';

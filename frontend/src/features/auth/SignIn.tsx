@@ -1,22 +1,29 @@
-// SignIn — email, password, and the six-digit code when the account has one.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the only route reachable while signed out.
-// Edit: the second step is a separate render rather than a separate page, so a
-//       refresh does not strand somebody holding a challenge they cannot use.
-//       Errors are announced to assistive technology, and focus moves to the
-//       code field when it appears — a screen reader user must be told the form
-//       changed under them.
+// Overview: Purpose, File Design, and Engineering
+//   SignIn — email, password, and the six-digit code when the account has one.
 //
-//       THE PASSKEY BUTTON SITS BESIDE THE PASSWORD FIELD, NOT ABOVE THE FORM
-//       (decided 2026-08-15, doc 11 §7). The password is still how almost
-//       everybody gets in, and putting a newer control in front of it would make
-//       the common case read as the exception. Beside it, it is offered to
-//       anybody who has one and ignored by everybody who has not.
+// Usage:
+//   The only route reachable while signed out.
 //
-//       It needs the dealer group and nothing else — no email. That is not an
-//       oversight: the credential identifies the account, so asking for one
-//       first would make this screen able to answer "does this person work
-//       here", which the sign-in ceremony is deliberately built not to do.
+// Coding Instructions:
+//   The second step is a separate render rather than a separate page, so a
+//   refresh does not strand somebody holding a challenge they cannot use.
+//   Errors are announced to assistive technology, and focus moves to the
+//   code field when it appears — a screen reader user must be told the form
+//   changed under them.
+//
+//   THE PASSKEY BUTTON SITS BESIDE THE PASSWORD FIELD, NOT ABOVE THE FORM
+//   (decided 2026-08-15, doc 11 §7). The password is still how almost
+//   everybody gets in, and putting a newer control in front of it would make
+//   the common case read as the exception. Beside it, it is offered to
+//   anybody who has one and ignored by everybody who has not.
+//
+//   It needs the dealer group and nothing else — no email. That is not an
+//   oversight: the credential identifies the account, so asking for one
+//   first would make this screen able to answer "does this person work
+//   here", which the sign-in ceremony is deliberately built not to do.
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';

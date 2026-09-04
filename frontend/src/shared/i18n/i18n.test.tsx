@@ -1,10 +1,17 @@
-// i18n.test — the words change, the page turns round, and the plurals are right.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  npm test
-// Edit: the catalogue-completeness check at the bottom is the one that earns its
-//       keep. TypeScript already fails the build on a MISSING key, but it cannot
-//       see a key that was copied across and left in English — which is the way
-//       a translation actually rots. That test reads the files.
+// Overview: Purpose, File Design, and Engineering
+//   i18n.test — the words change, the page turns round, and the plurals are right.
+//
+// Usage:
+//   npm test
+//
+// Coding Instructions:
+//   The catalogue-completeness check at the bottom is the one that earns its
+//   keep. TypeScript already fails the build on a MISSING key, but it cannot
+//   see a key that was copied across and left in English — which is the way
+//   a translation actually rots. That test reads the files.
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

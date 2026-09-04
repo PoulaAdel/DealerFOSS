@@ -1,10 +1,17 @@
-// contracts — the shapes the API returns.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  api<InventoryUnitSummary[]>('/inventory')
-// Edit: these mirror the read models in src/App/**/I<Feature>.cs. They are hand
-//       written for now; when the API grows an OpenAPI document this file is
-//       generated from it and stops drifting. Until then, changing a record on
-//       the server means changing it here in the same commit.
+// Overview: Purpose, File Design, and Engineering
+//   contracts — the shapes the API returns.
+//
+// Usage:
+//   Api<InventoryUnitSummary[]>('/inventory')
+//
+// Coding Instructions:
+//   These mirror the read models in src/App/**/I<Feature>.cs. They are hand
+//   written for now; when the API grows an OpenAPI document this file is
+//   generated from it and stops drifting. Until then, changing a record on
+//   the server means changing it here in the same commit.
 
 export type SignInResponse =
   | { secondFactorRequired?: false; expiresAt: string }

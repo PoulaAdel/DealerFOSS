@@ -1,10 +1,17 @@
-// session — who is signed in, as far as the browser can tell.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  const { user, signOut } = useSession() inside the authenticated shell.
-// Edit: the cookie is HttpOnly, so this cannot read it. "Signed in?" is answered
-//       by asking the server, which is also the only answer worth having — a
-//       session revoked on another device must stop working here on the next
-//       request, and only the server knows that.
+// Overview: Purpose, File Design, and Engineering
+//   session — who is signed in, as far as the browser can tell.
+//
+// Usage:
+//   const { user, signOut } = useSession() inside the authenticated shell.
+//
+// Coding Instructions:
+//   The cookie is HttpOnly, so this cannot read it. "Signed in?" is answered
+//   by asking the server, which is also the only answer worth having — a
+//   session revoked on another device must stop working here on the next
+//   request, and only the server knows that.
 
 import {
   createContext,

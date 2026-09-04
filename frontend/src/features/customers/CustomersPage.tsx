@@ -1,19 +1,26 @@
-// CustomersPage — finding a customer, and adding one without making a second
-// copy of somebody who is already here.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reachable at /customers. The page a receptionist opens fifty times a day.
-// Edit: the rule worth protecting is that **adding somebody goes through a
-//       duplicate check first**. Two records for the same person is the failure
-//       that quietly makes a dealer management system untrustworthy: their
-//       service history splits, their deals sit under the wrong name, and
-//       nobody notices until it matters. The check is not a warning that can be
-//       clicked past without reading — it shows who it found and makes somebody
-//       choose.
+// Overview: Purpose, File Design, and Engineering
+//   CustomersPage — finding a customer, and adding one without making a second
+//   copy of somebody who is already here.
 //
-//       It is deliberately not a hard refusal. Two people genuinely do share a
-//       name, and a shop that cannot record the second one will get a fake name
-//       typed in instead. The screen's job is to make the duplicate obvious, not
-//       to decide.
+// Usage:
+//   Reachable at /customers. The page a receptionist opens fifty times a day.
+//
+// Coding Instructions:
+//   The rule worth protecting is that **adding somebody goes through a
+//   duplicate check first**. Two records for the same person is the failure
+//   that quietly makes a dealer management system untrustworthy: their
+//   service history splits, their deals sit under the wrong name, and
+//   nobody notices until it matters. The check is not a warning that can be
+//   clicked past without reading — it shows who it found and makes somebody
+//   choose.
+//
+//   It is deliberately not a hard refusal. Two people genuinely do share a
+//   name, and a shop that cannot record the second one will get a fake name
+//   typed in instead. The screen's job is to make the duplicate obvious, not
+//   to decide.
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
