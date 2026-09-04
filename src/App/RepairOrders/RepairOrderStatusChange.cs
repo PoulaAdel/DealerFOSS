@@ -1,11 +1,18 @@
-// RepairOrderStatusChange — one line of a job's history: it moved from here to
-// there, then, by whom, and why.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  written by RepairOrder.ChangeStatus; never constructed directly.
-// Edit: append-only (ADR-016). This is the record of what a car was billed for
-//       and when — a service invoice is the document a customer disputes months
-//       later, and a history that can be rewritten answers nothing. TenantDb
-//       refuses to update or delete anything marked IAppendOnly.
+// Overview: Purpose, File Design, and Engineering
+//   RepairOrderStatusChange — one line of a job's history: it moved from here to
+//   there, then, by whom, and why.
+//
+// Usage:
+//   Written by RepairOrder.ChangeStatus; never constructed directly.
+//
+// Coding Instructions:
+//   Append-only (ADR-016). This is the record of what a car was billed for
+//   and when — a service invoice is the document a customer disputes months
+//   later, and a history that can be rewritten answers nothing. TenantDb
+//   refuses to update or delete anything marked IAppendOnly.
 
 using DealerFOSS.Core;
 

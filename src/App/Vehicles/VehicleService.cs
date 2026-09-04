@@ -1,11 +1,18 @@
-// VehicleService — finding, reading, and recording vehicles.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IVehicles.
-// Edit: a vehicle is organization-shared, so there is no rooftop filter here —
-//       only a permission check. That is the documented model (doc 04 §1): the
-//       same car is bought at one location, serviced at another, and traded back
-//       in at a third, and hiding it by location would make staff record it three
-//       times. Rooftop scope lives on InventoryUnit, in InventoryService.
+// Overview: Purpose, File Design, and Engineering
+//   VehicleService — finding, reading, and recording vehicles.
+//
+// Usage:
+//   Through IVehicles.
+//
+// Coding Instructions:
+//   A vehicle is organization-shared, so there is no rooftop filter here —
+//   only a permission check. That is the documented model (doc 04 §1): the
+//   same car is bought at one location, serviced at another, and traded back
+//   in at a third, and hiding it by location would make staff record it three
+//   times. Rooftop scope lives on InventoryUnit, in InventoryService.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

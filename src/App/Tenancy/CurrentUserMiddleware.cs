@@ -1,17 +1,24 @@
-// CurrentUserMiddleware — identifies the caller from their session cookie, after
-// the tenant is known.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  automatic for every /api/v1 path; runs after TenantMiddleware. Login and
-//       logout are exempt, since those are where a session is obtained or ended.
-// Edit: the session is checked against the database on every request, so
-//       revoking one takes effect immediately rather than whenever a token would
-//       have expired. Do not cache that lookup without also solving revocation —
-//       that trade is the whole reason sessions are durable rather than stateless.
+// Overview: Purpose, File Design, and Engineering
+//   CurrentUserMiddleware — identifies the caller from their session cookie, after
+//   the tenant is known.
 //
-//       The same check reports whether the caller owes their organization a
-//       second factor. If they do, this middleware lets them reach the enrolment
-//       path and nothing else. Enforcing it here rather than in each endpoint is
-//       the point: a capability added next year is covered without being told.
+// Usage:
+//   Automatic for every /api/v1 path; runs after TenantMiddleware. Login and
+//   logout are exempt, since those are where a session is obtained or ended.
+//
+// Coding Instructions:
+//   The session is checked against the database on every request, so
+//   revoking one takes effect immediately rather than whenever a token would
+//   have expired. Do not cache that lookup without also solving revocation —
+//   that trade is the whole reason sessions are durable rather than stateless.
+//
+//   The same check reports whether the caller owes their organization a
+//   second factor. If they do, this middleware lets them reach the enrolment
+//   path and nothing else. Enforcing it here rather than in each endpoint is
+//   the point: a capability added next year is covered without being told.
 
 using DealerFOSS.Administration;
 using DealerFOSS.Core;

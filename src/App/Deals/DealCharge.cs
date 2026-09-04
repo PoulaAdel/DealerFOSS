@@ -1,11 +1,18 @@
-// DealCharge — one line on a deal: the car, a fee, a discount, an accessory.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  added through Deal.SetTerms, never constructed directly, so the sign
-//       rules and the Draft-only restriction always apply.
-// Edit: the sign convention is load-bearing. A discount is stored negative so the
-//       subtotal is a plain sum — the alternative, storing it positive and
-//       remembering to subtract it, is how a total ends up wrong on one screen
-//       and right on another.
+// Overview: Purpose, File Design, and Engineering
+//   DealCharge — one line on a deal: the car, a fee, a discount, an accessory.
+//
+// Usage:
+//   Added through Deal.SetTerms, never constructed directly, so the sign
+//   rules and the Draft-only restriction always apply.
+//
+// Coding Instructions:
+//   The sign convention is load-bearing. A discount is stored negative so the
+//   subtotal is a plain sum — the alternative, storing it positive and
+//   remembering to subtract it, is how a total ends up wrong on one screen
+//   and right on another.
 
 namespace DealerFOSS.Deals;
 

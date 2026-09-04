@@ -1,26 +1,33 @@
-// Appointment — a promise that a car will arrive, and the job it becomes.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Appointment.Book(...), then Arrive(repairOrderId) when the car turns up,
-//       or MissedIt / Cancel when it does not.
-// Edit: an appointment is not a repair order with an earlier date on it. It is a
-//       promise, and the difference matters in three places.
+// Overview: Purpose, File Design, and Engineering
+//   Appointment — a promise that a car will arrive, and the job it becomes.
 //
-//       ONE. A promise becomes a job EXACTLY ONCE. Arriving twice is refused by
-//       name, because the second call would open a second job against the same
-//       car and the workshop would bill for one visit twice. This is the
-//       invariant that makes "Appointment -> RO reconciles to its source"
-//       (roadmap I5) true rather than asserted.
+// Usage:
+//   Appointment.Book(...), then Arrive(repairOrderId) when the car turns up,
+//   or MissedIt / Cancel when it does not.
 //
-//       TWO. A car that never came is RECORDED, not deleted. A no-show is the
-//       single most useful thing in a service diary — it is how a manager knows
-//       which customers to ring the day before — and deleting the row destroys
-//       exactly that. Cancelled and NoShow are different facts and are kept
-//       apart: one is the customer telling you, the other is silence.
+// Coding Instructions:
+//   An appointment is not a repair order with an earlier date on it. It is a
+//   promise, and the difference matters in three places.
 //
-//       THREE. The estimate is hours of WORKSHOP TIME, not a duration on a
-//       calendar. Two cars booked at nine o'clock is normal; twelve hours of work
-//       booked into an eight-hour day is not. The entity records the estimate and
-//       refuses nothing — see the note on capacity in AppointmentService.
+//   ONE. A promise becomes a job EXACTLY ONCE. Arriving twice is refused by
+//   name, because the second call would open a second job against the same
+//   car and the workshop would bill for one visit twice. This is the
+//   invariant that makes "Appointment -> RO reconciles to its source"
+//   (roadmap I5) true rather than asserted.
+//
+//   TWO. A car that never came is RECORDED, not deleted. A no-show is the
+//   single most useful thing in a service diary — it is how a manager knows
+//   which customers to ring the day before — and deleting the row destroys
+//   exactly that. Cancelled and NoShow are different facts and are kept
+//   apart: one is the customer telling you, the other is silence.
+//
+//   THREE. The estimate is hours of WORKSHOP TIME, not a duration on a
+//   calendar. Two cars booked at nine o'clock is normal; twelve hours of work
+//   booked into an eight-hour day is not. The entity records the estimate and
+//   refuses nothing — see the note on capacity in AppointmentService.
 
 using DealerFOSS.Core;
 

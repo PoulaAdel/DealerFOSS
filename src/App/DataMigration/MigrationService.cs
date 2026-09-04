@@ -1,14 +1,21 @@
-// MigrationService — staging a file, and reading back what happened to it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IMigration.
-// Edit: this does not import anything. It validates that a file is the shape it
-//       claims to be, records every row untouched, and stops. The importing is
-//       ImportRunner's job and happens later, in the worker.
+// Overview: Purpose, File Design, and Engineering
+//   MigrationService — staging a file, and reading back what happened to it.
 //
-//       The header check is here rather than in the runner on purpose: a file
-//       with the wrong columns is a mistake somebody made two seconds ago and
-//       can fix immediately, so telling them now beats queueing a job that is
-//       certain to fail every row.
+// Usage:
+//   Through IMigration.
+//
+// Coding Instructions:
+//   This does not import anything. It validates that a file is the shape it
+//   claims to be, records every row untouched, and stops. The importing is
+//   ImportRunner's job and happens later, in the worker.
+//
+//   The header check is here rather than in the runner on purpose: a file
+//   with the wrong columns is a mistake somebody made two seconds ago and
+//   can fix immediately, so telling them now beats queueing a job that is
+//   certain to fail every row.
 
 using System.Globalization;
 using System.Security.Cryptography;

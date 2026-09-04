@@ -1,9 +1,16 @@
-// ITenantResolver — turns a tenant key into a resolved connection.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  called by Host/Tenancy/TenantMiddleware once per request. A null result
-//       means unknown or not active; the caller decides the response.
-// Edit: keep the "null means refuse" contract. Returning a default tenant here
-//       would silently route a request into the wrong dealer's data.
+// Overview: Purpose, File Design, and Engineering
+//   ITenantResolver — turns a tenant key into a resolved connection.
+//
+// Usage:
+//   Called by Host/Tenancy/TenantMiddleware once per request. A null result
+//   means unknown or not active; the caller decides the response.
+//
+// Coding Instructions:
+//   Keep the "null means refuse" contract. Returning a default tenant here
+//   would silently route a request into the wrong dealer's data.
 
 using DealerFOSS.Core;
 

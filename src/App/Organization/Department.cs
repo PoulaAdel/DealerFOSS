@@ -1,8 +1,15 @@
-// Department — a department inside a rooftop (Sales, Service, Parts...).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created beneath a Rooftop.
-// Edit: pure domain — no EF or ASP.NET types. DepartmentKind is persisted as a
-//       string, so renaming a member is a data migration, not a rename.
+// Overview: Purpose, File Design, and Engineering
+//   Department — a department inside a rooftop (Sales, Service, Parts...).
+//
+// Usage:
+//   Created beneath a Rooftop.
+//
+// Coding Instructions:
+//   Pure domain — no EF or ASP.NET types. DepartmentKind is persisted as a
+//   string, so renaming a member is a data migration, not a rename.
 
 using DealerFOSS.Core;
 

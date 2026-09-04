@@ -1,22 +1,29 @@
-// EnvelopeSecretProtector — the real ISecretProtector: AES-256-GCM with a key id
-// so keys can be rotated without rewriting what was already stored.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  registered by AddSecretProtection when keys are configured. Nothing
-//       constructs it directly.
-// Edit: three things here are not preferences.
+// Overview: Purpose, File Design, and Engineering
+//   EnvelopeSecretProtector — the real ISecretProtector: AES-256-GCM with a key id
+//   so keys can be rotated without rewriting what was already stored.
 //
-//       GCM is authenticated encryption, so a tampered value fails to decrypt
-//       rather than quietly returning wrong bytes. Do not swap it for CBC.
+// Usage:
+//   Registered by AddSecretProtection when keys are configured. Nothing
+//   constructs it directly.
 //
-//       The nonce is random per call and never reused with the same key. Reusing
-//       a nonce under GCM does not merely weaken it — it leaks the key stream.
+// Coding Instructions:
+//   Three things here are not preferences.
 //
-//       The key id travels with the value. That is what makes rotation possible:
-//       new values use the current key, old values still decrypt with the key
-//       they were written under.
+//   GCM is authenticated encryption, so a tampered value fails to decrypt
+//   rather than quietly returning wrong bytes. Do not swap it for CBC.
 //
-//       Works identically on Windows, Linux, and a hosted platform, which is why
-//       it is this and not DPAPI (ADR-015, doc 06 §4).
+//   The nonce is random per call and never reused with the same key. Reusing
+//   a nonce under GCM does not merely weaken it — it leaks the key stream.
+//
+//   The key id travels with the value. That is what makes rotation possible:
+//   new values use the current key, old values still decrypt with the key
+//   they were written under.
+//
+//   Works identically on Windows, Linux, and a hosted platform, which is why
+//   it is this and not DPAPI (ADR-015, doc 06 §4).
 
 using System.Buffers.Text;
 using System.Security.Cryptography;

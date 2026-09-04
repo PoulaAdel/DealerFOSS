@@ -1,12 +1,19 @@
-// Vehicle — a specific physical vehicle, identified by its VIN.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Vehicle.Record(...). A vehicle exists independently of whether the
-//       dealership currently owns it — the same car arrives as a trade-in years
-//       after it was sold.
-// Edit: a vehicle belongs to the whole dealer organization, not to one rooftop
-//       (doc 04 §1). Rooftop ownership lives on InventoryUnit. Do not add a
-//       rooftop to this class, and do not add a unique index on VIN — see
-//       VehicleTables.cs for why.
+// Overview: Purpose, File Design, and Engineering
+//   Vehicle — a specific physical vehicle, identified by its VIN.
+//
+// Usage:
+//   Vehicle.Record(...). A vehicle exists independently of whether the
+//   dealership currently owns it — the same car arrives as a trade-in years
+//   after it was sold.
+//
+// Coding Instructions:
+//   A vehicle belongs to the whole dealer organization, not to one rooftop
+//   (doc 04 §1). Rooftop ownership lives on InventoryUnit. Do not add a
+//   rooftop to this class, and do not add a unique index on VIN — see
+//   VehicleTables.cs for why.
 
 using DealerFOSS.Core;
 

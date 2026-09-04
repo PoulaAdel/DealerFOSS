@@ -1,29 +1,36 @@
-// StaffEndpoints — who works here, and what they may reach.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  GET    /api/v1/staff                      the people whose access touches my rooftops
-//       GET    /api/v1/staff/roles                every role and what it grants
-//       GET    /api/v1/staff/{id}                 one colleague
-//       POST   /api/v1/staff                      add a starter (no credential yet)
-//       POST   /api/v1/staff/{id}/enrolment       mint their one-time code
-//       POST   /api/v1/staff/{id}/assignments     grant a role at a rooftop, or organization-wide
-//       DELETE /api/v1/staff/{id}/assignments/{a} take a grant away
-//       POST   /api/v1/staff/{id}/active          stop a leaver, or let a returner back
-//       POST   /api/v1/auth/enrol                 ANONYMOUS — redeem a code, set a password
-// Edit: the permission is checked here rather than inside Identity, for the same
-//       reason as SecurityEndpoints — Identity answers "what may this user
-//       reach?" and must not also decide who may change the answer, which would
-//       be circular.
+// Overview: Purpose, File Design, and Engineering
+//   StaffEndpoints — who works here, and what they may reach.
 //
-//       The scoping rule is the important part and it is not uniform:
-//       granting a role AT A ROOFTOP needs Staff.Manage at that rooftop, while
-//       granting ORGANIZATION-WIDE access needs it organization-wide. Without
-//       that split a single-lot manager could hand themselves the group. Stopping
-//       an account is organization-wide too, because signing in is not a
-//       per-rooftop thing.
+// Usage:
+//   GET    /api/v1/staff                      the people whose access touches my rooftops
+//   GET    /api/v1/staff/roles                every role and what it grants
+//   GET    /api/v1/staff/{id}                 one colleague
+//   POST   /api/v1/staff                      add a starter (no credential yet)
+//   POST   /api/v1/staff/{id}/enrolment       mint their one-time code
+//   POST   /api/v1/staff/{id}/assignments     grant a role at a rooftop, or organization-wide
+//   DELETE /api/v1/staff/{id}/assignments/{a} take a grant away
+//   POST   /api/v1/staff/{id}/active          stop a leaver, or let a returner back
+//   POST   /api/v1/auth/enrol                 ANONYMOUS — redeem a code, set a password
 //
-//       /auth/enrol is reached by somebody who cannot sign in yet, so it is
-//       anonymous and exempt from anti-forgery — like /auth/login, and for the
-//       same reason: there is no session to have issued a token.
+// Coding Instructions:
+//   The permission is checked here rather than inside Identity, for the same
+//   reason as SecurityEndpoints — Identity answers "what may this user
+//   reach?" and must not also decide who may change the answer, which would
+//   be circular.
+//
+//   The scoping rule is the important part and it is not uniform:
+//   granting a role AT A ROOFTOP needs Staff.Manage at that rooftop, while
+//   granting ORGANIZATION-WIDE access needs it organization-wide. Without
+//   that split a single-lot manager could hand themselves the group. Stopping
+//   an account is organization-wide too, because signing in is not a
+//   per-rooftop thing.
+//
+//   /auth/enrol is reached by somebody who cannot sign in yet, so it is
+//   anonymous and exempt from anti-forgery — like /auth/login, and for the
+//   same reason: there is no session to have issued a token.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

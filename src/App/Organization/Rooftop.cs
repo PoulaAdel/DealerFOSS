@@ -1,9 +1,16 @@
-// Rooftop — one physical dealership location, and the unit that scoped records
-// and permissions hang off.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created beneath a LegalEntity. RooftopId appears throughout the system.
-// Edit: pure domain — no EF or ASP.NET types. TimeZone is an IANA id and is how
-//       a dealership-local date is derived; instants stay UTC everywhere else.
+// Overview: Purpose, File Design, and Engineering
+//   Rooftop — one physical dealership location, and the unit that scoped records
+//   and permissions hang off.
+//
+// Usage:
+//   Created beneath a LegalEntity. RooftopId appears throughout the system.
+//
+// Coding Instructions:
+//   Pure domain — no EF or ASP.NET types. TimeZone is an IANA id and is how
+//   a dealership-local date is derived; instants stay UTC everywhere else.
 
 using DealerFOSS.Core;
 

@@ -1,20 +1,27 @@
-// TenantResolver — reads the host catalog, checks the tenant is Active, and
-// decrypts its connection reference. Results are cached.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through ITenantResolver.
-// Edit: a suspended or retired tenant must keep resolving to null. If you add a
-//       status, decide explicitly whether it may serve traffic.
+// Overview: Purpose, File Design, and Engineering
+//   TenantResolver — reads the host catalog, checks the tenant is Active, and
+//   decrypts its connection reference. Results are cached.
 //
-//       The key is normalized ONCE, here, and the normalized form is used for
-//       both the cache and the query. It used to be passed through raw, and the
-//       two layers agreed only by coincidence: TenantCache compares
-//       case-insensitively, while `t.Slug == tenantKey` inherits whatever
-//       collation the SQL Server was installed with. On a case-sensitive
-//       collation "NORTHGROUP" would miss in the database but HIT a warm cache —
-//       so the same request would succeed or 404 depending on cache state, which
-//       is the worst kind of bug to be handed. Slugs are stored lowercase
-//       (TenantProvisioning refuses anything else), so lowercasing the key makes
-//       both layers agree on purpose rather than by luck.
+// Usage:
+//   Through ITenantResolver.
+//
+// Coding Instructions:
+//   A suspended or retired tenant must keep resolving to null. If you add a
+//   status, decide explicitly whether it may serve traffic.
+//
+//   The key is normalized ONCE, here, and the normalized form is used for
+//   both the cache and the query. It used to be passed through raw, and the
+//   two layers agreed only by coincidence: TenantCache compares
+//   case-insensitively, while `t.Slug == tenantKey` inherits whatever
+//   collation the SQL Server was installed with. On a case-sensitive
+//   collation "NORTHGROUP" would miss in the database but HIT a warm cache —
+//   so the same request would succeed or 404 depending on cache state, which
+//   is the worst kind of bug to be handed. Slugs are stored lowercase
+//   (TenantProvisioning refuses anything else), so lowercasing the key makes
+//   both layers agree on purpose rather than by luck.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

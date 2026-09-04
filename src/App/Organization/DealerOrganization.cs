@@ -1,9 +1,16 @@
-// DealerOrganization — the tenant itself, and the root of the structure tree.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  exactly one row exists per tenant database.
-// Edit: this is pure domain — no EF or ASP.NET types may appear here, and an
-//       architecture test enforces it. Invariants belong in the constructor so
-//       an invalid organization cannot be created at all.
+// Overview: Purpose, File Design, and Engineering
+//   DealerOrganization — the tenant itself, and the root of the structure tree.
+//
+// Usage:
+//   Exactly one row exists per tenant database.
+//
+// Coding Instructions:
+//   This is pure domain — no EF or ASP.NET types may appear here, and an
+//   architecture test enforces it. Invariants belong in the constructor so
+//   an invalid organization cannot be created at all.
 
 using DealerFOSS.Core;
 

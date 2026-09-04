@@ -1,8 +1,15 @@
-// ServiceRegistration — wires the host catalog and tenant resolution into DI.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  services.AddHostCatalog(connectionString) from Program.cs.
-// Edit: this is where a production ISecretProtector replaces the development
-//       one. Registering it after AddHostCatalog overrides the default.
+// Overview: Purpose, File Design, and Engineering
+//   ServiceRegistration — wires the host catalog and tenant resolution into DI.
+//
+// Usage:
+//   Services.AddHostCatalog(connectionString) from Program.cs.
+//
+// Coding Instructions:
+//   This is where a production ISecretProtector replaces the development
+//   one. Registering it after AddHostCatalog overrides the default.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

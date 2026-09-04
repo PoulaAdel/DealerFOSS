@@ -1,15 +1,22 @@
-// PartEndpoints — the parts catalogue, the stock on each shelf, and how it is costed.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  GET  /api/v1/parts                    the catalogue with stock at my rooftops
-//       GET  /api/v1/parts/costing            the current costing method and the choices
-//       POST /api/v1/parts/costing            change it (organization-wide only)
-//       GET  /api/v1/parts/{id}               one part, its stock, and its layers
-//       POST /api/v1/parts                    add to the catalogue (organization-wide only)
-//       POST /api/v1/parts/{id}/receipts      book a delivery onto a rooftop's shelf
-// Edit: /costing sits before /{id:guid} only by convention — the route constraint
-//       already keeps them apart. There is deliberately no endpoint that issues
-//       stock: parts leave the shelf when a repair order is invoiced, inside that
-//       transaction, and never on their own.
+// Overview: Purpose, File Design, and Engineering
+//   PartEndpoints — the parts catalogue, the stock on each shelf, and how it is costed.
+//
+// Usage:
+//   GET  /api/v1/parts                    the catalogue with stock at my rooftops
+//   GET  /api/v1/parts/costing            the current costing method and the choices
+//   POST /api/v1/parts/costing            change it (organization-wide only)
+//   GET  /api/v1/parts/{id}               one part, its stock, and its layers
+//   POST /api/v1/parts                    add to the catalogue (organization-wide only)
+//   POST /api/v1/parts/{id}/receipts      book a delivery onto a rooftop's shelf
+//
+// Coding Instructions:
+//   /costing sits before /{id:guid} only by convention — the route constraint
+//   already keeps them apart. There is deliberately no endpoint that issues
+//   stock: parts leave the shelf when a repair order is invoiced, inside that
+//   transaction, and never on their own.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

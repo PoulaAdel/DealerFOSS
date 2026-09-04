@@ -1,13 +1,20 @@
-// InventoryUnit — one vehicle standing on one rooftop's lot, with a stock
-// number, a status, and what it cost.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  InventoryUnit.Receive(...) to take a vehicle into stock, then
-//       ChangeStatus to move it along. Every move writes a history line.
-// Edit: this is the rooftop-scoped half of the module (doc 04 §1, §3). RooftopId
-//       is a permission boundary, unlike Customer.HomeRooftopId — a user assigned
-//       to one location must never see or move another location's stock. The
-//       scope check lives in InventoryService; removing it fails
-//       InventoryScopeTests.
+// Overview: Purpose, File Design, and Engineering
+//   InventoryUnit — one vehicle standing on one rooftop's lot, with a stock
+//   number, a status, and what it cost.
+//
+// Usage:
+//   InventoryUnit.Receive(...) to take a vehicle into stock, then
+//   ChangeStatus to move it along. Every move writes a history line.
+//
+// Coding Instructions:
+//   This is the rooftop-scoped half of the module (doc 04 §1, §3). RooftopId
+//   is a permission boundary, unlike Customer.HomeRooftopId — a user assigned
+//   to one location must never see or move another location's stock. The
+//   scope check lives in InventoryService; removing it fails
+//   InventoryScopeTests.
 
 using DealerFOSS.Core;
 

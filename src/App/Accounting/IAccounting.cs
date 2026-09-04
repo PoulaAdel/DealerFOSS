@@ -1,11 +1,18 @@
-// IAccounting — what other capabilities may call to reach the ledger.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Deals posts a delivered sale through this. Nothing writes journal rows
-//       any other way.
-// Edit: there is deliberately no "create an entry from these lines" method on
-//       the public contract. An entry is the consequence of something that
-//       happened in the business, so the contract names the events — a delivery,
-//       a reversal — rather than offering a general-purpose posting hole.
+// Overview: Purpose, File Design, and Engineering
+//   IAccounting — what other capabilities may call to reach the ledger.
+//
+// Usage:
+//   Deals posts a delivered sale through this. Nothing writes journal rows
+//   any other way.
+//
+// Coding Instructions:
+//   There is deliberately no "create an entry from these lines" method on
+//   the public contract. An entry is the consequence of something that
+//   happened in the business, so the contract names the events — a delivery,
+//   a reversal — rather than offering a general-purpose posting hole.
 
 using DealerFOSS.Core;
 

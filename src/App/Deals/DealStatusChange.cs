@@ -1,11 +1,18 @@
-// DealStatusChange — one line of a deal's history: it moved from here to there,
-// then, by whom, and why.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  written by Deal.ChangeStatus; never constructed directly.
-// Edit: append-only, and more strictly so than the other histories. This is the
-//       record of who approved what and when — if it can be rewritten, an
-//       approval means nothing (ADR-016). TenantDb refuses to update or delete
-//       anything marked IAppendOnly.
+// Overview: Purpose, File Design, and Engineering
+//   DealStatusChange — one line of a deal's history: it moved from here to there,
+//   then, by whom, and why.
+//
+// Usage:
+//   Written by Deal.ChangeStatus; never constructed directly.
+//
+// Coding Instructions:
+//   Append-only, and more strictly so than the other histories. This is the
+//   record of who approved what and when — if it can be rewritten, an
+//   approval means nothing (ADR-016). TenantDb refuses to update or delete
+//   anything marked IAppendOnly.
 
 using DealerFOSS.Core;
 

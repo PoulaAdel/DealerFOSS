@@ -1,16 +1,23 @@
-// DocumentEndpoints — the paperwork, as a page a browser can print.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  GET /api/v1/documents/deals/{id}
-//       GET /api/v1/documents/repair-orders/{id}
-// Edit: these return HTML rather than JSON, which makes them the only endpoints
-//       here that do. That is the point: the browser prints the response, and
-//       nothing has to be assembled client-side from data that could drift from
-//       what the server holds.
+// Overview: Purpose, File Design, and Engineering
+//   DocumentEndpoints — the paperwork, as a page a browser can print.
 //
-//       No permission is checked here. It does not need to be — every document
-//       is built by reading through IDeals or IRepairOrders, which apply the
-//       caller's permissions and rooftop scope before returning anything. A
-//       second check here would be a second place to get it wrong.
+// Usage:
+//   GET /api/v1/documents/deals/{id}
+//   GET /api/v1/documents/repair-orders/{id}
+//
+// Coding Instructions:
+//   These return HTML rather than JSON, which makes them the only endpoints
+//   here that do. That is the point: the browser prints the response, and
+//   nothing has to be assembled client-side from data that could drift from
+//   what the server holds.
+//
+//   No permission is checked here. It does not need to be — every document
+//   is built by reading through IDeals or IRepairOrders, which apply the
+//   caller's permissions and rooftop scope before returning anything. A
+//   second check here would be a second place to get it wrong.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

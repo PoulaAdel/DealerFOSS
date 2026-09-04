@@ -1,12 +1,19 @@
-// PollBudget — waiting on a job the provider has already accepted.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  var budget = PollBudget.Start(timing, now); then budget.Next(now, hint)
-//       each time the provider says "check back in N seconds".
-// Edit: keep this measured in wall-clock time. A fixed number of attempts is
-//       not a duration — the same five attempts are fifty seconds against a
-//       provider that says "check back in 10" and fifty minutes against one
-//       that says "600". Counting attempts produces a timeout the client
-//       invented while the job was running perfectly well.
+// Overview: Purpose, File Design, and Engineering
+//   PollBudget — waiting on a job the provider has already accepted.
+//
+// Usage:
+//   Var budget = PollBudget.Start(timing, now); then budget.Next(now, hint)
+//   each time the provider says "check back in N seconds".
+//
+// Coding Instructions:
+//   Keep this measured in wall-clock time. A fixed number of attempts is
+//   not a duration — the same five attempts are fifty seconds against a
+//   provider that says "check back in 10" and fifty minutes against one
+//   that says "600". Counting attempts produces a timeout the client
+//   invented while the job was running perfectly well.
 
 namespace DealerFOSS.Integrations;
 

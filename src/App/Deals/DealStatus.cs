@@ -1,12 +1,19 @@
-// DealStatus — where a deal has got to, and which moves are legal between those
-// states.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  DealStatusRules.CanMove(from, to) before changing a status;
-//       Deal.ChangeStatus already applies it.
-// Edit: the Draft boundary is the important one. While a deal is Draft its
-//       numbers can be changed freely; from Submitted onwards they are frozen and
-//       a change means going back to Draft, which is a recorded move. That is
-//       what stops a price quietly changing after a manager approved it.
+// Overview: Purpose, File Design, and Engineering
+//   DealStatus — where a deal has got to, and which moves are legal between those
+//   states.
+//
+// Usage:
+//   DealStatusRules.CanMove(from, to) before changing a status;
+//   Deal.ChangeStatus already applies it.
+//
+// Coding Instructions:
+//   The Draft boundary is the important one. While a deal is Draft its
+//   numbers can be changed freely; from Submitted onwards they are frozen and
+//   a change means going back to Draft, which is a recorded move. That is
+//   what stops a price quietly changing after a manager approved it.
 
 namespace DealerFOSS.Deals;
 

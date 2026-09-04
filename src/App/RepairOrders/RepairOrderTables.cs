@@ -1,21 +1,28 @@
-// RepairOrderTables — how service work is stored. Owns the "service" schema and
-// no other (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: the schema is named for the department rather than for the folder, which
-//       is the one deliberate break from the pattern the other capabilities
-//       follow. A DBA reading `service.RepairOrders` learns something;
-//       `repairorders.RepairOrders` does not.
+// Overview: Purpose, File Design, and Engineering
+//   RepairOrderTables — how service work is stored. Owns the "service" schema and
+//   no other (ADR-014).
 //
-//       No foreign key to Customers or Vehicles, for the same reason as Deals —
-//       those are other capabilities' tables and a database constraint across
-//       that line couples their migrations to this one. The references are
-//       checked through ICustomers and IVehicles where a readable error can be
-//       given.
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
 //
-//       Money columns are decimal(18,2); hours are decimal(9,2), which is enough
-//       for a job nobody would book as one line.
+// Coding Instructions:
+//   The schema is named for the department rather than for the folder, which
+//   is the one deliberate break from the pattern the other capabilities
+//   follow. A DBA reading `service.RepairOrders` learns something;
+//   `repairorders.RepairOrders` does not.
+//
+//   No foreign key to Customers or Vehicles, for the same reason as Deals —
+//   those are other capabilities' tables and a database constraint across
+//   that line couples their migrations to this one. The references are
+//   checked through ICustomers and IVehicles where a readable error can be
+//   given.
+//
+//   Money columns are decimal(18,2); hours are decimal(9,2), which is enough
+//   for a job nobody would book as one line.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

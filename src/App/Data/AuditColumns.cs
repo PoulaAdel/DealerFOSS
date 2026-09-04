@@ -1,8 +1,15 @@
-// AuditColumns — the audit and concurrency columns every business record carries.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  builder.ConfigureAudit() at the end of an entity configuration.
-// Edit: this is shared by every feature's XTables.cs, so a change here changes
-//       every table that inherits AuditableEntity and needs a migration.
+// Overview: Purpose, File Design, and Engineering
+//   AuditColumns — the audit and concurrency columns every business record carries.
+//
+// Usage:
+//   Builder.ConfigureAudit() at the end of an entity configuration.
+//
+// Coding Instructions:
+//   This is shared by every feature's XTables.cs, so a change here changes
+//   every table that inherits AuditableEntity and needs a migration.
 
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using DealerFOSS.Core;

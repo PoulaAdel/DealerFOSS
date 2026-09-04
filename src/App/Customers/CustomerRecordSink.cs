@@ -1,27 +1,34 @@
-// CustomerRecordSink — how a customer arriving from another system becomes a
-// customer here.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  registered in Program.cs. The integration runtime finds it by contract
-//       name and version, and hands it a batch.
-// Edit: this file lives in Customers rather than in Integrations on purpose, and
-//       the direction is the point. FeatureBoundaryTests forbids Integrations
-//       from referencing any capability, so the port is declared at the edge and
-//       the adapter belongs to whoever owns the data. A connector able to write
-//       a customer row directly would be a route around every rule this
-//       capability enforces, arriving from outside the building.
+// Overview: Purpose, File Design, and Engineering
+//   CustomerRecordSink — how a customer arriving from another system becomes a
+//   customer here.
 //
-//       IDEMPOTENCE IS THE WHOLE JOB. The cursor deliberately refuses to advance
-//       whenever a provider will not account for its window, which means the
-//       same records arrive again tomorrow — by design, and routinely. Every
-//       insert here is guarded by an external-reference lookup, and there is a
-//       test that delivers the same batch twice and counts the rows.
+// Usage:
+//   Registered in Program.cs. The integration runtime finds it by contract
+//   name and version, and hands it a batch.
 //
-//       What this deliberately does NOT do is update an existing customer.
-//       Field ownership — who wins when the provider and a member of staff
-//       disagree about a phone number — is a real decision (doc 05 §4) and
-//       nobody has made it. Silently overwriting a person's correction with
-//       stale provider data would be worse than doing nothing, so an existing
-//       record is reported Unchanged and left alone.
+// Coding Instructions:
+//   This file lives in Customers rather than in Integrations on purpose, and
+//   the direction is the point. FeatureBoundaryTests forbids Integrations
+//   from referencing any capability, so the port is declared at the edge and
+//   the adapter belongs to whoever owns the data. A connector able to write
+//   a customer row directly would be a route around every rule this
+//   capability enforces, arriving from outside the building.
+//
+//   IDEMPOTENCE IS THE WHOLE JOB. The cursor deliberately refuses to advance
+//   whenever a provider will not account for its window, which means the
+//   same records arrive again tomorrow — by design, and routinely. Every
+//   insert here is guarded by an external-reference lookup, and there is a
+//   test that delivers the same batch twice and counts the rows.
+//
+//   What this deliberately does NOT do is update an existing customer.
+//   Field ownership — who wins when the provider and a member of staff
+//   disagree about a phone number — is a real decision (doc 05 §4) and
+//   nobody has made it. Silently overwriting a person's correction with
+//   stale provider data would be worse than doing nothing, so an existing
+//   record is reported Unchanged and left alone.
 
 using DealerFOSS.Core;
 using DealerFOSS.Integrations;

@@ -1,9 +1,16 @@
-// DevSecretProtector — a no-op ISecretProtector for local development.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nowhere but Development. Program.cs refuses to start if this is
-//       registered in any other environment.
-// Edit: do not "improve" this into a real implementation. Add a separate
-//       DPAPI/certificate/KMS class and register that instead.
+// Overview: Purpose, File Design, and Engineering
+//   DevSecretProtector — a no-op ISecretProtector for local development.
+//
+// Usage:
+//   Nowhere but Development. Program.cs refuses to start if this is
+//   registered in any other environment.
+//
+// Coding Instructions:
+//   Do not "improve" this into a real implementation. Add a separate
+//   DPAPI/certificate/KMS class and register that instead.
 
 using DealerFOSS.Core;
 

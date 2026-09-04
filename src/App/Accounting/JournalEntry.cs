@@ -1,12 +1,19 @@
-// JournalEntry — one balanced accounting event, posted once and never changed.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  JournalEntry.Post(...). It refuses to exist unless it balances.
-// Edit: this is the strictest thing in the codebase and it should stay that way
-//       (ADR-016). A posted entry is never edited and never deleted — a mistake
-//       is corrected by posting its reversal, which leaves both the error and
-//       the correction visible. That is not bureaucracy: it is the only way an
-//       auditor can tell the difference between "this was always right" and
-//       "somebody changed it afterwards".
+// Overview: Purpose, File Design, and Engineering
+//   JournalEntry — one balanced accounting event, posted once and never changed.
+//
+// Usage:
+//   JournalEntry.Post(...). It refuses to exist unless it balances.
+//
+// Coding Instructions:
+//   This is the strictest thing in the codebase and it should stay that way
+//   (ADR-016). A posted entry is never edited and never deleted — a mistake
+//   is corrected by posting its reversal, which leaves both the error and
+//   the correction visible. That is not bureaucracy: it is the only way an
+//   auditor can tell the difference between "this was always right" and
+//   "somebody changed it afterwards".
 
 using DealerFOSS.Core;
 

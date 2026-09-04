@@ -1,16 +1,23 @@
-// LeadTables — how enquiries are stored. Owns the "leads" schema and no other
-// (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: there is no foreign key to Customers or Vehicles on purpose. Those are
-//       other capabilities' tables, and a database-level constraint across that
-//       line would couple their migrations to this one. The reference is checked
-//       through ICustomers and IVehicles when the lead is captured, which is
-//       where a readable error can be given (ADR-017).
+// Overview: Purpose, File Design, and Engineering
+//   LeadTables — how enquiries are stored. Owns the "leads" schema and no other
+//   (ADR-014).
 //
-//       Lead history has no audit columns: it IS the history, and TenantDb
-//       refuses to update or delete a row of it.
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
+//
+// Coding Instructions:
+//   There is no foreign key to Customers or Vehicles on purpose. Those are
+//   other capabilities' tables, and a database-level constraint across that
+//   line would couple their migrations to this one. The reference is checked
+//   through ICustomers and IVehicles when the lead is captured, which is
+//   where a readable error can be given (ADR-017).
+//
+//   Lead history has no audit columns: it IS the history, and TenantDb
+//   refuses to update or delete a row of it.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

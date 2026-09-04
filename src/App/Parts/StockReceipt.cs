@@ -1,19 +1,26 @@
-// StockReceipt — one delivery of one part onto one rooftop's shelf, at a cost.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by PartsService.ReceiveAsync; consumed by IssueAsync.
-// Edit: this is the single source of truth for both quantity and cost, and it is
-//       kept that way ON PURPOSE even though only FIFO strictly needs layers.
+// Overview: Purpose, File Design, and Engineering
+//   StockReceipt — one delivery of one part onto one rooftop's shelf, at a cost.
 //
-//       The costing method is a setting the manager can change. If stock were
-//       held as a running total plus an average cost, switching to FIFO later
-//       would have no history to consume and would silently produce wrong costs
-//       from the day it was switched. Keeping layers always means every method
-//       reads the same data: moving average is value over quantity, last cost is
-//       the newest layer, FIFO consumes the oldest. Switching is then safe at any
-//       moment, and costs a little space nobody will notice.
+// Usage:
+//   Created by PartsService.ReceiveAsync; consumed by IssueAsync.
 //
-//       RemainingQuantity only ever decreases. A layer at zero is kept, because
-//       it is what a past sale's cost was calculated from.
+// Coding Instructions:
+//   This is the single source of truth for both quantity and cost, and it is
+//   kept that way ON PURPOSE even though only FIFO strictly needs layers.
+//
+//   The costing method is a setting the manager can change. If stock were
+//   held as a running total plus an average cost, switching to FIFO later
+//   would have no history to consume and would silently produce wrong costs
+//   from the day it was switched. Keeping layers always means every method
+//   reads the same data: moving average is value over quantity, last cost is
+//   the newest layer, FIFO consumes the oldest. Switching is then safe at any
+//   moment, and costs a little space nobody will notice.
+//
+//   RemainingQuantity only ever decreases. A layer at zero is kept, because
+//   it is what a past sale's cost was calculated from.
 
 using DealerFOSS.Core;
 

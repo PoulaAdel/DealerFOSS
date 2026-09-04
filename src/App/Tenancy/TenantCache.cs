@@ -1,9 +1,16 @@
-// TenantCache — in-process routing cache, so every request does not re-read the
-// host catalog. A single node needs nothing more (ADR-005).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through TenantResolver.
-// Edit: entries expire after Ttl. That is also the lag before a suspended tenant
-//       actually stops being served — call Invalidate on status changes.
+// Overview: Purpose, File Design, and Engineering
+//   TenantCache — in-process routing cache, so every request does not re-read the
+//   host catalog. A single node needs nothing more (ADR-005).
+//
+// Usage:
+//   Through TenantResolver.
+//
+// Coding Instructions:
+//   Entries expire after Ttl. That is also the lag before a suspended tenant
+//   actually stops being served — call Invalidate on status changes.
 
 using System.Collections.Concurrent;
 using DealerFOSS.Core;

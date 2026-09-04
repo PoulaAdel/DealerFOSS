@@ -1,18 +1,25 @@
-// FetchWindow — window arithmetic as data, and the rule that keeps a cursor honest.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  FetchWindowPolicy describes what a provider's endpoint will actually
-//       accept. Plan() turns a wanted range into the slices that endpoint will
-//       serve. Cursor.Advance() moves the cursor from what came *back*.
-// Edit: the one invariant worth defending is that nothing here ever returns the
-//       requested range as if it were the served range. Every field that could
-//       be confused for "what we asked for" is named for what it is.
+// Overview: Purpose, File Design, and Engineering
+//   FetchWindow — window arithmetic as data, and the rule that keeps a cursor honest.
 //
-//       Why this exists: real endpoints cap a request at a fixed span, refuse
-//       anything older than a few days, or take no dates at all and decide
-//       "recent" for themselves. A cursor advanced across a period the provider
-//       never served produces no error and no missing-record warning — the hole
-//       is found by a reconciliation months later, when the source no longer
-//       has the data.
+// Usage:
+//   FetchWindowPolicy describes what a provider's endpoint will actually
+//   accept. Plan() turns a wanted range into the slices that endpoint will
+//   serve. Cursor.Advance() moves the cursor from what came *back*.
+//
+// Coding Instructions:
+//   The one invariant worth defending is that nothing here ever returns the
+//   requested range as if it were the served range. Every field that could
+//   be confused for "what we asked for" is named for what it is.
+//
+//   Why this exists: real endpoints cap a request at a fixed span, refuse
+//   anything older than a few days, or take no dates at all and decide
+//   "recent" for themselves. A cursor advanced across a period the provider
+//   never served produces no error and no missing-record warning — the hole
+//   is found by a reconciliation months later, when the source no longer
+//   has the data.
 
 using DealerFOSS.Core;
 

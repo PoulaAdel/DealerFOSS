@@ -1,14 +1,21 @@
-// InventoryEndpoints — the HTTP surface for stock on a lot.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/inventory.
-//       GET  /api/v1/inventory?rooftopId=&status=Available&stock=A1234
-//       GET  /api/v1/inventory/aging?rooftopId=&asOf=
-//       GET  /api/v1/inventory/{id}
-//       POST /api/v1/inventory
-//       POST /api/v1/inventory/{id}/status
-// Edit: keep it thin — delegate, then map a Result to a status code. The rooftop
-//       scope is applied in InventoryService, not here, so a background caller
-//       gets the same check.
+// Overview: Purpose, File Design, and Engineering
+//   InventoryEndpoints — the HTTP surface for stock on a lot.
+//
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/inventory.
+//   GET  /api/v1/inventory?rooftopId=&status=Available&stock=A1234
+//   GET  /api/v1/inventory/aging?rooftopId=&asOf=
+//   GET  /api/v1/inventory/{id}
+//   POST /api/v1/inventory
+//   POST /api/v1/inventory/{id}/status
+//
+// Coding Instructions:
+//   Keep it thin — delegate, then map a Result to a status code. The rooftop
+//   scope is applied in InventoryService, not here, so a background caller
+//   gets the same check.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

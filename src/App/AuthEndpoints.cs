@@ -1,17 +1,24 @@
-// AuthEndpoints — signing in, signing out, and reporting who you are.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  POST /api/v1/auth/login sets the session cookie; POST .../logout clears
-//       and revokes it; GET .../me confirms the caller. All require X-Tenant,
-//       because a user belongs to one dealer organization.
-// Edit: the session cookie is HttpOnly so script cannot read it, SameSite=Strict
-//       so another site cannot cause a request with it, and Secure outside
-//       Development. Do not relax any of the three to make a client easier to
-//       write. The token is returned only in the cookie, never in the body.
+// Overview: Purpose, File Design, and Engineering
+//   AuthEndpoints — signing in, signing out, and reporting who you are.
 //
-//       Sign-in sets a second cookie carrying the anti-forgery token. That one
-//       is deliberately readable by script — the client has to read it to put it
-//       in a header, and a header is the thing a cross-site form cannot forge.
-//       It is not a credential: on its own it opens nothing.
+// Usage:
+//   POST /api/v1/auth/login sets the session cookie; POST .../logout clears
+//   and revokes it; GET .../me confirms the caller. All require X-Tenant,
+//   because a user belongs to one dealer organization.
+//
+// Coding Instructions:
+//   The session cookie is HttpOnly so script cannot read it, SameSite=Strict
+//   so another site cannot cause a request with it, and Secure outside
+//   Development. Do not relax any of the three to make a client easier to
+//   write. The token is returned only in the cookie, never in the body.
+//
+//   Sign-in sets a second cookie carrying the anti-forgery token. That one
+//   is deliberately readable by script — the client has to read it to put it
+//   in a header, and a header is the thing a cross-site form cannot forge.
+//   It is not a credential: on its own it opens nothing.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

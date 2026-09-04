@@ -1,10 +1,17 @@
-// ISafetyRecalls — what the public safety-recall record says about a car.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  a screen asks "should anybody look at this car before we sell it?".
-// Edit: READ THE SUMMARY ON RecallReport BEFORE CHANGING ANY WORDING HERE. The
-//       distinction between "campaigns that apply to this model" and "work this
-//       car still needs" is the entire honesty of this feature, and it is easy
-//       to erase by accident while tidying a property name.
+// Overview: Purpose, File Design, and Engineering
+//   ISafetyRecalls — what the public safety-recall record says about a car.
+//
+// Usage:
+//   A screen asks "should anybody look at this car before we sell it?".
+//
+// Coding Instructions:
+//   READ THE SUMMARY ON RecallReport BEFORE CHANGING ANY WORDING HERE. The
+//   distinction between "campaigns that apply to this model" and "work this
+//   car still needs" is the entire honesty of this feature, and it is easy
+//   to erase by accident while tidying a property name.
 
 using DealerFOSS.Core;
 

@@ -1,11 +1,18 @@
-// HostDbDesignTimeFactory — lets "dotnet ef" construct the host catalog context
-// outside the running application.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  tooling only; never referenced by application code.
-// Edit: override the target with DEALERFOSS_HOST_CONNECTION. The connection is
-//       used by "database update"; "migrations add" needs only the model. The
-//       default is trusted LocalDB on purpose — a credential in source, even a
-//       development one, is a habit worth not having.
+// Overview: Purpose, File Design, and Engineering
+//   HostDbDesignTimeFactory — lets "dotnet ef" construct the host catalog context
+//   outside the running application.
+//
+// Usage:
+//   Tooling only; never referenced by application code.
+//
+// Coding Instructions:
+//   Override the target with DEALERFOSS_HOST_CONNECTION. The connection is
+//   used by "database update"; "migrations add" needs only the model. The
+//   default is trusted LocalDB on purpose — a credential in source, even a
+//   development one, is a habit worth not having.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;

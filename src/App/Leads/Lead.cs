@@ -1,12 +1,19 @@
-// Lead — somebody who might buy a car, and the record of chasing them.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Lead.Capture(...), then ChangeStatus as the conversation progresses.
-// Edit: a lead belongs to ONE rooftop, and that is a permission boundary
-//       (doc 04 §1). A salesperson at one location must not see another
-//       location's enquiries — the branch manager's numbers depend on it, and so
-//       does the customer's experience of not being called by two salespeople.
-//       The customer themselves is organization-shared; only the enquiry is
-//       local. Do not "helpfully" widen the rooftop filter.
+// Overview: Purpose, File Design, and Engineering
+//   Lead — somebody who might buy a car, and the record of chasing them.
+//
+// Usage:
+//   Lead.Capture(...), then ChangeStatus as the conversation progresses.
+//
+// Coding Instructions:
+//   A lead belongs to ONE rooftop, and that is a permission boundary
+//   (doc 04 §1). A salesperson at one location must not see another
+//   location's enquiries — the branch manager's numbers depend on it, and so
+//   does the customer's experience of not being called by two salespeople.
+//   The customer themselves is organization-shared; only the enquiry is
+//   local. Do not "helpfully" widen the rooftop filter.
 
 using DealerFOSS.Core;
 

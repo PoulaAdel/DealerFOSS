@@ -1,21 +1,28 @@
-// PartsService — the catalogue, the stock on each shelf, and what a part costs.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IParts.
-// Edit: three things here are load-bearing.
+// Overview: Purpose, File Design, and Engineering
+//   PartsService — the catalogue, the stock on each shelf, and what a part costs.
 //
-//       Quantity is always SUM(RemainingQuantity) over the layers. There is no
-//       stored total to drift from it. If that ever becomes a performance problem
-//       the fix is an index or a projection, not a denormalized column somebody
-//       has to remember to keep in step.
+// Usage:
+//   Through IParts.
 //
-//       IssueAsync does NOT save. It is called from inside RepairOrders' invoice
-//       transaction, and saving here would commit the stock movement separately
-//       from the invoice and the ledger entry — which is exactly the disagreement
-//       the whole design is trying to prevent.
+// Coding Instructions:
+//   Three things here are load-bearing.
 //
-//       Stock cannot go negative. A workshop that can sell parts it does not have
-//       does not have a stock figure at all, and the refusal is what makes
-//       somebody go and book the delivery in.
+//   Quantity is always SUM(RemainingQuantity) over the layers. There is no
+//   stored total to drift from it. If that ever becomes a performance problem
+//   the fix is an index or a projection, not a denormalized column somebody
+//   has to remember to keep in step.
+//
+//   IssueAsync does NOT save. It is called from inside RepairOrders' invoice
+//   transaction, and saving here would commit the stock movement separately
+//   from the invoice and the ledger entry — which is exactly the disagreement
+//   the whole design is trying to prevent.
+//
+//   Stock cannot go negative. A workshop that can sell parts it does not have
+//   does not have a stock figure at all, and the refusal is what makes
+//   somebody go and book the delivery in.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

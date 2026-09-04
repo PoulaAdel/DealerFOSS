@@ -1,8 +1,15 @@
-// IDeals — what other capabilities may call to reach deals.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Finance and Accounting will read a delivered deal through this.
-// Edit: every read behind this interface is filtered to the caller's authorized
-//       rooftops. An empty scope is a denial, never "unfiltered".
+// Overview: Purpose, File Design, and Engineering
+//   IDeals — what other capabilities may call to reach deals.
+//
+// Usage:
+//   Finance and Accounting will read a delivered deal through this.
+//
+// Coding Instructions:
+//   Every read behind this interface is filtered to the caller's authorized
+//   rooftops. An empty scope is a denial, never "unfiltered".
 
 using DealerFOSS.Core;
 

@@ -1,12 +1,19 @@
-// InventoryService — what is on the lot, and the rooftop scope applied to it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IInventory.
-// Edit: this is where the rooftop boundary is actually enforced. Every read is
-//       filtered to the caller's authorized rooftops, and every write authorizes
-//       the specific rooftop first. An unauthorized unit and an unknown one
-//       return the same failure, so a response cannot be used to discover what
-//       another location has in stock. Removing either check fails
-//       InventoryScopeTests.
+// Overview: Purpose, File Design, and Engineering
+//   InventoryService — what is on the lot, and the rooftop scope applied to it.
+//
+// Usage:
+//   Through IInventory.
+//
+// Coding Instructions:
+//   This is where the rooftop boundary is actually enforced. Every read is
+//   filtered to the caller's authorized rooftops, and every write authorizes
+//   the specific rooftop first. An unauthorized unit and an unknown one
+//   return the same failure, so a response cannot be used to discover what
+//   another location has in stock. Removing either check fails
+//   InventoryScopeTests.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

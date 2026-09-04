@@ -1,12 +1,19 @@
-// CustomerTables — how this feature's records are stored. Owns the "customers"
-// schema and no other (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: there is deliberately no unique index on a contact value. Two customers
-//       can share an email or a phone — a couple, a family business — and
-//       enforcing uniqueness would block legitimate records and push staff into
-//       creating bad data to get around it (doc 04 §4).
+// Overview: Purpose, File Design, and Engineering
+//   CustomerTables — how this feature's records are stored. Owns the "customers"
+//   schema and no other (ADR-014).
+//
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
+//
+// Coding Instructions:
+//   There is deliberately no unique index on a contact value. Two customers
+//   can share an email or a phone — a couple, a family business — and
+//   enforcing uniqueness would block legitimate records and push staff into
+//   creating bad data to get around it (doc 04 §4).
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

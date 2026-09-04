@@ -1,20 +1,27 @@
-// NhtsaSafetyRecalls — ISafetyRecalls against the US road-safety regulator.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  registered as ISafetyRecalls; never referenced by name outside Program.
-// Edit: this is the FIRST thing in the product that calls out to a network, so
-//       the rules it follows are new here and worth keeping:
+// Overview: Purpose, File Design, and Engineering
+//   NhtsaSafetyRecalls — ISafetyRecalls against the US road-safety regulator.
 //
-//       1. It cannot throw. Every network fault becomes RecallErrors.Unavailable.
-//          A car cannot become un-sellable because somebody else's service is down.
-//       2. It has a deadline. The timeout lives on the HttpClient in Program.cs,
-//          not in a token here, so it is configured in one visible place.
-//       3. It never writes. No table, no cache, no cursor — ask and forget. A
-//          stored answer would go stale silently and start asserting an all-clear
-//          that nobody re-checked.
+// Usage:
+//   Registered as ISafetyRecalls; never referenced by name outside Program.
 //
-//       The regulator's own API is unauthenticated and free, which is why this
-//       one is buildable when every other integration on the list is not
-//       (doc 11 §3.4).
+// Coding Instructions:
+//   This is the FIRST thing in the product that calls out to a network, so
+//   the rules it follows are new here and worth keeping:
+//
+//   1. It cannot throw. Every network fault becomes RecallErrors.Unavailable.
+//   A car cannot become un-sellable because somebody else's service is down.
+//   2. It has a deadline. The timeout lives on the HttpClient in Program.cs,
+//   not in a token here, so it is configured in one visible place.
+//   3. It never writes. No table, no cache, no cursor — ask and forget. A
+//   stored answer would go stale silently and start asserting an all-clear
+//   that nobody re-checked.
+//
+//   The regulator's own API is unauthenticated and free, which is why this
+//   one is buildable when every other integration on the list is not
+//   (doc 11 §3.4).
 
 using System.Globalization;
 using System.Net.Http.Json;

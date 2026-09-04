@@ -1,16 +1,23 @@
-// AccountingService — reading the ledger, and the two ways something gets into
-// it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IAccounting.
-// Edit: the posting rules live in JournalEntry, not here, so they hold for any
-//       caller. This class does three jobs: scope the reads by rooftop, translate
-//       a business event into the accounts it moves, and refuse to reverse
-//       something twice.
+// Overview: Purpose, File Design, and Engineering
+//   AccountingService — reading the ledger, and the two ways something gets into
+//   it.
 //
-//       The account map below is the one place that decides which accounts a
-//       sale touches. When a real chart of accounts arrives it becomes
-//       configuration; until then it is deliberately in one readable method
-//       rather than scattered.
+// Usage:
+//   Through IAccounting.
+//
+// Coding Instructions:
+//   The posting rules live in JournalEntry, not here, so they hold for any
+//   caller. This class does three jobs: scope the reads by rooftop, translate
+//   a business event into the accounts it moves, and refuse to reverse
+//   something twice.
+//
+//   The account map below is the one place that decides which accounts a
+//   sale touches. When a real chart of accounts arrives it becomes
+//   configuration; until then it is deliberately in one readable method
+//   rather than scattered.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

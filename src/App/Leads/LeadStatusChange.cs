@@ -1,10 +1,17 @@
-// LeadStatusChange — one line of a lead's history: it moved from here to there,
-// then, and this is what was said.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  written by Lead.ChangeStatus; never constructed directly.
-// Edit: history is append-only. A wrong entry is corrected by making the opposite
-//       move with a reason, not by editing the record. TenantDb refuses to update
-//       or delete these rows.
+// Overview: Purpose, File Design, and Engineering
+//   LeadStatusChange — one line of a lead's history: it moved from here to there,
+//   then, and this is what was said.
+//
+// Usage:
+//   Written by Lead.ChangeStatus; never constructed directly.
+//
+// Coding Instructions:
+//   History is append-only. A wrong entry is corrected by making the opposite
+//   move with a reason, not by editing the record. TenantDb refuses to update
+//   or delete these rows.
 
 using DealerFOSS.Core;
 

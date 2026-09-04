@@ -1,11 +1,18 @@
-// JournalLine — one side of one account movement.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created through JournalEntry.Post; never on its own.
-// Edit: a line is a debit OR a credit, never both and never neither. Allowing
-//       both would let an entry balance itself line by line and hide what
-//       actually moved. The account code is stored alongside the id on purpose:
-//       a printed journal from three years ago must still be readable if the
-//       chart is later renumbered.
+// Overview: Purpose, File Design, and Engineering
+//   JournalLine — one side of one account movement.
+//
+// Usage:
+//   Created through JournalEntry.Post; never on its own.
+//
+// Coding Instructions:
+//   A line is a debit OR a credit, never both and never neither. Allowing
+//   both would let an entry balance itself line by line and hide what
+//   actually moved. The account code is stored alongside the id on purpose:
+//   a printed journal from three years ago must still be readable if the
+//   chart is later renumbered.
 
 using DealerFOSS.Core;
 

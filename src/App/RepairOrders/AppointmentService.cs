@@ -1,29 +1,36 @@
-// AppointmentService — the service diary, and the one moment it hands over to the
-// workshop.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IAppointments.
-// Edit: four things here are load-bearing.
+// Overview: Purpose, File Design, and Engineering
+//   AppointmentService — the service diary, and the one moment it hands over to the
+//   workshop.
 //
-//       The rooftop scope, as everywhere else: every read is filtered in the query
-//       and every write authorizes the rooftop first. A diary is a list of
-//       customers' names and cars, so an unscoped read here leaks exactly what
-//       the rooftop boundary exists to protect.
+// Usage:
+//   Through IAppointments.
 //
-//       Arriving opens the repair order and links it INSIDE ONE TRANSACTION. Both
-//       halves commit or neither does. Without that, a failure between them
-//       leaves either a job the diary has lost or an arrival with no job, and
-//       both are invisible until somebody tries to reconcile a month later.
+// Coding Instructions:
+//   Four things here are load-bearing.
 //
-//       The permission to book is Service.Write — the same right that opens a
-//       job — and that is deliberate. Arriving a car IS opening a job, so a
-//       weaker booking permission would be a way to reach the stronger one.
+//   The rooftop scope, as everywhere else: every read is filtered in the query
+//   and every write authorizes the rooftop first. A diary is a list of
+//   customers' names and cars, so an unscoped read here leaks exactly what
+//   the rooftop boundary exists to protect.
 //
-//       Capacity is REPORTED, NOT ENFORCED. A workshop that is full still takes
-//       the booking, because real shops overbook on purpose: jobs come in under
-//       estimate, cars are collected late, and a diary that refuses at eight
-//       hours would be worked around within a week by booking everything as an
-//       estimate of zero. Showing the load makes the decision visible; refusing
-//       it makes the data wrong.
+//   Arriving opens the repair order and links it INSIDE ONE TRANSACTION. Both
+//   halves commit or neither does. Without that, a failure between them
+//   leaves either a job the diary has lost or an arrival with no job, and
+//   both are invisible until somebody tries to reconcile a month later.
+//
+//   The permission to book is Service.Write — the same right that opens a
+//   job — and that is deliberate. Arriving a car IS opening a job, so a
+//   weaker booking permission would be a way to reach the stronger one.
+//
+//   Capacity is REPORTED, NOT ENFORCED. A workshop that is full still takes
+//   the booking, because real shops overbook on purpose: jobs come in under
+//   estimate, cars are collected late, and a diary that refuses at eight
+//   hours would be worked around within a week by booking everything as an
+//   estimate of zero. Showing the load makes the decision visible; refusing
+//   it makes the data wrong.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

@@ -1,11 +1,18 @@
-// IAppointments — what the rest of the application may call to reach the diary.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject IAppointments. Nothing outside this folder touches Appointment or
-//       the service schema (ADR-014).
-// Edit: the list returns the day's LOAD alongside the bookings, in one call. That
-//       is not convenience packaging — the only question a service manager asks a
-//       diary is "can I fit this in", and answering it from two round trips means
-//       a screen that can show a day and its capacity disagreeing.
+// Overview: Purpose, File Design, and Engineering
+//   IAppointments — what the rest of the application may call to reach the diary.
+//
+// Usage:
+//   Inject IAppointments. Nothing outside this folder touches Appointment or
+//   the service schema (ADR-014).
+//
+// Coding Instructions:
+//   The list returns the day's LOAD alongside the bookings, in one call. That
+//   is not convenience packaging — the only question a service manager asks a
+//   diary is "can I fit this in", and answering it from two round trips means
+//   a screen that can show a day and its capacity disagreeing.
 
 using DealerFOSS.Core;
 

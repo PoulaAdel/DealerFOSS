@@ -1,13 +1,20 @@
-// VehicleTables — how vehicle records are stored. Shares the "vehicles" schema
-// with Inventory (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls this directly. TenantDb finds it by scanning the assembly.
-// Edit: there is deliberately no unique index on VIN. The same physical vehicle
-//       legitimately reappears — sold, then taken back as a trade-in years later
-//       — and imported data contains mistyped numbers. A unique index would
-//       either block a real car or force staff to invent a fake VIN to get past
-//       it. Duplicates are resolved as a workflow, not by a constraint
-//       (doc 04 §4).
+// Overview: Purpose, File Design, and Engineering
+//   VehicleTables — how vehicle records are stored. Shares the "vehicles" schema
+//   with Inventory (ADR-014).
+//
+// Usage:
+//   Nothing calls this directly. TenantDb finds it by scanning the assembly.
+//
+// Coding Instructions:
+//   There is deliberately no unique index on VIN. The same physical vehicle
+//   legitimately reappears — sold, then taken back as a trade-in years later
+//   — and imported data contains mistyped numbers. A unique index would
+//   either block a real car or force staff to invent a fake VIN to get past
+//   it. Duplicates are resolved as a workflow, not by a constraint
+//   (doc 04 §4).
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

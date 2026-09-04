@@ -1,11 +1,18 @@
-// TenantDbDesignTimeFactory — lets "dotnet ef" build the tenant context outside
-// the running application.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  tooling only; never referenced by application code. Without it, "dotnet
-//       ef" would start the web host, which cannot resolve a tenant and would
-//       therefore fail.
-// Edit: override the target with DEALERFOSS_TENANT_CONNECTION. Migrations
-//       describe the schema; they are applied per tenant at provisioning time.
+// Overview: Purpose, File Design, and Engineering
+//   TenantDbDesignTimeFactory — lets "dotnet ef" build the tenant context outside
+//   the running application.
+//
+// Usage:
+//   Tooling only; never referenced by application code. Without it, "dotnet
+//   ef" would start the web host, which cannot resolve a tenant and would
+//   therefore fail.
+//
+// Coding Instructions:
+//   Override the target with DEALERFOSS_TENANT_CONNECTION. Migrations
+//   describe the schema; they are applied per tenant at provisioning time.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;

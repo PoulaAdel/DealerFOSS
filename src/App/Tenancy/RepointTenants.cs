@@ -1,21 +1,28 @@
-// RepointTenants — after a restore, make the host catalog name the databases
-// that were actually restored.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  dotnet run --project src/App -- --repoint-tenants --prefix Restored_
-// Edit: this exists because of what a restore drill exposed. Each tenant's
-//       connection string lives in the host catalog **encrypted**, so restoring
-//       the catalog under a new name leaves every row still naming the original
-//       databases. A "restored" installation would then quietly read and write
-//       the live ones — which is worse than a restore that plainly failed.
+// Overview: Purpose, File Design, and Engineering
+//   RepointTenants — after a restore, make the host catalog name the databases
+//   that were actually restored.
 //
-//       Re-pointing therefore has to decrypt and re-encrypt, and only something
-//       holding the deployment's keys can do that. A PowerShell script cannot,
-//       and should not be given the keys to try. So it lives here, in the
-//       application, and the restore script calls it.
+// Usage:
+//   Dotnet run --project src/App -- --repoint-tenants --prefix Restored_
 //
-//       It is deliberately not an endpoint. This runs against a catalog that is
-//       not serving anybody yet, from a console, by whoever is performing the
-//       restore.
+// Coding Instructions:
+//   This exists because of what a restore drill exposed. Each tenant's
+//   connection string lives in the host catalog **encrypted**, so restoring
+//   the catalog under a new name leaves every row still naming the original
+//   databases. A "restored" installation would then quietly read and write
+//   the live ones — which is worse than a restore that plainly failed.
+//
+//   Re-pointing therefore has to decrypt and re-encrypt, and only something
+//   holding the deployment's keys can do that. A PowerShell script cannot,
+//   and should not be given the keys to try. So it lives here, in the
+//   application, and the restore script calls it.
+//
+//   It is deliberately not an endpoint. This runs against a catalog that is
+//   not serving anybody yet, from a console, by whoever is performing the
+//   restore.
 
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;

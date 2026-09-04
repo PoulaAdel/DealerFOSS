@@ -1,11 +1,18 @@
-// Customer — a person or a business the dealership deals with.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Customer.Person(...) or Customer.Business(...). Contact details are added
-//       separately, because a customer can have several and none is mandatory.
-// Edit: a customer belongs to the whole dealer organization, not to one rooftop
-//       (doc 04 §1) — the same person may buy at one location and service at
-//       another. HomeRooftopId records where they were first met; it is not a
-//       permission boundary and must never be used as one.
+// Overview: Purpose, File Design, and Engineering
+//   Customer — a person or a business the dealership deals with.
+//
+// Usage:
+//   Customer.Person(...) or Customer.Business(...). Contact details are added
+//   separately, because a customer can have several and none is mandatory.
+//
+// Coding Instructions:
+//   A customer belongs to the whole dealer organization, not to one rooftop
+//   (doc 04 §1) — the same person may buy at one location and service at
+//   another. HomeRooftopId records where they were first met; it is not a
+//   permission boundary and must never be used as one.
 
 using DealerFOSS.Core;
 

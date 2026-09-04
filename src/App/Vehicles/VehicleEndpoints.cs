@@ -1,12 +1,19 @@
-// VehicleEndpoints — the HTTP surface for vehicle records.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/vehicles.
-//       GET  /api/v1/vehicles?search=1HGCM&limit=25
-//       GET  /api/v1/vehicles/{id}
-//       GET  /api/v1/vehicles/{id}/recalls
-//       POST /api/v1/vehicles
-// Edit: keep it thin — delegate, then map a Result to a status code.
-//       Authorization lives in VehicleService so background callers get it too.
+// Overview: Purpose, File Design, and Engineering
+//   VehicleEndpoints — the HTTP surface for vehicle records.
+//
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/vehicles.
+//   GET  /api/v1/vehicles?search=1HGCM&limit=25
+//   GET  /api/v1/vehicles/{id}
+//   GET  /api/v1/vehicles/{id}/recalls
+//   POST /api/v1/vehicles
+//
+// Coding Instructions:
+//   Keep it thin — delegate, then map a Result to a status code.
+//   Authorization lives in VehicleService so background callers get it too.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

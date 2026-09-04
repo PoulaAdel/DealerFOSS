@@ -1,10 +1,17 @@
-// FinanceTables — how the F&I product catalogue is stored.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: the name is unique across the organization, which is what stops two
-//       versions of the same warranty appearing. Note there is no foreign key
-//       from a sold DealProduct to here — see DealTables for why.
+// Overview: Purpose, File Design, and Engineering
+//   FinanceTables — how the F&I product catalogue is stored.
+//
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
+//
+// Coding Instructions:
+//   The name is unique across the organization, which is what stops two
+//   versions of the same warranty appearing. Note there is no foreign key
+//   from a sold DealProduct to here — see DealTables for why.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

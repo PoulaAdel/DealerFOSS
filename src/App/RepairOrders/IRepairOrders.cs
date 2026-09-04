@@ -1,10 +1,17 @@
-// IRepairOrders — what the rest of the application may call to reach service work.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject IRepairOrders. Nothing outside this folder touches RepairOrder,
-//       ServiceLine, or the service schema (ADR-014).
-// Edit: every read is rooftop-scoped inside the service, so a caller cannot widen
-//       its own view by passing a different rooftop id — an unauthorized one is
-//       refused rather than quietly ignored.
+// Overview: Purpose, File Design, and Engineering
+//   IRepairOrders — what the rest of the application may call to reach service work.
+//
+// Usage:
+//   Inject IRepairOrders. Nothing outside this folder touches RepairOrder,
+//   ServiceLine, or the service schema (ADR-014).
+//
+// Coding Instructions:
+//   Every read is rooftop-scoped inside the service, so a caller cannot widen
+//   its own view by passing a different rooftop id — an unauthorized one is
+//   refused rather than quietly ignored.
 
 using DealerFOSS.Core;
 

@@ -1,20 +1,27 @@
-// IMigration — a dealership's records arriving from a file, and leaving in one.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the Migration endpoints call this. Nothing else does yet; when a
-//       connector lands it will queue jobs through the same contract.
-// Edit: the shape to protect on the way in is that submitting a file and running
-//       it are separate. The request stages rows and returns; a worker does the
-//       work. A dealership's export is tens of thousands of rows and an HTTP
-//       request that tried to finish the job would time out somewhere in the
-//       middle, having half-imported their customers with no record of where it
-//       stopped.
+// Overview: Purpose, File Design, and Engineering
+//   IMigration — a dealership's records arriving from a file, and leaving in one.
 //
-//       The shape to protect on the way out is that **an export is a valid
-//       import**. Identical column names, in an order the importer accepts, so a
-//       dealership can take their data to a competitor — or back — without
-//       anybody here writing a converter for them. That is what an open DMS
-//       owes its users, and a round-trip test asserts it rather than a promise
-//       in a README.
+// Usage:
+//   The Migration endpoints call this. Nothing else does yet; when a
+//   connector lands it will queue jobs through the same contract.
+//
+// Coding Instructions:
+//   The shape to protect on the way in is that submitting a file and running
+//   it are separate. The request stages rows and returns; a worker does the
+//   work. A dealership's export is tens of thousands of rows and an HTTP
+//   request that tried to finish the job would time out somewhere in the
+//   middle, having half-imported their customers with no record of where it
+//   stopped.
+//
+//   The shape to protect on the way out is that **an export is a valid
+//   import**. Identical column names, in an order the importer accepts, so a
+//   dealership can take their data to a competitor — or back — without
+//   anybody here writing a converter for them. That is what an open DMS
+//   owes its users, and a round-trip test asserts it rather than a promise
+//   in a README.
 
 using DealerFOSS.Core;
 

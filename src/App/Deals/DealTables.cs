@@ -1,16 +1,23 @@
-// DealTables — how deals are stored. Owns the "deals" schema and no other
-// (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: no foreign key to Customers or Inventory, for the same reason as Leads —
-//       those are other capabilities' tables and a database constraint across
-//       that line couples their migrations to this one. The references are
-//       checked through ICustomers and IInventory where a readable error can be
-//       given.
+// Overview: Purpose, File Design, and Engineering
+//   DealTables — how deals are stored. Owns the "deals" schema and no other
+//   (ADR-014).
 //
-//       Money columns are decimal(18,2) and every amount on a deal shares the
-//       deal's currency, so a total can never mix two.
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
+//
+// Coding Instructions:
+//   No foreign key to Customers or Inventory, for the same reason as Leads —
+//   those are other capabilities' tables and a database constraint across
+//   that line couples their migrations to this one. The references are
+//   checked through ICustomers and IInventory where a readable error can be
+//   given.
+//
+//   Money columns are decimal(18,2) and every amount on a deal shares the
+//   deal's currency, so a total can never mix two.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

@@ -1,13 +1,20 @@
-// SecretProtection — decides which ISecretProtector the application runs with.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  services.AddSecretProtection(configuration) from Program.cs, after
-//       AddHostCatalog. Registering it later is what lets it replace the
-//       development default.
-// Edit: the rule is deliberately blunt. Keys configured means real encryption,
-//       in every environment including Development — so the thing that runs in
-//       production is the thing developers exercise. No keys means the
-//       development pass-through, and Program.cs refuses to start with that
-//       outside Development.
+// Overview: Purpose, File Design, and Engineering
+//   SecretProtection — decides which ISecretProtector the application runs with.
+//
+// Usage:
+//   Services.AddSecretProtection(configuration) from Program.cs, after
+//   AddHostCatalog. Registering it later is what lets it replace the
+//   development default.
+//
+// Coding Instructions:
+//   The rule is deliberately blunt. Keys configured means real encryption,
+//   in every environment including Development — so the thing that runs in
+//   production is the thing developers exercise. No keys means the
+//   development pass-through, and Program.cs refuses to start with that
+//   outside Development.
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

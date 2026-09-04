@@ -1,9 +1,16 @@
-// OrganizationView and friends — the read models this module hands out.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  returned by IOrganization and serialized directly to clients.
-// Edit: these are a published API shape. Entities never cross the boundary;
-//       map into these instead. Removing or renaming a field breaks callers, so
-//       treat additions as the safe change and removals as versioned ones.
+// Overview: Purpose, File Design, and Engineering
+//   OrganizationView and friends — the read models this module hands out.
+//
+// Usage:
+//   Returned by IOrganization and serialized directly to clients.
+//
+// Coding Instructions:
+//   These are a published API shape. Entities never cross the boundary;
+//   map into these instead. Removing or renaming a field breaks callers, so
+//   treat additions as the safe change and removals as versioned ones.
 
 using DealerFOSS.Core;
 

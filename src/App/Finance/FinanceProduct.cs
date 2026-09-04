@@ -1,17 +1,24 @@
-// FinanceProduct — something sold alongside the car: a warranty, GAP, a service
-// plan, paint protection.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the catalogue. What actually gets sold is a DealProduct on a deal, which
-//       carries its own price and cost — see Deals.
-// Edit: the catalogue price and cost are DEFAULTS, not the deal. F&I is
-//       negotiated: the same warranty goes out at different prices on different
-//       deals, and the provider's cost changes when the term does. Copying both
-//       onto the deal at the moment of sale is what lets last month's gross stay
-//       correct after this month's price list arrives.
+// Overview: Purpose, File Design, and Engineering
+//   FinanceProduct — something sold alongside the car: a warranty, GAP, a service
+//   plan, paint protection.
 //
-//       Cost is on the catalogue at all because a product sold without one has no
-//       gross, and F&I gross is most of the point. It can be overridden per deal
-//       and it must never be inferred.
+// Usage:
+//   The catalogue. What actually gets sold is a DealProduct on a deal, which
+//   carries its own price and cost — see Deals.
+//
+// Coding Instructions:
+//   The catalogue price and cost are DEFAULTS, not the deal. F&I is
+//   negotiated: the same warranty goes out at different prices on different
+//   deals, and the provider's cost changes when the term does. Copying both
+//   onto the deal at the moment of sale is what lets last month's gross stay
+//   correct after this month's price list arrives.
+//
+//   Cost is on the catalogue at all because a product sold without one has no
+//   gross, and F&I gross is most of the point. It can be overridden per deal
+//   and it must never be inferred.
 
 using DealerFOSS.Core;
 

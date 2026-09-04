@@ -1,17 +1,24 @@
-// RepairOrderEndpoints — the HTTP surface for workshop jobs.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/repair-orders.
-//       GET  /api/v1/repair-orders?rooftopId=&status=InProgress&vehicleId=&openOnly=true
-//       GET  /api/v1/repair-orders/{id}
-//       POST /api/v1/repair-orders
-//       POST /api/v1/repair-orders/{id}/lines
-//       DELETE /api/v1/repair-orders/{id}/lines/{lineId}
-//       POST /api/v1/repair-orders/{id}/lines/{lineId}/answer
-//       POST /api/v1/repair-orders/{id}/technician
-//       POST /api/v1/repair-orders/{id}/status
-// Edit: keep it thin — delegate, then map a Result to a status code. The rooftop
-//       scope and the authorization rule are applied in RepairOrderService, not
-//       here, so a background caller gets the same checks.
+// Overview: Purpose, File Design, and Engineering
+//   RepairOrderEndpoints — the HTTP surface for workshop jobs.
+//
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/repair-orders.
+//   GET  /api/v1/repair-orders?rooftopId=&status=InProgress&vehicleId=&openOnly=true
+//   GET  /api/v1/repair-orders/{id}
+//   POST /api/v1/repair-orders
+//   POST /api/v1/repair-orders/{id}/lines
+//   DELETE /api/v1/repair-orders/{id}/lines/{lineId}
+//   POST /api/v1/repair-orders/{id}/lines/{lineId}/answer
+//   POST /api/v1/repair-orders/{id}/technician
+//   POST /api/v1/repair-orders/{id}/status
+//
+// Coding Instructions:
+//   Keep it thin — delegate, then map a Result to a status code. The rooftop
+//   scope and the authorization rule are applied in RepairOrderService, not
+//   here, so a background caller gets the same checks.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

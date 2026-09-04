@@ -1,11 +1,18 @@
-// IConnector — the whole surface a provider adapter presents to the runtime.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  implement this in Connectors/<Provider>/. The runtime plans the window,
-//       calls Fetch once per slice, and advances the cursor from what came back.
-// Edit: FetchOutcome.Covered is the load-bearing field. It is nullable because
-//       "the provider did not say" is a real and common answer, and forcing a
-//       value here would push every connector into guessing — which is the
-//       failure this whole design exists to prevent.
+// Overview: Purpose, File Design, and Engineering
+//   IConnector — the whole surface a provider adapter presents to the runtime.
+//
+// Usage:
+//   Implement this in Connectors/<Provider>/. The runtime plans the window,
+//   calls Fetch once per slice, and advances the cursor from what came back.
+//
+// Coding Instructions:
+//   FetchOutcome.Covered is the load-bearing field. It is nullable because
+//   "the provider did not say" is a real and common answer, and forcing a
+//   value here would push every connector into guessing — which is the
+//   failure this whole design exists to prevent.
 
 using DealerFOSS.Core;
 

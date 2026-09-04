@@ -1,11 +1,18 @@
-// Program — the composition root. Everything the application is made of is
-// registered and ordered here, and nowhere else.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  dotnet run --project src/App. With no HostCatalog connection string it
-//       still starts and serves health only, which keeps a bare checkout usable.
-// Edit: a new feature is one AddScoped line and one Map line. Middleware order
-//       is behaviour, not style: the tenant must be resolved before the caller,
-//       and both before any endpoint runs.
+// Overview: Purpose, File Design, and Engineering
+//   Program — the composition root. Everything the application is made of is
+//   registered and ordered here, and nowhere else.
+//
+// Usage:
+//   Dotnet run --project src/App. With no HostCatalog connection string it
+//   still starts and serves health only, which keeps a bare checkout usable.
+//
+// Coding Instructions:
+//   A new feature is one AddScoped line and one Map line. Middleware order
+//   is behaviour, not style: the tenant must be resolved before the caller,
+//   and both before any endpoint runs.
 
 using System.Globalization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;

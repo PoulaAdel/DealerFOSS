@@ -1,18 +1,25 @@
-// DealProduct — one finance product actually sold on one deal.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  set with the rest of the terms, while the deal is still Draft.
-// Edit: the price AND the cost are copied onto this row at the point of sale
-//       rather than read from the catalogue. That is the whole design.
+// Overview: Purpose, File Design, and Engineering
+//   DealProduct — one finance product actually sold on one deal.
 //
-//       F&I is negotiated: the same warranty goes out at different prices on
-//       different deals, and the provider's cost changes when the term does. If
-//       either figure were read live from the catalogue, next month's price list
-//       would silently rewrite last month's gross — the same hazard as a part's
-//       cost, and the same answer.
+// Usage:
+//   Set with the rest of the terms, while the deal is still Draft.
 //
-//       Gross is price minus cost, and it is the number an F&I manager is
-//       measured on. It is computed here rather than stored, because two stored
-//       figures and a stored difference is one figure too many.
+// Coding Instructions:
+//   The price AND the cost are copied onto this row at the point of sale
+//   rather than read from the catalogue. That is the whole design.
+//
+//   F&I is negotiated: the same warranty goes out at different prices on
+//   different deals, and the provider's cost changes when the term does. If
+//   either figure were read live from the catalogue, next month's price list
+//   would silently rewrite last month's gross — the same hazard as a part's
+//   cost, and the same answer.
+//
+//   Gross is price minus cost, and it is the number an F&I manager is
+//   measured on. It is computed here rather than stored, because two stored
+//   figures and a stored difference is one figure too many.
 
 using DealerFOSS.Core;
 

@@ -1,22 +1,29 @@
-// RepairOrderService — running the workshop, and the control that makes it safe.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IRepairOrders.
-// Edit: three things here are load-bearing.
+// Overview: Purpose, File Design, and Engineering
+//   RepairOrderService — running the workshop, and the control that makes it safe.
 //
-//       The rooftop scope, as everywhere else: every read is filtered in the
-//       query and every write authorizes the rooftop first.
+// Usage:
+//   Through IRepairOrders.
 //
-//       Recording work and recording the customer's answer to it are separate
-//       permissions. A technician finds the work; somebody holding
-//       Service.Authorize says the customer agreed to pay for it. Unlike a deal
-//       approval there is deliberately NO ban on the same person doing both — in
-//       an independent workshop the advisor who spots it is usually the one who
-//       picks up the phone, and forbidding that would stop real shops working.
-//       The control is that saying "they agreed" is a distinct, permissioned,
-//       timestamped act, not that two different people must perform it.
+// Coding Instructions:
+//   Three things here are load-bearing.
 //
-//       Invoicing posts to the ledger inside the same transaction as the status
-//       change, so the bill and the books cannot disagree.
+//   The rooftop scope, as everywhere else: every read is filtered in the
+//   query and every write authorizes the rooftop first.
+//
+//   Recording work and recording the customer's answer to it are separate
+//   permissions. A technician finds the work; somebody holding
+//   Service.Authorize says the customer agreed to pay for it. Unlike a deal
+//   approval there is deliberately NO ban on the same person doing both — in
+//   an independent workshop the advisor who spots it is usually the one who
+//   picks up the phone, and forbidding that would stop real shops working.
+//   The control is that saying "they agreed" is a distinct, permissioned,
+//   timestamped act, not that two different people must perform it.
+//
+//   Invoicing posts to the ledger inside the same transaction as the status
+//   change, so the bill and the books cannot disagree.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Accounting;

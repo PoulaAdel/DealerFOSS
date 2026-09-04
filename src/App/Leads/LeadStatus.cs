@@ -1,11 +1,18 @@
-// LeadStatus — where an enquiry has got to, and which moves are legal between
-// those states.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  LeadStatusRules.CanMove(from, to) before changing a status;
-//       Lead.ChangeStatus already applies it.
-// Edit: adding a status means deciding what it can move to AND what can move to
-//       it. Leaving either out silently strands leads in a state nobody can get
-//       them out of.
+// Overview: Purpose, File Design, and Engineering
+//   LeadStatus — where an enquiry has got to, and which moves are legal between
+//   those states.
+//
+// Usage:
+//   LeadStatusRules.CanMove(from, to) before changing a status;
+//   Lead.ChangeStatus already applies it.
+//
+// Coding Instructions:
+//   Adding a status means deciding what it can move to AND what can move to
+//   it. Leaving either out silently strands leads in a state nobody can get
+//   them out of.
 
 namespace DealerFOSS.Leads;
 

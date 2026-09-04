@@ -1,16 +1,23 @@
-// ServiceLine — one piece of work on a repair order: labour, a part, or a job
-// sent out.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  added through RepairOrder.AddLine, never constructed directly, so the
-//       arithmetic and the authorization state always start out consistent.
-// Edit: labour is stored as hours AND a rate, not just a total. A service
-//       department's entire margin conversation is "how long did that take
-//       against what we charged for it", and a line that only kept the money
-//       cannot answer it. The total is derived, so the two can never disagree.
+// Overview: Purpose, File Design, and Engineering
+//   ServiceLine — one piece of work on a repair order: labour, a part, or a job
+//   sent out.
 //
-//       A line the customer declined keeps its amount rather than being deleted.
-//       "We offered, they said no" is worth more than silence when the same car
-//       comes back with the same fault.
+// Usage:
+//   Added through RepairOrder.AddLine, never constructed directly, so the
+//   arithmetic and the authorization state always start out consistent.
+//
+// Coding Instructions:
+//   Labour is stored as hours AND a rate, not just a total. A service
+//   department's entire margin conversation is "how long did that take
+//   against what we charged for it", and a line that only kept the money
+//   cannot answer it. The total is derived, so the two can never disagree.
+//
+//   A line the customer declined keeps its amount rather than being deleted.
+//   "We offered, they said no" is worth more than silence when the same car
+//   comes back with the same fault.
 
 namespace DealerFOSS.RepairOrders;
 

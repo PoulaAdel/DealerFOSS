@@ -1,15 +1,22 @@
-// TenantDb — one dealer organization's business database: organization
-// structure, customers, vehicles, and stock.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  injected into feature services. It binds to the tenant resolved for the
-//       current request and never chooses a connection itself, so a request
-//       cannot address a second dealer's data (doc 04 §5).
-// Edit: do NOT add entity configuration here. Each feature owns its own mapping
-//       in a XTables.cs file and this context picks them up by scanning the
-//       assembly, which is what keeps the features separable inside one project.
-//       Two behaviours below are load-bearing and must not be relaxed: audit
-//       columns are stamped centrally on save, and inventory status history is
-//       append-only.
+// Overview: Purpose, File Design, and Engineering
+//   TenantDb — one dealer organization's business database: organization
+//   structure, customers, vehicles, and stock.
+//
+// Usage:
+//   Injected into feature services. It binds to the tenant resolved for the
+//   current request and never chooses a connection itself, so a request
+//   cannot address a second dealer's data (doc 04 §5).
+//
+// Coding Instructions:
+//   Do NOT add entity configuration here. Each feature owns its own mapping
+//   in a XTables.cs file and this context picks them up by scanning the
+//   assembly, which is what keeps the features separable inside one project.
+//   Two behaviours below are load-bearing and must not be relaxed: audit
+//   columns are stamped centrally on save, and inventory status history is
+//   append-only.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Accounting;

@@ -1,10 +1,17 @@
-// Account — one line of the chart of accounts.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  looked up by code when posting. The chart is seeded, not created by
-//       users, until account administration lands.
-// Edit: the account kind decides which side increases it, and every report ever
-//       written depends on that being right. Do not add a kind without deciding
-//       its normal balance.
+// Overview: Purpose, File Design, and Engineering
+//   Account — one line of the chart of accounts.
+//
+// Usage:
+//   Looked up by code when posting. The chart is seeded, not created by
+//   users, until account administration lands.
+//
+// Coding Instructions:
+//   The account kind decides which side increases it, and every report ever
+//   written depends on that being right. Do not add a kind without deciding
+//   its normal balance.
 
 using DealerFOSS.Core;
 

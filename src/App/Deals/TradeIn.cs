@@ -1,11 +1,18 @@
-// TradeIn — the customer's old car, and what it is worth to this deal.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  TradeIn.Create(...), set through Deal.SetTerms.
-// Edit: allowance and payoff are separate on purpose and both are positive
-//       numbers. The allowance is what the dealership gives for the car; the
-//       payoff is what is still owed on it to a lender. Netting them into one
-//       figure loses the fact that a trade can be in negative equity, which is
-//       the single most common source of an argument at the desk.
+// Overview: Purpose, File Design, and Engineering
+//   TradeIn — the customer's old car, and what it is worth to this deal.
+//
+// Usage:
+//   TradeIn.Create(...), set through Deal.SetTerms.
+//
+// Coding Instructions:
+//   Allowance and payoff are separate on purpose and both are positive
+//   numbers. The allowance is what the dealership gives for the car; the
+//   payoff is what is still owed on it to a lender. Netting them into one
+//   figure loses the fact that a trade can be in negative equity, which is
+//   the single most common source of an argument at the desk.
 
 namespace DealerFOSS.Deals;
 

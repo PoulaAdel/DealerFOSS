@@ -1,9 +1,16 @@
-// TenantRecord — one routing row in the control-plane catalog: how to reach a
-// dealer organization's database, and whether it is currently usable.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  read through TenantResolver, not directly.
-// Edit: routing and lifecycle fields only. Dealership business data never goes
-//       in the host catalog (ADR-003) — it belongs in the tenant database.
+// Overview: Purpose, File Design, and Engineering
+//   TenantRecord — one routing row in the control-plane catalog: how to reach a
+//   dealer organization's database, and whether it is currently usable.
+//
+// Usage:
+//   Read through TenantResolver, not directly.
+//
+// Coding Instructions:
+//   Routing and lifecycle fields only. Dealership business data never goes
+//   in the host catalog (ADR-003) — it belongs in the tenant database.
 
 namespace DealerFOSS.Tenancy;
 

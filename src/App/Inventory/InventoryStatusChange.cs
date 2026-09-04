@@ -1,10 +1,17 @@
-// InventoryStatusChange — one line of a unit's history: it moved from here to
-// there, then, and this is why.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  written by InventoryUnit.ChangeStatus; never constructed directly.
-// Edit: history is append-only. A wrong entry is corrected by making the opposite
-//       move with a reason, not by editing the record (doc 04 §4, ADR-016).
-//       TenantDb refuses to update or delete these rows.
+// Overview: Purpose, File Design, and Engineering
+//   InventoryStatusChange — one line of a unit's history: it moved from here to
+//   there, then, and this is why.
+//
+// Usage:
+//   Written by InventoryUnit.ChangeStatus; never constructed directly.
+//
+// Coding Instructions:
+//   History is append-only. A wrong entry is corrected by making the opposite
+//   move with a reason, not by editing the record (doc 04 §4, ADR-016).
+//   TenantDb refuses to update or delete these rows.
 
 using DealerFOSS.Core;
 

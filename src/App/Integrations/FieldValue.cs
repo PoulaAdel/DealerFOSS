@@ -1,17 +1,24 @@
-// FieldValue — ADR-021 in code: a value that does not fit becomes absent.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Coerce.Amount(raw, min, max, "deal.frontGross") returns either a value
-//       or an absence carrying the raw text and the reason. Never returns a
-//       substitute.
-// Edit: the temptation, every time, is to return 0 or a sentinel date so the
-//       caller has something to write. Don't. A substituted 0 is a plausible
-//       sale amount and a sentinel date is a plausible delivery date; both
-//       survive every downstream check and are indistinguishable from fact by
-//       the time anybody asks. Absent is visibly missing and can be chased.
+// Overview: Purpose, File Design, and Engineering
+//   FieldValue — ADR-021 in code: a value that does not fit becomes absent.
 //
-//       Truncation is the single exception and only for free text — never for
-//       anything a later lookup is keyed on, because a truncated key silently
-//       matches the wrong record, which is worse than no record at all.
+// Usage:
+//   Coerce.Amount(raw, min, max, "deal.frontGross") returns either a value
+//   or an absence carrying the raw text and the reason. Never returns a
+//   substitute.
+//
+// Coding Instructions:
+//   The temptation, every time, is to return 0 or a sentinel date so the
+//   caller has something to write. Don't. A substituted 0 is a plausible
+//   sale amount and a sentinel date is a plausible delivery date; both
+//   survive every downstream check and are indistinguishable from fact by
+//   the time anybody asks. Absent is visibly missing and can be chased.
+//
+//   Truncation is the single exception and only for free text — never for
+//   anything a later lookup is keyed on, because a truncated key silently
+//   matches the wrong record, which is worse than no record at all.
 
 using System.Globalization;
 

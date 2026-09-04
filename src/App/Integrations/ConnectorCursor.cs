@@ -1,16 +1,23 @@
-// ConnectorCursor — how far a dealership has been read, and why it stopped there.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  one row per connector, per dealership, per contract. The runtime loads
-//       it, plans from it, and writes it back only when the provider accounted
-//       for the window.
-// Edit: this is the row the whole FetchWindow design exists to protect, so the
-//       two rules below are enforced here rather than trusted to callers.
+// Overview: Purpose, File Design, and Engineering
+//   ConnectorCursor — how far a dealership has been read, and why it stopped there.
 //
-//       Hold() exists because "the cursor did not move" is a state somebody has
-//       to be able to see. Without it a held cursor and a healthy one look
-//       identical in the table, and the store that has been re-reading the same
-//       three days for a fortnight is invisible until a reconciliation finds the
-//       hole.
+// Usage:
+//   One row per connector, per dealership, per contract. The runtime loads
+//   it, plans from it, and writes it back only when the provider accounted
+//   for the window.
+//
+// Coding Instructions:
+//   This is the row the whole FetchWindow design exists to protect, so the
+//   two rules below are enforced here rather than trusted to callers.
+//
+//   Hold() exists because "the cursor did not move" is a state somebody has
+//   to be able to see. Without it a held cursor and a healthy one look
+//   identical in the table, and the store that has been re-reading the same
+//   three days for a fortnight is invisible until a reconciliation finds the
+//   hole.
 
 using DealerFOSS.Core;
 

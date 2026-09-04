@@ -1,11 +1,18 @@
-// CustomerService — finding, reading, and adding customers.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through ICustomers.
-// Edit: customers are shared across the dealer organization, so there is no
-//       rooftop filter here — only a permission check. That is the documented
-//       model (doc 04 §1), not an oversight: the same person buys at one
-//       location and services at another, and hiding them would make staff
-//       create duplicates.
+// Overview: Purpose, File Design, and Engineering
+//   CustomerService — finding, reading, and adding customers.
+//
+// Usage:
+//   Through ICustomers.
+//
+// Coding Instructions:
+//   Customers are shared across the dealer organization, so there is no
+//   rooftop filter here — only a permission check. That is the documented
+//   model (doc 04 §1), not an oversight: the same person buys at one
+//   location and services at another, and hiding them would make staff
+//   create duplicates.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

@@ -1,10 +1,17 @@
-// RateLimits — the named limiter policies, in one place.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  .RequireRateLimiting(RateLimits.Credentials) on an endpoint where
-//       somebody could guess a secret.
-// Edit: adding a policy here is cheap; applying one to a business endpoint is
-//       not. A limiter on "list the stock" punishes a busy dealership for being
-//       busy, and the volume that matters is guessing, not working.
+// Overview: Purpose, File Design, and Engineering
+//   RateLimits — the named limiter policies, in one place.
+//
+// Usage:
+//   .RequireRateLimiting(RateLimits.Credentials) on an endpoint where
+//   somebody could guess a secret.
+//
+// Coding Instructions:
+//   Adding a policy here is cheap; applying one to a business endpoint is
+//   not. A limiter on "list the stock" punishes a busy dealership for being
+//   busy, and the volume that matters is guessing, not working.
 
 namespace DealerFOSS.App;
 

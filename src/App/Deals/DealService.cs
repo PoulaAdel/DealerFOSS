@@ -1,19 +1,26 @@
-// DealService — working a deal, and the two controls that make it safe.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IDeals.
-// Edit: three things here are load-bearing.
+// Overview: Purpose, File Design, and Engineering
+//   DealService — working a deal, and the two controls that make it safe.
 //
-//       The rooftop scope, as everywhere else: every read is filtered in the
-//       query and every write authorizes the rooftop first.
+// Usage:
+//   Through IDeals.
 //
-//       Writing a deal and approving one are separate permissions. A salesperson
-//       builds the numbers; somebody holding Deals.Approve signs them off. That
-//       split is the point of the capability, not decoration.
+// Coding Instructions:
+//   Three things here are load-bearing.
 //
-//       Starting a deal HOLDS the car and cancelling releases it, both through
-//       IInventory. Because the deal and the hold must never disagree, they are
-//       committed in one transaction — the same TenantDb instance is shared by
-//       both services within a request, so a single transaction covers both.
+//   The rooftop scope, as everywhere else: every read is filtered in the
+//   query and every write authorizes the rooftop first.
+//
+//   Writing a deal and approving one are separate permissions. A salesperson
+//   builds the numbers; somebody holding Deals.Approve signs them off. That
+//   split is the point of the capability, not decoration.
+//
+//   Starting a deal HOLDS the car and cancelling releases it, both through
+//   IInventory. Because the deal and the hold must never disagree, they are
+//   committed in one transaction — the same TenantDb instance is shared by
+//   both services within a request, so a single transaction covers both.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Accounting;

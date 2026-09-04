@@ -1,21 +1,28 @@
-// DocumentHtml — the print stylesheet and the small helpers every document uses.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  DocumentHtml.Page(title, body) wraps a document body in a complete,
-//       standalone HTML page.
-// Edit: a PDF library was deliberately not taken (maintainer, 2026-08-06). This
-//       is an AGPL project and `NuGetAudit` fails the build on a vulnerable
-//       package, so a rendering component would have to clear both a licence
-//       review and an advisory history. A printable page needs neither, and the
-//       browser's own print-to-PDF produces the customer's copy.
+// Overview: Purpose, File Design, and Engineering
+//   DocumentHtml — the print stylesheet and the small helpers every document uses.
 //
-//       Everything is inlined — no stylesheet link, no script, no font, no image.
-//       A document has to survive being saved to disk and opened next year, and
-//       anything fetched at open time will not be there.
+// Usage:
+//   DocumentHtml.Page(title, body) wraps a document body in a complete,
+//   standalone HTML page.
 //
-//       Escape EVERY value with Text(). A customer called "Bob & Sons <Motors>"
-//       is ordinary, and an unescaped one produces a broken document rather than
-//       an interesting exploit — but broken is bad enough, and the habit is what
-//       stops the interesting version arriving later.
+// Coding Instructions:
+//   A PDF library was deliberately not taken (maintainer, 2026-08-06). This
+//   is an AGPL project and `NuGetAudit` fails the build on a vulnerable
+//   package, so a rendering component would have to clear both a licence
+//   review and an advisory history. A printable page needs neither, and the
+//   browser's own print-to-PDF produces the customer's copy.
+//
+//   Everything is inlined — no stylesheet link, no script, no font, no image.
+//   A document has to survive being saved to disk and opened next year, and
+//   anything fetched at open time will not be there.
+//
+//   Escape EVERY value with Text(). A customer called "Bob & Sons <Motors>"
+//   is ordinary, and an unescaped one produces a broken document rather than
+//   an interesting exploit — but broken is bad enough, and the habit is what
+//   stops the interesting version arriving later.
 
 using System.Globalization;
 using System.Net;

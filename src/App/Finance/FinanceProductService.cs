@@ -1,12 +1,19 @@
-// FinanceProductService — the F&I catalogue.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IFinanceProducts.
-// Edit: the catalogue is organization-wide in both directions, and that is not an
-//       oversight. Reading it needs only Deals.Read, because a salesperson has to
-//       see what they may offer; changing it needs Finance.ManageProducts held
-//       organization-wide, because a product's provider and price list are a
-//       group-level arrangement and one lot inventing its own would produce two
-//       versions of the same warranty.
+// Overview: Purpose, File Design, and Engineering
+//   FinanceProductService — the F&I catalogue.
+//
+// Usage:
+//   Through IFinanceProducts.
+//
+// Coding Instructions:
+//   The catalogue is organization-wide in both directions, and that is not an
+//   oversight. Reading it needs only Deals.Read, because a salesperson has to
+//   see what they may offer; changing it needs Finance.ManageProducts held
+//   organization-wide, because a product's provider and price list are a
+//   group-level arrangement and one lot inventing its own would produce two
+//   versions of the same warranty.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

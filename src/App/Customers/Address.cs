@@ -1,11 +1,18 @@
-// Address — where a customer is, stored as a value on the customer rather than a
-// separate record.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  new Address("12 Main St", null, "Springfield", "IL", "62704", "US").
-// Edit: deliberately not US-shaped. "AdministrativeArea" covers a state, province,
-//       or region, and PostalCode is a string because postcodes are not numbers
-//       and leading zeros matter (doc 04 §4). Country is an ISO 3166-1 alpha-2
-//       code so a jurisdiction rule pack can key off it later.
+// Overview: Purpose, File Design, and Engineering
+//   Address — where a customer is, stored as a value on the customer rather than a
+//   separate record.
+//
+// Usage:
+//   New Address("12 Main St", null, "Springfield", "IL", "62704", "US").
+//
+// Coding Instructions:
+//   Deliberately not US-shaped. "AdministrativeArea" covers a state, province,
+//   or region, and PostalCode is a string because postcodes are not numbers
+//   and leading zeros matter (doc 04 §4). Country is an ISO 3166-1 alpha-2
+//   code so a jurisdiction rule pack can key off it later.
 
 namespace DealerFOSS.Customers;
 

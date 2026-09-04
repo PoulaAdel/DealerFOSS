@@ -1,11 +1,18 @@
-// ContactPoint — one way to reach a customer: an email address or a phone number.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  added through Customer.AddContactPoint, never constructed directly, so
-//       normalization and the primary-flag rules always apply.
-// Edit: an email address is a way to reach someone, NOT their identity
-//       (doc 04 §4). Two customers may legitimately share one — a couple, a
-//       family business — so never add a unique constraint on the value and
-//       never match customers on it alone.
+// Overview: Purpose, File Design, and Engineering
+//   ContactPoint — one way to reach a customer: an email address or a phone number.
+//
+// Usage:
+//   Added through Customer.AddContactPoint, never constructed directly, so
+//   normalization and the primary-flag rules always apply.
+//
+// Coding Instructions:
+//   An email address is a way to reach someone, NOT their identity
+//   (doc 04 §4). Two customers may legitimately share one — a couple, a
+//   family business — so never add a unique constraint on the value and
+//   never match customers on it alone.
 
 namespace DealerFOSS.Customers;
 

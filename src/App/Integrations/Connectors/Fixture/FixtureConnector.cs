@@ -1,12 +1,19 @@
-// FixtureConnector — a provider that misbehaves the way real ones do.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the conformance tests run against this. It is shipped rather than kept
-//       in the test project so a new connector author has a worked example of
-//       what the awkward answers look like.
-// Edit: every behaviour here was chosen because a real DMS does it. Do not
-//       "tidy" one away — a fixture that only returns well-formed pages proves
-//       nothing, and the conformance suite would pass against a connector that
-//       cannot survive a Tuesday.
+// Overview: Purpose, File Design, and Engineering
+//   FixtureConnector — a provider that misbehaves the way real ones do.
+//
+// Usage:
+//   The conformance tests run against this. It is shipped rather than kept
+//   in the test project so a new connector author has a worked example of
+//   what the awkward answers look like.
+//
+// Coding Instructions:
+//   Every behaviour here was chosen because a real DMS does it. Do not
+//   "tidy" one away — a fixture that only returns well-formed pages proves
+//   nothing, and the conformance suite would pass against a connector that
+//   cannot survive a Tuesday.
 
 using System.Globalization;
 using DealerFOSS.Core;

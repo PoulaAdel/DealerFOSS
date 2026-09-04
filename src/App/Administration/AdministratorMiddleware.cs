@@ -1,18 +1,25 @@
-// AdministratorMiddleware — identifies the caller on control-plane paths, from a
-// cookie that means nothing anywhere else.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  automatic for every /api/v1/admin path, and only those. Runs after
-//       TenantMiddleware, because opening support access needs to know which
-//       dealership is being entered.
-// Edit: read what this file does NOT do. It never calls ICurrentUser.Set, so an
-//       administrator cannot become a tenant caller by any route through here.
-//       The reverse holds by construction too: CurrentUserMiddleware only ever
-//       looks at the tenant session cookie against the tenant's own database, so
-//       an administrator cookie presented to a business endpoint resolves to
-//       nobody and is refused before any endpoint runs.
+// Overview: Purpose, File Design, and Engineering
+//   AdministratorMiddleware — identifies the caller on control-plane paths, from a
+//   cookie that means nothing anywhere else.
 //
-//       That is the separation, and it is structural rather than a permission
-//       check each capability has to remember (doc 06 §3).
+// Usage:
+//   Automatic for every /api/v1/admin path, and only those. Runs after
+//   TenantMiddleware, because opening support access needs to know which
+//   dealership is being entered.
+//
+// Coding Instructions:
+//   Read what this file does NOT do. It never calls ICurrentUser.Set, so an
+//   administrator cannot become a tenant caller by any route through here.
+//   The reverse holds by construction too: CurrentUserMiddleware only ever
+//   looks at the tenant session cookie against the tenant's own database, so
+//   an administrator cookie presented to a business endpoint resolves to
+//   nobody and is refused before any endpoint runs.
+//
+//   That is the separation, and it is structural rather than a permission
+//   check each capability has to remember (doc 06 §3).
 
 using DealerFOSS.Core;
 using DealerFOSS.Identity;

@@ -1,13 +1,20 @@
-// AccountingTables — how the ledger is stored. Owns the "accounting" schema and
-// no other (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: journal entries and lines carry no audit columns and no concurrency
-//       token, unlike every other table here — because they are never updated.
-//       They are marked IAppendOnly, which TenantDb enforces. If you find
-//       yourself wanting a "modified" column on a journal line, what you actually
-//       want is a reversal.
+// Overview: Purpose, File Design, and Engineering
+//   AccountingTables — how the ledger is stored. Owns the "accounting" schema and
+//   no other (ADR-014).
+//
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
+//
+// Coding Instructions:
+//   Journal entries and lines carry no audit columns and no concurrency
+//   token, unlike every other table here — because they are never updated.
+//   They are marked IAppendOnly, which TenantDb enforces. If you find
+//   yourself wanting a "modified" column on a journal line, what you actually
+//   want is a reversal.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

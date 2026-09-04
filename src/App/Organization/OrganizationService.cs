@@ -1,11 +1,18 @@
-// OrganizationService — the read workflows, and the rooftop-scope check applied
-// to them.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IOrganization.
-// Edit: authorization lives here, not in the endpoint, so a background job gets
-//       the same check as an HTTP call. An unauthorized rooftop and an unknown
-//       one deliberately return the same failure, so the response cannot be used
-//       to enumerate rooftops. Removing either check fails RooftopAuthorizationTests.
+// Overview: Purpose, File Design, and Engineering
+//   OrganizationService — the read workflows, and the rooftop-scope check applied
+//   to them.
+//
+// Usage:
+//   Through IOrganization.
+//
+// Coding Instructions:
+//   Authorization lives here, not in the endpoint, so a background job gets
+//   the same check as an HTTP call. An unauthorized rooftop and an unknown
+//   one deliberately return the same failure, so the response cannot be used
+//   to enumerate rooftops. Removing either check fails RooftopAuthorizationTests.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Identity;

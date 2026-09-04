@@ -1,11 +1,18 @@
-// CustomerEndpoints — the HTTP surface for customer records.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/customers.
-//       GET  /api/v1/customers?search=smith&limit=25
-//       GET  /api/v1/customers/{id}
-//       POST /api/v1/customers
-// Edit: keep it thin — delegate, then map a Result to a status code.
-//       Authorization lives in CustomerService so background callers get it too.
+// Overview: Purpose, File Design, and Engineering
+//   CustomerEndpoints — the HTTP surface for customer records.
+//
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/customers.
+//   GET  /api/v1/customers?search=smith&limit=25
+//   GET  /api/v1/customers/{id}
+//   POST /api/v1/customers
+//
+// Coding Instructions:
+//   Keep it thin — delegate, then map a Result to a status code.
+//   Authorization lives in CustomerService so background callers get it too.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

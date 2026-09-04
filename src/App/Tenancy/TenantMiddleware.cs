@@ -1,12 +1,19 @@
-// TenantMiddleware — resolves which dealer organization a request belongs to,
-// once, before any endpoint runs.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  automatic for every /api/v1 path. Health and root are exempt so probes
-//       work without a tenant.
-// Edit: the X-Tenant header is provisional. When sessions land (ADR-009) the
-//       tenant comes from the authenticated session and this header path is
-//       deleted. Refusing early is deliberate — a missing tenant must never
-//       reach a data call.
+// Overview: Purpose, File Design, and Engineering
+//   TenantMiddleware — resolves which dealer organization a request belongs to,
+//   once, before any endpoint runs.
+//
+// Usage:
+//   Automatic for every /api/v1 path. Health and root are exempt so probes
+//   work without a tenant.
+//
+// Coding Instructions:
+//   The X-Tenant header is provisional. When sessions land (ADR-009) the
+//   tenant comes from the authenticated session and this header path is
+//   deleted. Refusing early is deliberate — a missing tenant must never
+//   reach a data call.
 
 using DealerFOSS.Tenancy;
 using DealerFOSS.Core;

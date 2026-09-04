@@ -1,10 +1,17 @@
-// MigrationTables — how import jobs and their staged rows are stored. Owns the
-// "migration" schema and no other (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning.
-// Edit: the raw row column is deliberately generous and deliberately not indexed.
-//       It exists to be read back by a person resolving an exception, not to be
-//       searched — and a row from a real dealer export can be long.
+// Overview: Purpose, File Design, and Engineering
+//   MigrationTables — how import jobs and their staged rows are stored. Owns the
+//   "migration" schema and no other (ADR-014).
+//
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning.
+//
+// Coding Instructions:
+//   The raw row column is deliberately generous and deliberately not indexed.
+//   It exists to be read back by a person resolving an exception, not to be
+//   searched — and a row from a real dealer export can be long.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

@@ -1,18 +1,25 @@
-// Deal — one customer buying one car, at a price, with a trade-in and an
-// approval.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Deal.Start(...), SetTerms while it is Draft, then ChangeStatus to move it
-//       along.
-// Edit: two rules here are not conveniences.
+// Overview: Purpose, File Design, and Engineering
+//   Deal — one customer buying one car, at a price, with a trade-in and an
+//   approval.
 //
-//       The numbers are frozen the moment the deal leaves Draft. A price that can
-//       change after a manager approved it makes the approval meaningless, so
-//       changing an approved deal means moving it back to Draft — which is a
-//       recorded move somebody has to make deliberately.
+// Usage:
+//   Deal.Start(...), SetTerms while it is Draft, then ChangeStatus to move it
+//   along.
 //
-//       A deal belongs to ONE rooftop and that is a permission boundary
-//       (doc 04 §1). The customer is shared across the organization; the deal is
-//       not.
+// Coding Instructions:
+//   Two rules here are not conveniences.
+//
+//   The numbers are frozen the moment the deal leaves Draft. A price that can
+//   change after a manager approved it makes the approval meaningless, so
+//   changing an approved deal means moving it back to Draft — which is a
+//   recorded move somebody has to make deliberately.
+//
+//   A deal belongs to ONE rooftop and that is a permission boundary
+//   (doc 04 §1). The customer is shared across the organization; the deal is
+//   not.
 
 using DealerFOSS.Core;
 

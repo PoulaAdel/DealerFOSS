@@ -1,18 +1,25 @@
-// AdminEndpoints — the control plane: operating the deployment, and the one
-// deliberate door into a dealership's data.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  POST /api/v1/admin/login sets the administrator cookie. Everything else
-//       under /api/v1/admin needs it. Support access additionally needs the
-//       X-Tenant header naming the dealership being entered.
-// Edit: what an administrator may reach is decided by which endpoints exist here,
-//       not by a permission check. There is no business capability on this
-//       router, and adding one would be the mistake this whole area prevents —
-//       an administrator who wants a customer record opens support access and
-//       reads it as the dealership's own support principal, in their own log.
+// Overview: Purpose, File Design, and Engineering
+//   AdminEndpoints — the control plane: operating the deployment, and the one
+//   deliberate door into a dealership's data.
 //
-//       The administrator cookies are named apart from the tenant ones on
-//       purpose. After support access is granted a browser holds both, and a
-//       shared name would mean one silently overwriting the other.
+// Usage:
+//   POST /api/v1/admin/login sets the administrator cookie. Everything else
+//   under /api/v1/admin needs it. Support access additionally needs the
+//   X-Tenant header naming the dealership being entered.
+//
+// Coding Instructions:
+//   What an administrator may reach is decided by which endpoints exist here,
+//   not by a permission check. There is no business capability on this
+//   router, and adding one would be the mistake this whole area prevents —
+//   an administrator who wants a customer record opens support access and
+//   reads it as the dealership's own support principal, in their own log.
+//
+//   The administrator cookies are named apart from the tenant ones on
+//   purpose. After support access is granted a browser holds both, and a
+//   shared name would mean one silently overwriting the other.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

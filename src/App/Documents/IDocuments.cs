@@ -1,15 +1,22 @@
-// IDocuments — the paperwork a customer is handed.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject IDocuments and ask for a deal summary or a service invoice. The
-//       result is a complete, standalone HTML page.
-// Edit: this capability OWNS NO DATA. It reads through IDeals, IRepairOrders,
-//       ICustomers, and IOrganization, which means the caller's permissions and
-//       rooftop scope are already applied by the time anything is rendered — a
-//       document cannot show what the person asking could not have read anyway.
+// Overview: Purpose, File Design, and Engineering
+//   IDocuments — the paperwork a customer is handed.
 //
-//       The output type is deliberately a record rather than a raw string. When
-//       a PDF renderer eventually replaces the HTML, ContentType and FileName
-//       change and no caller does.
+// Usage:
+//   Inject IDocuments and ask for a deal summary or a service invoice. The
+//   result is a complete, standalone HTML page.
+//
+// Coding Instructions:
+//   This capability OWNS NO DATA. It reads through IDeals, IRepairOrders,
+//   ICustomers, and IOrganization, which means the caller's permissions and
+//   rooftop scope are already applied by the time anything is rendered — a
+//   document cannot show what the person asking could not have read anyway.
+//
+//   The output type is deliberately a record rather than a raw string. When
+//   a PDF renderer eventually replaces the HTML, ContentType and FileName
+//   change and no caller does.
 
 using DealerFOSS.Core;
 

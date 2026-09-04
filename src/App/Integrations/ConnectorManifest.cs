@@ -1,12 +1,19 @@
-// ConnectorManifest — what a connector claims, and what it needs to be told.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  every connector exposes one Manifest. The UI shows it, and
-//       ValidateSettings() runs when a dealership's configuration is saved.
-// Edit: settings are declared one field at a time. Never add a "Delimited" kind
-//       or a setting whose value is parsed into several — that is how
-//       "sub123;dept-a;dept-b;test" happens, where appending a word silently
-//       moves a dealership to the sandbox and the parser for it becomes the
-//       least-tested code in the connector.
+// Overview: Purpose, File Design, and Engineering
+//   ConnectorManifest — what a connector claims, and what it needs to be told.
+//
+// Usage:
+//   Every connector exposes one Manifest. The UI shows it, and
+//   ValidateSettings() runs when a dealership's configuration is saved.
+//
+// Coding Instructions:
+//   Settings are declared one field at a time. Never add a "Delimited" kind
+//   or a setting whose value is parsed into several — that is how
+//   "sub123;dept-a;dept-b;test" happens, where appending a word silently
+//   moves a dealership to the sandbox and the parser for it becomes the
+//   least-tested code in the connector.
 
 using DealerFOSS.Core;
 

@@ -1,27 +1,34 @@
-// IRecordSink — how an arriving record reaches the capability that owns it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  implemented by a capability (Deals, Customers, …) and registered in DI.
-//       The runtime finds the sink for a contract and hands it the records.
-// Edit: this interface is the reason Integrations can persist and apply anything
-//       at all without seeing a single capability type. FeatureBoundaryTests
-//       forbids the direct reference, and the correct response to that test
-//       failing is another sink — never an exception to the rule. A connector
-//       able to write a Deal row directly would be a route around every rule
-//       Deals enforces, arriving from outside the building.
+// Overview: Purpose, File Design, and Engineering
+//   IRecordSink — how an arriving record reaches the capability that owns it.
 //
-//       ONE obligation on an implementer, and it is load-bearing:
+// Usage:
+//   Implemented by a capability (Deals, Customers, …) and registered in DI.
+//   The runtime finds the sink for a contract and hands it the records.
 //
-//       APPLYING MUST BE IDEMPOTENT, keyed on ExternalId. The cursor stays put
-//       whenever a provider will not account for the window, which means the
-//       same records arrive again tomorrow — by design. A sink that inserts
-//       blindly turns that safety into duplicate customers.
+// Coding Instructions:
+//   This interface is the reason Integrations can persist and apply anything
+//   at all without seeing a single capability type. FeatureBoundaryTests
+//   forbids the direct reference, and the correct response to that test
+//   failing is another sink — never an exception to the rule. A connector
+//   able to write a Deal row directly would be a route around every rule
+//   Deals enforces, arriving from outside the building.
 //
-//       Saving is fine. The runtime opens an explicit transaction around the
-//       whole run, so a sink calling SaveChangesAsync flushes but does not
-//       commit; applying and advancing the cursor still commit together or not
-//       at all. This used to say "do not save", which no capability could
-//       satisfy — every service in this codebase saves — and would have forced
-//       an awkward second no-save method onto each one.
+//   ONE obligation on an implementer, and it is load-bearing:
+//
+//   APPLYING MUST BE IDEMPOTENT, keyed on ExternalId. The cursor stays put
+//   whenever a provider will not account for the window, which means the
+//   same records arrive again tomorrow — by design. A sink that inserts
+//   blindly turns that safety into duplicate customers.
+//
+//   Saving is fine. The runtime opens an explicit transaction around the
+//   whole run, so a sink calling SaveChangesAsync flushes but does not
+//   commit; applying and advancing the cursor still commit together or not
+//   at all. This used to say "do not save", which no capability could
+//   satisfy — every service in this codebase saves — and would have forced
+//   an awkward second no-save method onto each one.
 
 using DealerFOSS.Core;
 

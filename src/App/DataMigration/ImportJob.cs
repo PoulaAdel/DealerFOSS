@@ -1,9 +1,16 @@
-// ImportJob — one attempt at bringing a dealership's existing records in.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by MigrationService, run by ImportWorker.
-// Edit: the counts are the reconciliation report (doc 05 §6 step 7), so every row
-//       must land in exactly one of created/updated/skipped/failed. If they stop
-//       summing to RowsTotal, the report is lying and somebody will trust it.
+// Overview: Purpose, File Design, and Engineering
+//   ImportJob — one attempt at bringing a dealership's existing records in.
+//
+// Usage:
+//   Created by MigrationService, run by ImportWorker.
+//
+// Coding Instructions:
+//   The counts are the reconciliation report (doc 05 §6 step 7), so every row
+//   must land in exactly one of created/updated/skipped/failed. If they stop
+//   summing to RowsTotal, the report is lying and somebody will trust it.
 
 using DealerFOSS.Core;
 

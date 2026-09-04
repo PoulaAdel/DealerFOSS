@@ -1,9 +1,16 @@
-// IInventory — what other features may call to reach stock on a lot.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Sales will read and reserve a unit through this.
-// Edit: every read and write behind this interface is filtered to the caller's
-//       authorized rooftops. An empty scope is a denial, never "unfiltered" —
-//       keep that contract, or a caller will read it as "no filter".
+// Overview: Purpose, File Design, and Engineering
+//   IInventory — what other features may call to reach stock on a lot.
+//
+// Usage:
+//   Sales will read and reserve a unit through this.
+//
+// Coding Instructions:
+//   Every read and write behind this interface is filtered to the caller's
+//   authorized rooftops. An empty scope is a denial, never "unfiltered" —
+//   keep that contract, or a caller will read it as "no filter".
 
 using DealerFOSS.Core;
 

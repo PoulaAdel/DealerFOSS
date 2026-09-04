@@ -1,15 +1,22 @@
-// LeadService — working the enquiry list, and the rooftop scope applied to it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through ILeads.
-// Edit: this is where the rooftop boundary is enforced. Every read is filtered to
-//       the caller's authorized rooftops in the query, and every write authorizes
-//       the specific rooftop first. An unauthorized lead and an unknown one return
-//       the same failure, so a response cannot be used to find out what another
-//       location is working. Removing either check fails LeadTests.
+// Overview: Purpose, File Design, and Engineering
+//   LeadService — working the enquiry list, and the rooftop scope applied to it.
 //
-//       Customers and vehicles are reached only through ICustomers and IVehicles —
-//       never their tables, and never their entity types. That is what makes the
-//       capability boundary real inside a single project (ADR-017).
+// Usage:
+//   Through ILeads.
+//
+// Coding Instructions:
+//   This is where the rooftop boundary is enforced. Every read is filtered to
+//   the caller's authorized rooftops in the query, and every write authorizes
+//   the specific rooftop first. An unauthorized lead and an unknown one return
+//   the same failure, so a response cannot be used to find out what another
+//   location is working. Removing either check fails LeadTests.
+//
+//   Customers and vehicles are reached only through ICustomers and IVehicles —
+//   never their tables, and never their entity types. That is what makes the
+//   capability boundary real inside a single project (ADR-017).
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

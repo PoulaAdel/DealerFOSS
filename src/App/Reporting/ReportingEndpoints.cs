@@ -1,12 +1,19 @@
-// ReportingEndpoints — the HTTP surface for the dashboard.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/reporting.
-//       GET /api/v1/reporting/month?year=&month=&rooftopId=
-// Edit: one route, on purpose. The screen it feeds is a single view, and a
-//       dashboard assembled from four calls is a dashboard that renders in four
-//       stages — each one a chance to show a figure next to a stale one.
+// Overview: Purpose, File Design, and Engineering
+//   ReportingEndpoints — the HTTP surface for the dashboard.
 //
-//       Year and month default to today's, so the common case is a bare GET.
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/reporting.
+//   GET /api/v1/reporting/month?year=&month=&rooftopId=
+//
+// Coding Instructions:
+//   One route, on purpose. The screen it feeds is a single view, and a
+//   dashboard assembled from four calls is a dashboard that renders in four
+//   stages — each one a chance to show a figure next to a stale one.
+//
+//   Year and month default to today's, so the common case is a bare GET.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

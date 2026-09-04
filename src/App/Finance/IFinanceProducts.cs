@@ -1,12 +1,19 @@
-// IFinanceProducts — the catalogue of things sold alongside a car.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject IFinanceProducts. Deals reads it to offer products and to copy a
-//       price and cost onto a deal; nothing outside this folder touches
-//       FinanceProduct or the finance schema (ADR-014).
-// Edit: there is no "sell this product" method here on purpose. Selling happens
-//       on the deal, because the price is negotiated per deal and the sale has to
-//       live or die with the deal it is on. This contract answers "what can we
-//       sell and what does it usually go for", and nothing more.
+// Overview: Purpose, File Design, and Engineering
+//   IFinanceProducts — the catalogue of things sold alongside a car.
+//
+// Usage:
+//   Inject IFinanceProducts. Deals reads it to offer products and to copy a
+//   price and cost onto a deal; nothing outside this folder touches
+//   FinanceProduct or the finance schema (ADR-014).
+//
+// Coding Instructions:
+//   There is no "sell this product" method here on purpose. Selling happens
+//   on the deal, because the price is negotiated per deal and the sale has to
+//   live or die with the deal it is on. This contract answers "what can we
+//   sell and what does it usually go for", and nothing more.
 
 using DealerFOSS.Core;
 

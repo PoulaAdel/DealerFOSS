@@ -1,14 +1,21 @@
-// DevelopmentSeeder — creates sample dealer organizations so the system can be
-// run and tested without hand-building data. Development only.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  runs at startup when Seed:Enabled is true. It is idempotent, so
-//       repeated runs neither duplicate nor overwrite.
-// Edit: the DevUsers ids are fixed on purpose — integration tests and
-//       deploy/verify-e2e.ps1 both reference them. Changing one breaks both.
-//       Sample data must stay synthetic; never seed real customer data.
-//       Identity accounts are created through IdentitySeeder rather than here,
-//       because user and role records are internal to the Identity project
-//       (ADR-017).
+// Overview: Purpose, File Design, and Engineering
+//   DevelopmentSeeder — creates sample dealer organizations so the system can be
+//   run and tested without hand-building data. Development only.
+//
+// Usage:
+//   Runs at startup when Seed:Enabled is true. It is idempotent, so
+//   repeated runs neither duplicate nor overwrite.
+//
+// Coding Instructions:
+//   The DevUsers ids are fixed on purpose — integration tests and
+//   deploy/verify-e2e.ps1 both reference them. Changing one breaks both.
+//   Sample data must stay synthetic; never seed real customer data.
+//   Identity accounts are created through IdentitySeeder rather than here,
+//   because user and role records are internal to the Identity project
+//   (ADR-017).
 
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;

@@ -1,15 +1,22 @@
-// TenantScope — how work that is not a request reaches one dealer's database.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  await using var scope = await factory.OpenAsync("northgroup", ct);
-//       var db = scope.Services.GetRequiredService<TenantDb>();
-// Edit: this is the only sanctioned way for a background job to touch tenant
-//       data, and the reason it exists is that the alternative is worse. A
-//       worker that captured a DbContext, or read the tenant from a field
-//       somewhere, would eventually run one dealership's job against another's
-//       database — and nothing in the type system would object.
+// Overview: Purpose, File Design, and Engineering
+//   TenantScope — how work that is not a request reaches one dealer's database.
 //
-//       Naming the tenant is therefore mandatory and explicit. There is no
-//       "current" tenant outside a request, and there must never be one.
+// Usage:
+//   Await using var scope = await factory.OpenAsync("northgroup", ct);
+//   var db = scope.Services.GetRequiredService<TenantDb>();
+//
+// Coding Instructions:
+//   This is the only sanctioned way for a background job to touch tenant
+//   data, and the reason it exists is that the alternative is worse. A
+//   worker that captured a DbContext, or read the tenant from a field
+//   somewhere, would eventually run one dealership's job against another's
+//   database — and nothing in the type system would object.
+//
+//   Naming the tenant is therefore mandatory and explicit. There is no
+//   "current" tenant outside a request, and there must never be one.
 
 using Microsoft.Extensions.DependencyInjection;
 using DealerFOSS.Core;

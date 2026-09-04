@@ -1,14 +1,21 @@
-// IParts — what the rest of the application may call to reach parts stock.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject IParts. Nothing outside this folder touches Part, StockReceipt, or
-//       the parts schema (ADR-014).
-// Edit: IssueAsync is the one that matters. RepairOrders calls it while invoicing,
-//       inside that same transaction, so the bill, the stock, and the ledger
-//       cannot end up disagreeing about whether the part left the shelf.
+// Overview: Purpose, File Design, and Engineering
+//   IParts — what the rest of the application may call to reach parts stock.
 //
-//       The cost it returns is the cost AT THAT MOMENT, and the caller freezes it.
-//       Do not add a "recost" operation: a supplier price rise must never rewrite
-//       what last month's work cost.
+// Usage:
+//   Inject IParts. Nothing outside this folder touches Part, StockReceipt, or
+//   the parts schema (ADR-014).
+//
+// Coding Instructions:
+//   IssueAsync is the one that matters. RepairOrders calls it while invoicing,
+//   inside that same transaction, so the bill, the stock, and the ledger
+//   cannot end up disagreeing about whether the part left the shelf.
+//
+//   The cost it returns is the cost AT THAT MOMENT, and the caller freezes it.
+//   Do not add a "recost" operation: a supplier price rise must never rewrite
+//   what last month's work cost.
 
 using DealerFOSS.Core;
 

@@ -1,21 +1,28 @@
-// SecurityHeadersMiddleware — the headers a browser needs to be told, on every
-// response.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  registered first in the pipeline, so a response that fails later still
-//       carries them. A header only set on the happy path is not a control.
-// Edit: the content-security policy allows inline STYLES and nothing else.
-//       Printed documents inline their whole stylesheet on purpose — a document
-//       has to survive being saved to disk and opened next year, and a linked
-//       stylesheet would not be there. Inline SCRIPT stays forbidden, which is
-//       the half that matters: it is what turns a reflected value into an
-//       execution.
+// Overview: Purpose, File Design, and Engineering
+//   SecurityHeadersMiddleware — the headers a browser needs to be told, on every
+//   response.
 //
-//       These are set here rather than in a reverse proxy because the
-//       installation targets are a Windows service, a Linux container, and
-//       hosted — and only one of those reliably has a proxy in front of it.
-//       That is also why HSTS is here: two of the three targets have nothing
-//       else that would send it, and the one that does is the one least likely
-//       to have been configured.
+// Usage:
+//   Registered first in the pipeline, so a response that fails later still
+//   carries them. A header only set on the happy path is not a control.
+//
+// Coding Instructions:
+//   The content-security policy allows inline STYLES and nothing else.
+//   Printed documents inline their whole stylesheet on purpose — a document
+//   has to survive being saved to disk and opened next year, and a linked
+//   stylesheet would not be there. Inline SCRIPT stays forbidden, which is
+//   the half that matters: it is what turns a reflected value into an
+//   execution.
+//
+//   These are set here rather than in a reverse proxy because the
+//   installation targets are a Windows service, a Linux container, and
+//   hosted — and only one of those reliably has a proxy in front of it.
+//   That is also why HSTS is here: two of the three targets have nothing
+//   else that would send it, and the one that does is the one least likely
+//   to have been configured.
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;

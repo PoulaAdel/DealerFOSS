@@ -1,15 +1,22 @@
-// Part — a part the dealership sells, and the stock of it held at each location.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Part is the catalogue entry (organization-shared, like Vehicle);
-//       StockReceipt is a delivery of it onto one rooftop's shelf.
-// Edit: the split matters. A part NUMBER means the same thing across the group —
-//       two lots ordering "MZ-690411" mean the same component — but the pile on
-//       each shelf is that lot's own, like InventoryUnit and unlike Vehicle.
+// Overview: Purpose, File Design, and Engineering
+//   Part — a part the dealership sells, and the stock of it held at each location.
 //
-//       There is deliberately no QuantityOnHand column. Quantity is the sum of
-//       what is left on the receipts, so it cannot drift from the layers that
-//       produce it. A stored total and a layer list WILL disagree eventually,
-//       and when they do nobody can tell which one is lying.
+// Usage:
+//   Part is the catalogue entry (organization-shared, like Vehicle);
+//   StockReceipt is a delivery of it onto one rooftop's shelf.
+//
+// Coding Instructions:
+//   The split matters. A part NUMBER means the same thing across the group —
+//   two lots ordering "MZ-690411" mean the same component — but the pile on
+//   each shelf is that lot's own, like InventoryUnit and unlike Vehicle.
+//
+//   There is deliberately no QuantityOnHand column. Quantity is the sum of
+//   what is left on the receipts, so it cannot drift from the layers that
+//   produce it. A stored total and a layer list WILL disagree eventually,
+//   and when they do nobody can tell which one is lying.
 
 using DealerFOSS.Core;
 

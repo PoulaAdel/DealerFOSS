@@ -1,32 +1,39 @@
-// ConnectorRuntime — the thing that makes the cursor rules real.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  RunAsync(connector, rooftop, capability, settings) for one dealership's
-//       feed. Returns the run record it wrote.
-// Edit: two orderings in here are load-bearing and neither is the obvious one.
+// Overview: Purpose, File Design, and Engineering
+//   ConnectorRuntime — the thing that makes the cursor rules real.
 //
-//       1. THE RUN ROW IS SAVED BEFORE ANY WORK, AND OUTSIDE THE TRANSACTION.
-//          A process killed mid-fetch leaves a row with FinishedAt null, and
-//          that unfinished row is the only evidence the attempt happened. Inside
-//          the transaction it would roll back with everything else, and a crash
-//          would look like a night that never ran.
-//       2. SLICES ADVANCE THE CURSOR ONE AT A TIME, IN ORDER, AND THE FIRST ONE
-//          THAT CANNOT ACCOUNT FOR ITSELF STOPS THE LOOP. Fetching the rest
-//          would leave the cursor behind a period that had already been read,
-//          so the next run re-reads across a boundary the provider has already
-//          moved past.
-//       3. APPLYING AND ADVANCING SHARE ONE TRANSACTION. The dangerous half is
-//          a cursor that moved over records that did not land: that is silent
-//          data loss. The reverse — records applied, cursor unmoved — costs a
-//          re-read, which the idempotency rule on IRecordSink makes free.
+// Usage:
+//   RunAsync(connector, rooftop, capability, settings) for one dealership's
+//   feed. Returns the run record it wrote.
 //
-//       There is no interface over this class. Nothing else in the application
-//       calls it — capabilities are called BY it, through IRecordSink — and an
-//       interface with one implementation and no caller is ceremony.
+// Coding Instructions:
+//   Two orderings in here are load-bearing and neither is the obvious one.
 //
-//       Exceptions are not caught here. A thrown fetch leaves the run row open,
-//       which is the correct evidence, and deciding whether the other
-//       dealerships carry on is the scheduler's job. There is no scheduler yet,
-//       so inventing that policy here would be guessing.
+//   1. THE RUN ROW IS SAVED BEFORE ANY WORK, AND OUTSIDE THE TRANSACTION.
+//   A process killed mid-fetch leaves a row with FinishedAt null, and
+//   that unfinished row is the only evidence the attempt happened. Inside
+//   the transaction it would roll back with everything else, and a crash
+//   would look like a night that never ran.
+//   2. SLICES ADVANCE THE CURSOR ONE AT A TIME, IN ORDER, AND THE FIRST ONE
+//   THAT CANNOT ACCOUNT FOR ITSELF STOPS THE LOOP. Fetching the rest
+//   would leave the cursor behind a period that had already been read,
+//   so the next run re-reads across a boundary the provider has already
+//   moved past.
+//   3. APPLYING AND ADVANCING SHARE ONE TRANSACTION. The dangerous half is
+//   a cursor that moved over records that did not land: that is silent
+//   data loss. The reverse — records applied, cursor unmoved — costs a
+//   re-read, which the idempotency rule on IRecordSink makes free.
+//
+//   There is no interface over this class. Nothing else in the application
+//   calls it — capabilities are called BY it, through IRecordSink — and an
+//   interface with one implementation and no caller is ceremony.
+//
+//   Exceptions are not caught here. A thrown fetch leaves the run row open,
+//   which is the correct evidence, and deciding whether the other
+//   dealerships carry on is the scheduler's job. There is no scheduler yet,
+//   so inventing that policy here would be guessing.
 
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;

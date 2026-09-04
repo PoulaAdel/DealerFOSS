@@ -1,19 +1,26 @@
-// AntiForgeryMiddleware — refuses a state-changing request that does not prove it
-// came from this application rather than from another site.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  automatic for every /api/v1 path; runs after CurrentUserMiddleware, so a
-//       request that reaches it already has a session.
-// Edit: the rule is deliberately blunt — if the request carries a session cookie
-//       and changes something, it must also carry the matching anti-forgery
-//       token in a header. Exemptions are the two paths where no session can
-//       exist yet, and nothing else. Adding an endpoint to that list is a
-//       security decision, not a convenience.
+// Overview: Purpose, File Design, and Engineering
+//   AntiForgeryMiddleware — refuses a state-changing request that does not prove it
+//   came from this application rather than from another site.
 //
-//       Why a header and not a second cookie comparison: a cross-site form post
-//       can carry cookies but cannot set a custom header, and a cross-origin
-//       fetch that tries is stopped by the browser's preflight. Why the token is
-//       bound to the session rather than merely echoed: otherwise anything able
-//       to write a cookie for this site could supply both halves of the pair.
+// Usage:
+//   Automatic for every /api/v1 path; runs after CurrentUserMiddleware, so a
+//   request that reaches it already has a session.
+//
+// Coding Instructions:
+//   The rule is deliberately blunt — if the request carries a session cookie
+//   and changes something, it must also carry the matching anti-forgery
+//   token in a header. Exemptions are the two paths where no session can
+//   exist yet, and nothing else. Adding an endpoint to that list is a
+//   security decision, not a convenience.
+//
+//   Why a header and not a second cookie comparison: a cross-site form post
+//   can carry cookies but cannot set a custom header, and a cross-origin
+//   fetch that tries is stopped by the browser's preflight. Why the token is
+//   bound to the session rather than merely echoed: otherwise anything able
+//   to write a cookie for this site could supply both halves of the pair.
 
 using DealerFOSS.Administration;
 using DealerFOSS.App;

@@ -1,17 +1,24 @@
-// Exporter — a dealership's records on their way out, in a file this same API
-// would accept back.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  called by MigrationService.ExportAsync.
-// Edit: the column names here are not a choice. They are exactly what
-//       ImportRunner reads, in an order it accepts, because **an export must be
-//       a valid import**. That is the promise an open DMS makes: a dealership
-//       can take their records to a competitor, or bring them back, without
-//       anybody here writing them a converter. `ExportTests` round-trips a real
-//       export through the importer and compares, so this cannot drift quietly.
+// Overview: Purpose, File Design, and Engineering
+//   Exporter — a dealership's records on their way out, in a file this same API
+//   would accept back.
 //
-//       Everything is quoted. It costs a few bytes and removes the entire class
-//       of bug where a customer called "Smith, Jones & Co" silently becomes two
-//       columns in whatever the receiving system is.
+// Usage:
+//   Called by MigrationService.ExportAsync.
+//
+// Coding Instructions:
+//   The column names here are not a choice. They are exactly what
+//   ImportRunner reads, in an order it accepts, because **an export must be
+//   a valid import**. That is the promise an open DMS makes: a dealership
+//   can take their records to a competitor, or bring them back, without
+//   anybody here writing them a converter. `ExportTests` round-trips a real
+//   export through the importer and compares, so this cannot drift quietly.
+//
+//   Everything is quoted. It costs a few bytes and removes the entire class
+//   of bug where a customer called "Smith, Jones & Co" silently becomes two
+//   columns in whatever the receiving system is.
 
 using System.Globalization;
 using System.Text;

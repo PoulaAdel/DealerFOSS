@@ -1,15 +1,22 @@
-// RepairOrderStatus — where a job has got to, plus the two smaller enums that
-// describe a line on it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  RepairOrderStatusRules.CanMove(from, to) before changing a status;
-//       RepairOrder.ChangeStatus already applies it.
-// Edit: the Completed boundary mirrors the Draft boundary on a deal. While a job
-//       is Booked or InProgress its lines can be changed freely; once it is
-//       Completed the work is what will be billed, and changing it means sending
-//       it back — a recorded move somebody has to make deliberately.
+// Overview: Purpose, File Design, and Engineering
+//   RepairOrderStatus — where a job has got to, plus the two smaller enums that
+//   describe a line on it.
 //
-//       Cancelled is reachable right up to Completed, because cars are collected
-//       unrepaired more often than anybody would like.
+// Usage:
+//   RepairOrderStatusRules.CanMove(from, to) before changing a status;
+//   RepairOrder.ChangeStatus already applies it.
+//
+// Coding Instructions:
+//   The Completed boundary mirrors the Draft boundary on a deal. While a job
+//   is Booked or InProgress its lines can be changed freely; once it is
+//   Completed the work is what will be billed, and changing it means sending
+//   it back — a recorded move somebody has to make deliberately.
+//
+//   Cancelled is reachable right up to Completed, because cars are collected
+//   unrepaired more often than anybody would like.
 
 namespace DealerFOSS.RepairOrders;
 

@@ -1,25 +1,32 @@
-// ImportRunner — deciding what happens to each staged row, and doing it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  called by ImportWorker inside a tenant scope. Not an endpoint.
-// Edit: two properties are the whole value of this file.
+// Overview: Purpose, File Design, and Engineering
+//   ImportRunner — deciding what happens to each staged row, and doing it.
 //
-//       **A trial and a real run make the same decisions.** Every row goes
-//       through the same validation and the same natural-key lookup; the only
-//       difference is that a trial does not call the write at the end. So a
-//       trial's report of "412 created, 88 updated, 3 failed" is what the real
-//       run will do — that is the question somebody is asking before they commit
-//       a dealership's history to it.
+// Usage:
+//   Called by ImportWorker inside a tenant scope. Not an endpoint.
 //
-//       What a trial genuinely cannot predict is named rather than hidden: a
-//       failure that only the database can raise, and the effect of rows on each
-//       other. Two rows carrying the same VIN both read as "create" in a trial,
-//       because neither has been written when the other is examined; in the real
-//       run the second finds the first and reports "updated". The counts move by
-//       one. That is the honest limit, and it is in the README.
+// Coding Instructions:
+//   Two properties are the whole value of this file.
 //
-//       **A row is decided exactly once.** Created, Updated, Skipped, or Failed.
-//       If these stop summing to the row count, the reconciliation report is
-//       lying, and a reconciliation report nobody can trust is worse than none.
+//   **A trial and a real run make the same decisions.** Every row goes
+//   through the same validation and the same natural-key lookup; the only
+//   difference is that a trial does not call the write at the end. So a
+//   trial's report of "412 created, 88 updated, 3 failed" is what the real
+//   run will do — that is the question somebody is asking before they commit
+//   a dealership's history to it.
+//
+//   What a trial genuinely cannot predict is named rather than hidden: a
+//   failure that only the database can raise, and the effect of rows on each
+//   other. Two rows carrying the same VIN both read as "create" in a trial,
+//   because neither has been written when the other is examined; in the real
+//   run the second finds the first and reports "updated". The counts move by
+//   one. That is the honest limit, and it is in the README.
+//
+//   **A row is decided exactly once.** Created, Updated, Skipped, or Failed.
+//   If these stop summing to the row count, the reconciliation report is
+//   lying, and a reconciliation report nobody can trust is worse than none.
 
 using DealerFOSS.Core;
 using DealerFOSS.Customers;

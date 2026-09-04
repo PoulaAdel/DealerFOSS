@@ -1,11 +1,18 @@
-// MigrationEndpoints — submitting a file and watching what happens to it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  POST /api/v1/migration/imports with the file's text in the body.
-// Edit: the file arrives as JSON rather than as a multipart upload because it is
-//       text and the client already sends JSON with an anti-forgery header. When
-//       real dealer extracts arrive — tens of megabytes — this becomes a
-//       multipart or pre-signed upload, and the contract below does not change:
-//       submitting still returns a job, and the job is still watched by polling.
+// Overview: Purpose, File Design, and Engineering
+//   MigrationEndpoints — submitting a file and watching what happens to it.
+//
+// Usage:
+//   POST /api/v1/migration/imports with the file's text in the body.
+//
+// Coding Instructions:
+//   The file arrives as JSON rather than as a multipart upload because it is
+//   text and the client already sends JSON with an anti-forgery header. When
+//   real dealer extracts arrive — tens of megabytes — this becomes a
+//   multipart or pre-signed upload, and the contract below does not change:
+//   submitting still returns a job, and the job is still watched by polling.
 
 using System.Globalization;
 using System.Text;

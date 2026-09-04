@@ -1,15 +1,22 @@
-// AppointmentEndpoints — the HTTP surface for the service diary.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/appointments.
-//       GET  /api/v1/appointments?rooftopId=&from=2026-08-10&to=2026-08-16&openOnly=true
-//       GET  /api/v1/appointments/{id}
-//       POST /api/v1/appointments
-//       POST /api/v1/appointments/{id}/reschedule
-//       POST /api/v1/appointments/{id}/arrive     → opens the job and links it
-//       POST /api/v1/appointments/{id}/close      → no-show or cancelled
-// Edit: keep it thin — delegate, then map a Result to a status code. The rooftop
-//       scope and the arrival transaction live in AppointmentService, not here, so
-//       a background caller gets the same checks.
+// Overview: Purpose, File Design, and Engineering
+//   AppointmentEndpoints — the HTTP surface for the service diary.
+//
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/appointments.
+//   GET  /api/v1/appointments?rooftopId=&from=2026-08-10&to=2026-08-16&openOnly=true
+//   GET  /api/v1/appointments/{id}
+//   POST /api/v1/appointments
+//   POST /api/v1/appointments/{id}/reschedule
+//   POST /api/v1/appointments/{id}/arrive     → opens the job and links it
+//   POST /api/v1/appointments/{id}/close      → no-show or cancelled
+//
+// Coding Instructions:
+//   Keep it thin — delegate, then map a Result to a status code. The rooftop
+//   scope and the arrival transaction live in AppointmentService, not here, so
+//   a background caller gets the same checks.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

@@ -1,19 +1,26 @@
-// QuarantinedRecord — a record that arrived and could not be applied.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  written by the runtime when a record will not map. Holds the provider's
-//       own payload so the decision can be reviewed against what actually
-//       arrived, not against what we made of it.
-// Edit: the payload is PERSONAL DATA — customer names, addresses and telephone
-//       numbers, exactly as the provider sent them. ADR-022 therefore applies in
-//       full: it carries an expiry set from a declared retention, and reads
-//       filter on that expiry so an out-of-date row stops being visible whether
-//       or not anything has physically deleted it yet.
+// Overview: Purpose, File Design, and Engineering
+//   QuarantinedRecord — a record that arrived and could not be applied.
 //
-//       The uncomfortable consequence is deliberate and must not be designed
-//       away: a quarantined record left unresolved past its retention is gone,
-//       and that is the right trade. Keeping a customer's details indefinitely
-//       because a mapping bug was never fixed is not a data-quality feature, it
-//       is a data-protection failure with a queue in front of it.
+// Usage:
+//   Written by the runtime when a record will not map. Holds the provider's
+//   own payload so the decision can be reviewed against what actually
+//   arrived, not against what we made of it.
+//
+// Coding Instructions:
+//   The payload is PERSONAL DATA — customer names, addresses and telephone
+//   numbers, exactly as the provider sent them. ADR-022 therefore applies in
+//   full: it carries an expiry set from a declared retention, and reads
+//   filter on that expiry so an out-of-date row stops being visible whether
+//   or not anything has physically deleted it yet.
+//
+//   The uncomfortable consequence is deliberate and must not be designed
+//   away: a quarantined record left unresolved past its retention is gone,
+//   and that is the right trade. Keeping a customer's details indefinitely
+//   because a mapping bug was never fixed is not a data-quality feature, it
+//   is a data-protection failure with a queue in front of it.
 
 using DealerFOSS.Core;
 

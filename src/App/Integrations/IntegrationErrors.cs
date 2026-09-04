@@ -1,11 +1,18 @@
-// IntegrationErrors — the stable codes an integration refusal is identified by.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  return Result.Failure<T>(IntegrationErrors.CoverageUnknown). Codes are
-//       part of the API contract (doc 06 §6) and must not be reworded.
-// Edit: adding a code is cheap; changing one breaks every caller matching on it.
-//       Note which of these are *non-transient* — a retry loop that cannot tell
-//       "the provider is down" from "the provider's record has no room" will
-//       retry the second one forever.
+// Overview: Purpose, File Design, and Engineering
+//   IntegrationErrors — the stable codes an integration refusal is identified by.
+//
+// Usage:
+//   Return Result.Failure<T>(IntegrationErrors.CoverageUnknown). Codes are
+//   part of the API contract (doc 06 §6) and must not be reworded.
+//
+// Coding Instructions:
+//   Adding a code is cheap; changing one breaks every caller matching on it.
+//   Note which of these are *non-transient* — a retry loop that cannot tell
+//   "the provider is down" from "the provider's record has no room" will
+//   retry the second one forever.
 
 using DealerFOSS.Core;
 

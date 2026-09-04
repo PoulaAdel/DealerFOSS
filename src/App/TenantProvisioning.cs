@@ -1,27 +1,34 @@
-// TenantProvisioning — creating a dealership without a developer.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through ITenantProvisioning, from the operator console.
+// Overview: Purpose, File Design, and Engineering
+//   TenantProvisioning — creating a dealership without a developer.
 //
-// Where this lives: the composition root (DealerFOSS.App), beside
-// DevelopmentSeeder, which does the same job for development data. It was tried
-// in Administration and then in Tenancy, and the architecture tests refused both
-// — correctly. Provisioning builds a database AND writes an organization and a
-// chart of accounts, and neither of those namespaces may do both. It is not a
-// capability; it composes several, which is what the root is for.
-// Edit: the order below is not arbitrary and the comments say why at each step.
-//       Two of them have bitten already:
+// Usage:
+//   Through ITenantProvisioning, from the operator console.
 //
-//       THE BOOKS MUST BE OPENED. Nothing posts into a month that has not been
-//       opened, so a dealership provisioned without this looks fine until its
-//       very first sale is refused for a reason nobody would guess.
+//   Where this lives: the composition root (DealerFOSS.App), beside
+//   DevelopmentSeeder, which does the same job for development data. It was tried
+//   in Administration and then in Tenancy, and the architecture tests refused both
+//   — correctly. Provisioning builds a database AND writes an organization and a
+//   chart of accounts, and neither of those namespaces may do both. It is not a
+//   capability; it composes several, which is what the root is for.
 //
-//       THE FIRST MANAGER GETS AN ENROLMENT CODE, not a password. Inventing a
-//       temporary password here would be a second place credentials are created,
-//       and the one nobody would think to harden.
+// Coding Instructions:
+//   The order below is not arbitrary and the comments say why at each step.
+//   Two of them have bitten already:
 //
-//       The connection string is written to the host catalog ENCRYPTED and there
-//       is deliberately no way to read it back. `--repoint-tenants` exists so
-//       nothing needs to.
+//   THE BOOKS MUST BE OPENED. Nothing posts into a month that has not been
+//   opened, so a dealership provisioned without this looks fine until its
+//   very first sale is refused for a reason nobody would guess.
+//
+//   THE FIRST MANAGER GETS AN ENROLMENT CODE, not a password. Inventing a
+//   temporary password here would be a second place credentials are created,
+//   and the one nobody would think to harden.
+//
+//   The connection string is written to the host catalog ENCRYPTED and there
+//   is deliberately no way to read it back. `--repoint-tenants` exists so
+//   nothing needs to.
 
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;

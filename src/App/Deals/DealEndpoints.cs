@@ -1,14 +1,21 @@
-// DealEndpoints — the HTTP surface for deals.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/deals.
-//       GET  /api/v1/deals?rooftopId=&status=Submitted&openOnly=true
-//       GET  /api/v1/deals/{id}
-//       POST /api/v1/deals
-//       POST /api/v1/deals/{id}/terms
-//       POST /api/v1/deals/{id}/status
-// Edit: approving goes through the same status endpoint as everything else. The
-//       separate permission is checked in DealService, where a background caller
-//       gets it too — not here, where only HTTP would.
+// Overview: Purpose, File Design, and Engineering
+//   DealEndpoints — the HTTP surface for deals.
+//
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/deals.
+//   GET  /api/v1/deals?rooftopId=&status=Submitted&openOnly=true
+//   GET  /api/v1/deals/{id}
+//   POST /api/v1/deals
+//   POST /api/v1/deals/{id}/terms
+//   POST /api/v1/deals/{id}/status
+//
+// Coding Instructions:
+//   Approving goes through the same status endpoint as everything else. The
+//   separate permission is checked in DealService, where a background caller
+//   gets it too — not here, where only HTTP would.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

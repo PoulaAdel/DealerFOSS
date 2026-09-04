@@ -1,10 +1,17 @@
-// ProviderShape — the two shapes DMS payloads take that break naive mapping.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  ColumnSet.Align() before reading parallel arrays; Slots.Fit() before
-//       writing into a record with a fixed number of positions.
-// Edit: both of these exist because the obvious code is wrong in a way that
-//       produces no error. Keep them returning Result rather than throwing —
-//       one quarantines a record and the other is a refusal a user reads.
+// Overview: Purpose, File Design, and Engineering
+//   ProviderShape — the two shapes DMS payloads take that break naive mapping.
+//
+// Usage:
+//   ColumnSet.Align() before reading parallel arrays; Slots.Fit() before
+//   writing into a record with a fixed number of positions.
+//
+// Coding Instructions:
+//   Both of these exist because the obvious code is wrong in a way that
+//   produces no error. Keep them returning Result rather than throwing —
+//   one quarantines a record and the other is a refusal a user reads.
 
 using DealerFOSS.Core;
 

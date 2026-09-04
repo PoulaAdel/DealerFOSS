@@ -1,42 +1,48 @@
-// TrustedProxies — believing `X-Forwarded-For`, but only from a proxy the
-// operator has named.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  configure `Network:TrustedProxies` with the addresses or CIDR ranges of
-//       the reverse proxies in front of this installation:
+// Overview: Purpose, File Design, and Engineering
+//   TrustedProxies — believing `X-Forwarded-For`, but only from a proxy the
+//   operator has named.
 //
-//         "Network": { "TrustedProxies": [ "10.0.0.5", "10.1.0.0/16" ] }
+// Usage:
+//   Configure `Network:TrustedProxies` with the addresses or CIDR ranges of
+//   the reverse proxies in front of this installation:
 //
-// Edit: read why this is opt-in, because the obvious "just call
-//       UseForwardedHeaders()" is worse than doing nothing.
+//   "Network": { "TrustedProxies": [ "10.0.0.5", "10.1.0.0/16" ] }
 //
-//       THE PROBLEM. The credential rate limiter partitions callers by
-//       `RemoteIpAddress`. Behind nginx or a hosted load balancer that address
-//       is the PROXY's for every request, so the whole dealership shares one
-//       bucket and twenty sign-in attempts from anywhere — including from one
-//       attacker — locks everybody out. That is precisely the shared-bucket
-//       failure the partitioning exists to prevent.
+// Coding Instructions:
+//   Read why this is opt-in, because the obvious "just call
+//   UseForwardedHeaders()" is worse than doing nothing.
 //
-//       THE TRAP. The fix is to read the real client from `X-Forwarded-For`.
-//       But that header is just a header: anyone can send one. Trusting it
-//       unconditionally turns the limiter into a formality, because an attacker
-//       writes a fresh address on every request and never shares a bucket with
-//       themselves. A spoofable partition key is WORSE than a shared one — the
-//       shared one at least still limits somebody.
+//   THE PROBLEM. The credential rate limiter partitions callers by
+//   `RemoteIpAddress`. Behind nginx or a hosted load balancer that address
+//   is the PROXY's for every request, so the whole dealership shares one
+//   bucket and twenty sign-in attempts from anywhere — including from one
+//   attacker — locks everybody out. That is precisely the shared-bucket
+//   failure the partitioning exists to prevent.
 //
-//       SO: the header is honoured only when the request actually arrived from
-//       an address the operator listed. With nothing configured, nothing is
-//       trusted and the behaviour is exactly what it was before this file
-//       existed. Silence means "no proxy", which is the safe reading.
+//   THE TRAP. The fix is to read the real client from `X-Forwarded-For`.
+//   But that header is just a header: anyone can send one. Trusting it
+//   unconditionally turns the limiter into a formality, because an attacker
+//   writes a fresh address on every request and never shares a bucket with
+//   themselves. A spoofable partition key is WORSE than a shared one — the
+//   shared one at least still limits somebody.
 //
-//       The default KnownNetworks/KnownProxies (loopback) are CLEARED first.
-//       Leaving them in would trust anything arriving over localhost, which on
-//       a container host is a much larger set of things than it sounds.
+//   SO: the header is honoured only when the request actually arrived from
+//   an address the operator listed. With nothing configured, nothing is
+//   trusted and the behaviour is exactly what it was before this file
+//   existed. Silence means "no proxy", which is the safe reading.
 //
-//       `X-Forwarded-Proto` rides along deliberately. Behind a proxy that
-//       terminates TLS the request reaches Kestrel as plain HTTP, so
-//       `Request.IsHttps` is false and the HSTS header in
-//       SecurityHeadersMiddleware would never be sent — the header would be
-//       configured, believed to be working, and absent.
+//   The default KnownNetworks/KnownProxies (loopback) are CLEARED first.
+//   Leaving them in would trust anything arriving over localhost, which on
+//   a container host is a much larger set of things than it sounds.
+//
+//   `X-Forwarded-Proto` rides along deliberately. Behind a proxy that
+//   terminates TLS the request reaches Kestrel as plain HTTP, so
+//   `Request.IsHttps` is false and the HSTS header in
+//   SecurityHeadersMiddleware would never be sent — the header would be
+//   configured, believed to be working, and absent.
 
 using System.Net;
 using Microsoft.AspNetCore.Builder;

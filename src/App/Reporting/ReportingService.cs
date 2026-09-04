@@ -1,11 +1,18 @@
-// ReportingService — assembling one month from what the other capabilities know.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IReporting.
-// Edit: there is no TenantDb here, on purpose. Every figure arrives through a
-//       published contract, so every permission check happens inside the
-//       capability that owns the data. A dashboard that queried the tables
-//       directly would be a way to read past a rooftop scope, and it would be the
-//       last place anybody thought to look for one.
+// Overview: Purpose, File Design, and Engineering
+//   ReportingService — assembling one month from what the other capabilities know.
+//
+// Usage:
+//   Through IReporting.
+//
+// Coding Instructions:
+//   There is no TenantDb here, on purpose. Every figure arrives through a
+//   published contract, so every permission check happens inside the
+//   capability that owns the data. A dashboard that queried the tables
+//   directly would be a way to read past a rooftop scope, and it would be the
+//   last place anybody thought to look for one.
 
 using DealerFOSS.Accounting;
 using DealerFOSS.Core;

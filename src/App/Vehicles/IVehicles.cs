@@ -1,10 +1,17 @@
-// IVehicles — what other features may call to reach vehicle records.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Sales and Service read a vehicle through this. They never query the
-//       tables themselves, and they never reference VehicleService.
-// Edit: a vehicle is organization-shared — it answers "what car is this?", not
-//       "whose lot is it on". The rooftop-scoped half lives in IInventory. Do not
-//       merge the two: the scope is the reason they are separate.
+// Overview: Purpose, File Design, and Engineering
+//   IVehicles — what other features may call to reach vehicle records.
+//
+// Usage:
+//   Sales and Service read a vehicle through this. They never query the
+//   tables themselves, and they never reference VehicleService.
+//
+// Coding Instructions:
+//   A vehicle is organization-shared — it answers "what car is this?", not
+//   "whose lot is it on". The rooftop-scoped half lives in IInventory. Do not
+//   merge the two: the scope is the reason they are separate.
 
 using DealerFOSS.Core;
 

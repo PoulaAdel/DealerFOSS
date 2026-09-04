@@ -1,17 +1,24 @@
-// Csv — reading the file a dealership actually sends.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Csv.Read(text) yields a header and then one CsvRow per line.
-// Edit: this follows RFC 4180 and is deliberately not a dependency. What arrives
-//       from a dealership's old system is rarely clean, and the three things that
-//       break naive splitting are all handled here: a comma inside quotes, a
-//       doubled quote meaning one literal quote, and a newline inside a quoted
-//       field. Anything stranger is reported as a bad row rather than guessed at.
+// Overview: Purpose, File Design, and Engineering
+//   Csv — reading the file a dealership actually sends.
 //
-//       Two decisions worth keeping. A row's raw text is preserved exactly as it
-//       arrived, because the migration workflow forbids editing the source to fix
-//       an exception (doc 05 §6). And a row with the wrong number of fields is a
-//       failed row, not a truncated one — silently padding it would import a
-//       customer with somebody else's phone number in the address column.
+// Usage:
+//   Csv.Read(text) yields a header and then one CsvRow per line.
+//
+// Coding Instructions:
+//   This follows RFC 4180 and is deliberately not a dependency. What arrives
+//   from a dealership's old system is rarely clean, and the three things that
+//   break naive splitting are all handled here: a comma inside quotes, a
+//   doubled quote meaning one literal quote, and a newline inside a quoted
+//   field. Anything stranger is reported as a bad row rather than guessed at.
+//
+//   Two decisions worth keeping. A row's raw text is preserved exactly as it
+//   arrived, because the migration workflow forbids editing the source to fix
+//   an exception (doc 05 §6). And a row with the wrong number of fields is a
+//   failed row, not a truncated one — silently padding it would import a
+//   customer with somebody else's phone number in the address column.
 
 using System.Globalization;
 using System.Text;

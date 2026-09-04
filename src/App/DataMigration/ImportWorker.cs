@@ -1,23 +1,30 @@
-// ImportWorker — the background service that actually runs queued imports.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  registered in Program.cs. Nothing calls it.
-// Edit: this is the first piece of work in the system that is not a request, so
-//       three things it does are the pattern for everything that follows —
-//       reconciliation, outbox delivery, and whatever comes after.
+// Overview: Purpose, File Design, and Engineering
+//   ImportWorker — the background service that actually runs queued imports.
 //
-//       **It names the tenant.** There is no ambient "current dealership" out
-//       here, and there must never be one. Every unit of work opens a
-//       TenantScope for a tenant it has explicitly identified, and a job in one
-//       dealership's database can only ever be run against that database.
+// Usage:
+//   Registered in Program.cs. Nothing calls it.
 //
-//       **It runs as the person who asked.** ICurrentUser is set from the job's
-//       requester, so the import is authorized by their permissions and audited
-//       under their name. A background job that ran as nobody would be a
-//       permission check silently skipped.
+// Coding Instructions:
+//   This is the first piece of work in the system that is not a request, so
+//   three things it does are the pattern for everything that follows —
+//   reconciliation, outbox delivery, and whatever comes after.
 //
-//       **It claims before it works.** Two instances of the application share one
-//       database, so the move from Queued to Running is a conditional update and
-//       the loser simply finds nothing to do.
+//   **It names the tenant.** There is no ambient "current dealership" out
+//   here, and there must never be one. Every unit of work opens a
+//   TenantScope for a tenant it has explicitly identified, and a job in one
+//   dealership's database can only ever be run against that database.
+//
+//   **It runs as the person who asked.** ICurrentUser is set from the job's
+//   requester, so the import is authorized by their permissions and audited
+//   under their name. A background job that ran as nobody would be a
+//   permission check silently skipped.
+//
+//   **It claims before it works.** Two instances of the application share one
+//   database, so the move from Queued to Running is a conditional update and
+//   the loser simply finds nothing to do.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

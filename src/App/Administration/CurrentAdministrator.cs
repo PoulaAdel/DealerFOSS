@@ -1,12 +1,19 @@
-// CurrentAdministrator — who is making the current control-plane request.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject it into an admin endpoint and read Id. Resolved once, by
-//       AdministratorMiddleware, before any endpoint runs.
-// Edit: this is deliberately NOT ICurrentUser, and must never be made to
-//       implement it. ICurrentUser is what every business capability passes to
-//       IAccessDirectory when it asks "may this person see this dealership's
-//       data?" — an administrator has no answer to that question, and giving
-//       them one is the whole thing this milestone exists to prevent.
+// Overview: Purpose, File Design, and Engineering
+//   CurrentAdministrator — who is making the current control-plane request.
+//
+// Usage:
+//   Inject it into an admin endpoint and read Id. Resolved once, by
+//   AdministratorMiddleware, before any endpoint runs.
+//
+// Coding Instructions:
+//   This is deliberately NOT ICurrentUser, and must never be made to
+//   implement it. ICurrentUser is what every business capability passes to
+//   IAccessDirectory when it asks "may this person see this dealership's
+//   data?" — an administrator has no answer to that question, and giving
+//   them one is the whole thing this milestone exists to prevent.
 
 namespace DealerFOSS.Administration;
 

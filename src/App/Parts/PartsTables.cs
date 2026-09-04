@@ -1,12 +1,19 @@
-// PartsTables — how parts and their stock are stored.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: the part-number index is unique across the ORGANIZATION, not per rooftop
-//       — the opposite of a stock number. A stock number is a sticker one lot put
-//       on one car; a part number is the manufacturer's name for a component, and
-//       two catalogue rows for it is the failure that makes a parts department
-//       stop trusting the figures.
+// Overview: Purpose, File Design, and Engineering
+//   PartsTables — how parts and their stock are stored.
+//
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
+//
+// Coding Instructions:
+//   The part-number index is unique across the ORGANIZATION, not per rooftop
+//   — the opposite of a stock number. A stock number is a sticker one lot put
+//   on one car; a part number is the manufacturer's name for a component, and
+//   two catalogue rows for it is the failure that makes a parts department
+//   stop trusting the figures.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

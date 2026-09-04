@@ -1,12 +1,19 @@
-// IntegrationTables — how the integration edge's own records are stored.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: the unique index on ConnectorCursor is the one to be careful with. Two
-//       rows for the same connector, dealership and contract would let two runs
-//       each advance their own copy, and the feed would read as up to date while
-//       skipping whatever the other row had already passed. The database refuses
-//       it rather than the runtime remembering to.
+// Overview: Purpose, File Design, and Engineering
+//   IntegrationTables — how the integration edge's own records are stored.
+//
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
+//
+// Coding Instructions:
+//   The unique index on ConnectorCursor is the one to be careful with. Two
+//   rows for the same connector, dealership and contract would let two runs
+//   each advance their own copy, and the feed would read as up to date while
+//   skipping whatever the other row had already passed. The database refuses
+//   it rather than the runtime remembering to.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

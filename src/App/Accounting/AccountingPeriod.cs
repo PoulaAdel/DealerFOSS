@@ -1,24 +1,31 @@
-// AccountingPeriod — one month of the books, and whether it is still open.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  AccountingPeriod.Open(...) to start a month; Close to lock it; Reopen to
-//       unlock one that was closed.
-// Edit: the rule this exists to hold is that **locking is an act somebody
-//       performs, not a date that passes** (maintainer, 2026-08-06). The cutoff
-//       is the calendar month end, but the close then runs over however many
-//       business days the work takes — reconciling, adjusting, reviewing — and
-//       the month is locked at the end of that. Anything built as "prior-month
-//       entries are refused after the Nth" would either lock a month somebody is
-//       still working on or leave one open because nobody's calendar said
-//       otherwise.
+// Overview: Purpose, File Design, and Engineering
+//   AccountingPeriod — one month of the books, and whether it is still open.
 //
-//       An adjustment posted DURING the close belongs in the month being closed.
-//       That is what the window is for, and it is why Open is the state that
-//       accepts postings rather than "the current month".
+// Usage:
+//   AccountingPeriod.Open(...) to start a month; Close to lock it; Reopen to
+//   unlock one that was closed.
 //
-//       Reopening is deliberately not a quiet undo. It needs a written reason and
-//       its own permission, and every transition is kept — because a month that
-//       was reported on, reopened, and changed is exactly the sequence somebody
-//       will later need to reconstruct.
+// Coding Instructions:
+//   The rule this exists to hold is that **locking is an act somebody
+//   performs, not a date that passes** (maintainer, 2026-08-06). The cutoff
+//   is the calendar month end, but the close then runs over however many
+//   business days the work takes — reconciling, adjusting, reviewing — and
+//   the month is locked at the end of that. Anything built as "prior-month
+//   entries are refused after the Nth" would either lock a month somebody is
+//   still working on or leave one open because nobody's calendar said
+//   otherwise.
+//
+//   An adjustment posted DURING the close belongs in the month being closed.
+//   That is what the window is for, and it is why Open is the state that
+//   accepts postings rather than "the current month".
+//
+//   Reopening is deliberately not a quiet undo. It needs a written reason and
+//   its own permission, and every transition is kept — because a month that
+//   was reported on, reopened, and changed is exactly the sequence somebody
+//   will later need to reconstruct.
 
 using DealerFOSS.Core;
 

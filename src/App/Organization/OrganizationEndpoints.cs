@@ -1,11 +1,18 @@
-// OrganizationEndpoints — the HTTP surface for the dealer organization structure.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/organization.
-//       GET /api/v1/organization
-//       GET /api/v1/organization/rooftops/{id}
-// Edit: keep it thin — delegate, then map a Result to a status code. No business
-//       logic and no data access belong here. Authorization lives in
-//       OrganizationService so every caller is checked, not only HTTP ones.
+// Overview: Purpose, File Design, and Engineering
+//   OrganizationEndpoints — the HTTP surface for the dealer organization structure.
+//
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/organization.
+//   GET /api/v1/organization
+//   GET /api/v1/organization/rooftops/{id}
+//
+// Coding Instructions:
+//   Keep it thin — delegate, then map a Result to a status code. No business
+//   logic and no data access belong here. Authorization lives in
+//   OrganizationService so every caller is checked, not only HTTP ones.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

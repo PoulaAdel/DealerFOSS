@@ -1,12 +1,19 @@
-// SecurityEndpoints — the rules a dealer organization applies to its own staff.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  GET  /api/v1/security/second-factor-policy   which roles demand one
-//       POST /api/v1/security/second-factor-policy   turn it on or off for a role
-// Edit: the permission is checked here rather than inside Identity, because
-//       Identity answers "what may this user reach?" and must not also decide
-//       who may change the answer — that is circular. The check demands
-//       organization-wide scope: a rule about the whole dealership is not set
-//       from one lot.
+// Overview: Purpose, File Design, and Engineering
+//   SecurityEndpoints — the rules a dealer organization applies to its own staff.
+//
+// Usage:
+//   GET  /api/v1/security/second-factor-policy   which roles demand one
+//   POST /api/v1/security/second-factor-policy   turn it on or off for a role
+//
+// Coding Instructions:
+//   The permission is checked here rather than inside Identity, because
+//   Identity answers "what may this user reach?" and must not also decide
+//   who may change the answer — that is circular. The check demands
+//   organization-wide scope: a rule about the whole dealership is not set
+//   from one lot.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

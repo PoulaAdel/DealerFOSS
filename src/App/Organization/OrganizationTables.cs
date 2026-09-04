@@ -1,11 +1,18 @@
-// OrganizationTables — how this feature's records are stored. Owns the "org"
-// schema and no other (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly, so adding a configuration here is all that is needed.
-// Edit: typed ids need a HasConversion or they will not persist as GUIDs. Audit
-//       columns and the concurrency token are stamped centrally by TenantDb on
-//       save — do not set them at call sites.
+// Overview: Purpose, File Design, and Engineering
+//   OrganizationTables — how this feature's records are stored. Owns the "org"
+//   schema and no other (ADR-014).
+//
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly, so adding a configuration here is all that is needed.
+//
+// Coding Instructions:
+//   Typed ids need a HasConversion or they will not persist as GUIDs. Audit
+//   columns and the concurrency token are stamped centrally by TenantDb on
+//   save — do not set them at call sites.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

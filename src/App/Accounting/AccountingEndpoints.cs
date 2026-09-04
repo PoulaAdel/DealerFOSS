@@ -1,14 +1,21 @@
-// AccountingEndpoints — the HTTP surface for the ledger.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  mapped from Program.cs; routes under /api/v1/accounting.
-//       GET  /api/v1/accounting/accounts
-//       GET  /api/v1/accounting/performance?rooftopId=&from=&to=
-//       GET  /api/v1/accounting/journal?rooftopId=&reference=&from=&to=
-//       GET  /api/v1/accounting/journal/{id}
-//       POST /api/v1/accounting/journal/{id}/reverse
-// Edit: there is no endpoint that creates an entry. Entries are the consequence
-//       of business events — a delivery posts one — and a general-purpose
-//       posting endpoint would be a hole straight through the controls.
+// Overview: Purpose, File Design, and Engineering
+//   AccountingEndpoints — the HTTP surface for the ledger.
+//
+// Usage:
+//   Mapped from Program.cs; routes under /api/v1/accounting.
+//   GET  /api/v1/accounting/accounts
+//   GET  /api/v1/accounting/performance?rooftopId=&from=&to=
+//   GET  /api/v1/accounting/journal?rooftopId=&reference=&from=&to=
+//   GET  /api/v1/accounting/journal/{id}
+//   POST /api/v1/accounting/journal/{id}/reverse
+//
+// Coding Instructions:
+//   There is no endpoint that creates an entry. Entries are the consequence
+//   of business events — a delivery posts one — and a general-purpose
+//   posting endpoint would be a hole straight through the controls.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

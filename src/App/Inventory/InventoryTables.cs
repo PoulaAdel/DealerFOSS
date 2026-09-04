@@ -1,12 +1,19 @@
-// InventoryTables — how stock records are stored. Shares the "vehicles" schema
-// with the Vehicles feature (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls these directly. TenantDb finds them by scanning the
-//       assembly.
-// Edit: the stock-number index IS unique, but only within a rooftop: two
-//       locations may each have a unit "A1234", one location may not have it
-//       twice. Status history has no audit columns on purpose — it IS the
-//       history, and TenantDb refuses to update or delete a row of it.
+// Overview: Purpose, File Design, and Engineering
+//   InventoryTables — how stock records are stored. Shares the "vehicles" schema
+//   with the Vehicles feature (ADR-014).
+//
+// Usage:
+//   Nothing calls these directly. TenantDb finds them by scanning the
+//   assembly.
+//
+// Coding Instructions:
+//   The stock-number index IS unique, but only within a rooftop: two
+//   locations may each have a unit "A1234", one location may not have it
+//   twice. Status history has no audit columns on purpose — it IS the
+//   history, and TenantDb refuses to update or delete a row of it.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

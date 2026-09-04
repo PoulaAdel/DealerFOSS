@@ -1,8 +1,15 @@
-// ILeads — what other capabilities may call to reach enquiries.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Sales will turn a won lead into a deal through this.
-// Edit: every read behind this interface is filtered to the caller's authorized
-//       rooftops. An empty scope is a denial, never "unfiltered".
+// Overview: Purpose, File Design, and Engineering
+//   ILeads — what other capabilities may call to reach enquiries.
+//
+// Usage:
+//   Sales will turn a won lead into a deal through this.
+//
+// Coding Instructions:
+//   Every read behind this interface is filtered to the caller's authorized
+//   rooftops. An empty scope is a denial, never "unfiltered".
 
 using DealerFOSS.Core;
 

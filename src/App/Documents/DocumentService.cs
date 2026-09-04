@@ -1,20 +1,27 @@
-// DocumentService — turns a deal or a job into paperwork.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IDocuments.
-// Edit: two rules here are not stylistic.
+// Overview: Purpose, File Design, and Engineering
+//   DocumentService — turns a deal or a job into paperwork.
 //
-//       NOTHING THE CUSTOMER MUST NOT SEE IS RENDERED. DealDetail carries the
-//       cost and gross of every F&I product, and RepairOrderDetail carries the
-//       cost of every part. Neither appears here, and
-//       DocumentTests.No_dealership_only_figure_reaches_a_customers_copy reads
-//       the raw HTML to prove it. If a future field arrives on either detail, it
-//       does not reach paper unless somebody comes here and writes it out.
+// Usage:
+//   Through IDocuments.
 //
-//       A DOCUMENT IS A SNAPSHOT, and it is one because of where the data comes
-//       from rather than anything done here. A deal's numbers freeze on
-//       submission; a job's lines freeze on completion and its part costs freeze
-//       at invoicing. Reprinting last month's invoice therefore gives last
-//       month's figures. Do not "improve" this by recalculating anything.
+// Coding Instructions:
+//   Two rules here are not stylistic.
+//
+//   NOTHING THE CUSTOMER MUST NOT SEE IS RENDERED. DealDetail carries the
+//   cost and gross of every F&I product, and RepairOrderDetail carries the
+//   cost of every part. Neither appears here, and
+//   DocumentTests.No_dealership_only_figure_reaches_a_customers_copy reads
+//   the raw HTML to prove it. If a future field arrives on either detail, it
+//   does not reach paper unless somebody comes here and writes it out.
+//
+//   A DOCUMENT IS A SNAPSHOT, and it is one because of where the data comes
+//   from rather than anything done here. A deal's numbers freeze on
+//   submission; a job's lines freeze on completion and its part costs freeze
+//   at invoicing. Reprinting last month's invoice therefore gives last
+//   month's figures. Do not "improve" this by recalculating anything.
 
 using System.Globalization;
 using DealerFOSS.Core;

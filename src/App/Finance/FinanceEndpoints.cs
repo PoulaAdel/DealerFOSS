@@ -1,12 +1,19 @@
-// FinanceEndpoints — the F&I product catalogue.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  GET  /api/v1/finance/products                 what can be sold
-//       POST /api/v1/finance/products                 add one
-//       POST /api/v1/finance/products/{id}/price      move the defaults
-//       POST /api/v1/finance/products/{id}/available  withdraw or restore
-// Edit: selling a product is not here. It happens on the deal
-//       (POST /api/v1/deals/{id}/products), because the price is negotiated per
-//       deal and the sale has to live or die with the deal it is on.
+// Overview: Purpose, File Design, and Engineering
+//   FinanceEndpoints — the F&I product catalogue.
+//
+// Usage:
+//   GET  /api/v1/finance/products                 what can be sold
+//   POST /api/v1/finance/products                 add one
+//   POST /api/v1/finance/products/{id}/price      move the defaults
+//   POST /api/v1/finance/products/{id}/available  withdraw or restore
+//
+// Coding Instructions:
+//   Selling a product is not here. It happens on the deal
+//   (POST /api/v1/deals/{id}/products), because the price is negotiated per
+//   deal and the sale has to live or die with the deal it is on.
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

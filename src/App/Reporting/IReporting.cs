@@ -1,14 +1,21 @@
-// IReporting — the one question a dealer principal asks: how did we do?
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the dashboard calls MonthAsync and renders what comes back.
-// Edit: this capability owns no data and no table. It composes what Accounting
-//       and Inventory already publish, and its whole value is that the answer
-//       arrives in one round trip instead of four — which is what lets the screen
-//       be a single view rather than a set of tabs.
+// Overview: Purpose, File Design, and Engineering
+//   IReporting — the one question a dealer principal asks: how did we do?
 //
-//       It deliberately holds no account codes and no aging rules. Those belong
-//       to the capabilities that own the figures; a second copy here would be a
-//       second thing to keep true.
+// Usage:
+//   The dashboard calls MonthAsync and renders what comes back.
+//
+// Coding Instructions:
+//   This capability owns no data and no table. It composes what Accounting
+//   and Inventory already publish, and its whole value is that the answer
+//   arrives in one round trip instead of four — which is what lets the screen
+//   be a single view rather than a set of tabs.
+//
+//   It deliberately holds no account codes and no aging rules. Those belong
+//   to the capabilities that own the figures; a second copy here would be a
+//   second thing to keep true.
 
 using DealerFOSS.Accounting;
 using DealerFOSS.Core;

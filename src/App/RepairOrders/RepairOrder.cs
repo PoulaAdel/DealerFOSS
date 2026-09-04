@@ -1,24 +1,31 @@
-// RepairOrder — one car in the workshop, the work done to it, and the bill.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  RepairOrder.Open(...), AddLine while the lines are open, Answer to record
-//       what the customer said, then ChangeStatus to move it along.
-// Edit: three rules here are not conveniences.
+// Overview: Purpose, File Design, and Engineering
+//   RepairOrder — one car in the workshop, the work done to it, and the bill.
 //
-//       A job cannot be invoiced while any line is still Pending. That is the
-//       control the capability exists to hold — billing work nobody agreed to pay
-//       for is the complaint that ends up in front of a trading standards officer,
-//       and it happens by accident far more often than by dishonesty.
+// Usage:
+//   RepairOrder.Open(...), AddLine while the lines are open, Answer to record
+//   what the customer said, then ChangeStatus to move it along.
 //
-//       The lines freeze the moment the job is Completed. Changing them means
-//       sending it back to InProgress, which is a recorded move.
+// Coding Instructions:
+//   Three rules here are not conveniences.
 //
-//       A job belongs to ONE rooftop and that is a permission boundary
-//       (doc 04 §1). The customer and the car are shared across the organization;
-//       the job is not.
+//   A job cannot be invoiced while any line is still Pending. That is the
+//   control the capability exists to hold — billing work nobody agreed to pay
+//   for is the complaint that ends up in front of a trading standards officer,
+//   and it happens by accident far more often than by dishonesty.
 //
-//       The car here is a VEHICLE, not an inventory unit. A customer's own car is
-//       not on anybody's lot, and modelling service against stock would make the
-//       whole capability unusable the day after the warranty runs out.
+//   The lines freeze the moment the job is Completed. Changing them means
+//   sending it back to InProgress, which is a recorded move.
+//
+//   A job belongs to ONE rooftop and that is a permission boundary
+//   (doc 04 §1). The customer and the car are shared across the organization;
+//   the job is not.
+//
+//   The car here is a VEHICLE, not an inventory unit. A customer's own car is
+//   not on anybody's lot, and modelling service against stock would make the
+//   whole capability unusable the day after the warranty runs out.
 
 using DealerFOSS.Core;
 

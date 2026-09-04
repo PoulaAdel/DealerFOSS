@@ -1,9 +1,16 @@
-// ICustomers — what other capabilities may call to reach customer records.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Leads, Sales, and Service confirm a customer exists and read a summary
-//       through this. They never touch the customer tables.
-// Edit: keep the returned shapes small. A capability that needs a field not here
-//       should say why — widening the contract couples every caller to it.
+// Overview: Purpose, File Design, and Engineering
+//   ICustomers — what other capabilities may call to reach customer records.
+//
+// Usage:
+//   Leads, Sales, and Service confirm a customer exists and read a summary
+//   through this. They never touch the customer tables.
+//
+// Coding Instructions:
+//   Keep the returned shapes small. A capability that needs a field not here
+//   should say why — widening the contract couples every caller to it.
 
 using DealerFOSS.Core;
 

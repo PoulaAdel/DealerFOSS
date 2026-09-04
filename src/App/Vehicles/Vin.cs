@@ -1,12 +1,19 @@
-// Vin — reading and checking a vehicle identification number.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Vin.Normalize(typed) before storing or comparing; Vin.IsWellFormed to
-//       decide whether a documented exception is required.
-// Edit: a VIN that fails this check is NOT automatically wrong. Pre-1981
-//       vehicles, imports, trailers, and equipment legitimately have shorter or
-//       oddly shaped numbers, and source data is frequently mistyped. The rule is
-//       "well-formed, or say why not" — never a hard refusal, and never a
-//       universal unique index (doc 04 §4).
+// Overview: Purpose, File Design, and Engineering
+//   Vin — reading and checking a vehicle identification number.
+//
+// Usage:
+//   Vin.Normalize(typed) before storing or comparing; Vin.IsWellFormed to
+//   decide whether a documented exception is required.
+//
+// Coding Instructions:
+//   A VIN that fails this check is NOT automatically wrong. Pre-1981
+//   vehicles, imports, trailers, and equipment legitimately have shorter or
+//   oddly shaped numbers, and source data is frequently mistyped. The rule is
+//   "well-formed, or say why not" — never a hard refusal, and never a
+//   universal unique index (doc 04 §4).
 
 namespace DealerFOSS.Vehicles;
 

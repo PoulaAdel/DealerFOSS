@@ -1,21 +1,28 @@
-// ConnectorRun — what happened, per connector, per dealership, per run.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Started() before the work, Succeeded()/Failed()/Misconfigured() after.
-//       Written in its own save so a crash leaves a row behind.
-// Edit: this is a record, not a log line, because the question an operator asks
-//       is "has this dealership been failing all week?" — and metrics are
-//       aggregates that expire. A store producing zero rows every night looks
-//       exactly like a quiet store until somebody can compare last night with
-//       the one before.
+// Overview: Purpose, File Design, and Engineering
+//   ConnectorRun — what happened, per connector, per dealership, per run.
 //
-//       The row is inserted BEFORE the fetch and completed after, so a process
-//       killed mid-run leaves FinishedAt null. That unfinished row is the only
-//       evidence such a run ever happened, and it is worth more than the tidiness
-//       of writing one row at the end.
+// Usage:
+//   Started() before the work, Succeeded()/Failed()/Misconfigured() after.
+//   Written in its own save so a crash leaves a row behind.
 //
-//       CursorHeld is deliberately separate from Outcome. A run can succeed —
-//       records arrived, records applied — and still not move the cursor, and
-//       collapsing the two would hide the more important half.
+// Coding Instructions:
+//   This is a record, not a log line, because the question an operator asks
+//   is "has this dealership been failing all week?" — and metrics are
+//   aggregates that expire. A store producing zero rows every night looks
+//   exactly like a quiet store until somebody can compare last night with
+//   the one before.
+//
+//   The row is inserted BEFORE the fetch and completed after, so a process
+//   killed mid-run leaves FinishedAt null. That unfinished row is the only
+//   evidence such a run ever happened, and it is worth more than the tidiness
+//   of writing one row at the end.
+//
+//   CursorHeld is deliberately separate from Outcome. A run can succeed —
+//   records arrived, records applied — and still not move the cursor, and
+//   collapsing the two would hide the more important half.
 
 using DealerFOSS.Core;
 

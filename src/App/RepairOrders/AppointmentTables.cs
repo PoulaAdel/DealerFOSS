@@ -1,16 +1,23 @@
-// AppointmentTables — how the service diary is stored. Part of the "service"
-// schema the workshop owns (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  nothing calls this directly. TenantDb finds it by scanning the assembly.
-// Edit: no foreign key to RepairOrders, even though both tables live in this
-//       schema and the column points at one. The link is set inside a transaction
-//       that writes both rows, so the constraint would buy nothing a test does not
-//       already prove — and it would make deleting a job impossible without first
-//       finding every booking that mentions it, which is the wrong way round: the
-//       diary's record of what happened should survive.
+// Overview: Purpose, File Design, and Engineering
+//   AppointmentTables — how the service diary is stored. Part of the "service"
+//   schema the workshop owns (ADR-014).
 //
-//       No foreign key to Customers or Vehicles either, for the same reason as
-//       RepairOrders: those are other capabilities' tables.
+// Usage:
+//   Nothing calls this directly. TenantDb finds it by scanning the assembly.
+//
+// Coding Instructions:
+//   No foreign key to RepairOrders, even though both tables live in this
+//   schema and the column points at one. The link is set inside a transaction
+//   that writes both rows, so the constraint would buy nothing a test does not
+//   already prove — and it would make deleting a job impossible without first
+//   finding every booking that mentions it, which is the wrong way round: the
+//   diary's record of what happened should survive.
+//
+//   No foreign key to Customers or Vehicles either, for the same reason as
+//   RepairOrders: those are other capabilities' tables.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

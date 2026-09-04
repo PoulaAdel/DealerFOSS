@@ -1,16 +1,23 @@
-// AppointmentStatus — where a booking got to.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  AppointmentStatusRules.IsOpen(status) before changing anything;
-//       Appointment already applies it.
-// Edit: there is no transition table here, unlike RepairOrderStatusRules, and
-//       that is not an omission. A booking has exactly one open state and three
-//       terminal ones, so "can this move" is the single question "is it still
-//       open" — a table would be three rows of the same answer.
+// Overview: Purpose, File Design, and Engineering
+//   AppointmentStatus — where a booking got to.
 //
-//       The three endings are deliberately three and not one. "Cancelled" is the
-//       customer telling you; "NoShow" is silence; "Arrived" is the car being
-//       here. Collapsing them into "closed" would throw away the only figures a
-//       service manager actually wants from a diary.
+// Usage:
+//   AppointmentStatusRules.IsOpen(status) before changing anything;
+//   Appointment already applies it.
+//
+// Coding Instructions:
+//   There is no transition table here, unlike RepairOrderStatusRules, and
+//   that is not an omission. A booking has exactly one open state and three
+//   terminal ones, so "can this move" is the single question "is it still
+//   open" — a table would be three rows of the same answer.
+//
+//   The three endings are deliberately three and not one. "Cancelled" is the
+//   customer telling you; "NoShow" is silence; "Arrived" is the car being
+//   here. Collapsing them into "closed" would throw away the only figures a
+//   service manager actually wants from a diary.
 
 namespace DealerFOSS.RepairOrders;
 

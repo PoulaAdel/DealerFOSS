@@ -1,16 +1,23 @@
-// PartsCostingMethod — how the cost of a part sold is worked out, and the
-// per-organization setting that chooses it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  PartsCosting.CostOf(method, layers, quantity) is the whole calculation.
-//       The setting is read and changed through IParts.
-// Edit: all three methods read the SAME data — the receipt layers — so switching
-//       between them is safe at any moment and needs no migration. That is the
-//       reason StockReceipt exists even for organizations that never use FIFO.
+// Overview: Purpose, File Design, and Engineering
+//   PartsCostingMethod — how the cost of a part sold is worked out, and the
+//   per-organization setting that chooses it.
 //
-//       Changing the method affects FUTURE sales only. A sold line freezes the
-//       cost it was sold at and the ledger is immutable, so switching cannot
-//       rewrite a month somebody has already reported on. Do not "improve" this
-//       into a recalculation.
+// Usage:
+//   PartsCosting.CostOf(method, layers, quantity) is the whole calculation.
+//   The setting is read and changed through IParts.
+//
+// Coding Instructions:
+//   All three methods read the SAME data — the receipt layers — so switching
+//   between them is safe at any moment and needs no migration. That is the
+//   reason StockReceipt exists even for organizations that never use FIFO.
+//
+//   Changing the method affects FUTURE sales only. A sold line freezes the
+//   cost it was sold at and the ledger is immutable, so switching cannot
+//   rewrite a month somebody has already reported on. Do not "improve" this
+//   into a recalculation.
 
 using DealerFOSS.Core;
 
