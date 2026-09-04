@@ -115,6 +115,10 @@ External data that cannot be stored as received is recorded as absent with the r
 
 An integration that cannot show what a provider actually sent cannot be operated, so raw capture is part of the runtime — with a default retention in code, redaction of the body rather than only the header, and the same erasure obligations as any other personal data. See [`adr/0022`](adr/0022-raw-capture-is-personal-data-with-an-expiry.md).
 
+### ADR-023 — STAR is a wire format to translate from, not our internal vocabulary — Accepted
+
+`ContractFields` keeps its own names. The industry standard, STAR, is a nested XML message format whose shape a flat field map cannot carry, so adopting its names without its structure would imply an interoperability nobody has built. A STAR connector translates at the edge like any other; STAR's role internally is as the coverage checklist a contract is measured against. Settles open decision D3. See [`adr/0023`](adr/0023-star-is-a-wire-format-not-our-vocabulary.md).
+
 ## 4. Technology stack
 
 Versions follow supported LTS/current stable releases and are pinned centrally. Upgrades require compatibility tests, not a new ADR unless the technology changes.

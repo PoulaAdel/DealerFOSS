@@ -22,6 +22,24 @@
 //
 //   Names are lowerCamelCase and dotted by area, matching the JSON style the
 //   API already uses. They are compared with Ordinal, so case matters.
+//
+//   THESE NAMES ARE OURS ON PURPOSE, AND THAT WAS DECIDED RATHER THAN DEFAULTED
+//   (ADR-023, 2026-09-04). The industry standard is STAR, whose vocabulary is
+//   published openly — so the question was settled on merit, not on access.
+//
+//   STAR is a WIRE FORMAT: nested XML Business Object Documents where an address
+//   offers a choice between five free-text lines and a structured form, and
+//   several elements repeat. This dictionary is flat `string -> string?`, so it
+//   can carry STAR's names but not STAR's shape — and STAR-looking names on a
+//   non-STAR structure imply an interoperability that does not exist. A STAR
+//   connector translates at the edge like any other. Read the ADR before
+//   renaming anything here; it is a question that looks new every time.
+//
+//   What STAR IS good for is coverage. When you extend a contract, check it
+//   against the matching STAR noun and record what you deliberately leave out.
+//   Doing that once already found three gaps, listed in the ADR — the sharpest
+//   being that `customer.address.area` collapses state and county, while US
+//   sales tax varies by both.
 
 namespace DealerFOSS.Integrations;
 

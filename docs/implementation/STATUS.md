@@ -820,3 +820,21 @@ to come.
   **Named and not done: `IdentityDb` has the same gap.** Its rows say `system` too. It is deliberately left for its own change, because the interesting case is a session row — written at the moment somebody signs in, when `ICurrentUser` is by definition not yet set — and that needs a decision rather than the same mechanical fix.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **668/668** (was 664), `verify-e2e.ps1` PASS. Confirmed against the real database afterwards: rows written by `gm@dev.local` during the e2e run carry `11111111-1111-1111-1111-111111111111`.
+
+- **2026-09-04 — D3 is settled: STAR is a wire format, not our vocabulary.** [ADR-023](../adr/0023-star-is-a-wire-format-not-our-vocabulary.md). `ContractFields` keeps its own names, and now says why in its own header so the question is not re-opened by the next person who meets STAR.
+
+  **The research overturned our own premise.** Doc 11 §2 closed by saying adoption "means reading the specification", implying access was the obstacle. It is not: the STAR 5 and STAR 6 repositories, the OpenAPI definitions and the short codes are published openly at `docs.starstandard.org` under the **Eclipse Public License v1.0**, no membership and no login. The vocabulary was readable the whole time, so the decision had to be made on merit.
+
+  **Made on merit, the answer is still to keep our own names**, for a reason the original framing missed. STAR is a *wire format*: its address alone offers a choice between five free-text lines and a structured form, with several elements repeating. `ProviderRecord.Fields` is a flat `string → string?` map, so it can carry STAR's names but not STAR's shape — and STAR-looking names on a non-STAR structure imply an interoperability nobody has built. Certification, where a manufacturer does it, is against real messages over real transport; renaming constants gets no closer to passing.
+
+  **What STAR earns instead is the job of coverage checklist**, and it paid for itself immediately. Measuring our eleven customer fields against STAR's address structure found three gaps, recorded in the ADR and deliberately not built:
+
+  - **`customer.address.area` collapses state and county.** STAR separates `StateOrProvinceCountrySub-DivisionID` from `CountyCountrySub-Division`. This one matters commercially: doc 11 §3.3 records that US sales tax varies by state, county and sometimes city, so **our address cannot express the thing that drives the tax calculation**.
+  - **No `AddressType` or `UseCode`** — billing, residence and garaging addresses are indistinguishable, and garaging address drives insurance and some tax.
+  - **Two address lines against STAR's five.** Rarely a problem; now a known limit rather than a surprise.
+
+  None was built, because a field nothing populates is speculation — there is one sink and one connector, and that connector is a test double.
+
+  **Two factual corrections to doc 11 §2**, both from STAR's own material: it publishes **200+** message formats across **35+** business areas, not the "145 across 40" we had. Both numbers were wrong, in opposite directions.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **668/668**, every relative link in `docs/` resolves. Sources read 2026-09-04 and cited in the ADR.

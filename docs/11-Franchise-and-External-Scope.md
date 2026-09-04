@@ -43,27 +43,54 @@ already the overdue decision **N3** in the handover — the decision that govern
 this entire document. Building OEM plumbing before choosing is building for a
 customer we have not identified.
 
-## 2. The industry already has a data standard, and we did not use it
+## 2. The industry already has a data standard — settled 2026-09-04
 
 **STAR** — Standards for Technology in Automotive Retail — is the body that
 defines how dealers, manufacturers and their vendors exchange data. It publishes
-**over 145 XML message formats across more than 40 business areas**, and
+**over 200 XML message formats across more than 35 business areas**, and
 Volkswagen Group of America, among others, certifies DMS integrations against
 STAR XML through its Dealer Communication System. STAR's newer work moves to
 JSON and a shared Retail Automotive Domain Model.
 
-**This lands directly on a decision we already made.** `ContractFields.cs`
-declares our own contract vocabulary (`customer.firstName`, `customer.email`,
-and so on) so that a connector translates a vendor's names into ours and one
-sink serves every provider. The seam is right. **The vocabulary is invented when
-a standard one exists.**
+> **Corrected 2026-09-04.** This paragraph said "over 145 formats across more
+> than 40 business areas". Both figures were wrong in opposite directions;
+> STAR's own material says 200+ and 35+.
 
-Nothing needs to be undone today — the indirection is exactly what makes this
-cheap to change later, and one sink still serves every provider either way. But
-the naming should be reconsidered against STAR before there are many contracts,
-not after. Recorded as an open decision rather than acted on, because adopting
-STAR properly means reading the specification, not renaming constants to match a
-press release.
+**This landed on a decision we had already made.** `ContractFields.cs` declares
+our own contract vocabulary (`customer.firstName`, `customer.email`, and so on)
+so that a connector translates a vendor's names into ours and one sink serves
+every provider. The seam is right. The vocabulary is ours.
+
+### The obstacle turned out not to exist
+
+This section used to close by saying adoption "means reading the specification"
+— implying access was the blocker. **It is not.** The STAR 5 and STAR 6
+repositories, the OpenAPI definitions and the short codes are published openly
+at `docs.starstandard.org` under the **Eclipse Public License v1.0**, with no
+membership and no login. The vocabulary was readable the whole time.
+
+So D3 was decided on merit instead, and the answer is **keep our own names**
+([ADR-023](adr/0023-star-is-a-wire-format-not-our-vocabulary.md)):
+
+- **STAR is a wire format, not an internal vocabulary.** Its address alone
+  offers a *choice* between five free-text lines and a structured form, with
+  several elements repeating. `ProviderRecord.Fields` is a flat
+  `string → string?` map: it can carry STAR's names but not STAR's shape, and
+  STAR-looking names on a non-STAR structure imply an interoperability nobody
+  has built.
+- **Certification is about messages, not names.** What a manufacturer certifies
+  is the exchange of real BODs over real transport. Renaming constants gets no
+  closer to passing it.
+- **A STAR connector translates at the edge**, like every other connector. That
+  is what the seam is for.
+
+**What STAR does earn is the job of coverage checklist.** Measuring our eleven
+customer fields against STAR's address structure immediately found three things
+we do not carry — the sharpest being that `customer.address.area` collapses
+*state* and *county*, while §3.3 of this document records that US sales tax
+varies by state, county and sometimes city. Our address cannot currently express
+the thing that drives the tax calculation. All three are listed in the ADR and
+none is built, because a field nothing populates is speculation.
 
 ## 3. Scope, by what blocks it
 
@@ -336,7 +363,7 @@ Outside engineering, recorded so they are not lost:
 |---|---|---|
 | **D1** | Franchised or independent dealers first | Governs §3.1, §3.2, §3.3 and both roles in §10. Already overdue as **N3** |
 | **D2** | Which jurisdiction | Tax, titling and privacy all follow from it. Six languages and US-only compliance point in different directions |
-| **D3** | Adopt STAR vocabulary for `ContractFields`, or keep our own | Cheap now, expensive once several connectors exist |
+| ~~**D3**~~ | ~~Adopt STAR vocabulary for `ContractFields`, or keep our own~~ | **Settled 2026-09-04 — keep our own.** STAR is a wire format a connector translates from, not an internal vocabulary; a flat field map can carry its names but not its shape. The obstacle assumed here (reading the spec) did not exist — it is public under EPL v1.0. See [ADR-023](adr/0023-star-is-a-wire-format-not-our-vocabulary.md) |
 | ~~**D4**~~ | ~~Which accounts warranty and internal work post to~~ | **Settled 2026-08-15.** Warranty is a receivable from the manufacturer (`1200`), internal work is a charge against the dealership (`5400`), and reconditioning on a car we own is capitalised onto the unit rather than expensed — so used-vehicle cost carries its recon. Built and proven; see `4f0073c` |
 | **D5** | Whether to hold credit data at all | Changes the security posture of the whole product (§4) |
 
@@ -367,7 +394,7 @@ engineering time), or **Done**.
 | Registration and titling (EVR/ERT) | Compliance | Market | Not started |
 | Sales tax by state, county and city | Accounting | Market | Not started |
 | Ambassadors to dealers | Business | Market | Not started |
-| Adopt STAR vocabulary for contracts | Integration | Decision | Not started |
+| Adopt STAR vocabulary for contracts | Integration | Done | Decided 2026-09-04: keep our own (ADR-023) |
 | Pay type on service work | Service | Done | Built, with a screen |
 | Reconditioning capitalised onto the car | Accounting | Done | Built |
 | Technician load balancing | Service | Decision | Not started |
