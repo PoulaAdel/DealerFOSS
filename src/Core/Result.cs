@@ -1,9 +1,26 @@
-// Result — the return type for operations that can fail for ordinary reasons.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  return Result.Failure<T>(Error.NotFound(...)) for an expected outcome;
-//       throw only for bugs. Endpoints map a failed Result to a status code.
-// Edit: add combinators (Map, Bind) here if they earn their keep. Never add a
-//       domain-specific helper — Core must stay free of dealership concepts.
+// Overview: Purpose, File Design, and Engineering
+//   The return type for operations that can fail for ordinary reasons. It draws
+//   the line this system depends on: an EXPECTED outcome — not found, not
+//   permitted, already submitted — is a value, and only a bug is an exception.
+//
+//   That split is what makes the HTTP surface thin. An endpoint maps a failed
+//   Result to a status code and a Problem Details body without knowing anything
+//   about the rule that failed, and a service can refuse something without
+//   deciding how the refusal will be transported.
+//
+// Usage:
+//   return Result.Failure<Deal>(Error.NotFound("deal.not_found", "..."));
+//   return Result.Success(deal);
+//   if (result.IsFailure) return result.Error.ToProblem();
+//
+// Coding Instructions:
+//   Combinators (Map, Bind) belong here if they earn their keep across several
+//   capabilities. A domain-specific helper never does: Core must stay free of
+//   dealership concepts, and one Deal-shaped method here would be the first
+//   crack in the wall that keeps this project testable without a database.
 
 namespace DealerFOSS.Core;
 

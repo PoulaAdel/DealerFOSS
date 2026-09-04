@@ -1,21 +1,28 @@
-// PasskeyDirectory — IPasskeys, over the credential store and the verifier.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  registered as IPasskeys; the application maps four routes onto it.
-// Edit: this class does almost nothing on its own, and that is the design. The
-//       cryptography is in WebAuthn, the credential rules are on Passkey, and
-//       sessions are minted by the one method every other sign-in uses. What
-//       lives here is the ORDER those happen in, which is where ceremonies
-//       usually go wrong:
+// Overview: Purpose, File Design, and Engineering
+//   PasskeyDirectory — IPasskeys, over the credential store and the verifier.
 //
-//       * The challenge is consumed BEFORE the response is judged, and saved
-//         either way. A challenge that survives a failed attempt can be retried
-//         against, which is most of the way to removing it.
-//       * A credential is looked up by its id, and the challenge is checked
-//         against THAT credential's key — never "any key that verifies".
-//       * The counter is written in the same save as the sign-in.
+// Usage:
+//   Registered as IPasskeys; the application maps four routes onto it.
 //
-//       Every refusal outside is PasskeyErrors.NotAccepted. The specific reason
-//       is logged. See IPasskeys for why.
+// Coding Instructions:
+//   This class does almost nothing on its own, and that is the design. The
+//   cryptography is in WebAuthn, the credential rules are on Passkey, and
+//   sessions are minted by the one method every other sign-in uses. What
+//   lives here is the ORDER those happen in, which is where ceremonies
+//   usually go wrong:
+//
+//   * The challenge is consumed BEFORE the response is judged, and saved
+//   either way. A challenge that survives a failed attempt can be retried
+//   against, which is most of the way to removing it.
+//   * A credential is looked up by its id, and the challenge is checked
+//   against THAT credential's key — never "any key that verifies".
+//   * The counter is written in the same save as the sign-in.
+//
+//   Every refusal outside is PasskeyErrors.NotAccepted. The specific reason
+//   is logged. See IPasskeys for why.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

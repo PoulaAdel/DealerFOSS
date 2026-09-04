@@ -1,28 +1,35 @@
-// IAccountRecovery — how somebody who cannot sign in proves the account is theirs.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject IAccountRecovery. Reached from /api/v1/auth/recover, which is
-//       unauthenticated by necessity — the caller has no session, that is the
-//       whole problem.
-// Edit: three properties hold this together, and each is the reason a familiar
-//       shape was NOT used. See ADR-018.
+// Overview: Purpose, File Design, and Engineering
+//   IAccountRecovery — how somebody who cannot sign in proves the account is theirs.
 //
-//       ONE. RESETTING IS A SINGLE CALL. Email, proof, and the new password
-//       arrive together and the password changes or nothing does. The usual
-//       shape — prove, receive a ticket, redeem the ticket — needs a second
-//       credential that exists between the two calls, has to be stored, expired,
-//       transported and invalidated, and is worth stealing. Nothing here needs
-//       to survive between two requests, so nothing does.
+// Usage:
+//   Inject IAccountRecovery. Reached from /api/v1/auth/recover, which is
+//   unauthenticated by necessity — the caller has no session, that is the
+//   whole problem.
 //
-//       TWO. WHAT IS OFFERED IS A PROPERTY OF THE INSTALLATION, NEVER OF THE
-//       ACCOUNT. "Which methods can I use?" is answered without being told an
-//       email address. Answering per-account would mean saying whether that
-//       address exists and whether it has an authenticator enrolled, which turns
-//       the recovery screen into a way to enumerate a dealership's staff and
-//       identify who is easiest to attack.
+// Coding Instructions:
+//   Three properties hold this together, and each is the reason a familiar
+//   shape was NOT used. See ADR-018.
 //
-//       THREE. EVERY FAILURE IS THE SAME FAILURE. Unknown email, wrong code, no
-//       authenticator, stopped account, account that never had a password — all
-//       return RecoveryRefused. A caller must not be able to tell them apart.
+//   ONE. RESETTING IS A SINGLE CALL. Email, proof, and the new password
+//   arrive together and the password changes or nothing does. The usual
+//   shape — prove, receive a ticket, redeem the ticket — needs a second
+//   credential that exists between the two calls, has to be stored, expired,
+//   transported and invalidated, and is worth stealing. Nothing here needs
+//   to survive between two requests, so nothing does.
+//
+//   TWO. WHAT IS OFFERED IS A PROPERTY OF THE INSTALLATION, NEVER OF THE
+//   ACCOUNT. "Which methods can I use?" is answered without being told an
+//   email address. Answering per-account would mean saying whether that
+//   address exists and whether it has an authenticator enrolled, which turns
+//   the recovery screen into a way to enumerate a dealership's staff and
+//   identify who is easiest to attack.
+//
+//   THREE. EVERY FAILURE IS THE SAME FAILURE. Unknown email, wrong code, no
+//   authenticator, stopped account, account that never had a password — all
+//   return RecoveryRefused. A caller must not be able to tell them apart.
 
 using DealerFOSS.Core;
 

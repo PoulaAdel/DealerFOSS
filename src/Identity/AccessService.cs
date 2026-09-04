@@ -1,9 +1,16 @@
-// AccessService — decides what a user may reach, and records every refusal.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IAccessDirectory; do not construct it directly.
-// Edit: deny is the default and must stay so — an unknown user, an inactive
-//       user, or one with no covering assignment gets AuthorizedScope.None.
-//       If you add a fast path, make sure it cannot turn "no rows" into access.
+// Overview: Purpose, File Design, and Engineering
+//   AccessService — decides what a user may reach, and records every refusal.
+//
+// Usage:
+//   Through IAccessDirectory; do not construct it directly.
+//
+// Coding Instructions:
+//   Deny is the default and must stay so — an unknown user, an inactive
+//   user, or one with no covering assignment gets AuthorizedScope.None.
+//   If you add a fast path, make sure it cannot turn "no rows" into access.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Identity;

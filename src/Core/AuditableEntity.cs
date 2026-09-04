@@ -1,10 +1,26 @@
-// AuditableEntity — base for records that carry audit columns and an optimistic
-// concurrency stamp.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inherit from it. Do not set CreatedAt/ModifiedAt by hand — each module's
-//       DbContext stamps them centrally in SaveChangesAsync.
-// Edit: rarely. Adding a field here changes every table that inherits it, so it
-//       needs a migration in every module.
+// Overview: Purpose, File Design, and Engineering
+//   The base for records carrying audit columns and an optimistic concurrency
+//   stamp. Inheriting it is what opts a table into two behaviours the tenant
+//   data context applies centrally in SaveChangesAsync: the columns are stamped
+//   on save, and the stamp is checked so a second writer cannot silently
+//   overwrite the first.
+//
+//   Central rather than per-entity for the same reason IAppendOnly is an
+//   interface: the failure mode of forgetting is invisible. A row with no
+//   CreatedBy looks like a row, not like a bug.
+//
+// Usage:
+//   Inherit from it on any business record.
+//   Never set CreatedAt / ModifiedAt / CreatedBy / ModifiedBy by hand.
+//
+// Coding Instructions:
+//   Change this rarely and deliberately. A field added here changes EVERY table
+//   that inherits it, so it needs a migration for each — across four contexts.
+//   Architecture tests also assert that anything inheriting this has no EF or
+//   ASP.NET dependency, wherever the file happens to sit.
 
 namespace DealerFOSS.Core;
 

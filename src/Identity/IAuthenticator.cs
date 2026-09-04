@@ -1,13 +1,20 @@
-// IAuthenticator — the Identity project's sign-in surface, used by the
-// application to turn credentials into a session and a session token back into a
-// caller.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  SignInAsync at the login endpoint; if the outcome carries a challenge,
-//       CompleteSignInAsync with the code. ValidateAsync on every request;
-//       RevokeAsync at logout.
-// Edit: every credential failure returns the same error on purpose. Distinguishing
-//       "no such user" from "wrong password" — or "wrong code" from "no second
-//       factor enrolled" — tells an attacker which accounts are worth attacking.
+// Overview: Purpose, File Design, and Engineering
+//   IAuthenticator — the Identity project's sign-in surface, used by the
+//   application to turn credentials into a session and a session token back into a
+//   caller.
+//
+// Usage:
+//   SignInAsync at the login endpoint; if the outcome carries a challenge,
+//   CompleteSignInAsync with the code. ValidateAsync on every request;
+//   RevokeAsync at logout.
+//
+// Coding Instructions:
+//   Every credential failure returns the same error on purpose. Distinguishing
+//   "no such user" from "wrong password" — or "wrong code" from "no second
+//   factor enrolled" — tells an attacker which accounts are worth attacking.
 
 using DealerFOSS.Core;
 

@@ -1,25 +1,32 @@
-// IStaffDirectory — seeing and managing the people who work for this dealer
-// organization.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  list staff, see what a role grants, assign somebody to a rooftop, stop a
-//       leaver, and add a starter who then sets their own password with a
-//       one-time code. The caller checks the permission first — this contract
-//       does what it is told and records who told it.
-// Edit: this is the FOURTH public surface of the Identity project and it was
-//       opened deliberately (BoundaryTests names it). Two rules keep it safe:
+// Overview: Purpose, File Design, and Engineering
+//   IStaffDirectory — seeing and managing the people who work for this dealer
+//   organization.
 //
-//       It returns NO credential material. No password hash, no TOTP secret, no
-//       session or recovery-code value ever crosses this boundary. What a
-//       colleague may see is an identifier (email), an administrative fact
-//       (active), and one actionable yes/no (holds a second factor). Notably
-//       absent: when somebody last signed in — its honest use is spotting a
-//       dormant account, but on a shared screen it answers "when was Dave
-//       working", and the audit trail is the right place to look when there is a
-//       reason to.
+// Usage:
+//   List staff, see what a role grants, assign somebody to a rooftop, stop a
+//   leaver, and add a starter who then sets their own password with a
+//   one-time code. The caller checks the permission first — this contract
+//   does what it is told and records who told it.
 //
-//       It cannot invent permissions. Roles are read-only here; assigning grants
-//       an EXISTING role at an EXISTING scope. Editing the catalogue is not on
-//       this contract, and adding it would be a different decision entirely.
+// Coding Instructions:
+//   This is the FOURTH public surface of the Identity project and it was
+//   opened deliberately (BoundaryTests names it). Two rules keep it safe:
+//
+//   It returns NO credential material. No password hash, no TOTP secret, no
+//   session or recovery-code value ever crosses this boundary. What a
+//   colleague may see is an identifier (email), an administrative fact
+//   (active), and one actionable yes/no (holds a second factor). Notably
+//   absent: when somebody last signed in — its honest use is spotting a
+//   dormant account, but on a shared screen it answers "when was Dave
+//   working", and the audit trail is the right place to look when there is a
+//   reason to.
+//
+//   It cannot invent permissions. Roles are read-only here; assigning grants
+//   an EXISTING role at an EXISTING scope. Editing the catalogue is not on
+//   this contract, and adding it would be a different decision entirely.
 
 using DealerFOSS.Core;
 

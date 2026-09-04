@@ -1,16 +1,23 @@
-// Administrator — whoever runs the deployment. Deliberately not a User.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by ControlPlaneSeeder today; an administration workflow later.
-// Edit: this type must never gain a link to a tenant, a rooftop, or a role from
-//       the permission catalogue. The whole point is that operating the
-//       installation and reading a dealership's records are different jobs held
-//       by different records in different databases. An administrator reaches
-//       business data only by going through the support-access flow, which mints
-//       a separate, time-limited tenant session that the dealership can see.
+// Overview: Purpose, File Design, and Engineering
+//   Administrator — whoever runs the deployment. Deliberately not a User.
 //
-//       A second factor is mandatory, not optional: an account that can suspend
-//       a dealership or step into one is worth more to an attacker than any
-//       single user account.
+// Usage:
+//   Created by ControlPlaneSeeder today; an administration workflow later.
+//
+// Coding Instructions:
+//   This type must never gain a link to a tenant, a rooftop, or a role from
+//   the permission catalogue. The whole point is that operating the
+//   installation and reading a dealership's records are different jobs held
+//   by different records in different databases. An administrator reaches
+//   business data only by going through the support-access flow, which mints
+//   a separate, time-limited tenant session that the dealership can see.
+//
+//   A second factor is mandatory, not optional: an account that can suspend
+//   a dealership or step into one is worth more to an attacker than any
+//   single user account.
 
 namespace DealerFOSS.Identity;
 

@@ -1,22 +1,29 @@
-// Passkey — one registered credential, and the state that keeps it honest.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by PasskeyDirectory once WebAuthn has proven a registration.
-// Edit: TWO fields carry security meaning and are not bookkeeping.
+// Overview: Purpose, File Design, and Engineering
+//   Passkey — one registered credential, and the state that keeps it honest.
 //
-//       SignCount is clone detection. It only ever moves forward, and the domain
-//       refuses to move it backwards rather than trusting the caller to check —
-//       a repeated count is the one signal the standard gives that a credential
-//       supposed to be unclonable has been copied.
+// Usage:
+//   Created by PasskeyDirectory once WebAuthn has proven a registration.
 //
-//       PublicKeySpki is a PUBLIC key and nothing else. There is no private
-//       material here, which is the whole point of the scheme: a stolen copy of
-//       this table lets an attacker verify signatures, not produce them. That is
-//       why a passkey survives a database breach and a password hash only
-//       resists one.
+// Coding Instructions:
+//   TWO fields carry security meaning and are not bookkeeping.
 //
-//       There is deliberately no "disabled" flag. A passkey somebody no longer
-//       wants is deleted, because a credential that still exists but is ignored
-//       is a thing two people will disagree about.
+//   SignCount is clone detection. It only ever moves forward, and the domain
+//   refuses to move it backwards rather than trusting the caller to check —
+//   a repeated count is the one signal the standard gives that a credential
+//   supposed to be unclonable has been copied.
+//
+//   PublicKeySpki is a PUBLIC key and nothing else. There is no private
+//   material here, which is the whole point of the scheme: a stolen copy of
+//   this table lets an attacker verify signatures, not produce them. That is
+//   why a passkey survives a database breach and a password hash only
+//   resists one.
+//
+//   There is deliberately no "disabled" flag. A passkey somebody no longer
+//   wants is deleted, because a credential that still exists but is ignored
+//   is a thing two people will disagree about.
 
 namespace DealerFOSS.Identity;
 

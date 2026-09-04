@@ -1,12 +1,19 @@
-// Authenticator — verifies passwords, starts sessions, and turns a session token
-// back into a caller on every request.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IAuthenticator; the Host never touches sessions directly.
-// Edit: three rules hold this together and none may be relaxed for convenience.
-//       Every credential failure returns the same error. The raw token is hashed
-//       before it is compared or stored. A password is verified even when the
-//       user does not exist, so the response time does not reveal which emails
-//       are real.
+// Overview: Purpose, File Design, and Engineering
+//   Authenticator — verifies passwords, starts sessions, and turns a session token
+//   back into a caller on every request.
+//
+// Usage:
+//   Through IAuthenticator; the Host never touches sessions directly.
+//
+// Coding Instructions:
+//   Three rules hold this together and none may be relaxed for convenience.
+//   Every credential failure returns the same error. The raw token is hashed
+//   before it is compared or stored. A password is verified even when the
+//   user does not exist, so the response time does not reveal which emails
+//   are real.
 
 using DealerFOSS.Core;
 using Microsoft.AspNetCore.Identity;

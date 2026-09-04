@@ -1,14 +1,21 @@
-// ControlPlaneAudit — the deployment's own append-only log.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  written by GlobalAdministrationService. Never updated or deleted;
-//       ControlPlaneDb refuses both (ADR-016).
-// Edit: this is a separate table from a tenant's identity.AuditEvents on purpose.
-//       A tenant's audit trail belongs to that dealership and travels with their
-//       database; what an administrator did to the installation belongs to the
-//       installation. Support access writes to both — the dealership must be able
-//       to see somebody came in without being given the control plane's log.
+// Overview: Purpose, File Design, and Engineering
+//   ControlPlaneAudit — the deployment's own append-only log.
 //
-//       Never record a credential, a token, or any dealership business data here.
+// Usage:
+//   Written by GlobalAdministrationService. Never updated or deleted;
+//   ControlPlaneDb refuses both (ADR-016).
+//
+// Coding Instructions:
+//   This is a separate table from a tenant's identity.AuditEvents on purpose.
+//   A tenant's audit trail belongs to that dealership and travels with their
+//   database; what an administrator did to the installation belongs to the
+//   installation. Support access writes to both — the dealership must be able
+//   to see somebody came in without being given the control plane's log.
+//
+//   Never record a credential, a token, or any dealership business data here.
 
 namespace DealerFOSS.Identity;
 

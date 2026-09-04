@@ -1,38 +1,45 @@
-// AccountRecoveryService — the two ways back into an account, and the care they
-// both need.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IAccountRecovery.
-// Edit: this is the softest surface in the application. It is unauthenticated by
-//       necessity, it names an account by email, and success is a new password on
-//       somebody else's login. Four things are load-bearing.
+// Overview: Purpose, File Design, and Engineering
+//   AccountRecoveryService — the two ways back into an account, and the care they
+//   both need.
 //
-//       EVERY REFUSAL IS THE SAME REFUSAL, and every path does the same work
-//       before returning it. An unknown email must not answer faster than a known
-//       one with a wrong code, or the timing IS the answer — so the password
-//       hasher runs even when there is no user to hash for.
+// Usage:
+//   Through IAccountRecovery.
 //
-//       A RECOVERY CODE CANNOT BE AN ENROLMENT CODE, and the purpose is matched
-//       in the query rather than checked afterwards. Be honest about what that
-//       buys today: it is DEFENCE IN DEPTH, not the control doing the work.
-//       Rehearsed 2026-08-09 — removing the purpose filter from BOTH this path
-//       and enrolment's failed no test, because the two are already separated by
-//       their opposite preconditions on PasswordHash: recovery refuses an account
-//       without one, enrolment refuses an account with one, so neither path can
-//       currently reach the other's codes to be confused by them.
+// Coding Instructions:
+//   This is the softest surface in the application. It is unauthenticated by
+//   necessity, it names an account by email, and success is a new password on
+//   somebody else's login. Four things are load-bearing.
 //
-//       It stays because that separation is an accident of two checks agreeing,
-//       and the day somebody relaxes either one — an "invite an existing user"
-//       feature, a merge, an import that sets a hash — the purpose column is what
-//       stops a starter's code opening a reset. Same reasoning as the supersede
-//       loop in StaffDirectoryService, and recorded the same way.
+//   EVERY REFUSAL IS THE SAME REFUSAL, and every path does the same work
+//   before returning it. An unknown email must not answer faster than a known
+//   one with a wrong code, or the timing IS the answer — so the password
+//   hasher runs even when there is no user to hash for.
 //
-//       A SUCCESSFUL RESET ENDS EVERY SESSION. Somebody recovering an account may
-//       be recovering it FROM someone, and leaving the old sessions alive would
-//       make the reset cosmetic.
+//   A RECOVERY CODE CANNOT BE AN ENROLMENT CODE, and the purpose is matched
+//   in the query rather than checked afterwards. Be honest about what that
+//   buys today: it is DEFENCE IN DEPTH, not the control doing the work.
+//   Rehearsed 2026-08-09 — removing the purpose filter from BOTH this path
+//   and enrolment's failed no test, because the two are already separated by
+//   their opposite preconditions on PasswordHash: recovery refuses an account
+//   without one, enrolment refuses an account with one, so neither path can
+//   currently reach the other's codes to be confused by them.
 //
-//       THE AUTHENTICATOR PATH SPENDS WHAT IT USES. A second-factor recovery code
-//       is single use here exactly as it is at sign-in; a code that could be
-//       replayed to set a password is a password.
+//   It stays because that separation is an accident of two checks agreeing,
+//   and the day somebody relaxes either one — an "invite an existing user"
+//   feature, a merge, an import that sets a hash — the purpose column is what
+//   stops a starter's code opening a reset. Same reasoning as the supersede
+//   loop in StaffDirectoryService, and recorded the same way.
+//
+//   A SUCCESSFUL RESET ENDS EVERY SESSION. Somebody recovering an account may
+//   be recovering it FROM someone, and leaving the old sessions alive would
+//   make the reset cosmetic.
+//
+//   THE AUTHENTICATOR PATH SPENDS WHAT IT USES. A second-factor recovery code
+//   is single use here exactly as it is at sign-in; a code that could be
+//   replayed to set a password is a password.
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

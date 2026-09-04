@@ -1,9 +1,16 @@
-// SqlAuditSink — writes audit entries into the tenant's identity.AuditEvents
-// table. Identity owns the audit store; other modules go through IAuditSink.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  registered for IAuditSink; callers never reference this class.
-// Edit: audit rows are append-only (ADR-016) — write new rows, never update.
-//       Nothing sensitive may be placed in an entry; see IAuditSink.
+// Overview: Purpose, File Design, and Engineering
+//   SqlAuditSink — writes audit entries into the tenant's identity.AuditEvents
+//   table. Identity owns the audit store; other modules go through IAuditSink.
+//
+// Usage:
+//   Registered for IAuditSink; callers never reference this class.
+//
+// Coding Instructions:
+//   Audit rows are append-only (ADR-016) — write new rows, never update.
+//   Nothing sensitive may be placed in an entry; see IAuditSink.
 
 using DealerFOSS.Core;
 

@@ -1,18 +1,25 @@
-// ControlPlaneDb — persistence for the deployment's own identities, in the host
-// catalog database. Owns the "control" schema and no other.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  injected into GlobalAdministrationService and nothing else.
-// Edit: this context binds to the host catalog connection, not to any tenant's.
-//       That is the separation: there is no code path by which an administrator
-//       row and a dealership's business tables are open in the same context. A
-//       business table added here would be a design error of the same kind as
-//       one added to HostDb (ADR-003).
+// Overview: Purpose, File Design, and Engineering
+//   ControlPlaneDb — persistence for the deployment's own identities, in the host
+//   catalog database. Owns the "control" schema and no other.
 //
-//       Why this lives in the Identity project rather than in a capability folder:
-//       password verification, TOTP, and session issuance must exist in exactly
-//       one place, behind the wall that exists to hold them. A second copy in
-//       src/App would be reachable from every feature — which is precisely what
-//       ADR-017 prevents.
+// Usage:
+//   Injected into GlobalAdministrationService and nothing else.
+//
+// Coding Instructions:
+//   This context binds to the host catalog connection, not to any tenant's.
+//   That is the separation: there is no code path by which an administrator
+//   row and a dealership's business tables are open in the same context. A
+//   business table added here would be a design error of the same kind as
+//   one added to HostDb (ADR-003).
+//
+//   Why this lives in the Identity project rather than in a capability folder:
+//   password verification, TOTP, and session issuance must exist in exactly
+//   one place, behind the wall that exists to hold them. A second copy in
+//   src/App would be reachable from every feature — which is precisely what
+//   ADR-017 prevents.
 
 using Microsoft.EntityFrameworkCore;
 

@@ -1,9 +1,16 @@
-// IdentityDesignTimeFactory — lets "dotnet ef" build this context outside the
-// running application.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  tooling only; never referenced by application code.
-// Edit: override the target with DEALERFOSS_TENANT_CONNECTION. Migrations
-//       describe the schema; they are applied per tenant at provisioning time.
+// Overview: Purpose, File Design, and Engineering
+//   IdentityDesignTimeFactory — lets "dotnet ef" build this context outside the
+//   running application.
+//
+// Usage:
+//   Tooling only; never referenced by application code.
+//
+// Coding Instructions:
+//   Override the target with DEALERFOSS_TENANT_CONNECTION. Migrations
+//   describe the schema; they are applied per tenant at provisioning time.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;

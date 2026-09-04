@@ -1,11 +1,18 @@
-// IAccessDirectory — the Identity module's public contract, and the only part of
-// it other modules may reference (ADR-008).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  ask "what may this user reach?" (GetAuthorizedScopeAsync) or "may they
-//       reach this rooftop?" (IsAuthorizedAsync). Never read assignments yourself.
-// Edit: changing a signature here is a cross-module break — every caller must be
-//       updated in the same change. An empty AuthorizedScope means DENY; keep
-//       that contract, or callers will read it as "no filter".
+// Overview: Purpose, File Design, and Engineering
+//   IAccessDirectory — the Identity module's public contract, and the only part of
+//   it other modules may reference (ADR-008).
+//
+// Usage:
+//   Ask "what may this user reach?" (GetAuthorizedScopeAsync) or "may they
+//   reach this rooftop?" (IsAuthorizedAsync). Never read assignments yourself.
+//
+// Coding Instructions:
+//   Changing a signature here is a cross-module break — every caller must be
+//   updated in the same change. An empty AuthorizedScope means DENY; keep
+//   that contract, or callers will read it as "no filter".
 
 using DealerFOSS.Core;
 

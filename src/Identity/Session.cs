@@ -1,16 +1,23 @@
-// Session — a durable record of one signed-in browser, held in SQL so it can be
-// revoked immediately rather than waiting for a token to expire.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by SignInService; validated on every request. The raw token is
-//       never stored — only its hash — so a database leak cannot be replayed.
-// Edit: expiry is two clocks at once. Idle expiry slides forward with activity;
-//       absolute expiry never moves, so a session cannot be kept alive forever
-//       by staying busy. Both must be checked, and revocation must beat both.
+// Overview: Purpose, File Design, and Engineering
+//   Session — a durable record of one signed-in browser, held in SQL so it can be
+//   revoked immediately rather than waiting for a token to expire.
 //
-//       A session carries two independent secrets: the session token, which the
-//       browser never sees in script, and the anti-forgery token, which it must
-//       read and echo back on every write. Both are stored hashed, and both die
-//       together when the session is revoked.
+// Usage:
+//   Created by SignInService; validated on every request. The raw token is
+//   never stored — only its hash — so a database leak cannot be replayed.
+//
+// Coding Instructions:
+//   Expiry is two clocks at once. Idle expiry slides forward with activity;
+//   absolute expiry never moves, so a session cannot be kept alive forever
+//   by staying busy. Both must be checked, and revocation must beat both.
+//
+//   A session carries two independent secrets: the session token, which the
+//   browser never sees in script, and the anti-forgery token, which it must
+//   read and echo back on every write. Both are stored hashed, and both die
+//   together when the session is revoked.
 
 using DealerFOSS.Core;
 

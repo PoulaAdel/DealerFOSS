@@ -1,14 +1,21 @@
-// IGlobalAdministration — the control plane's sign-in surface, and the only door
-// between running the deployment and reading a dealership's data.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  SignInAsync at /api/v1/admin/login; ValidateAsync on every admin request;
-//       GrantSupportAccessAsync when a dealership asks for help.
-// Edit: notice what is NOT here. There is no method that turns an administrator
-//       into a tenant caller, and no flag that widens an administrator session.
-//       Support access mints a separate tenant session belonging to a separate
-//       principal, with its own expiry and its own entry in the dealership's own
-//       audit trail. Keep it that way: a flag on an existing session is a
-//       privilege escalation with better manners.
+// Overview: Purpose, File Design, and Engineering
+//   IGlobalAdministration — the control plane's sign-in surface, and the only door
+//   between running the deployment and reading a dealership's data.
+//
+// Usage:
+//   SignInAsync at /api/v1/admin/login; ValidateAsync on every admin request;
+//   GrantSupportAccessAsync when a dealership asks for help.
+//
+// Coding Instructions:
+//   Notice what is NOT here. There is no method that turns an administrator
+//   into a tenant caller, and no flag that widens an administrator session.
+//   Support access mints a separate tenant session belonging to a separate
+//   principal, with its own expiry and its own entry in the dealership's own
+//   audit trail. Keep it that way: a flag on an existing session is a
+//   privilege escalation with better manners.
 
 using DealerFOSS.Core;
 

@@ -1,11 +1,18 @@
-// RecoveryCode — a one-time way back in when the phone with the authenticator on
-// it is lost, broken, or in a taxi.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  issued as a set when the second factor is confirmed, and shown to the
-//       user exactly once.
-// Edit: only the hash is stored, for the same reason as a password — a stolen
-//       database must not contain a working way past the second factor. A code
-//       is consumed on use and never reissued.
+// Overview: Purpose, File Design, and Engineering
+//   RecoveryCode — a one-time way back in when the phone with the authenticator on
+//   it is lost, broken, or in a taxi.
+//
+// Usage:
+//   Issued as a set when the second factor is confirmed, and shown to the
+//   user exactly once.
+//
+// Coding Instructions:
+//   Only the hash is stored, for the same reason as a password — a stolen
+//   database must not contain a working way past the second factor. A code
+//   is consumed on use and never reissued.
 
 using System.Security.Cryptography;
 using System.Text;

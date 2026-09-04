@@ -1,14 +1,21 @@
-// SupportGrant — one recorded, time-limited entry by an administrator into one
-// dealership's data.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by GlobalAdministrationService.GrantSupportAccessAsync.
-// Edit: this record is the evidence, not the mechanism. The access itself is a
-//       real tenant session with its own expiry, so ending the grant and ending
-//       the session are the same act — do not let them drift apart, or the log
-//       would say "closed" while the session kept working.
+// Overview: Purpose, File Design, and Engineering
+//   SupportGrant — one recorded, time-limited entry by an administrator into one
+//   dealership's data.
 //
-//       A reason is required and cannot be blank. An entry nobody had to justify
-//       is not deliberate access; it is a back door with a timestamp.
+// Usage:
+//   Created by GlobalAdministrationService.GrantSupportAccessAsync.
+//
+// Coding Instructions:
+//   This record is the evidence, not the mechanism. The access itself is a
+//   real tenant session with its own expiry, so ending the grant and ending
+//   the session are the same act — do not let them drift apart, or the log
+//   would say "closed" while the session kept working.
+//
+//   A reason is required and cannot be blank. An entry nobody had to justify
+//   is not deliberate access; it is a back door with a timestamp.
 
 namespace DealerFOSS.Identity;
 

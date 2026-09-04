@@ -1,10 +1,17 @@
-// SecurityPolicyService — reads and changes the second-factor obligation.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through ISecurityPolicy; the application never touches Role directly.
-// Edit: the counts returned by the listing are the point, not decoration. An
-//       administrator about to demand a second factor of forty people needs to
-//       know that thirty-one of them have not set one up yet — otherwise the
-//       policy lands as a support queue rather than as a control.
+// Overview: Purpose, File Design, and Engineering
+//   SecurityPolicyService — reads and changes the second-factor obligation.
+//
+// Usage:
+//   Through ISecurityPolicy; the application never touches Role directly.
+//
+// Coding Instructions:
+//   The counts returned by the listing are the point, not decoration. An
+//   administrator about to demand a second factor of forty people needs to
+//   know that thirty-one of them have not set one up yet — otherwise the
+//   policy lands as a support queue rather than as a control.
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;

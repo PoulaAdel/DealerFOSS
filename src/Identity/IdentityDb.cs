@@ -1,12 +1,19 @@
-// IdentityDb — persistence for this module. Owns the "identity" schema
-// and no other (ADR-014).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  injected into the module's own services; nothing outside Identity may
-//       take a dependency on it.
-// Edit: schema changes need a migration in this project. SaveChangesAsync stamps
-//       audit columns centrally and refuses to modify audit history — do not
-//       bypass it. Note "identity" is a reserved T-SQL word: hand-written SQL
-//       must bracket it as [identity].
+// Overview: Purpose, File Design, and Engineering
+//   IdentityDb — persistence for this module. Owns the "identity" schema
+//   and no other (ADR-014).
+//
+// Usage:
+//   Injected into the module's own services; nothing outside Identity may
+//   take a dependency on it.
+//
+// Coding Instructions:
+//   Schema changes need a migration in this project. SaveChangesAsync stamps
+//   audit columns centrally and refuses to modify audit history — do not
+//   bypass it. Note "identity" is a reserved T-SQL word: hand-written SQL
+//   must bracket it as [identity].
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Identity;

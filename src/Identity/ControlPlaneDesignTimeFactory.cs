@@ -1,10 +1,17 @@
-// ControlPlaneDesignTimeFactory — lets "dotnet ef" build the control-plane
-// context outside the running application.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  tooling only; never referenced by application code.
-// Edit: override the target with DEALERFOSS_HOST_CONNECTION — the control
-//       plane lives in the host catalog, so it is the same connection HostDb
-//       uses, not a tenant's.
+// Overview: Purpose, File Design, and Engineering
+//   ControlPlaneDesignTimeFactory — lets "dotnet ef" build the control-plane
+//   context outside the running application.
+//
+// Usage:
+//   Tooling only; never referenced by application code.
+//
+// Coding Instructions:
+//   Override the target with DEALERFOSS_HOST_CONNECTION — the control
+//   plane lives in the host catalog, so it is the same connection HostDb
+//   uses, not a tenant's.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;

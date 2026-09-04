@@ -1,9 +1,29 @@
-// Money — an amount together with its ISO currency.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  new Money(24995.00m, "USD"). Add/Subtract refuse mixed currencies on
-//       purpose; there is no implicit conversion anywhere in the system.
-// Edit: only add operations that are true for every currency. Conversion needs
-//       a rate and a date, so it belongs to the module that owns those.
+// Overview: Purpose, File Design, and Engineering
+//   An amount together with the currency it is denominated in, as one value
+//   rather than a decimal that happens to have a currency written down beside
+//   it somewhere. It lives in Core because every capability needs it and none
+//   of them owns it.
+//
+//   The engineering decision is that arithmetic REFUSES mixed currencies
+//   instead of converting them. A conversion needs a rate and a date, and this
+//   type can know neither; silently picking one would produce a number that
+//   looks right and is wrong, in a system whose whole job is money.
+//
+// Usage:
+//   new Money(24995.00m, "USD")
+//   a.Add(b)        → throws when a and b are different currencies
+//   a.Subtract(b)   → the same
+//
+// Coding Instructions:
+//   Only add operations that are true for every currency. Conversion belongs to
+//   whichever capability owns rates and effective dates, not here.
+//
+//   Never add an implicit conversion to decimal. It would let an amount lose
+//   its currency at a call site nobody reviews, which is exactly the class of
+//   bug this type exists to make impossible.
 
 using System.Globalization;
 

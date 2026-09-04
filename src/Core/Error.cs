@@ -1,9 +1,27 @@
-// Error — a stable, code-identified business failure.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Error.Validation("deal.price_required", "A price is required."). The
-//       Code is part of the public API contract; changing one breaks clients.
-// Edit: adding an ErrorType means every endpoint's status-code mapping must
-//       handle it — check OrganizationEndpoints.Problem before you do.
+// Overview: Purpose, File Design, and Engineering
+//   A business failure identified by a stable code and carrying a message
+//   written for the person who hit it. The code is the machine-readable half
+//   and part of the public API contract; the message is the human half and may
+//   be reworded freely.
+//
+//   ErrorType exists so that one mapping — ProblemResults.cs — turns any Error
+//   into an HTTP status. That is why a new ErrorType is not a local change: it
+//   is a new status code for the whole API, and a type the mapping does not
+//   handle would fall through to something misleading.
+//
+// Usage:
+//   Error.Validation("deal.price_required", "A price is required.")
+//   Error.NotFound / Conflict / Forbidden / Unavailable
+//
+// Coding Instructions:
+//   CHANGING A CODE BREAKS CLIENTS. Codes are contract; treat a rename as a
+//   breaking API change and version it.
+//
+//   Adding an ErrorType means updating the status mapping in
+//   src/App/ProblemResults.cs in the same commit. Check it before you add one.
 
 namespace DealerFOSS.Core;
 

@@ -1,13 +1,20 @@
-// AdminSession — one signed-in administrator, held in the host catalog so it can
-// be revoked immediately.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by GlobalAdministrationService; validated on every /api/v1/admin
-//       request.
-// Edit: the timeouts are deliberately tighter than a tenant user's. A dealership
-//       session is a workday; a control-plane session is a task. Both secrets are
-//       stored hashed, and both die together when the session is revoked — the
-//       same rules Session follows, kept separate rather than shared because the
-//       two must never be interchangeable.
+// Overview: Purpose, File Design, and Engineering
+//   AdminSession — one signed-in administrator, held in the host catalog so it can
+//   be revoked immediately.
+//
+// Usage:
+//   Created by GlobalAdministrationService; validated on every /api/v1/admin
+//   request.
+//
+// Coding Instructions:
+//   The timeouts are deliberately tighter than a tenant user's. A dealership
+//   session is a workday; a control-plane session is a task. Both secrets are
+//   stored hashed, and both die together when the session is revoked — the
+//   same rules Session follows, kept separate rather than shared because the
+//   two must never be interchangeable.
 
 namespace DealerFOSS.Identity;
 

@@ -1,22 +1,29 @@
-// StaffDirectoryService — the staff list, and the changes a manager makes to it.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IStaffDirectory; the application never touches User, Role, or
-//       UserAssignment directly.
-// Edit: three things here are load-bearing.
+// Overview: Purpose, File Design, and Engineering
+//   StaffDirectoryService — the staff list, and the changes a manager makes to it.
 //
-//       Nothing that leaves this class is a credential. The projections build
-//       StaffMember by hand rather than mapping an entity, so a field added to
-//       User later cannot leak by accident — somebody has to come here and write
-//       it out.
+// Usage:
+//   Through IStaffDirectory; the application never touches User, Role, or
+//   UserAssignment directly.
 //
-//       A starter is created WITHOUT a password hash. User.CanSignIn already
-//       reads "active and holds a credential", so an un-enrolled account is
-//       refused at sign-in by machinery that already exists, rather than by a new
-//       check somebody could forget.
+// Coding Instructions:
+//   Three things here are load-bearing.
 //
-//       The enrolment code is compared in constant time and answers identically
-//       for an unknown email, a wrong code, and an expired one. Distinguishing
-//       them turns "I have a code" into "I can find out whose codes are live".
+//   Nothing that leaves this class is a credential. The projections build
+//   StaffMember by hand rather than mapping an entity, so a field added to
+//   User later cannot leak by accident — somebody has to come here and write
+//   it out.
+//
+//   A starter is created WITHOUT a password hash. User.CanSignIn already
+//   reads "active and holds a credential", so an un-enrolled account is
+//   refused at sign-in by machinery that already exists, rather than by a new
+//   check somebody could forget.
+//
+//   The enrolment code is compared in constant time and answers identically
+//   for an unknown email, a wrong code, and an expired one. Distinguishing
+//   them turns "I have a code" into "I can find out whose codes are live".
 
 using System.Security.Cryptography;
 using System.Text;

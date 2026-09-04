@@ -1,9 +1,24 @@
-// Ids — typed identifiers for the tenancy hierarchy, so a RooftopId cannot be
-// passed where a LegalEntityId is expected.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  new RooftopId(guid); .Value to get the Guid back.
-// Edit: when adding an id, add its JsonConverter too. Without one it serializes
-//       as {"value":"..."} instead of a plain GUID, which breaks route binding.
+// Overview: Purpose, File Design, and Engineering
+//   Typed identifiers for the tenancy hierarchy — dealer organization, legal
+//   entity, rooftop, department — so that a RooftopId cannot be passed where a
+//   LegalEntityId is expected. Every one of them is a Guid underneath, which is
+//   precisely the problem: bare Guids are mutually assignable, and a scope
+//   confusion in this system is a permission bug.
+//
+//   The compiler catching it is worth the wrapping. This is the cheapest place
+//   in the product to prevent a whole class of authorization mistake.
+//
+// Usage:
+//   new RooftopId(guid)
+//   rooftopId.Value   → the Guid back
+//
+// Coding Instructions:
+//   ADDING AN ID MEANS ADDING ITS JsonConverter TOO. Without one it serializes
+//   as {"value":"..."} rather than a plain GUID, which breaks route binding and
+//   every client that reads the field — and it fails at runtime, not at build.
 
 using System.Text.Json;
 using System.Text.Json.Serialization;

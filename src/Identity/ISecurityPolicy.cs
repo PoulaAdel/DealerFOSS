@@ -1,13 +1,20 @@
-// ISecurityPolicy — reading and changing the security rules a dealer organization
-// applies to its own staff.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  list the roles and their second-factor obligation; set one. The caller is
-//       responsible for checking the permission first — this contract does what
-//       it is told and records who told it.
-// Edit: this is the third public surface of the Identity project, and it exists
-//       because a policy nobody can change is not a policy. Keep it to policy:
-//       creating users, granting roles, and reading assignments stay internal
-//       (ADR-017), and adding them here would be a different decision entirely.
+// Overview: Purpose, File Design, and Engineering
+//   ISecurityPolicy — reading and changing the security rules a dealer organization
+//   applies to its own staff.
+//
+// Usage:
+//   List the roles and their second-factor obligation; set one. The caller is
+//   responsible for checking the permission first — this contract does what
+//   it is told and records who told it.
+//
+// Coding Instructions:
+//   This is the third public surface of the Identity project, and it exists
+//   because a policy nobody can change is not a policy. Keep it to policy:
+//   creating users, granting roles, and reading assignments stay internal
+//   (ADR-017), and adding them here would be a different decision entirely.
 
 using DealerFOSS.Core;
 

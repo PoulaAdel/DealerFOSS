@@ -1,16 +1,23 @@
-// Totp — time-based one-time codes, RFC 6238. The maths behind the six digits in
-// an authenticator app.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  Totp.Verify(secret, code, now) at sign-in; Totp.NewSecret() at enrolment.
-// Edit: three details are not adjustable without breaking every authenticator
-//       app in the world: HMAC-SHA1, a 30-second step, and 6 digits. They look
-//       dated and they are what Google Authenticator, Authy, 1Password and the
-//       rest implement.
+// Overview: Purpose, File Design, and Engineering
+//   Totp — time-based one-time codes, RFC 6238. The maths behind the six digits in
+//   an authenticator app.
 //
-//       The verification window is deliberately one step either side. Wider
-//       accepts a code for longer after it is shown on screen — including to
-//       somebody reading it over a shoulder — and narrower rejects users whose
-//       phone clock is a few seconds out, which is most of them.
+// Usage:
+//   Totp.Verify(secret, code, now) at sign-in; Totp.NewSecret() at enrolment.
+//
+// Coding Instructions:
+//   Three details are not adjustable without breaking every authenticator
+//   app in the world: HMAC-SHA1, a 30-second step, and 6 digits. They look
+//   dated and they are what Google Authenticator, Authy, 1Password and the
+//   rest implement.
+//
+//   The verification window is deliberately one step either side. Wider
+//   accepts a code for longer after it is shown on screen — including to
+//   somebody reading it over a shoulder — and narrower rejects users whose
+//   phone clock is a few seconds out, which is most of them.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;

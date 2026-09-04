@@ -1,16 +1,23 @@
-// StaffEnrolment — the one-time code a starter uses to set their own password.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by StaffDirectoryService when a manager issues one; consumed when
-//       the starter redeems it.
-// Edit: this is a credential in its own right, and the same rules as
-//       SignInChallenge apply — stored hashed, lives for hours rather than days,
-//       single use, and capped on wrong guesses. It is longer-lived than a
-//       sign-in challenge because it has to survive somebody being handed a code
-//       and getting to a computer, and shorter than a working week because a code
-//       that outlives the conversation is a password lying on a desk.
+// Overview: Purpose, File Design, and Engineering
+//   StaffEnrolment — the one-time code a starter uses to set their own password.
 //
-//       Issuing a new code supersedes any outstanding one. Two live codes for one
-//       account doubles the guessing surface for no benefit.
+// Usage:
+//   Created by StaffDirectoryService when a manager issues one; consumed when
+//   the starter redeems it.
+//
+// Coding Instructions:
+//   This is a credential in its own right, and the same rules as
+//   SignInChallenge apply — stored hashed, lives for hours rather than days,
+//   single use, and capped on wrong guesses. It is longer-lived than a
+//   sign-in challenge because it has to survive somebody being handed a code
+//   and getting to a computer, and shorter than a working week because a code
+//   that outlives the conversation is a password lying on a desk.
+//
+//   Issuing a new code supersedes any outstanding one. Two live codes for one
+//   account doubles the guessing surface for no benefit.
 
 using System.Security.Cryptography;
 using System.Text;

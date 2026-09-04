@@ -1,9 +1,16 @@
-// User — a person who can sign in to this dealer organization.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by administration workflows (and the development seeder today).
-// Edit: credentials and sessions arrive with the authentication milestone and
-//       belong here. Email is a sign-in handle, not an identity: customer
-//       matching must never key on it (doc 04 §4).
+// Overview: Purpose, File Design, and Engineering
+//   User — a person who can sign in to this dealer organization.
+//
+// Usage:
+//   Created by administration workflows (and the development seeder today).
+//
+// Coding Instructions:
+//   Credentials and sessions arrive with the authentication milestone and
+//   belong here. Email is a sign-in handle, not an identity: customer
+//   matching must never key on it (doc 04 §4).
 
 using DealerFOSS.Core;
 

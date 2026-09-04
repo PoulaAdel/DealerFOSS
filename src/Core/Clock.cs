@@ -1,9 +1,24 @@
-// Clock — injectable "now", so time can be controlled in tests.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject IClock and read UtcNow. Do not call DateTimeOffset.UtcNow in
-//       domain or workflow code.
-// Edit: instants are UTC. A dealership-local date is derived from the rooftop
-//       time zone at the point of display, not stored as local time.
+// Overview: Purpose, File Design, and Engineering
+//   Injectable "now". An interface rather than a static call so that time is an
+//   input to the system instead of an ambient fact about the machine it runs
+//   on, which is what makes expiry, aging and period-close testable at all.
+//
+//   Instants are UTC throughout. A dealership-local date is DERIVED from the
+//   rooftop's time zone at the point of display; it is never stored as local
+//   time, because a stored local time cannot be interpreted later without also
+//   knowing which zone and which rule set were in force when it was written.
+//
+// Usage:
+//   Inject IClock, read UtcNow.
+//   Do not call DateTimeOffset.UtcNow in domain or workflow code.
+//
+// Coding Instructions:
+//   Keep this to the current instant. A "today in the rooftop's zone" helper
+//   belongs where the rooftop is known, not here — Core knows nothing about
+//   rooftops and must not learn.
 
 namespace DealerFOSS.Core;
 

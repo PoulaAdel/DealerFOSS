@@ -1,9 +1,26 @@
-// IAuditSink — how a security-sensitive event is recorded.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject it and call RecordAsync. The Identity module implements it and
-//       owns the table; nothing else writes audit rows directly.
-// Edit: never put credentials, tokens, credit data, government ids, or document
-//       content into an AuditEntry. Audit rows are append-only (ADR-016).
+// Overview: Purpose, File Design, and Engineering
+//   How a security-sensitive event is recorded. Declared in Core so any
+//   capability can write one, implemented in Identity so only Identity owns the
+//   table — the same shape as every other cross-capability contract here.
+//
+//   Audit rows are append-only (ADR-016), and the data context enforces that
+//   rather than trusting callers. An audit trail that can be edited is not an
+//   audit trail.
+//
+// Usage:
+//   Inject IAuditSink, call RecordAsync. Denials are recorded as well as
+//   successes — a refused attempt is usually the more interesting row.
+//
+// Coding Instructions:
+//   NEVER put credentials, tokens, credit data, government identifiers, or
+//   document content into an AuditEntry. The trail is retained long, exported,
+//   and read by people who are not entitled to those values.
+//
+//   Record what was attempted, by whom, against what, and the outcome. A
+//   before/after summary is welcome; a payload dump is not.
 
 namespace DealerFOSS.Core;
 

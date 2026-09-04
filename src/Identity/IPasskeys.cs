@@ -1,26 +1,33 @@
-// IPasskeys — registering a passkey, and signing in with one.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  the only door to passkey credentials. The application maps four routes
-//       onto it and never touches the tables behind it.
-// Edit: NOTE WHAT THIS CONTRACT DOES NOT CARRY, because that is what makes it
-//       safe to make public.
+// Overview: Purpose, File Design, and Engineering
+//   IPasskeys — registering a passkey, and signing in with one.
 //
-//       No public key leaves this project, no challenge is ever handed back to
-//       a caller after it has been issued, and there is no way to register a
-//       credential against a user other than the one signed in. A caller cannot
-//       ask "does this credential exist" — the sign-in path answers a completed
-//       ceremony, not a probe.
+// Usage:
+//   The only door to passkey credentials. The application maps four routes
+//   onto it and never touches the tables behind it.
 //
-//       Both Finish methods take raw bytes and return a Result. That is
-//       deliberate: verification lives behind this line, so nothing outside
-//       Identity can be written that accidentally accepts an assertion nobody
-//       checked. The application's job is to move bytes and set a cookie.
+// Coding Instructions:
+//   NOTE WHAT THIS CONTRACT DOES NOT CARRY, because that is what makes it
+//   safe to make public.
 //
-//       Failures are DELIBERATELY COARSE at this boundary. Every refusal comes
-//       back as one error. Telling a caller which check failed would help
-//       somebody assembling a forgery far more than it helps a person who
-//       tapped the wrong key, and the precise reason is logged where an
-//       administrator can read it.
+//   No public key leaves this project, no challenge is ever handed back to
+//   a caller after it has been issued, and there is no way to register a
+//   credential against a user other than the one signed in. A caller cannot
+//   ask "does this credential exist" — the sign-in path answers a completed
+//   ceremony, not a probe.
+//
+//   Both Finish methods take raw bytes and return a Result. That is
+//   deliberate: verification lives behind this line, so nothing outside
+//   Identity can be written that accidentally accepts an assertion nobody
+//   checked. The application's job is to move bytes and set a cookie.
+//
+//   Failures are DELIBERATELY COARSE at this boundary. Every refusal comes
+//   back as one error. Telling a caller which check failed would help
+//   somebody assembling a forgery far more than it helps a person who
+//   tapped the wrong key, and the precise reason is logged where an
+//   administrator can read it.
 
 using DealerFOSS.Core;
 

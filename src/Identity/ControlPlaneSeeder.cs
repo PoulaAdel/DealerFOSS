@@ -1,11 +1,18 @@
-// ControlPlaneSeeder — creates the development administrator. Development only.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  called by the application's DevelopmentSeeder, for the same reason
-//       IdentitySeeder is: administrator records are internal to this project.
-// Edit: it is idempotent, and it never overwrites an existing password or an
-//       existing second factor. Never seed a real administrator here, and never
-//       seed one outside Development — an account that operates the whole
-//       installation must be created deliberately by whoever owns it.
+// Overview: Purpose, File Design, and Engineering
+//   ControlPlaneSeeder — creates the development administrator. Development only.
+//
+// Usage:
+//   Called by the application's DevelopmentSeeder, for the same reason
+//   IdentitySeeder is: administrator records are internal to this project.
+//
+// Coding Instructions:
+//   It is idempotent, and it never overwrites an existing password or an
+//   existing second factor. Never seed a real administrator here, and never
+//   seed one outside Development — an account that operates the whole
+//   installation must be created deliberately by whoever owns it.
 
 using DealerFOSS.Core;
 using Microsoft.AspNetCore.Identity;

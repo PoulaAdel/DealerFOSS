@@ -1,11 +1,18 @@
-// UserAssignment — grants a user a role, either across the whole organization or
-// at one named rooftop. The same user may hold different roles at different
-// rooftops (doc 04 §1).
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  UserAssignment.ForOrganization(...) or .ForRooftop(...).
-// Edit: keep organization-wide as its own scope rather than "a list of every
-//       rooftop". A rooftop opened next year must be covered automatically by
-//       the first and deliberately not by the second.
+// Overview: Purpose, File Design, and Engineering
+//   UserAssignment — grants a user a role, either across the whole organization or
+//   at one named rooftop. The same user may hold different roles at different
+//   rooftops (doc 04 §1).
+//
+// Usage:
+//   UserAssignment.ForOrganization(...) or .ForRooftop(...).
+//
+// Coding Instructions:
+//   Keep organization-wide as its own scope rather than "a list of every
+//   rooftop". A rooftop opened next year must be covered automatically by
+//   the first and deliberately not by the second.
 
 using DealerFOSS.Core;
 

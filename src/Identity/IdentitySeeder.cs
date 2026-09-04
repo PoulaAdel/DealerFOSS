@@ -1,13 +1,20 @@
-// IdentitySeeder — creates the development sign-in accounts. Development only.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  called by the application's DevelopmentSeeder. It exists because user,
-//       role, and assignment records are internal to this project: without a
-//       sanctioned entry point the seeder would need the internals opened up,
-//       which is exactly what ADR-017 is preventing.
-// Edit: it is idempotent, so repeated runs neither duplicate nor overwrite.
-//       Roles are reconciled every run — a database seeded before a feature
-//       existed would otherwise leave the development accounts unable to use it.
-//       Never seed anything but obviously synthetic accounts here.
+// Overview: Purpose, File Design, and Engineering
+//   IdentitySeeder — creates the development sign-in accounts. Development only.
+//
+// Usage:
+//   Called by the application's DevelopmentSeeder. It exists because user,
+//   role, and assignment records are internal to this project: without a
+//   sanctioned entry point the seeder would need the internals opened up,
+//   which is exactly what ADR-017 is preventing.
+//
+// Coding Instructions:
+//   It is idempotent, so repeated runs neither duplicate nor overwrite.
+//   Roles are reconciled every run — a database seeded before a feature
+//   existed would otherwise leave the development accounts unable to use it.
+//   Never seed anything but obviously synthetic accounts here.
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

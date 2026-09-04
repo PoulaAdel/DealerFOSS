@@ -1,18 +1,25 @@
-// GlobalAdministrationService — sign-in for the people who run the deployment,
-// and the one deliberate door from there into a dealership's data.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  through IGlobalAdministration; the application never touches control-plane
-//       tables directly.
-// Edit: the same three rules that hold Authenticator together hold here — one
-//       error for every credential failure, tokens hashed before they are stored
-//       or compared, and a password verified even when the account does not exist.
+// Overview: Purpose, File Design, and Engineering
+//   GlobalAdministrationService — sign-in for the people who run the deployment,
+//   and the one deliberate door from there into a dealership's data.
 //
-//       The rule specific to this file: nothing here may return a tenant caller
-//       for an administrator. GrantSupportAccessAsync mints a session for the
-//       tenant's own support principal — a separate user row, in the dealership's
-//       database, with read-only access, that no password can sign into. That is
-//       what makes the access visible to the dealership in their own audit trail
-//       and revocable by ending one session.
+// Usage:
+//   Through IGlobalAdministration; the application never touches control-plane
+//   tables directly.
+//
+// Coding Instructions:
+//   The same three rules that hold Authenticator together hold here — one
+//   error for every credential failure, tokens hashed before they are stored
+//   or compared, and a password verified even when the account does not exist.
+//
+//   The rule specific to this file: nothing here may return a tenant caller
+//   for an administrator. GrantSupportAccessAsync mints a session for the
+//   tenant's own support principal — a separate user row, in the dealership's
+//   database, with read-only access, that no password can sign into. That is
+//   what makes the access visible to the dealership in their own audit trail
+//   and revocable by ending one session.
 
 using DealerFOSS.Core;
 using Microsoft.AspNetCore.Identity;

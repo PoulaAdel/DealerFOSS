@@ -1,9 +1,26 @@
-// ITenantContext — which dealer organization the current request belongs to.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject it and read Current. It is write-once per request and throws if
-//       read before resolution, which catches code running outside middleware.
-// Edit: this is only the holder. Resolution lives in src/App/Tenancy — the
-//       middleware and the resolver; change those instead.
+// Overview: Purpose, File Design, and Engineering
+//   Which dealer organization the current request belongs to. A holder and
+//   nothing more — it carries the answer, it does not work it out.
+//
+//   It is write-once per request and THROWS when read before resolution, rather
+//   than returning null or a default. That is deliberate: code running outside
+//   the middleware — a background job, a test harness, a startup path — is
+//   exactly the code that must not quietly get "some tenant". A loud failure at
+//   the first read is the cheapest possible way to find it.
+//
+// Usage:
+//   Inject ITenantContext, read Current.
+//
+// Coding Instructions:
+//   Resolution belongs to src/App/Tenancy — the middleware and the resolver.
+//   Change those, not this.
+//
+//   Do not add a "try get" or a nullable accessor. Every caller that wanted one
+//   so far turned out to be code that should have named its tenant explicitly,
+//   which is what ITenantScopeFactory is for.
 
 using DealerFOSS.Core;
 

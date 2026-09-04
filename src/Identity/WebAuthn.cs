@@ -1,34 +1,41 @@
-// WebAuthn — the cryptography behind a passkey, and nothing else.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  internal to Identity. PasskeyDirectory calls it; nothing else may.
-// Edit: READ THIS BEFORE CHANGING A LINE. Every check below is the reason a
-//       passkey cannot be phished, replayed, or forged. Removing one does not
-//       break a test that says "removing this breaks sign-in" — it silently
-//       turns strong authentication into a formality, which is the worst
-//       failure mode a security control has.
+// Overview: Purpose, File Design, and Engineering
+//   WebAuthn — the cryptography behind a passkey, and nothing else.
 //
-//       The checks, and what each one stops:
+// Usage:
+//   Internal to Identity. PasskeyDirectory calls it; nothing else may.
 //
-//       * Type. "webauthn.create" on registration, "webauthn.get" on sign-in.
-//         Without it a registration response can be replayed as a sign-in.
-//       * Challenge. Must equal the one WE issued, and it is single-use. This
-//         is what makes the ceremony fresh rather than a recording.
-//       * Origin. Must be one we expect. THIS is the anti-phishing property:
-//         the browser puts the real origin in, and an authenticator on
-//         evil-example.com cannot produce a signature that names ours.
-//       * RP ID hash. The first 32 bytes of authenticator data are SHA-256 of
-//         the relying party id. Binds the credential to this application.
-//       * User present. Bit 0 of the flags. Somebody physically touched it.
-//       * Signature. Over authenticatorData || SHA-256(clientDataJSON), with
-//         the public key recorded at registration.
-//       * Sign count. If the authenticator counts, a count that does not
-//         advance means a cloned credential.
+// Coding Instructions:
+//   READ THIS BEFORE CHANGING A LINE. Every check below is the reason a
+//   passkey cannot be phished, replayed, or forged. Removing one does not
+//   break a test that says "removing this breaks sign-in" — it silently
+//   turns strong authentication into a formality, which is the worst
+//   failure mode a security control has.
 //
-//       Attestation is deliberately NOT verified. We accept "none", which is
-//       what platform passkeys send by default, and refuse the rest. Verifying
-//       attestation proves which authenticator model was used — a fleet-control
-//       question, not an authentication one — and doing it badly is worse than
-//       not doing it. Named here so nobody assumes it happens.
+//   The checks, and what each one stops:
+//
+//   * Type. "webauthn.create" on registration, "webauthn.get" on sign-in.
+//   Without it a registration response can be replayed as a sign-in.
+//   * Challenge. Must equal the one WE issued, and it is single-use. This
+//   is what makes the ceremony fresh rather than a recording.
+//   * Origin. Must be one we expect. THIS is the anti-phishing property:
+//   the browser puts the real origin in, and an authenticator on
+//   evil-example.com cannot produce a signature that names ours.
+//   * RP ID hash. The first 32 bytes of authenticator data are SHA-256 of
+//   the relying party id. Binds the credential to this application.
+//   * User present. Bit 0 of the flags. Somebody physically touched it.
+//   * Signature. Over authenticatorData || SHA-256(clientDataJSON), with
+//   the public key recorded at registration.
+//   * Sign count. If the authenticator counts, a count that does not
+//   advance means a cloned credential.
+//
+//   Attestation is deliberately NOT verified. We accept "none", which is
+//   what platform passkeys send by default, and refuse the rest. Verifying
+//   attestation proves which authenticator model was used — a fleet-control
+//   question, not an authentication one — and doing it badly is worse than
+//   not doing it. Named here so nobody assumes it happens.
 
 using System.Formats.Cbor;
 using System.Security.Cryptography;

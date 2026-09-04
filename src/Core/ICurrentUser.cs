@@ -1,9 +1,29 @@
-// ICurrentUser — who is making the current request.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  inject it and read Id. Never accept a user id as a parameter from the
-//       client; that would let a caller act as somebody else.
-// Edit: this is only the holder. Resolution lives in
-//       Host/Tenancy/CurrentUserMiddleware.
+// Overview: Purpose, File Design, and Engineering
+//   Who is making the current request. Like ITenantContext, a holder rather
+//   than a resolver, and the type every capability hands to the access
+//   directory when it asks whether a caller may see something.
+//
+//   That makes it a load-bearing part of the security model rather than a
+//   convenience. Control-plane identities NEVER reach it: an administrator has
+//   their own middleware, cookie and store, so an administrator cookie on a
+//   business endpoint resolves to nobody and is refused before any endpoint
+//   runs. An architecture test fails the build if anything in the control plane
+//   so much as references this type.
+//
+// Usage:
+//   Inject ICurrentUser, read Id.
+//
+// Coding Instructions:
+//   NEVER accept a user id as a parameter from a client. That would let a
+//   caller act as somebody else, and it is the single easiest way to undo every
+//   permission check in the product.
+//
+//   Resolution lives in src/App/Tenancy/CurrentUserMiddleware.cs. Background
+//   work sets it from the requester of the job, so the work is authorized by
+//   their permissions and audited under their name.
 
 namespace DealerFOSS.Core;
 

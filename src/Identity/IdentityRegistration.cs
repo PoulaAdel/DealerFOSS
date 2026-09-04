@@ -1,11 +1,18 @@
-// IdentityRegistration — the only way the application switches this project on.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  services.AddIdentity() from Program.cs.
-// Edit: this and the two contracts are almost the whole public surface of the
-//       project. Everything else — the context, the services, the tables — is
-//       internal on purpose, so no feature can write a user row or an audit row
-//       except through IAccessDirectory and IAuthenticator (ADR-017). Adding a
-//       public type here is a security decision, not a convenience.
+// Overview: Purpose, File Design, and Engineering
+//   IdentityRegistration — the only way the application switches this project on.
+//
+// Usage:
+//   Services.AddIdentity() from Program.cs.
+//
+// Coding Instructions:
+//   This and the two contracts are almost the whole public surface of the
+//   project. Everything else — the context, the services, the tables — is
+//   internal on purpose, so no feature can write a user row or an audit row
+//   except through IAccessDirectory and IAuthenticator (ADR-017). Adding a
+//   public type here is a security decision, not a convenience.
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

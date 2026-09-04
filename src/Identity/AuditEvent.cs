@@ -1,9 +1,16 @@
-// AuditEvent — one append-only record of a security-sensitive action.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  written through IAuditSink, never constructed by feature code.
-// Edit: never add a field that could carry a credential, token, credit datum,
-//       government id, or document content. Rows are never updated or deleted
-//       (ADR-016); a correction is a new row.
+// Overview: Purpose, File Design, and Engineering
+//   AuditEvent — one append-only record of a security-sensitive action.
+//
+// Usage:
+//   Written through IAuditSink, never constructed by feature code.
+//
+// Coding Instructions:
+//   Never add a field that could carry a credential, token, credit datum,
+//   government id, or document content. Rows are never updated or deleted
+//   (ADR-016); a correction is a new row.
 
 namespace DealerFOSS.Identity;
 

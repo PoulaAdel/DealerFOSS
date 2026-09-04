@@ -1,12 +1,19 @@
-// SignInChallenge — the short window between "the password was right" and "the
-// code was right".
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  created by Authenticator when a user with a second factor signs in;
-//       consumed when they supply a code.
-// Edit: this is a credential in its own right, so it is stored hashed and lives
-//       for minutes, not hours. It grants nothing on its own — presenting it
-//       without a valid code does nothing — but a long-lived one would turn a
-//       stolen password into a stolen account eventually.
+// Overview: Purpose, File Design, and Engineering
+//   SignInChallenge — the short window between "the password was right" and "the
+//   code was right".
+//
+// Usage:
+//   Created by Authenticator when a user with a second factor signs in;
+//   consumed when they supply a code.
+//
+// Coding Instructions:
+//   This is a credential in its own right, so it is stored hashed and lives
+//   for minutes, not hours. It grants nothing on its own — presenting it
+//   without a valid code does nothing — but a long-lived one would turn a
+//   stolen password into a stolen account eventually.
 
 namespace DealerFOSS.Identity;
 

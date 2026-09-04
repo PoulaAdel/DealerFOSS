@@ -1,13 +1,20 @@
-// Role — a named bundle of permissions. Users hold roles, never permissions
-// directly, so access can be reasoned about and revoked as a unit.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  new Role(id, "Service Advisor"), then Grant(Permissions.X).
-// Edit: Grant deliberately rejects anything outside the Permissions catalogue.
-//       Keep that check — it is what stops a typo becoming a silent non-grant.
+// Overview: Purpose, File Design, and Engineering
+//   Role — a named bundle of permissions. Users hold roles, never permissions
+//   directly, so access can be reasoned about and revoked as a unit.
 //
-//       The second-factor requirement lives here rather than on the user,
-//       because "who must have one" is a statement about responsibility, not a
-//       list somebody has to remember to update when staff change.
+// Usage:
+//   New Role(id, "Service Advisor"), then Grant(Permissions.X).
+//
+// Coding Instructions:
+//   Grant deliberately rejects anything outside the Permissions catalogue.
+//   Keep that check — it is what stops a typo becoming a silent non-grant.
+//
+//   The second-factor requirement lives here rather than on the user,
+//   because "who must have one" is a statement about responsibility, not a
+//   list somebody has to remember to update when staff change.
 
 using DealerFOSS.Core;
 

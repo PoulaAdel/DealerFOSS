@@ -1,9 +1,16 @@
-// Permissions — the catalogue of actions the system can authorize, plus the
-// levels an assignment can apply at.
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Use:  reference the constants; never invent a permission string at a call site.
-// Edit: adding a permission means granting it to a role somewhere, or it can
-//       never be held. Role.Grant rejects anything not listed here.
+// Overview: Purpose, File Design, and Engineering
+//   Permissions — the catalogue of actions the system can authorize, plus the
+//   levels an assignment can apply at.
+//
+// Usage:
+//   Reference the constants; never invent a permission string at a call site.
+//
+// Coding Instructions:
+//   Adding a permission means granting it to a role somewhere, or it can
+//   never be held. Role.Grant rejects anything not listed here.
 
 namespace DealerFOSS.Identity;
 
