@@ -1,7 +1,7 @@
 # First tasks
 
 Real, scoped work with nothing blocking it but engineering time. Every item here
-was **checked against the code on 2026-08-15** rather than copied from a wish
+was **checked against the code on 2026-09-04** rather than copied from a wish
 list — if one of them turns out to be already built, that is a bug in this file
 and worth reporting on its own.
 

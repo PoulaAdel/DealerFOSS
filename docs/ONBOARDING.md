@@ -179,12 +179,13 @@ against the code on 2026-08-15.
   Only `Core` and `Identity` have compiler walls, because breaching those two is
   a security or correctness incident rather than a mess.
 - **Local verification is the real gate, not CI.** The maintainer pushes by hand,
-  and `main` was pushed as far as `c55dcd7` on 2026-08-15 — so
+  and `main` has been pushed at least as far as `c55dcd7` — so
   `.github/workflows/ci.yml` has had the chance to run, and its result is worth
-  checking rather than assuming. This entry read "nothing has been pushed" for
-  the few hours between the docs sweep and the push that overtook it. Whatever CI
-  says, every milestone here is gated locally first: `dotnet build`,
-  `dotnet test`, `verify-e2e.ps1`, and the frontend four.
+  checking rather than assuming. Whatever CI says, every milestone here is gated
+  locally first: `dotnet build`, `dotnet test`, `verify-e2e.ps1`, and the
+  frontend four. This entry claimed "nothing has been pushed" until 2026-09-04,
+  by which point it had quietly stopped being true — which is the failure mode a
+  list like this one is most prone to.
 - **Federation (OIDC) does not exist**, and cannot be honestly built until there
   is a real identity provider to test against. Passwords, TOTP and **passkeys**
   are the whole of sign-in today.

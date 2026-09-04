@@ -3,12 +3,12 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **four API-only features became screens somebody can use**.
-Pay type is chosen and shown per line and the totals name each payer; the labour
-report is a screen that says which two figures it will not invent; the recall
-check is a button on the stock detail; and a passkey can be enrolled and used to
-sign in. Six languages, verified in a real browser.
-Last verified: 2026-08-15 · `dotnet build` 0 warnings/0 errors, `dotnet test` 664/664,
+Current milestone: **the project is ready for a second person**. Every source
+file carries the four-part header with its copyright line; the documentation set
+no longer contradicts itself and says plainly which parts are specification
+rather than description; and there is a curated list of scoped first tasks, each
+checked against the code.
+Last verified: 2026-09-04 · `dotnet build` 0 warnings/0 errors, `dotnet test` 664/664,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
 `npm run typecheck`, `npm test` 303/303, and `npm run build` all pass
 
@@ -777,7 +777,21 @@ to come.
 
   Evidence: every relative link in `docs/` resolves (checked by script); `dotnet build` 0/0; `dotnet test` 664/664; frontend typecheck and 303/303 unchanged, since nothing outside `docs/`, `CLAUDE.md` and the progress generator was touched.
 
-- **2026-08-15 — A second person could now start.** The contributor path existed as three documents that disagreed about where to begin and no answer at all to "what should I do first". Both are fixed.
+- **2026-09-04 — Every source file says who owns it and how to change it.** The four-part header the maintainer settled on 2026-08-15 — Copyright / SPDX-License-Identifier / `Overview: Purpose, File Design, and Engineering` / `Usage:` / `Coding Instructions:` — is applied to all **347** hand-written files across four commits: 49 in Core and Identity, 145 in `src/App`, 60 tests, and 93 in the frontend, deploy scripts and CI.
+
+  **Core's eleven were written by hand and the other 336 were transformed**, and the distinction is the point. `Overview` is where engineering judgement goes, and in Core that judgement is load-bearing: why `Money` refuses a mixed-currency add rather than converting, why `IAppendOnly` is an interface instead of a list of type names, why `ITenantContext` throws instead of returning null. Everywhere else an awk transformer moved the existing prose into the new shape — summary to `Overview`, `Use:` to `Usage:`, `Edit:` to `Coding Instructions:` — **without rewording a sentence**. Those headers carry the reasoning behind the CSRF session binding, the seven WebAuthn checks and the cursor-advance trap; a paraphrase would have been a downgrade dressed as a reformat, and a generic header repeated 347 times is noise people learn to skip.
+
+  **Two classes of damage the transformer caused, found and repaired rather than shipped.** Capitalising the first word of each section turned commands into prose — `npm test` became `Npm test`, `await api(...)` became `Await api(...)` — across 47 files. The same rule title-cased lowercase module names, so the French catalogue introduced itself as `Fr` and the fetch wrapper as `Api`, across 25 more. Both were reverted by matching against the real filename and a list of code tokens, never by editing prose by hand.
+
+  Seven files had free-prose headers with no `Use:`/`Edit:` to map, so their sections were written rather than derived: both compose files, four deploy scripts, and `vite.config.ts` — whose hanging indentation the dedent had flattened and which was rebuilt.
+
+  **Both exclusions held**: the 50 generated files under `Migrations/` are untouched, because EF overwrites them, and no `.json` was given a comment it cannot carry.
+
+  This reverses the standing "SPDX once at assembly level, no per-file licence headers" rule. SPDX is now declared **both** per file and at assembly level, which is deliberate rather than duplication: the per-file line is the authority for a file copied out of the tree, and the assembly attribute is what a package consumer sees. Doc 08 §5 keeps a note of what the rule used to say.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **664/664**, `verify-e2e.ps1` PASS, all six PowerShell scripts parse, and the frontend gate — `npm audit` clean, typecheck, **303 tests**, production build — all pass.
+
+- **2026-09-04 — A second person could now start.** The contributor path existed as three documents that disagreed about where to begin and no answer at all to "what should I do first". Both are fixed.
 
   **`docs/FIRST-TASKS.md` is the new part, and its value is that every item was checked against the code rather than imagined.** Eight tasks, each saying where it lives, why it is a reasonable place to start, what "done" looks like, and what to watch out for. Verified absent before being listed: the VIN decode, session list-and-revoke, import cancellation, passkey challenge pruning, ETags, and any route that creates a second administrator. Two items are marked **claimed** so nobody duplicates work in flight, and three more are named as deliberately unbuilt with a pointer to why.
 
@@ -787,4 +801,4 @@ to come.
 
   Evidence: every relative link in `docs/` and `.github/` resolves, checked by script.
 
-- **2026-08-15 — The frontend gate that could not run, ran.** The header conversion's fourth pass was committed with the frontend unverified: Docker had stopped on this host, so `npm audit`, `typecheck`, `test` and `build` could not execute against the 83 changed frontend files, and the commit said so rather than implying otherwise. With Docker back, all four pass — `npm audit` clean, typecheck clean, **303 tests**, production build clean. The first attempt failed on a socket hang-up reaching the npm registry from a container that had just started, which is worth knowing: that failure looks like an audit finding and is not one.
+- **2026-09-04 — The frontend gate that could not run, ran.** The header conversion's fourth pass was committed with the frontend unverified: Docker had stopped on this host, so `npm audit`, `typecheck`, `test` and `build` could not execute against the 83 changed frontend files, and the commit said so rather than implying otherwise. With Docker back, all four pass — `npm audit` clean, typecheck clean, **303 tests**, production build clean. The first attempt failed on a socket hang-up reaching the npm registry from a container that had just started, which is worth knowing: that failure looks like an audit finding and is not one.

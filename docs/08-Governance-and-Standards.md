@@ -39,7 +39,7 @@ Experimental community connectors are welcome but cannot be labeled certified wi
 ## 5. Coding standards
 
 **Every hand-written source file opens with a four-part header.** Applied to all
-347 of them on 2026-08-15; `.cs`, `.ts`, `.tsx`, `.css`, `.ps1` and `.yml` alike.
+347 of them on 2026-09-04; `.cs`, `.ts`, `.tsx`, `.css`, `.ps1` and `.yml` alike.
 
 ```csharp
 // Copyright (c) 2026 The DealerFOSS contributors.
@@ -77,9 +77,11 @@ at assembly level in `Directory.Build.props` (`AGPL-3.0-or-later`). The per-file
 line is the authority for a file copied out of the tree; the assembly attribute
 is what a package consumer sees. Neither is redundant.
 
-> **On the history of this rule.** Until 2026-08-15 the header was three parts
-> with no copyright line, and this section said explicitly *"do not add per-file
-> licence headers"*. The maintainer reversed that. The conversion restructured
+> **On the history of this rule.** The header was three parts with no copyright
+> line until 2026-09-04, and this section said explicitly *"do not add per-file
+> licence headers"*. The maintainer reversed that on 2026-08-15 and asked for it
+> to be applied later, which is why the decision and the conversion carry
+> different dates. The conversion restructured
 > the existing prose rather than replacing it — summary to `Overview`, `Use:` to
 > `Usage:`, `Edit:` to `Coding Instructions:` — because those headers carry the
 > most specific reasoning in the repository and a generic four-section header
