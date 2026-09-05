@@ -166,6 +166,15 @@ refused any update or delete. The marker is why a history table added later is
 protected by implementing an interface rather than by somebody remembering to
 extend a guard.
 
+`IUnattendedSafe` is the second marker of that family and works the same way in
+the other direction: it says a service does **not** authorize against a person,
+and it is the only thing `UnattendedScope.Get<T>()` accepts. Both are allow-lists
+whose failure mode is a compile error rather than a silent hole — forget
+`IAppendOnly` on a history table and it becomes editable; forget `IUnattendedSafe`
+and a sweep simply cannot reach the service, which is the safe direction to be
+wrong in. Today only `TenantDb` carries it, and `BoundaryTests` fails the build
+if anything else does.
+
 `IdentityDb` stays separate even though it lives in the same physical database.
 Merging it would hand every feature a `DbSet<User>`, undoing the wall that is the
 whole reason `Identity` is its own project.

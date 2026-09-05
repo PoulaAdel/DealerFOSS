@@ -9,7 +9,7 @@
 //
 // Coding Instructions:
 //   This is the first piece of work in the system that is not a request, so
-//   three things it does are the pattern for everything that follows —
+//   four things it does are the pattern for everything that follows —
 //   reconciliation, outbox delivery, and whatever comes after.
 //
 //   **It names the tenant.** There is no ambient "current dealership" out
@@ -27,14 +27,15 @@
 //   database, so the move from Queued to Running is a conditional update and
 //   the loser simply finds nothing to do.
 //
-//   **Two scopes per job, and that is not an accident.** Polling for work and
-//   claiming it is nobody's request — the dispatcher scope says so and its
-//   writes are attributed to the system. Running the job is the requester's,
-//   and that scope is opened only once their id is known. Doing it in one scope
-//   meant the claim was written before any caller existed, and a job that
-//   failed early was attributed to the system while one that failed late was
-//   attributed to the person: the same event, two different answers, depending
-//   on timing.
+//   **Two scopes per job, of two different TYPES, and that is not an accident.**
+//   Polling for work and claiming it is nobody's request, so the dispatcher
+//   holds an UnattendedScope: it reaches TenantDb to claim the job and CANNOT
+//   COMPILE a call to ICustomers, because Get<T> only accepts IUnattendedSafe.
+//   Running the job is the requester's, and that TenantScope is opened only
+//   once their id is known. Doing it in one scope meant the claim was written
+//   before any caller existed, and a job that failed early was attributed to
+//   the system while one that failed late was attributed to the person: the
+//   same event, two different answers, depending on timing.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -162,8 +163,8 @@ internal sealed partial class ImportWorker(
     {
         // Nobody asked for the polling, so the dispatcher says so and its writes —
         // the claim — are attributed to the system, which is what happened.
-        await using var dispatch = await _tenantScopes.OpenAsync(
-            JobContext.Unattended(slug, DispatcherReason), cancellationToken);
+        await using var dispatch = await _tenantScopes.OpenUnattendedAsync(
+            UnattendedJob.For(slug, DispatcherReason), cancellationToken);
 
         if (dispatch is null)
         {
@@ -188,7 +189,7 @@ internal sealed partial class ImportWorker(
             // Suspended in the gap between the claim and the run. The job is
             // already Running, so leaving it would strand it there forever.
             await MarkFailedAsync(
-                dispatch,
+                dispatch.Get<TenantDb>(),
                 claim.Value.JobId,
                 "This dealership was suspended between the job being claimed and being started.",
                 cancellationToken);
@@ -206,7 +207,11 @@ internal sealed partial class ImportWorker(
 #pragma warning restore CA1031
         {
             ImportFailed(_logger, claim.Value.JobId, run.Tenant.Key, ex);
-            await MarkFailedAsync(run, claim.Value.JobId, ex.Message, cancellationToken);
+            await MarkFailedAsync(
+                run.Services.GetRequiredService<TenantDb>(),
+                claim.Value.JobId,
+                ex.Message,
+                cancellationToken);
         }
 
         return true;
@@ -225,10 +230,12 @@ internal sealed partial class ImportWorker(
     /// is none — or when another instance took it first.
     /// </summary>
     private async Task<Claim?> ClaimNextJobAsync(
-        TenantScope dispatch,
+        UnattendedScope dispatch,
         CancellationToken cancellationToken)
     {
-        var db = dispatch.Services.GetRequiredService<TenantDb>();
+        // Get<TenantDb>() and nothing else: an UnattendedScope cannot resolve a
+        // capability that would authorize against a person who is not there.
+        var db = dispatch.Get<TenantDb>();
 
         var job = await db.ImportJobs
             .AsNoTracking()
@@ -346,15 +353,19 @@ internal sealed partial class ImportWorker(
     /// <summary>Row 1 of the file, as a spreadsheet counts.</summary>
     internal const int HeaderRowNumber = 1;
 
+    /// <summary>
+    /// Takes the context rather than a scope, because the two callers hold two
+    /// different KINDS of scope: the dispatcher an UnattendedScope, the run a
+    /// TenantScope. Recording a failure is the same act either way.
+    /// </summary>
     private async Task MarkFailedAsync(
-        TenantScope scope,
+        TenantDb db,
         Guid jobId,
         string reason,
         CancellationToken cancellationToken)
     {
         try
         {
-            var db = scope.Services.GetRequiredService<TenantDb>();
             db.ChangeTracker.Clear();
 
             var job = await db.ImportJobs.SingleAsync(j => j.Id == jobId, cancellationToken);

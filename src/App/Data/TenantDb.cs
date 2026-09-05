@@ -41,7 +41,7 @@ namespace DealerFOSS.Data;
 /// physically unreachable from here); routing lives in the host catalog.
 /// </summary>
 public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, ICurrentUser currentUser)
-    : DbContext(options)
+    : DbContext(options), IUnattendedSafe
 {
     /// <summary>
     /// What a row says when no person asked for it. Matches the default on

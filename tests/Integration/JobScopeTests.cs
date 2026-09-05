@@ -18,15 +18,19 @@
 //
 // Coding Instructions:
 //   These are about WHEN identity exists, not whether it can be read. The first
-//   two assert the state of a freshly opened scope with nothing done to it —
+//   ones assert the state of a freshly opened scope with nothing done to it —
 //   resist the urge to "arrange" anything before the assertion, because the
 //   arrangement is what used to be the bug.
 //
-//   The last two go through a real service rather than stopping at the holder,
-//   because a holder that reports the right answer while the row records the
-//   wrong one is the failure that matters. One reads the stamp back with SQL;
-//   the other asserts that an unattended job is refused at the permission check,
-//   which is the intended shape and not a limitation to route around.
+//   One goes through a real service and reads the stamp back with SQL, because
+//   a holder that reports the right answer while the row records the wrong one
+//   is the failure that matters.
+//
+//   The last two are reflection over shape rather than behaviour, and that is
+//   deliberate: the guarantee they protect is a COMPILE error, and a call that
+//   does not compile cannot be written down in a test. They assert the two
+//   things that produce it — Get<T> constrained to IUnattendedSafe, and no
+//   IServiceProvider anywhere on UnattendedScope to route around it.
 
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
@@ -34,6 +38,7 @@ using Microsoft.Extensions.DependencyInjection;
 using DealerFOSS.App;
 using DealerFOSS.Core;
 using DealerFOSS.Customers;
+using DealerFOSS.Data;
 using DealerFOSS.Tenancy;
 using Xunit;
 
@@ -71,36 +76,41 @@ public sealed class JobScopeTests(HostFixture fixture)
     }
 
     [Fact]
-    public async Task A_scope_nobody_asked_for_has_no_caller_and_says_so_loudly()
+    public async Task A_scope_nobody_asked_for_knows_its_dealership_and_nothing_else()
     {
-        await using var scope = await Factory.OpenAsync(
-            JobContext.Unattended(Tenant, "job scope test sweep"),
+        await using var scope = await Factory.OpenUnattendedAsync(
+            UnattendedJob.For(Tenant, "job scope test sweep"),
             CancellationToken.None);
 
         scope.Should().NotBeNull();
 
-        var caller = scope!.Services.GetRequiredService<ICurrentUser>();
-        caller.IsAuthenticated.Should().BeFalse();
+        // It still knows its dealership, which is the whole reason it exists,
+        // and the context it reaches addresses that dealership's database.
+        scope!.Tenant.Key.Should().Be(Tenant);
+        scope.Get<TenantDb>().Should().NotBeNull();
+        scope.Job.Reason.Should().Be("job scope test sweep");
 
-        // Throwing is the correct outcome for a sweep that wanders into a
-        // permission check. Returning Guid.Empty would let it pass one.
-        var read = () => caller.Id;
-        read.Should().Throw<InvalidOperationException>();
-
-        // It still knows its dealership, which is the whole reason it exists.
-        scope.Services.GetRequiredService<ITenantContext>().Current.Key.Should().Be(Tenant);
-        scope.Job.IsUnattended.Should().BeTrue();
+        // And it cannot ask for anything else. `scope.Get<ICustomers>()` is not
+        // written here because it DOES NOT COMPILE — Get<T> is constrained to
+        // IUnattendedSafe, and a capability that authorizes against a person
+        // must never carry that marker. BoundaryTests guards the constraint.
     }
 
     [Fact]
-    public async Task A_suspended_dealership_refuses_the_scope_rather_than_defaulting()
+    public async Task A_suspended_dealership_refuses_both_kinds_of_scope()
     {
-        await using var scope = await Factory.OpenAsync(
-            JobContext.Unattended("no-such-dealership", "job scope test sweep"),
+        await using var attended = await Factory.OpenAsync(
+            JobContext.RequestedBy(
+                "no-such-dealership", DevelopmentSeeder.DevUsers.OrganizationWide, "job scope test"),
             CancellationToken.None);
 
-        scope.Should().BeNull(
+        await using var sweep = await Factory.OpenUnattendedAsync(
+            UnattendedJob.For("no-such-dealership", "job scope test sweep"),
+            CancellationToken.None);
+
+        attended.Should().BeNull(
             because: "queued work for a dealership out of service waits; it does not run somewhere else");
+        sweep.Should().BeNull(because: "and neither does a sweep");
     }
 
     [Fact]
@@ -123,20 +133,41 @@ public sealed class JobScopeTests(HostFixture fixture)
     }
 
     [Fact]
-    public async Task An_unattended_job_cannot_reach_a_permission_checked_service_at_all()
+    public void A_permission_checked_capability_is_not_reachable_from_an_unattended_scope()
     {
-        // Not a limitation to work around — the intended shape. A sweep runs as
-        // nobody, so there are no permissions to check it against, and the only
-        // safe answer to "may this caller write a customer" is to refuse loudly.
-        // The alternative, a sweep that passes every check because there is
-        // nobody to fail, is the security hole this whole change exists to close.
-        await using var scope = await OpenAsync(
-            JobContext.Unattended(Tenant, "job scope test sweep"));
+        // The compile error itself cannot be written down here, so this asserts
+        // the constraint that produces it: Get<T> only accepts IUnattendedSafe,
+        // and ICustomers does not carry the marker. Mark ICustomers and this
+        // fails — which is the moment somebody would be about to let a sweep
+        // write customer records with nobody to authorize it.
+        var get = typeof(UnattendedScope).GetMethod(nameof(UnattendedScope.Get))!;
+        var constraints = get.GetGenericArguments()[0].GetGenericParameterConstraints();
 
-        var write = async () => await AddCustomerAsync(scope, "Sweep");
+        constraints.Should().Contain(typeof(IUnattendedSafe),
+            because: "the constraint is the whole mechanism; widening it removes the guarantee silently");
 
-        await write.Should().ThrowAsync<InvalidOperationException>(
-            because: "an unattended job has no permissions, so it must not be granted any");
+        typeof(IUnattendedSafe).IsAssignableFrom(typeof(ICustomers)).Should().BeFalse(
+            because: "a capability that reads ICurrentUser.Id must never be reachable with no caller");
+
+        typeof(IUnattendedSafe).IsAssignableFrom(typeof(TenantDb)).Should().BeTrue(
+            because: "the dispatcher has to be able to claim a job, and that write is honestly the system's");
+    }
+
+    [Fact]
+    public async Task An_unattended_scope_hands_out_no_service_provider_to_route_around_it()
+    {
+        // The escape that would undo everything: one property returning
+        // IServiceProvider and Get<T>'s constraint means nothing.
+        await using var scope = await Factory.OpenUnattendedAsync(
+            UnattendedJob.For(Tenant, "job scope test sweep"),
+            CancellationToken.None);
+
+        scope.Should().NotBeNull();
+
+        typeof(UnattendedScope).GetProperties()
+            .Should().NotContain(p => typeof(IServiceProvider).IsAssignableFrom(p.PropertyType));
+        typeof(UnattendedScope).GetMethods()
+            .Should().NotContain(m => typeof(IServiceProvider).IsAssignableFrom(m.ReturnType));
     }
 
     private async Task<TenantScope> OpenAsync(JobContext job) =>

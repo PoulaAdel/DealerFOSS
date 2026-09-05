@@ -134,11 +134,18 @@ follows.
 - **It claims before it works.** Two instances share one database, so Queued →
   Running is a conditional update and the loser finds nothing to do.
 - **It uses two scopes per job, deliberately.** Polling and claiming is nobody's
-  request — that scope is `JobContext.Unattended` and its writes say `system`.
-  Running the job is the requester's, and that scope is opened only once their
-  id is known. One scope meant the claim was written before any caller existed,
-  and a job that failed early was recorded as the system's doing while one that
-  failed late was recorded as a person's.
+  request — that one is an `UnattendedJob` and its writes say `system`. Running
+  the job is the requester's, and that scope is opened only once their id is
+  known. One scope meant the claim was written before any caller existed, and a
+  job that failed early was recorded as the system's doing while one that failed
+  late was recorded as a person's.
+- **The two scopes are different TYPES, and can see different things.** The
+  dispatcher holds an `UnattendedScope`, whose only way to a service is
+  `Get<T>() where T : IUnattendedSafe` — it reaches `TenantDb` to claim the job
+  and cannot compile a call to `ICustomers`. The run holds a `TenantScope` with
+  the full provider, because it has a person to authorize against. That is why
+  `MarkFailedAsync` takes a `TenantDb` rather than a scope: both callers can
+  produce one, and neither has to pretend to be the other kind.
 
 ## Not built yet
 

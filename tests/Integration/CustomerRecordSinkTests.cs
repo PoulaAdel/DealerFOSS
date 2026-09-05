@@ -171,12 +171,19 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
         // An integration writes real dealership records. One that could do so
         // with no name attached would be the only path into this application
         // that leaves nothing on the audit trail.
-        await using var scope = await OpenUnattendedScopeAsync();
+        //
+        // The caller here is an unset CurrentUser, assembled by hand. Since
+        // 2026-09-05 this arrangement cannot be reached from an UnattendedScope
+        // at all — Get<T> would not compile for ICustomers — so what is left to
+        // prove is ConnectorRuntime's OWN guard, which still matters: the
+        // runtime is constructed directly in places the scope types do not
+        // reach, and it must refuse rather than trust its caller to be set.
+        await using var scope = await OpenScopeAsync();
 
         var runtime = new ConnectorRuntime(
             scope.Services.GetRequiredService<TenantDb>(),
             [new CustomerRecordSink(scope.Services.GetRequiredService<ICustomers>())],
-            scope.Services.GetRequiredService<ICurrentUser>(),
+            new CurrentUser(),
             new FixedClock(Start));
 
         var run = await runtime.RunAsync(
@@ -313,20 +320,6 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
             ?? throw new InvalidOperationException($"The '{Tenant}' tenant did not resolve.");
 
         return scope;
-    }
-
-    /// <summary>
-    /// A tenant scope nobody asked for. The only kind a sweep or an expiry gets,
-    /// and the one an integration must refuse to run in.
-    /// </summary>
-    private async Task<TenantScope> OpenUnattendedScopeAsync()
-    {
-        var factory = _fixture.Services.GetRequiredService<ITenantScopeFactory>();
-
-        return await factory.OpenAsync(
-            JobContext.Unattended(Tenant, "connector sink test with no requester"),
-            CancellationToken.None)
-            ?? throw new InvalidOperationException($"The '{Tenant}' tenant did not resolve.");
     }
 
     private async Task<List<string>> StoredAsync()

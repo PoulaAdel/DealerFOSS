@@ -200,6 +200,78 @@ public sealed class BoundaryTests
     }
 
     [Fact]
+    public void Work_nobody_asked_for_cannot_be_expressed_as_work_somebody_did()
+    {
+        // Two types, not one with a nullable requester. If they merged, the
+        // factory could not return two different scopes, and "runs as nobody"
+        // would go straight back to being a runtime discovery.
+        typeof(JobContext).GetProperty(nameof(JobContext.RequestedByUserId))!
+            .PropertyType.Should().Be<Guid>(
+                because: "a nullable requester is an anonymous job that type-checks");
+
+        typeof(JobContext).IsAssignableFrom(typeof(UnattendedJob)).Should().BeFalse();
+        typeof(UnattendedJob).IsAssignableFrom(typeof(JobContext)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_job_nobody_asked_for_cannot_reach_a_service_that_needs_a_caller()
+    {
+        // UnattendedScope.Get<T> is constrained to IUnattendedSafe and there is
+        // no IServiceProvider on the type to route around it. Those two facts
+        // together are what turn "a sweep must not use ICustomers" from a
+        // sentence in a header into a compile error at the call site.
+        var get = typeof(UnattendedScope).GetMethod(nameof(UnattendedScope.Get));
+
+        get.Should().NotBeNull(because: "Get<T> is the only sanctioned way out of an unattended scope");
+
+        get!.GetGenericArguments()[0].GetGenericParameterConstraints()
+            .Should().Contain(typeof(IUnattendedSafe),
+                because: "widening this constraint removes the guarantee and nothing else would notice");
+
+        typeof(UnattendedScope).GetProperties()
+            .Should().NotContain(
+                p => typeof(IServiceProvider).IsAssignableFrom(p.PropertyType),
+                because: "one IServiceProvider property and the constraint means nothing");
+
+        typeof(UnattendedScope).GetMethods()
+            .Should().NotContain(m => typeof(IServiceProvider).IsAssignableFrom(m.ReturnType));
+    }
+
+    [Fact]
+    public void Only_these_types_may_declare_themselves_safe_with_no_caller()
+    {
+        // The list, not the constraint, is what a sweep can actually reach — so
+        // this is the rule that catches somebody adding IUnattendedSafe to a
+        // capability to make a compile error go away. Same shape, and the same
+        // reasoning, as the Identity exported-types list above: adding a name
+        // here is a deliberate act a reviewer sees.
+        //
+        // Before adding one, check what it does when nobody is signed in. If it
+        // reads ICurrentUser.Id on any path, it belongs on the attended side and
+        // the honest fix is that the work has a requester after all.
+        var allowed = new[]
+        {
+            // Raw table access. It reads ICurrentUser only to decide between a
+            // person's id and "system" for the audit columns, and never reads
+            // .Id without checking IsAuthenticated first — so it is correct with
+            // no caller rather than merely tolerant of one.
+            "TenantDb",
+        };
+
+        var marked = typeof(TenantScope).Assembly.GetTypes()
+            .Concat(typeof(Result).Assembly.GetTypes())
+            .Where(t => typeof(IUnattendedSafe).IsAssignableFrom(t))
+            .Where(t => t != typeof(IUnattendedSafe))
+            .Select(t => t.Name)
+            .Distinct()
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        marked.Should().BeSubsetOf(allowed,
+            because: "a capability reachable from a sweep is a permission check with nobody to fail");
+    }
+
+    [Fact]
     public void A_feature_can_ask_who_the_caller_is_but_cannot_decide()
     {
         typeof(ICurrentUser).GetMethods().Select(m => m.Name)
