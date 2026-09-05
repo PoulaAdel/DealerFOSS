@@ -99,7 +99,11 @@ if (tenancyEnabled)
     // runs in production is what developers exercise.
     builder.Services.AddSecretProtection(builder.Configuration);
 
-    builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+    // Registered concrete-first: only the middleware and TenantScopeFactory ask for
+    // CurrentUser, which is the only type that can Set an identity. Everything else
+    // gets the read-only interface.
+    builder.Services.AddScoped<CurrentUser>();
+    builder.Services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>());
     builder.Services.AddScoped<ICurrentAdministrator, CurrentAdministrator>();
 
     // Identity is a separate project so its tables and services are physically

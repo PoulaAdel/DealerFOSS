@@ -88,7 +88,7 @@ public sealed class CurrentUserMiddleware(RequestDelegate next)
     // middleware parameters are constructed before the method body runs, and
     // building it reaches the tenant-bound DbContext — which throws on paths
     // like /health where no tenant was ever resolved.
-    public async Task InvokeAsync(HttpContext context, ICurrentUser currentUser)
+    public async Task InvokeAsync(HttpContext context, CurrentUser currentUser)
     {
         // The control plane is not a tenant caller and never becomes one. It has
         // its own middleware, its own cookie, and its own store; an administrator

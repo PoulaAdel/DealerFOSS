@@ -19,6 +19,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.Data.SqlClient;
 using DealerFOSS.App;
 
 namespace DealerFOSS.IntegrationTests;
@@ -129,6 +130,32 @@ public sealed class ImportTests(HostFixture fixture)
         Sums(job).Should().Be(job.GetProperty("rowsTotal").GetInt32());
 
         (await FindVehicleAsync(Vin17(vin, 'A'))).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task A_row_an_import_creates_is_attributed_to_whoever_submitted_the_file()
+    {
+        // The end-to-end proof of the tenant job context: the request that
+        // submits the file ends when the response does, and the worker picks the
+        // job up later, in its own scope, on another thread. The row it writes
+        // still names the person — because the scope could not have been opened
+        // without naming them.
+        var vin = Unique();
+        await RunToCompletionAsync("Vehicles", "Apply", VehicleFile(vin));
+
+        var vehicle = await FindVehicleAsync(Vin17(vin, 'A'));
+        vehicle.Should().NotBeNull();
+
+        await using var connection = new SqlConnection(HostFixture.TenantConnectionString(Tenant));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT CreatedBy FROM vehicles.Vehicles WHERE Id = @id";
+        command.Parameters.AddWithValue("@id", vehicle!.Value.GetProperty("id").GetGuid());
+
+        (await command.ExecuteScalarAsync())?.ToString()
+            .Should().Be(DevelopmentSeeder.DevUsers.OrganizationWide.ToString(),
+                because: "work done later on somebody's behalf is still their work");
     }
 
     [Fact]

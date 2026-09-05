@@ -119,19 +119,26 @@ needs streaming, which changes how it is written and none of the logic.
 
 ## The worker is the pattern for background work
 
-`ImportWorker` is the first thing in the system that is not a request, and three
+`ImportWorker` is the first thing in the system that is not a request, and four
 of its habits are the template for reconciliation, outbox delivery, and whatever
 follows.
 
 - **It names the tenant.** There is no ambient "current dealership" outside a
   request and there must never be one. Every unit of work opens an
   `ITenantScopeFactory` scope for a tenant it has explicitly identified.
-- **It runs as the person who asked.** `ICurrentUser` is set from the job's
-  requester, so the import is authorized by their permissions and audited under
-  their name. A background job running as nobody is a permission check silently
-  skipped.
+- **It runs as the person who asked.** The requester is part of the `JobContext`
+  the scope is opened with, so the import is authorized by their permissions and
+  audited under their name. This used to be a habit; since 2026-09-05 it is the
+  only way `OpenAsync` can be called, because a worker running as nobody is a
+  permission check silently skipped.
 - **It claims before it works.** Two instances share one database, so Queued →
   Running is a conditional update and the loser finds nothing to do.
+- **It uses two scopes per job, deliberately.** Polling and claiming is nobody's
+  request — that scope is `JobContext.Unattended` and its writes say `system`.
+  Running the job is the requester's, and that scope is opened only once their
+  id is known. One scope meant the claim was written before any caller existed,
+  and a job that failed early was recorded as the system's doing while one that
+  failed late was recorded as a person's.
 
 ## Not built yet
 

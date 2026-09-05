@@ -24,6 +24,7 @@ using FluentAssertions;
 using NetArchTest.Rules;
 using DealerFOSS.Core;
 using DealerFOSS.Identity;
+using DealerFOSS.Tenancy;
 using Xunit;
 
 namespace DealerFOSS.ArchitectureTests;
@@ -172,5 +173,47 @@ public sealed class BoundaryTests
 
         actual.Should().BeSubsetOf(allowed,
             because: "everything else in Identity must stay internal");
+    }
+
+    // --- Identity is established in two places, and nowhere else -------------
+    //
+    // These three tests stand in for a compile error. "A background worker that
+    // does not name a requester fails to compile" cannot be asserted directly —
+    // the offending call cannot be written down here — so instead they assert
+    // the SHAPE that makes it a compile error. Restore any one of the three
+    // conveniences and the corresponding test fails, which is the moment the
+    // guarantee would otherwise have been quietly lost.
+
+    [Fact]
+    public void Reaching_tenant_data_outside_a_request_must_name_the_job()
+    {
+        var opens = typeof(ITenantScopeFactory).GetMethods()
+            .Where(m => m.Name == nameof(ITenantScopeFactory.OpenAsync))
+            .ToList();
+
+        opens.Should().ContainSingle(
+            because: "a second overload would be the shorter call, so it would become the usual one");
+
+        opens[0].GetParameters()[0].ParameterType.Should().Be<JobContext>(
+            because: "naming the dealership AND the requester is what makes an anonymous worker "
+                + "a compile error rather than a code review comment");
+    }
+
+    [Fact]
+    public void A_feature_can_ask_who_the_caller_is_but_cannot_decide()
+    {
+        typeof(ICurrentUser).GetMethods().Select(m => m.Name)
+            .Should().NotContain("Set",
+                because: "Set belongs to CurrentUser, which only CurrentUserMiddleware and "
+                    + "TenantScopeFactory resolve — a feature that could assign itself an "
+                    + "identity could undo every permission check in the product");
+    }
+
+    [Fact]
+    public void A_feature_can_ask_which_dealership_it_is_in_but_cannot_choose()
+    {
+        typeof(ITenantContext).GetMethods().Select(m => m.Name)
+            .Should().NotContain("Set",
+                because: "choosing a tenant is how one dealership's work reaches another's database");
     }
 }

@@ -21,6 +21,11 @@
 //   Do not add a "try get" or a nullable accessor. Every caller that wanted one
 //   so far turned out to be code that should have named its tenant explicitly,
 //   which is what ITenantScopeFactory is for.
+//
+//   The interface is read-only. Set lives on the concrete TenantContext, which
+//   only TenantMiddleware and TenantScopeFactory resolve — the same rule, and
+//   the same reason, as ICurrentUser. Being able to ASK which dealership you are
+//   in is ordinary; being able to DECIDE is not.
 
 using DealerFOSS.Core;
 
@@ -36,8 +41,6 @@ public interface ITenantContext
     bool IsResolved { get; }
 
     ResolvedTenant Current { get; }
-
-    void Set(ResolvedTenant tenant);
 }
 
 /// <summary>A resolved tenant: its identity, routing key, and connection.</summary>
@@ -52,6 +55,12 @@ public sealed record ResolvedTenant(
 /// Registered per-scope; a background job builds its own instead of reusing
 /// request state (doc 04 §5).
 /// </summary>
+/// <remarks>
+/// <see cref="Set"/> is deliberately not on <see cref="ITenantContext"/>. Only
+/// <c>TenantMiddleware</c> and <c>TenantScopeFactory</c> resolve this concrete
+/// type; everything else is injected the read-only interface and can ask which
+/// dealership it is in without being able to choose one.
+/// </remarks>
 public sealed class TenantContext : ITenantContext
 {
     private ResolvedTenant? _current;

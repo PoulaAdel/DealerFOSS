@@ -171,7 +171,7 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
         // An integration writes real dealership records. One that could do so
         // with no name attached would be the only path into this application
         // that leaves nothing on the audit trail.
-        await using var scope = await OpenScopeAsync(signIn: false);
+        await using var scope = await OpenUnattendedScopeAsync();
 
         var runtime = new ConnectorRuntime(
             scope.Services.GetRequiredService<TenantDb>(),
@@ -213,9 +213,7 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
     [Fact]
     public async Task A_run_asked_for_by_somebody_without_the_permission_writes_nothing()
     {
-        await using var scope = await OpenScopeAsync(signIn: false);
-        scope.Services.GetRequiredService<ICurrentUser>()
-            .Set(DevelopmentSeeder.DevUsers.FirstRooftopOnly);
+        await using var scope = await OpenScopeAsync(DevelopmentSeeder.DevUsers.FirstRooftopOnly);
 
         var runtime = new ConnectorRuntime(
             scope.Services.GetRequiredService<TenantDb>(),
@@ -292,22 +290,37 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
     }
 
     /// <summary>
-    /// A tenant scope acting as the organization-wide development user — the
-    /// same shape the CSV import worker uses, which runs as the person who asked
-    /// rather than as a system principal.
+    /// A tenant scope acting as a named person — the same shape the CSV import
+    /// worker uses, which runs as the person who asked rather than as a system
+    /// principal. Defaults to the organization-wide development user.
     /// </summary>
-    private async Task<TenantScope> OpenScopeAsync(bool signIn = true)
+    private async Task<TenantScope> OpenScopeAsync(Guid? requestedBy = null)
     {
         var factory = _fixture.Services.GetRequiredService<ITenantScopeFactory>();
-        var scope = await factory.OpenAsync(Tenant, CancellationToken.None)
+
+        var scope = await factory.OpenAsync(
+            JobContext.RequestedBy(
+                Tenant,
+                requestedBy ?? DevelopmentSeeder.DevUsers.OrganizationWide,
+                "connector sink test"),
+            CancellationToken.None)
             ?? throw new InvalidOperationException($"The '{Tenant}' tenant did not resolve.");
 
-        if (signIn)
-        {
-            scope.Services.GetRequiredService<ICurrentUser>().Set(DevelopmentSeeder.DevUsers.OrganizationWide);
-        }
-
         return scope;
+    }
+
+    /// <summary>
+    /// A tenant scope nobody asked for. The only kind a sweep or an expiry gets,
+    /// and the one an integration must refuse to run in.
+    /// </summary>
+    private async Task<TenantScope> OpenUnattendedScopeAsync()
+    {
+        var factory = _fixture.Services.GetRequiredService<ITenantScopeFactory>();
+
+        return await factory.OpenAsync(
+            JobContext.Unattended(Tenant, "connector sink test with no requester"),
+            CancellationToken.None)
+            ?? throw new InvalidOperationException($"The '{Tenant}' tenant did not resolve.");
     }
 
     private async Task<List<string>> StoredAsync()

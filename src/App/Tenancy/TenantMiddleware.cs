@@ -48,7 +48,7 @@ public sealed class TenantMiddleware(RequestDelegate next)
     public async Task InvokeAsync(
         HttpContext context,
         ITenantResolver resolver,
-        ITenantContext tenantContext)
+        TenantContext tenantContext)
     {
         if (!context.Request.Path.StartsWithSegments(ApiPrefix))
         {

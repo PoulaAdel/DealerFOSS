@@ -29,7 +29,10 @@ public static class TenancyRegistration
 
         services.AddSingleton<TenantCache>();
         services.AddScoped<ITenantResolver, TenantResolver>();
-        services.AddScoped<ITenantContext, TenantContext>();
+        // Concrete-first for the same reason as CurrentUser: Set is not on the
+        // interface, so only the middleware and TenantScopeFactory can choose a tenant.
+        services.AddScoped<TenantContext>();
+        services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
 
         // Default dev protector; the Host replaces this outside Development.
         services.AddSingleton<ISecretProtector, DevSecretProtector>();

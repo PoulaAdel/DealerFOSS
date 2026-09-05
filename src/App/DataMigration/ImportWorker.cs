@@ -17,14 +17,24 @@
 //   TenantScope for a tenant it has explicitly identified, and a job in one
 //   dealership's database can only ever be run against that database.
 //
-//   **It runs as the person who asked.** ICurrentUser is set from the job's
-//   requester, so the import is authorized by their permissions and audited
-//   under their name. A background job that ran as nobody would be a
-//   permission check silently skipped.
+//   **It runs as the person who asked.** The requester is named in the
+//   JobContext the scope is opened with, so the import is authorized by their
+//   permissions and audited under their name. This used to be a promise this
+//   comment made on the code's behalf; it is now the only way OpenAsync can be
+//   called.
 //
 //   **It claims before it works.** Two instances of the application share one
 //   database, so the move from Queued to Running is a conditional update and
 //   the loser simply finds nothing to do.
+//
+//   **Two scopes per job, and that is not an accident.** Polling for work and
+//   claiming it is nobody's request — the dispatcher scope says so and its
+//   writes are attributed to the system. Running the job is the requester's,
+//   and that scope is opened only once their id is known. Doing it in one scope
+//   meant the claim was written before any caller existed, and a job that
+//   failed early was attributed to the system while one that failed late was
+//   attributed to the person: the same event, two different answers, depending
+//   on timing.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -126,15 +136,7 @@ internal sealed partial class ImportWorker(
     {
         foreach (var slug in await ActiveTenantsAsync(cancellationToken))
         {
-            await using var scope = await _tenantScopes.OpenAsync(slug, cancellationToken);
-            if (scope is null)
-            {
-                // Suspended between listing and opening. Its queued work waits,
-                // which is the correct behaviour for a dealership out of service.
-                continue;
-            }
-
-            if (await RunNextJobAsync(scope, cancellationToken))
+            if (await RunNextJobAsync(slug, cancellationToken))
             {
                 return true;
             }
@@ -156,18 +158,88 @@ internal sealed partial class ImportWorker(
             .ToListAsync(cancellationToken);
     }
 
-    private async Task<bool> RunNextJobAsync(TenantScope scope, CancellationToken cancellationToken)
+    private async Task<bool> RunNextJobAsync(string slug, CancellationToken cancellationToken)
     {
-        var db = scope.Services.GetRequiredService<TenantDb>();
+        // Nobody asked for the polling, so the dispatcher says so and its writes —
+        // the claim — are attributed to the system, which is what happened.
+        await using var dispatch = await _tenantScopes.OpenAsync(
+            JobContext.Unattended(slug, DispatcherReason), cancellationToken);
+
+        if (dispatch is null)
+        {
+            // Suspended between listing and opening. Its queued work waits,
+            // which is the correct behaviour for a dealership out of service.
+            return false;
+        }
+
+        var claim = await ClaimNextJobAsync(dispatch, cancellationToken);
+        if (claim is null)
+        {
+            return false;
+        }
+
+        // A second scope, opened now that there is a person to open it as.
+        await using var run = await _tenantScopes.OpenAsync(
+            JobContext.RequestedBy(slug, claim.Value.RequestedByUserId, RunReason),
+            cancellationToken);
+
+        if (run is null)
+        {
+            // Suspended in the gap between the claim and the run. The job is
+            // already Running, so leaving it would strand it there forever.
+            await MarkFailedAsync(
+                dispatch,
+                claim.Value.JobId,
+                "This dealership was suspended between the job being claimed and being started.",
+                cancellationToken);
+
+            return true;
+        }
+
+        try
+        {
+            await ProcessAsync(run, claim.Value.JobId, cancellationToken);
+        }
+#pragma warning disable CA1031 // Any failure of the job as a whole is recorded on
+        // the job so a person can see it, rather than vanishing into a log.
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            ImportFailed(_logger, claim.Value.JobId, run.Tenant.Key, ex);
+            await MarkFailedAsync(run, claim.Value.JobId, ex.Message, cancellationToken);
+        }
+
+        return true;
+    }
+
+    /// <summary>Reasons carried on the two job contexts, so an audit can tell them apart.</summary>
+    internal const string DispatcherReason = "import dispatcher";
+
+    internal const string RunReason = "csv import";
+
+    /// <summary>What the dispatcher learned: which job, and who to run it as.</summary>
+    private readonly record struct Claim(Guid JobId, Guid RequestedByUserId);
+
+    /// <summary>
+    /// Takes the next queued job for this dealership, or returns null when there
+    /// is none — or when another instance took it first.
+    /// </summary>
+    private async Task<Claim?> ClaimNextJobAsync(
+        TenantScope dispatch,
+        CancellationToken cancellationToken)
+    {
+        var db = dispatch.Services.GetRequiredService<TenantDb>();
 
         var job = await db.ImportJobs
+            .AsNoTracking()
             .Where(j => j.Status == ImportStatus.Queued)
             .OrderBy(j => j.QueuedAt)
+            .Select(j => new { j.Id, j.RequestedByUserId })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (job is null)
         {
-            return false;
+            return null;
         }
 
         // Claim it. Two application instances share this database, so whoever
@@ -180,27 +252,7 @@ internal sealed partial class ImportWorker(
                     .SetProperty(j => j.StartedAt, _clock.UtcNow),
                 cancellationToken);
 
-        if (claimed == 0)
-        {
-            return false;
-        }
-
-        db.ChangeTracker.Clear();
-
-        try
-        {
-            await ProcessAsync(scope, job.Id, cancellationToken);
-        }
-#pragma warning disable CA1031 // Any failure of the job as a whole is recorded on
-        // the job so a person can see it, rather than vanishing into a log.
-        catch (Exception ex)
-#pragma warning restore CA1031
-        {
-            ImportFailed(_logger, job.Id, scope.Tenant.Key, ex);
-            await MarkFailedAsync(scope, job.Id, ex.Message, cancellationToken);
-        }
-
-        return true;
+        return claimed == 0 ? null : new Claim(job.Id, job.RequestedByUserId);
     }
 
     private async Task ProcessAsync(
@@ -212,10 +264,8 @@ internal sealed partial class ImportWorker(
 
         var job = await db.ImportJobs.SingleAsync(j => j.Id == jobId, cancellationToken);
 
-        // The job runs with the permissions of whoever submitted it. Everything
-        // it writes is attributed to them, as it should be.
-        scope.Services.GetRequiredService<ICurrentUser>().Set(job.RequestedByUserId);
-
+        // Nothing establishes the caller here any more: the scope arrived already
+        // running as the requester, because JobContext made that part of opening it.
         var runner = new ImportRunner(
             scope.Services.GetRequiredService<ICustomers>(),
             scope.Services.GetRequiredService<IVehicles>());

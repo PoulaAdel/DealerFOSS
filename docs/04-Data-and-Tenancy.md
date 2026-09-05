@@ -66,7 +66,16 @@ Standalone Parts, Accounting, and Tax/Title tables are introduced only with thei
 4. The endpoint declares the required scope. Data queries apply it centrally.
 5. Organization-wide access is an explicit permission; global administration never grants silent access to tenant business data.
 
-Background jobs must carry a signed/validated tenant job context and create a fresh data context per tenant, and cannot reuse request-scoped tenant state. **The second half holds and the first does not.** The one background worker today — CSV import — builds its own scope and its own tenant context, and a test proves it cannot do what its requester may not; what is missing is the *signed* context that would make that structural rather than careful. It is the last unmet exit criterion of phase I1 that is not blocked on somebody else ([doc 09](09-Implementation-Roadmap.md)).
+Background jobs must carry a validated tenant job context and create a fresh data context per tenant, and cannot reuse request-scoped tenant state. **Both halves now hold** (2026-09-05). `JobContext` names the dealership *and* the person the work runs as; `ITenantScopeFactory.OpenAsync` accepts nothing else and there is no string overload, so a worker that omits either does not compile. The factory sets both holders before it returns the scope, and `Set` is not on `ICurrentUser` or `ITenantContext` — a feature can ask who the caller is and cannot decide. Work nobody asked for says so with `JobContext.Unattended(tenant, reason)`, and its rows are attributed to `system`.
+
+> **A word this paragraph used to carry, corrected 2026-09-05.** It said the
+> context must be *signed*. It is not, and a signature would not be the
+> guarantee here. Signing exists to protect a job description crossing an
+> untrusted boundary; ours is constructed in-process from a row the worker just
+> read out of the tenant's own database, so it would be signing our own data to
+> ourselves. **The constructor is the guarantee.** If a durable external queue
+> is ever introduced, the signing question comes back with it — and that is the
+> review trigger, not a task outstanding today.
 
 ## 6. Reporting
 

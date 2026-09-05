@@ -24,6 +24,14 @@
 //   Resolution lives in src/App/Tenancy/CurrentUserMiddleware.cs. Background
 //   work sets it from the requester of the job, so the work is authorized by
 //   their permissions and audited under their name.
+//
+//   THE INTERFACE IS READ-ONLY, AND THAT IS THE POINT. Set lives on the
+//   concrete CurrentUser, which only two places resolve: the middleware, for a
+//   request, and TenantScopeFactory, for a job. Everything else is handed
+//   ICurrentUser and therefore cannot say who the caller is — it can only ask.
+//   When Set was on the interface, any feature could have assigned an identity
+//   to itself, and the only thing preventing it was that nobody had thought of
+//   it yet.
 
 namespace DealerFOSS.Core;
 
@@ -46,11 +54,17 @@ public interface ICurrentUser
     /// enforced before any endpoint runs, not by each endpoint remembering.
     /// </summary>
     bool MustEnrolSecondFactor { get; }
-
-    void Set(Guid userId, bool mustEnrolSecondFactor = false);
 }
 
-/// <summary>Scoped, write-once holder of the caller for the current request.</summary>
+/// <summary>
+/// Scoped, write-once holder of the caller for the current request.
+/// </summary>
+/// <remarks>
+/// <see cref="Set"/> is deliberately not on <see cref="ICurrentUser"/>. Only the
+/// two places entitled to establish an identity resolve this concrete type —
+/// <c>CurrentUserMiddleware</c> for a request and <c>TenantScopeFactory</c> for a
+/// background job. Everything else is injected the read-only interface.
+/// </remarks>
 public sealed class CurrentUser : ICurrentUser
 {
     private Guid? _id;
