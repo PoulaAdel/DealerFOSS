@@ -119,6 +119,10 @@ An integration that cannot show what a provider actually sent cannot be operated
 
 `ContractFields` keeps its own names. The industry standard, STAR, is a nested XML message format whose shape a flat field map cannot carry, so adopting its names without its structure would imply an interoperability nobody has built. A STAR connector translates at the edge like any other; STAR's role internally is as the coverage checklist a contract is measured against. Settles open decision D3. See [`adr/0023`](adr/0023-star-is-a-wire-format-not-our-vocabulary.md).
 
+### ADR-024 — Compliance splits three ways: product baseline, jurisdiction pack, deployment posture — Accepted
+
+There is no single jurisdiction dial. A **baseline** is what every deployment must do and cannot switch off (encryption, MFA, audit, retention machinery, erasure, export). A **pack** is one jurisdiction's *data* — rates, boundaries, fee caps, taxability flags, effective dates — versioned, sourced, and reviewed before it is marked Supported; a pack carries data and declarations, never logic. A **posture** is what the dealership itself chooses. Tax is resolved from the registration address recorded on the deal, never from an IP address or a browser locale, and the charged tax is frozen on the deal as evidence with its pack version and provenance — including `entered-by-person`, which is what makes an unsupported jurisdiction a label rather than an error. Settles open decision D2. See [`adr/0024`](adr/0024-compliance-is-baseline-pack-and-posture.md).
+
 ## 4. Technology stack
 
 Versions follow supported LTS/current stable releases and are pinned centrally. Upgrades require compatibility tests, not a new ADR unless the technology changes.

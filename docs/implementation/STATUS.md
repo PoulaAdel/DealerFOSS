@@ -74,7 +74,8 @@ exists.
 | A CLI | **Spec, and doc 04 §8 claimed it existed until 2026-08-15** | — |
 | Warranty claim submission, manufacturer APIs, CSI | **Spec** — blocked on an OEM relationship | doc 11 §3 |
 | Credit reports, auctions, title history, plate lookup | **Spec** — blocked on commercial contracts | doc 11 §3 |
-| Tax by jurisdiction, titling and registration | **Spec** — blocked on decision D2 | doc 11 §11 |
+| Tax by jurisdiction | **Spec** — no longer blocked. D2 settled 2026-09-05 by [ADR-024](../adr/0024-compliance-is-baseline-pack-and-posture.md); nothing is built yet | doc 11 §3.3 |
+| Titling and registration (EVR/ERT) | **Spec** — still blocked, on a state list and a Service Provider contract per state | doc 11 §3.3 |
 
 ## Exit criteria
 
@@ -838,3 +839,25 @@ to come.
   **Two factual corrections to doc 11 §2**, both from STAR's own material: it publishes **200+** message formats across **35+** business areas, not the "145 across 40" we had. Both numbers were wrong, in opposite directions.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **668/668**, every relative link in `docs/` resolves. Sources read 2026-09-04 and cited in the ADR.
+
+- **2026-09-05 — D2 is settled: compliance is a baseline, a pack, and a posture.** [ADR-024](../adr/0024-compliance-is-baseline-pack-and-posture.md). The question arrived as "can the system dynamically fit multiple legal and tax rules to the user's current location?" and the research changed its shape three times before it could be answered.
+
+  **"Current location" is never the input.** A vehicle sale is taxed at the buyer's **registration address**, not the dealer's location and not where anyone is standing — cross a state line and the home state collects use tax at registration instead. For privacy the governing facts are the data subject's residence and the deployer's establishment. All of those are addresses already on records we hold. **IP geolocation, browser locale and `Accept-Language` are rejected outright** and recorded as rejected: they answer a different question from the one the law asks, three of them are attacker-controlled, and a corporate VPN would change a tax rate.
+
+  **Tax is two problems and only the smaller one is ours.** Rates and boundaries are unbuildable — 13,000+ US jurisdictions, and a single ZIP can span several of them because ZIPs are USPS delivery routes. But the automotive arithmetic **is** ours, and it is exactly what a general retail tax engine gets wrong: the **trade-in credit** (most states tax price minus trade; California taxes the full price, with the $20,000 car and $4,000 trade as CDTFA's own worked example), doc-fee taxability and caps, and lease basis. So the seam is a rate *provider* that is replaceable, and a taxable *basis* that lives next to `Deal.Subtotal` where the sign conventions already are.
+
+  **The finding that made it shippable: rates are free and liability-shifted for a third of the country.** The 23 Streamlined Sales Tax member states each publish a rate file and a boundary file, free, quarterly, keyed to 5- and 9-digit ZIP — and *"the states hold a business harmless for charging too much or too little tax if the business calculated and collected the incorrect tax based on the state's rate and boundary files."* That removes the need for rooftop geocoding in those states and makes **provenance**, not accuracy in the abstract, the load-bearing engineering requirement.
+
+  **Privacy is the opposite shape, and a rule table would have been a mistake.** A dealer arranging financing is a GLBA financial institution; Virginia, Colorado, Connecticut and Utah then grant an **entity-level** exemption while California grants only a **data-level** one. The same dealership is exempt in one state and not in another, per field. A rule reading `if (state == "VA") exempt` is wrong the moment they sell to a Californian — and encoding it would mean the software silently issuing a legal opinion about its operator. **Declined.** Underneath all of it the FTC Safeguards Rule applies to every US dealer regardless of state, so MFA, encryption at rest and in transit, and the audit trail become **product baseline** rather than posture.
+
+  **And self-hosting moves the obligation.** AGPLv3, deployed by the dealership: they are the controller and the taxpayer of record, not us. GDPR Recital 78 encourages producers to design for it; it does not make a producer a controller. So the product's job is to make compliance *possible and evidenced*, not to enforce it — a claim it could not honour.
+
+  **The decision.** Three dials with different lifetimes: a **baseline** in code that no deployment can switch off; a **pack** of one jurisdiction's versioned, sourced, human-reviewed *data* — flags and numbers, never logic; and a **posture** the dealership owns. Reference data lives in the host catalog and is effective-dated so a March deal still reads as March. A deal stores the tax it charged as frozen evidence with pack version and provenance, and **`entered-by-person` is a valid provenance** — which is what turns an unsupported jurisdiction from a blocker into a label, and what makes all of this buildable before a single pack exists.
+
+  **What D2 resolves to:** US first for compliance depth (its floor is the strictest of the candidates, so building to it wastes nothing if the market answer changes), architecture stays country-neutral, first pack is `Manual` and the second is SST-23 — which notably requires choosing no individual state. **Titling and registration stay blocked** on a state list, correctly.
+
+  **A doc 07 claim corrected.** The roadmap argued that US-only compliance and six shipped languages "cannot both be the priority". The tension was overstated: shipping six languages is *done* and carries no ongoing compliance cost. A language is not a jurisdiction — Spanish is spoken in the United States, and Arabic RTL is a UI capability, not a promise about anybody's law.
+
+  **Named and not built.** Nothing here is code. The first consequence on the critical path is the gap ADR-023 found last week: `customer.address.area` collapses state and county, and the county is what drives the rate.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` 668/668, every relative link in `docs/` and `.github/` resolves. Sources read 2026-09-05 and cited in the ADR.

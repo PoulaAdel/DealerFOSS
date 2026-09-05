@@ -55,6 +55,7 @@ Standalone Parts, Accounting, and Tax/Title tables are introduced only with thei
 - Soft delete is used only where deletion is a valid domain action. Posted financial entries, stock movements, evidence, and audit events are never edited or deleted; corrections are appended.
 - Email is a contact point, not a unique customer identity. VIN validation supports documented exceptions and duplicate-resolution workflow rather than relying on a universal unique index.
 - Money stores amount and ISO currency. Address stores country plus country-appropriate administrative area and postal code. Tenant settings include time zone, culture, default currency, and enabled jurisdiction rule packs.
+- **Jurisdiction packs are reference data in the host catalog, not tenant data** ([ADR-024](adr/0024-compliance-is-baseline-pack-and-posture.md)). Rates and rules are effective-dated and never updated in place; only the *enablement* is per tenant. A deal stores the tax it charged as evidence — amount, basis, rate, jurisdiction, pack version, resolved address and provenance — frozen at the sale and never recomputed on read. `Address.AdministrativeArea` currently collapses state and county, which the tax work has to split.
 - Indexes follow measured query patterns and include all external-reference lookups and scope/status/date combinations used by operational screens.
 
 ## 5. Tenant and rooftop resolution

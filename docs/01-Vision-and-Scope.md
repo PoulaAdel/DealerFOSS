@@ -75,7 +75,7 @@ The following are required before DealerFOSS can replace an incumbent DMS:
 - **Parts:** catalog, bins, stock ledger, purchasing, receiving, issue/return, cores, supersession, pricing, and physical count.
 - **Service depth:** estimates and authorization, dispatch, technician skills/time, flat-rate labor, inspections, warranty, recalls, sublet, comeback, and invoicing.
 - **F&I compliance:** OFAC provider integration/evidence, Red Flags workflow, adverse-action and risk-based notices, Reg B/Z evidence, menu versions, lender stipulations, e-contracting, remittance, and cancellation.
-- **Tax, title, and registration:** effective-dated jurisdiction rules, fees, exemptions, title/lien status, odometer disclosures, temporary tags, and provider integrations.
+- **Tax, title, and registration:** effective-dated jurisdiction rules, fees, exemptions, title/lien status, odometer disclosures, temporary tags, and provider integrations. How those rules are carried is settled by [ADR-024](adr/0024-compliance-is-baseline-pack-and-posture.md); the *market* this section scopes to is still open as **D1**.
 
 ## 5. Multi-rooftop rules
 

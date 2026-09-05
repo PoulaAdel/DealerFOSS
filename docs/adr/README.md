@@ -44,6 +44,7 @@ Two carry one today: [ADR-007](0007-integration-platform-edge.md) and
 | [ADR-021](0021-coerced-values-become-absent.md) | A value that does not fit becomes absent, never a substitute | Accepted |
 | [ADR-022](0022-raw-capture-is-personal-data-with-an-expiry.md) | Raw provider capture is a required facility, and it is personal data | Accepted |
 | [ADR-023](0023-star-is-a-wire-format-not-our-vocabulary.md) | STAR is a wire format to translate from, not our internal vocabulary | Accepted |
+| [ADR-024](0024-compliance-is-baseline-pack-and-posture.md) | Compliance splits three ways: product baseline, jurisdiction pack, deployment posture | Accepted |
 
 ## ADR file template
 

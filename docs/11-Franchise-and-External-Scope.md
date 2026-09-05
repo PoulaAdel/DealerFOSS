@@ -120,7 +120,7 @@ Real APIs exist and are documented; they need a paying relationship.
 | **Title history checks** | **NMVTIS**, run by the US Department of Justice, is the authoritative source for title brands (junk, salvage, flood), odometer readings and theft records. Reached through approved data providers |
 | **Plate to VIN** | Commercial APIs with 50-state coverage. There is no free government equivalent |
 
-### 3.3 Blocked on a jurisdiction decision
+### 3.3 Blocked on a jurisdiction decision — half of it no longer is
 
 **A correction to the original phrasing.** There is no "county DMV" for vehicles
 and no county API. Titling and registration are **state** functions. What
@@ -131,13 +131,30 @@ actually varies by county is **tax**.
   state directly — each state approves **Service Providers**, sometimes called
   First Line Service Providers, and the dealer's DMS integrates with an approved
   provider. Per state, with a different provider and a different contract in each.
+  **This half is still blocked**, and correctly so: it needs a state list before
+  anyone can sign anything.
 - **Tax** genuinely is local: state, county and sometimes city rates, plus
-  documentation fees that some states cap and others do not. This is normally
-  bought rather than built.
+  documentation fees that some states cap and others do not. **This half is
+  unblocked as of 2026-09-05** — see D2 below and
+  [ADR-024](adr/0024-compliance-is-baseline-pack-and-posture.md).
 
-None of it can be scoped before **N3** picks a market. Doc 01 §4 currently
-assumes US-only compliance while the product ships six languages with full
-right-to-left support; those two cannot both be the priority.
+The unblocking came from three findings. **Rates are free and liability-shifted
+for a third of the country**: the 23 Streamlined Sales Tax member states publish
+rate and boundary files quarterly at no charge, and hold a seller harmless for a
+wrong figure computed from them. **The automotive-specific arithmetic is ours
+whatever the market is** — the trade-in credit, doc-fee taxability, lease basis —
+and it is the part a general retail tax engine gets wrong. And **an unsupported
+jurisdiction can be a label rather than a blocker**: a person types the tax and
+the record says a person typed it.
+
+> **Corrected 2026-09-05.** This section used to close by saying doc 01 §4
+> assumes US-only compliance "while the product ships six languages with full
+> right-to-left support; those two cannot both be the priority." The tension is
+> not symmetric and the sentence overstated it. **Shipping six languages is
+> already done and carries no ongoing compliance cost.** A language is not a
+> jurisdiction: Spanish is spoken in the United States, and Arabic RTL support
+> is a UI capability, not a promise about anybody's law. Compliance is the
+> singular thing; the product is not.
 
 ### 3.4 Open today — no approval, no contract, no market decision
 
@@ -362,10 +379,13 @@ Outside engineering, recorded so they are not lost:
 | # | Decision | Why it cannot be deferred much longer |
 |---|---|---|
 | **D1** | Franchised or independent dealers first | Governs §3.1, §3.2, §3.3 and both roles in §10. Already overdue as **N3** |
-| **D2** | Which jurisdiction | Tax, titling and privacy all follow from it. Six languages and US-only compliance point in different directions |
+| ~~**D2**~~ | ~~Which jurisdiction~~ | **Settled 2026-09-05 — the question decomposes.** Compliance is a **baseline** (what every deployment must do), a **pack** (one jurisdiction's versioned, sourced data — never logic), and a **posture** (what the dealership chooses). Tax resolves from the registration address on the deal, never from an IP address, and an unsupported jurisdiction is a labelled manual entry rather than a blocker. US first for compliance depth, architecture stays country-neutral, first pack is `Manual` and the second is the 23 free hold-harmless SST states. **Titling/EVR stays blocked** on a state list. See [ADR-024](adr/0024-compliance-is-baseline-pack-and-posture.md) |
 | ~~**D3**~~ | ~~Adopt STAR vocabulary for `ContractFields`, or keep our own~~ | **Settled 2026-09-04 — keep our own.** STAR is a wire format a connector translates from, not an internal vocabulary; a flat field map can carry its names but not its shape. The obstacle assumed here (reading the spec) did not exist — it is public under EPL v1.0. See [ADR-023](adr/0023-star-is-a-wire-format-not-our-vocabulary.md) |
 | ~~**D4**~~ | ~~Which accounts warranty and internal work post to~~ | **Settled 2026-08-15.** Warranty is a receivable from the manufacturer (`1200`), internal work is a charge against the dealership (`5400`), and reconditioning on a car we own is capitalised onto the unit rather than expensed — so used-vehicle cost carries its recon. Built and proven; see `4f0073c` |
-| **D5** | Whether to hold credit data at all | Changes the security posture of the whole product (§4) |
+| **D5** | Whether to hold credit data at all | Changes the security posture of the whole product (§4). [ADR-024](adr/0024-compliance-is-baseline-pack-and-posture.md) makes this a deployment **posture** switch rather than an architecture question, but does not answer it |
+
+**Two left.** D1 is a market decision and belongs to the business; D5 is ours.
+Everything else on this list has been settled and written down.
 
 ## 12. Scope register
 
@@ -376,8 +396,8 @@ here disagrees with the section above it, the section is right.
 
 `Blocker` is the single thing that has to change first, and is one of:
 **OEM** (a manufacturer relationship), **Contract** (a commercial agreement),
-**Market** (decision D1/D2), **Decision** (one of ours, D3–D5), **Build** (only
-engineering time), or **Done**.
+**Market** (decision D1 — D2 is settled), **Decision** (one of ours, D5 is the
+one still open), **Build** (only engineering time), or **Done**.
 
 | Item | Area | Blocker | State |
 |---|---|---|---|
@@ -391,10 +411,11 @@ engineering time), or **Done**.
 | Credit reports via an aggregator | Finance | Contract | Not started |
 | Title history checks (NMVTIS) | Vehicle | Contract | Not started |
 | Plate to VIN lookup | Vehicle | Contract | Not started |
-| Registration and titling (EVR/ERT) | Compliance | Market | Not started |
-| Sales tax by state, county and city | Accounting | Market | Not started |
+| Registration and titling (EVR/ERT) | Compliance | Market | Not started — still needs a state list before a Service Provider contract exists |
+| Sales tax by state, county and city | Accounting | Build | Not started — unblocked 2026-09-05 by ADR-024; first pack is `Manual`, second is SST-23 |
 | Ambassadors to dealers | Business | Market | Not started |
 | Adopt STAR vocabulary for contracts | Integration | Done | Decided 2026-09-04: keep our own (ADR-023) |
+| How jurisdiction rules are carried at all | Compliance | Done | Decided 2026-09-05: baseline / pack / posture (ADR-024) |
 | Pay type on service work | Service | Done | Built, with a screen |
 | Reconditioning capitalised onto the car | Accounting | Done | Built |
 | Technician load balancing | Service | Decision | Not started |
