@@ -62,6 +62,7 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             address.Property(a => a.Line2).HasColumnName("AddressLine2").HasMaxLength(200);
             address.Property(a => a.City).HasColumnName("City").HasMaxLength(120);
             address.Property(a => a.AdministrativeArea).HasColumnName("AdministrativeArea").HasMaxLength(120);
+            address.Property(a => a.County).HasColumnName("County").HasMaxLength(120);
             address.Property(a => a.PostalCode).HasColumnName("PostalCode").HasMaxLength(20);
             address.Property(a => a.Country).HasColumnName("Country").HasMaxLength(2);
         });

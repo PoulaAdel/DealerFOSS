@@ -887,3 +887,19 @@ to come.
   **Named and not done.** The claim is an `ExecuteUpdate`, which bypasses the change tracker, so it stamps no `ModifiedBy` and rotates no concurrency token. That is unchanged by this work and harmless — the conditional update *is* the concurrency control — but it means a claimed job's `ModifiedBy` still shows whoever last saved it through the tracker.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **686/686** (was 668), `verify-e2e.ps1` PASS.
+
+- **2026-09-05 — an address can now say which county it is in.** The gap [ADR-023](../adr/0023-star-is-a-wire-format-not-our-vocabulary.md) found by measuring our eleven customer fields against STAR's address structure, and [ADR-024](../adr/0024-compliance-is-baseline-pack-and-posture.md) put on the critical path: **US sales tax varies by state, county and sometimes city**, and `customer.address.area` carried only one of them. The address could not express the thing that decides the rate.
+
+  `Address.County` sits alongside `Address.AdministrativeArea` — the state, province or region — through the domain, the EF mapping and its migration, the customer API, both CSV directions, the connector contract, and the customer screen. Null in most countries, which is expected: it is a sub-division slot, not a promise that every address has one.
+
+  **Nothing infers one from the other.** Not from the state, not from the postcode. An absent county is absent ([ADR-021](../adr/0021-coerced-values-become-absent.md)) because a guessed county is a wrong tax rate on a real invoice that looks exactly like a right one — and a test named `A_state_with_no_county_given_does_not_borrow_one` fails if anybody adds the convenience.
+
+  **No version bump, and a doc corrected to say why.** `ContractFields`'s header claimed that any field added there forces one. [Doc 05 §2](../05-Integration-Framework.md), which governs the rule, says the opposite: *"Adding an optional field is compatible. Removing, changing meaning, or changing requiredness creates a new major version."* A connector compiled against v1 simply does not populate a field added later. The header now says what actually forces a bump — changing what an existing name means — because that is the case that is invisible at the call site.
+
+  **The fixture connector now sends `IL` and `Sangamon`**, two different words, so a sink that folded one into the other would be caught rather than looking correct. Springfield IL 62704 really is in Sangamon County; seeded data that is geographically wrong teaches the wrong thing about a field whose whole purpose is deciding a tax rate.
+
+  **Rehearsed three ways**, each failing exactly its own test: inferring the county from the state fails `A_state_with_no_county_given_does_not_borrow_one`; dropping the county from the export fails `A_county_survives_the_round_trip_apart_from_its_state`; making the sink read the state into the county slot fails `Contract_fields_arrive_as_a_usable_customer`.
+
+  **Named and not done: the address TYPE**, the second gap ADR-023 recorded. A customer holds one address and a type only discriminates between several. The registration or garaging address that decides a deal's tax is a fact about the **deal**, frozen with it (ADR-024 R3), so it lands with the tax work rather than as a second customer field nothing would populate.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **689/689** (was 686), `verify-e2e.ps1` PASS, and the frontend gate clean — `npm audit`, typecheck, **303 tests**, production build.

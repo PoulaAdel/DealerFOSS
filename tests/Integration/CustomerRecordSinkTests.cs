@@ -259,6 +259,12 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
         customer.Address!.Line1.Should().Be("1 Fixture Way");
         customer.Address.City.Should().Be("Testburg");
 
+        // State and county arrive as two fields and must stay two. Folding them
+        // together loses what decides a US sales tax rate (ADR-024), and the
+        // fixture sends different words for each so a swap cannot look right.
+        customer.Address.AdministrativeArea.Should().Be("IL");
+        customer.Address.County.Should().Be("Sangamon");
+
         customer.ContactPoints.Should().Contain(p => p.Value.Contains("example.invalid"));
     }
 

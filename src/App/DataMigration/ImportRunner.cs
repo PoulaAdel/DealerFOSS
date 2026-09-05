@@ -142,6 +142,7 @@ internal sealed class ImportRunner(ICustomers customers, IVehicles vehicles)
                         row.Field(header, "addressline2"),
                         city,
                         row.Field(header, "state") ?? row.Field(header, "administrativearea"),
+                        row.Field(header, "county"),
                         row.Field(header, "postalcode") ?? row.Field(header, "zip"),
                         row.Field(header, "country") ?? "US"),
                 externalId),

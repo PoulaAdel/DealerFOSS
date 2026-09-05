@@ -262,7 +262,10 @@ public static class DevelopmentSeeder
         alvarez.AddContactPoint(Guid.NewGuid(), ContactKind.Email, "marisol.alvarez@example.test");
         alvarez.AddContactPoint(Guid.NewGuid(), ContactKind.Phone, "(555) 010-2030");
         alvarez.SetAddress(CustomerAddress.Create(
-            "18 Kestrel Way", null, "Springfield", "IL", "62704", "US"));
+            // Sangamon is the real county for Springfield IL 62704. Seeded data
+            // that is geographically wrong teaches the wrong thing about a field
+            // whose whole purpose is that it decides a tax rate.
+            "18 Kestrel Way", null, "Springfield", "IL", "Sangamon", "62704", "US"));
 
         var okafor = Customer.Person(Guid.NewGuid(), "Daniel", "Okafor");
         okafor.AddContactPoint(Guid.NewGuid(), ContactKind.Mobile, "+15550117788");

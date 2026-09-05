@@ -161,9 +161,10 @@ public sealed class CustomerTests
     [Fact]
     public void An_address_needs_a_line_a_city_and_a_two_letter_country()
     {
-        var noLine = () => Address.Create("", null, "Springfield", "IL", "62704", "US");
-        var noCity = () => Address.Create("18 Kestrel Way", null, " ", "IL", "62704", "US");
-        var badCountry = () => Address.Create("18 Kestrel Way", null, "Springfield", "IL", "62704", "USA");
+        var noLine = () => Address.Create("", null, "Springfield", "IL", "Sangamon", "62704", "US");
+        var noCity = () => Address.Create("18 Kestrel Way", null, " ", "IL", "Sangamon", "62704", "US");
+        var badCountry = () =>
+            Address.Create("18 Kestrel Way", null, "Springfield", "IL", "Sangamon", "62704", "USA");
 
         noLine.Should().Throw<ArgumentException>();
         noCity.Should().Throw<ArgumentException>();
@@ -174,7 +175,7 @@ public sealed class CustomerTests
     public void An_address_keeps_a_postal_code_exactly_as_given()
     {
         // Leading zeros are real, and plenty of postcodes are not numeric at all.
-        var address = Address.Create("1 High St", null, "Boston", "MA", "02108", "us");
+        var address = Address.Create("1 High St", null, "Boston", "MA", "Suffolk", "02108", "us");
 
         address.PostalCode.Should().Be("02108");
         address.Country.Should().Be("US", because: "country codes are normalized, postcodes are not");
@@ -183,9 +184,34 @@ public sealed class CustomerTests
     [Fact]
     public void An_optional_address_line_is_null_rather_than_blank()
     {
-        var address = Address.Create("1 High St", "   ", "Boston", null, null, "US");
+        var address = Address.Create("1 High St", "   ", "Boston", null, null, null, "US");
 
         address.Line2.Should().BeNull();
         address.AdministrativeArea.Should().BeNull();
+        address.County.Should().BeNull();
+    }
+
+    [Fact]
+    public void A_county_is_kept_apart_from_the_state_that_contains_it()
+    {
+        // The commercial reason (ADR-024): US sales tax varies by state AND by
+        // county, so an address that folds one into the other cannot express
+        // what decides the rate. Two towns called Springfield in the same state
+        // can sit in different counties and be taxed differently.
+        var address = Address.Create("18 Kestrel Way", null, "Springfield", "IL", "Sangamon", "62704", "US");
+
+        address.AdministrativeArea.Should().Be("IL");
+        address.County.Should().Be("Sangamon");
+    }
+
+    [Fact]
+    public void A_state_with_no_county_given_does_not_borrow_one()
+    {
+        // Never infer. An absent county is absent (ADR-021); a guessed one is a
+        // wrong tax rate on a real invoice, and it looks exactly like a real one.
+        var address = Address.Create("18 Kestrel Way", null, "Springfield", "IL", null, "62704", "US");
+
+        address.AdministrativeArea.Should().Be("IL");
+        address.County.Should().BeNull();
     }
 }

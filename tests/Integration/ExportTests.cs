@@ -223,6 +223,66 @@ public sealed class ExportTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task A_county_survives_the_round_trip_apart_from_its_state()
+    {
+        // A US sales tax rate is decided by state AND county (ADR-024), so an
+        // export that drops the county — or a reader that folds it into the
+        // state — silently loses what the tax depends on. Two different words
+        // are used so a swap cannot pass.
+        var surname = "County" + new string([.. Guid.NewGuid().ToString("N")[..8]
+            .Select(c => char.IsAsciiDigit(c) ? (char)('q' + (c - '0')) : c)]).ToUpperInvariant();
+
+        using var created = await SendAsync(
+            HttpMethod.Post, "/api/v1/customers", Manager, "northgroup",
+            new
+            {
+                kind = "Person",
+                firstName = "Hand",
+                lastName = surname,
+                address = new
+                {
+                    line1 = "18 Kestrel Way",
+                    city = "Springfield",
+                    administrativeArea = "IL",
+                    county = "Sangamon",
+                    postalCode = "62704",
+                    country = "US",
+                },
+            });
+
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        using var exported = await SendAsync(
+            HttpMethod.Get, "/api/v1/migration/exports/Customers", Manager, "northgroup");
+
+        var file = await exported.Content.ReadAsStringAsync();
+        file.Should().Contain("Sangamon", because: "the export carries the county as its own column");
+
+        using var reimported = await SendAsync(
+            HttpMethod.Post, "/api/v1/migration/imports", Manager, "citymotors",
+            new { kind = "Customers", mode = "Apply", sourceName = "people.csv", content = file });
+
+        var job = await WaitForImportAsync(
+            (await reimported.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid(),
+            "citymotors");
+
+        job.GetProperty("rowsFailed").GetInt32().Should().Be(0);
+
+        using var found = await SendAsync(
+            HttpMethod.Get, $"/api/v1/customers?search={surname}", Manager, "citymotors");
+
+        var id = (await found.Content.ReadFromJsonAsync<JsonElement>())[0].GetProperty("id").GetGuid();
+
+        using var detail = await SendAsync(
+            HttpMethod.Get, $"/api/v1/customers/{id}", Manager, "citymotors");
+
+        var address = (await detail.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("address");
+
+        address.GetProperty("administrativeArea").GetString().Should().Be("IL");
+        address.GetProperty("county").GetString().Should().Be("Sangamon");
+    }
+
+    [Fact]
     public async Task Exporting_twice_without_changes_produces_the_same_checksum()
     {
         using var first = await SendAsync(

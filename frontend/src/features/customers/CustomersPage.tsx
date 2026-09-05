@@ -305,6 +305,7 @@ function CustomerPanel({
             address.line2,
             address.city,
             address.administrativeArea,
+            address.county,
             address.postalCode,
             address.country,
           ]

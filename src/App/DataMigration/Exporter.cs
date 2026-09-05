@@ -35,7 +35,7 @@ internal static class Exporter
     public static readonly string[] CustomerColumns =
     [
         "externalid", "kind", "firstname", "lastname", "email", "phone",
-        "addressline1", "addressline2", "city", "state", "postalcode", "country",
+        "addressline1", "addressline2", "city", "state", "county", "postalcode", "country",
     ];
 
     /// <summary>
@@ -83,6 +83,7 @@ internal static class Exporter
             address?.Line2 ?? string.Empty,
             address?.City ?? string.Empty,
             address?.AdministrativeArea ?? string.Empty,
+            address?.County ?? string.Empty,
             address?.PostalCode ?? string.Empty,
             address?.Country ?? string.Empty,
         ]);

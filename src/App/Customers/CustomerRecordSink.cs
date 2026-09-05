@@ -172,6 +172,7 @@ public sealed class CustomerRecordSink(ICustomers customers) : IRecordSink
             Text(record, CustomerFields.AddressLine2, AddressLength, warnings),
             city,
             Text(record, CustomerFields.AdministrativeArea, NameLength, warnings),
+            Text(record, CustomerFields.County, NameLength, warnings),
             Text(record, CustomerFields.PostalCode, 20, warnings),
             Text(record, CustomerFields.Country, NameLength, warnings) ?? string.Empty);
     }

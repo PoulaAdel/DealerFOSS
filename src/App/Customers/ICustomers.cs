@@ -91,11 +91,17 @@ public sealed record CustomerDetail(
 
 public sealed record ContactPointView(Guid Id, string Kind, string Value, bool IsPrimary);
 
+/// <summary>
+/// An address as the API speaks it. <see cref="County"/> is separate from
+/// <see cref="AdministrativeArea"/> because US sales tax varies by both
+/// (ADR-024); it is null in most countries, which is expected.
+/// </summary>
 public sealed record AddressView(
     string Line1,
     string? Line2,
     string City,
     string? AdministrativeArea,
+    string? County,
     string? PostalCode,
     string Country);
 

@@ -88,6 +88,13 @@ export interface AddressView {
   line2: string | null;
   city: string;
   administrativeArea: string | null;
+  /**
+   * The county, where a country has one. Separate from administrativeArea
+   * because US sales tax varies by state AND by county (ADR-024). Null in most
+   * countries, and null wherever nobody supplied it — never inferred from the
+   * state or the postcode.
+   */
+  county: string | null;
   postalCode: string | null;
   country: string;
 }

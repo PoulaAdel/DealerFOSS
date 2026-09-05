@@ -106,14 +106,27 @@ If a real STAR connector arrives it translates at the edge, which is one file.
   STAR's address ABIE immediately found three things we do not carry, recorded
   here rather than fixed, because adding a field nothing populates is
   speculation:
-  - **County is collapsed.** We have one `customer.address.area`; STAR separates
+  - ~~**County is collapsed.**~~ **Closed 2026-09-05.** We had one
+    `customer.address.area`; STAR separates
     `StateOrProvinceCountrySub-DivisionID` from `CountyCountrySub-Division`.
-    This matters commercially — doc 11 §3.3 records that US sales tax varies by
-    **state, county and sometimes city**, so our address cannot currently express
-    the thing that drives the tax calculation.
+    This mattered commercially — doc 11 §3.3 records that US sales tax varies by
+    **state, county and sometimes city**, so our address could not express the
+    thing that drives the tax calculation. `customer.address.county` now exists
+    alongside `customer.address.area`, as an optional field, which doc 05 §2
+    makes a compatible change needing no version bump.
+    [ADR-024](0024-compliance-is-baseline-pack-and-posture.md) is what moved this
+    from "recorded" to "on the critical path": the county is the jurisdiction
+    that decides the rate. Neither field is derivable from the other, and nothing
+    infers one from the other — a guessed county is a wrong tax rate that looks
+    exactly like a right one.
   - **No address type or use.** STAR carries `AddressType` and `UseCode`; we
     cannot distinguish a billing address from a residence or a garaging address,
-    and garaging address drives insurance and some tax.
+    and garaging address drives insurance and some tax. **Still open, and still
+    deliberately** (reviewed 2026-09-05): a customer holds one address, and a
+    type only discriminates between several. The registration address that
+    decides a deal's tax is a fact about the *deal*, frozen with it
+    ([ADR-024](0024-compliance-is-baseline-pack-and-posture.md) R3), so it lands
+    there rather than as a second customer field nothing would populate.
   - **Two address lines, not five.** Rarely a problem, and named so it is a known
     limit rather than a surprise.
 - A future STAR connector is an ordinary connector. It declares its capabilities

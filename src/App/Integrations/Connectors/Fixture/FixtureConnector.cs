@@ -185,6 +185,11 @@ public sealed class FixtureConnector : IConnector
                     [CustomerFields.Phone] = $"555{i:D7}",
                     [CustomerFields.AddressLine1] = "1 Fixture Way",
                     [CustomerFields.City] = "Testburg",
+                    // State and county are both sent, and they are different
+                    // words, so a sink that mapped one into the other would be
+                    // caught rather than looking correct.
+                    [CustomerFields.AdministrativeArea] = "IL",
+                    [CustomerFields.County] = "Sangamon",
                     [CustomerFields.Country] = "US",
                 });
         })];

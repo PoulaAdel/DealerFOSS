@@ -267,12 +267,18 @@ the switches the dealership owns.
 
 - **The tax work can start without the market decision**, which is what D2 was
   blocking. `Manual` plus the basis arithmetic is buildable now and useful now.
-- **`customer.address.area` has to split.** The gap ADR-023 found by measuring
-  against STAR is now on the critical path rather than a note: state and county
-  are different jurisdictions and the county drives the rate. This is a contract
-  change and needs the version bump `ContractFields` already warns about.
+- ~~**`customer.address.area` has to split.**~~ **Done 2026-09-05.** The gap
+  ADR-023 found by measuring against STAR was on the critical path rather than a
+  note: state and county are different jurisdictions and the county drives the
+  rate. `customer.address.county` now exists alongside it, through the domain,
+  the API, both CSV directions and the connector contract. It needed **no**
+  version bump — doc 05 §2 makes an added optional field compatible, and the
+  claim in `ContractFields`'s header that any added field forces a bump was
+  wrong and has been corrected.
 - **A garaging or registration address becomes a real field**, distinct from the
-  customer's mailing address — the second gap ADR-023 named.
+  customer's mailing address — the second gap ADR-023 named. Not built, and it
+  belongs on the **deal** rather than the customer: it is the address the tax
+  was resolved from, frozen with the sale by R3 above.
 - **A pack needs an owner and a review date, or it rots**, and a rotted pack is
   worse than none because it is trusted. `Supported` status is a claim about a
   human review, not about the file parsing.

@@ -161,7 +161,7 @@ public sealed class CustomerService(
             {
                 created.SetAddress(Address.Create(
                     address.Line1, address.Line2, address.City,
-                    address.AdministrativeArea, address.PostalCode, address.Country));
+                    address.AdministrativeArea, address.County, address.PostalCode, address.Country));
             }
 
             created.SetExternalReference(customer.ExternalReference);
@@ -260,7 +260,7 @@ public sealed class CustomerService(
                 ? null
                 : new AddressView(
                     c.Address.Line1, c.Address.Line2, c.Address.City,
-                    c.Address.AdministrativeArea, c.Address.PostalCode, c.Address.Country),
+                    c.Address.AdministrativeArea, c.Address.County, c.Address.PostalCode, c.Address.Country),
             c.ContactPoints
                 .OrderByDescending(p => p.IsPrimary)
                 .ThenBy(p => p.Kind)

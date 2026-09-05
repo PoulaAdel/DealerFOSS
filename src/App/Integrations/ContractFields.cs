@@ -16,9 +16,16 @@
 //   provider.
 //
 //   So: the connector translates, exactly once, at the edge. Everything
-//   inside speaks the contract. A field added here is a change to a
-//   published contract and needs a version bump (doc 05 §2) — connectors
-//   compiled against v1 must keep working.
+//   inside speaks the contract.
+//
+//   WHAT NEEDS A VERSION BUMP, corrected 2026-09-05. This paragraph used to say
+//   any field added here needs one. It does not, and doc 05 §2 — which governs
+//   the rule — says the opposite: "Adding an optional field is compatible.
+//   Removing, changing meaning, or changing requiredness creates a new major
+//   version with a documented support window." A connector compiled against v1
+//   simply does not populate a field added after it. What DOES force a bump is
+//   changing what an existing name means, and that is the case to watch here,
+//   because it is invisible at the call site.
 //
 //   Names are lowerCamelCase and dotted by area, matching the JSON style the
 //   API already uses. They are compared with Ordinal, so case matters.
@@ -37,9 +44,12 @@
 //
 //   What STAR IS good for is coverage. When you extend a contract, check it
 //   against the matching STAR noun and record what you deliberately leave out.
-//   Doing that once already found three gaps, listed in the ADR — the sharpest
-//   being that `customer.address.area` collapses state and county, while US
-//   sales tax varies by both.
+//   Doing that once found three gaps, listed in ADR-023. The sharpest of them —
+//   `customer.address.area` collapsing state and county, while US sales tax
+//   varies by both — was CLOSED on 2026-09-05 by adding `customer.address.county`
+//   as an optional field, which is compatible and needed no version bump.
+//   The other two remain open and deliberate: no address type, and two address
+//   lines against STAR's five.
 
 namespace DealerFOSS.Integrations;
 
@@ -77,7 +87,17 @@ public static class CustomerFields
 
     public const string City = "customer.address.city";
 
+    /// <summary>State, province, or region. NOT the county — see <see cref="County"/>.</summary>
     public const string AdministrativeArea = "customer.address.area";
+
+    /// <summary>
+    /// The county, where a country has them. Separate from
+    /// <see cref="AdministrativeArea"/> because US sales tax varies by state,
+    /// county and sometimes city, so an address that folds the two together
+    /// cannot express what decides the rate (ADR-024). Neither is derivable from
+    /// the other: a provider that sends only one leaves the other absent.
+    /// </summary>
+    public const string County = "customer.address.county";
 
     public const string PostalCode = "customer.address.postalCode";
 
