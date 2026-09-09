@@ -1243,9 +1243,20 @@ kbd + kbd {
   color: var(--fail);
 }
 
+/* 20rem was too generous a minimum for what actually goes in here. One side is
+   a five-column money table, and at 780px the pair each got 351px — so the
+   table came out 379px wide, scrolled inside its own panel, and "Finance and
+   insurance" wrapped onto two lines beside three columns of "$0". Measured
+   2026-09-09.
+
+   The columns are sized by their HEADERS, not their figures: REVENUE, COST and
+   GROSS are wider set in small caps than "$0" will ever be, so no amount of
+   narrowing the numbers helps. The honest fix is to stop splitting before the
+   split starts hurting — 34rem each, so the pair sits side by side on a real
+   desktop and stacks to full width below that. */
 .dash__split {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr));
   gap: 16px;
   align-items: start;
   margin-bottom: 16px;
