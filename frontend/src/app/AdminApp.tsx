@@ -22,6 +22,7 @@ import { AdminSecondFactorSetup } from '../features/admin/AdminSecondFactorSetup
 import { TenantsPage } from '../features/admin/TenantsPage';
 import { SupportAccessPage } from '../features/admin/SupportAccessPage';
 import { AppearanceControls } from './AppearanceControls';
+import { Mark } from './Mark';
 
 export function AdminApp() {
   return (
@@ -83,6 +84,7 @@ function AdminShell({ restricted = false }: { restricted?: boolean }) {
 
       <header className="shell__bar">
         <span className="shell__brand">
+          <Mark />
           {t('app.name')} <span className="shell__badge">{t('admin.badge')}</span>
         </span>
 

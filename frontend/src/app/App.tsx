@@ -29,6 +29,7 @@ import { SessionProvider, useSession } from './session';
 import { AppearanceProvider } from '../shared/appearance';
 import { I18nProvider, useI18n } from '../shared/i18n';
 import { AppearanceControls } from './AppearanceControls';
+import { Mark } from './Mark';
 import { ShortcutsPanel } from './Shortcuts';
 import { useHotkeys } from '../shared/useHotkeys';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
@@ -197,7 +198,10 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
       </a>
 
       <header className="shell__bar">
-        <span className="shell__brand">{t('app.name')}</span>
+        <span className="shell__brand">
+          <Mark />
+          {t('app.name')}
+        </span>
 
         {restricted ? null : (
           <nav aria-label={t('shell.mainNavigation')}>

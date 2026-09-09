@@ -57,6 +57,15 @@
      nobody with ordinary eyesight in ordinary light can read comfortably. This
      token is why that pair is stated once instead of hard-coded twice. */
   --on-accent: #ffffff;
+
+  /* THE MARK USES --accent AND HAS NO COLOUR OF ITS OWN. A brand red was tried
+     on 2026-09-09 and dropped: --accent is not decoration here, it is the "in
+     progress" colour on seven chips — reconditioning, provisioning, submitted,
+     appointment, warn, and two pay types — and --fail is already a red, so a
+     second red would have had "submitted" and "failed" reading as the same
+     thing. One accent, used for identity and for state, is the smaller idea and
+     the correct one. Measured 5.3:1 on --surface, comfortably past the 3:1 a
+     large graphic needs. */
   --done: #256a4d;
   --done-soft: #dff0e7;
   --fail: #a5342b;
@@ -212,6 +221,19 @@ textarea {
   margin-block-end: 12px;
 }
 
+/* The mark and the name on one baseline. This is the one screen where the
+   brand is the subject rather than a label in a corner, so the mark is 44px
+   here against 26 in the bar. */
+.signin__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.signin__brand h1 {
+  margin: 0;
+}
+
 .signin__lede {
   margin: 8px 0 4px;
   color: var(--ink-3);
@@ -286,19 +308,77 @@ textarea {
   inset-inline-start: 8px;
 }
 
+/* TWO TIERS ON PURPOSE, WHICH IS WHY THIS IS A GRID AND NOT A WRAPPING FLEX ROW.
+   Measured 2026-09-09 at 1440px: the old flex bar was 213px tall — five rows of
+   chrome above every screen on a full desktop. It got there by accident. The
+   navigation is 1230px wide with thirteen links, so it could never share a line
+   with the brand; it wrapped, which pushed the utilities onto a line of their
+   own, and the language select then wrapped again because the global input rule
+   gives every select width:100%.
+
+   Named areas fix the cause rather than the symptom: identity and utilities on
+   one line, navigation on its own line underneath, and neither can push the
+   other around. Roughly 90px, and it is the same 90px whatever gets added to
+   the navigation later. */
 .shell__bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    'brand utilities'
+    'nav   nav';
   align-items: center;
-  gap: 20px;
-  padding: 12px clamp(14px, 3vw, 28px);
+  column-gap: 20px;
+  row-gap: 6px;
+  padding: 10px clamp(14px, 3vw, 28px);
   background: var(--surface);
+
+  /* A 2px accent line along the very top of the viewport, with the grey rule
+     still doing its own job at the bottom. It says whose application this is
+     using the colour the product already speaks in, rather than introducing a
+     second one that would have to mean nothing. */
   border-bottom: 1px solid var(--line);
-  flex-wrap: wrap;
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+/* One column below the point where the brand and the utilities stop sharing a
+   line comfortably. Three stacked rows is the honest layout at that width, and
+   it is reached deliberately rather than by things elbowing each other. */
+@media (width < 640px) {
+  .shell__bar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'brand'
+      'utilities'
+      'nav';
+  }
+}
+
+/* The language picker is the reason the utilities used to need two rows: the
+   global `select { width: 100% }` made it eat whatever space it was given.
+   Width is content here, and the top margin belongs to form fields. */
+.shell__bar select {
+  width: auto;
+  margin-top: 0;
 }
 
 .shell__brand {
+  grid-area: brand;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* The colour lives here rather than on the brand span, because the name beside
+   the mark is a bare text node and would inherit a colour set on the parent —
+   giving an accent-coloured wordmark next to an accent-coloured mark, which is
+   the same thing said twice. */
+.mark {
+  flex: none;
+  display: block;
+  color: var(--accent);
 }
 
 /* Wraps. The bar itself already wraps, but a nav that does not will push the
@@ -306,6 +386,7 @@ textarea {
    what adding the seventh link did at 375px. Every link must stay reachable
    without the page scrolling under the reader. */
 .shell__bar nav {
+  grid-area: nav;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -331,6 +412,7 @@ textarea {
 }
 
 .shell__right {
+  grid-area: utilities;
   margin-inline-start: auto;
   display: flex;
   align-items: center;
@@ -504,9 +586,16 @@ tbody tr:last-child td {
   color: var(--done);
 }
 
+/* Tabular figures so a column of money lines up on the decimal instead of
+   drifting with the glyph widths, and `width: 1%` so a numeric column takes
+   only what it needs. Without the second half the browser shares the width
+   evenly and "Finance and insurance" wraps onto three lines beside three
+   columns of "$0" — the label starved while the numbers had room to spare. */
 .num {
   text-align: end;
   font-variant-numeric: tabular-nums;
+  width: 1%;
+  white-space: nowrap;
 }
 
 .strong {
@@ -1086,11 +1175,29 @@ kbd + kbd {
   color: var(--ink-2);
 }
 
+/* FOUR, TWO, OR ONE — NEVER THREE. There are exactly four figures on the
+   dashboard, and `auto-fit` fitted three of them at 780px and orphaned the
+   fourth on a line of its own, which reads as a layout that ran out of room
+   rather than one that was chosen. With a known count, explicit columns are
+   honest: four across when there is room, otherwise a 2x2 block, otherwise a
+   stack. Seen at 1440, 1024, 780 and 375. */
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
+}
+
+@media (width >= 60rem) {
+  .tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (width < 30rem) {
+  .tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .tile {
