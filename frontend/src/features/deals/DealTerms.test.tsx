@@ -45,6 +45,9 @@ const base: DealDetail = {
   approvedByUserId: null,
   approvedAt: null,
   termsAreOpen: true,
+  taxLines: [],
+  taxTotal: 0,
+  taxedAt: null,
   history: [],
 };
 

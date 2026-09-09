@@ -74,7 +74,7 @@ exists.
 | A CLI | **Spec, and doc 04 §8 claimed it existed until 2026-08-15** | — |
 | Warranty claim submission, manufacturer APIs, CSI | **Spec** — blocked on an OEM relationship | doc 11 §3 |
 | Credit reports, auctions, title history, plate lookup | **Spec** — blocked on commercial contracts | doc 11 §3 |
-| Tax on a deal | **API only** — the basis, tax as evidence with provenance, and person-entered tax (2026-09-09). No rate tables, no pack data, no screen | doc 11 §3.3 |
+| Tax on a deal | **API · Screen** — the basis, tax as evidence with provenance, and person-entered tax, with a band on the deal desk (2026-09-09). No rate tables and no pack data: nothing computes it | doc 11 §3.3 |
 | Titling and registration (EVR/ERT) | **Spec** — still blocked, on a state list and a Service Provider contract per state | doc 11 §3.3 |
 
 ## Exit criteria
@@ -992,3 +992,19 @@ to come.
   **Not built, and none of it pretends to be:** rate tables, the `JurisdictionPacks` / `JurisdictionRates` / `JurisdictionRules` host-catalog data, the SST-23 pack, the resolution order, and any screen. Tax is API-only today.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **711/711** (was 694) — 14 new unit tests on the basis and the line, 3 new integration tests through the real endpoint — `verify-e2e.ps1` PASS.
+
+- **2026-09-09 — the tax band, so a person can actually charge tax.** The API landed earlier today with no reader; a capability only an HTTP client can reach is not a capability. `DealTax` sits on the deal desk while the terms are open, `SoldTax` shows the same lines read-only once they are frozen.
+
+  **Every line says on screen where its figure came from.** Not a debug detail — it is the whole point of ADR-024 R4. Nothing computes tax yet, so the lede says so plainly rather than leaving a person to assume a rate table is behind the boxes, and a frozen line carries a chip reading *"a person entered it"* or the pack's id and version. The chip says its own name in words; the colour is reinforcement, never the message.
+
+  **The rate is typed as a percentage and stored as a fraction.** Anybody entering one is reading "6.25%" off a table, and asking them to divide by a hundred is how a deal gets taxed a hundred times over. **This is the change that would have been wrong invisibly** — every figure on the screen stays right if the conversion breaks, because the amount is typed separately and only the stored rate is wrong. A component test asserts the wire carries `0.0625`, and it was confirmed against the running application: a rate typed as `6.25` reads back from the API as `0.0625`.
+
+  **The county has its own box**, beside the state rather than folded into it, because a US rate depends on both — the gap closed on 2026-09-05, now visible to the person doing the work.
+
+  **Driven end to end in a browser, not only mocked.** A Draft deal priced at $24,000 with a $500 documentation fee: tax entered through the form, saved, and the deal read back at **$26,031.25 due** with the rate stored correctly and the county intact. Then submitted, and the editor correctly disappeared in favour of the read-only view with the provenance chip — mounted rather than merely disabled, because a disabled form still looks like somewhere to type.
+
+  **All six languages**, translated rather than copied. `tax.fromPack` is `{pack} v{version}` in every locale and is on the untranslated-keys allowlist with the reason: it is an id and a number with no words in it.
+
+  **Still not built:** rate tables, the host-catalog pack data, the SST-23 pack, and the resolution order. Nothing computes tax; a person enters it, and the record says so.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` 711/711; `npm audit` clean at high, typecheck clean, **310 frontend tests** (was 303), production build clean.

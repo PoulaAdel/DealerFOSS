@@ -814,7 +814,44 @@ export interface DealDetail extends DealSummary {
   approvedAt: string | null;
   /** False once submitted: the numbers are frozen from that point. */
   termsAreOpen: boolean;
+  /** Every tax charged, each saying where its figure came from. */
+  taxLines: TaxLineView[];
+  /** The tax added up. Already inside `amountDue`. */
+  taxTotal: number;
+  /** The address the tax was worked out from. Null when there is no tax. */
+  taxedAt: TaxAddressView | null;
   history: DealHistoryEntry[];
+}
+
+/**
+ * Where a tax figure came from. `EnteredByPerson` is a real answer, not a
+ * placeholder — it is what lets a dealership work in a jurisdiction nobody has
+ * written a rate pack for, and the screen has to say so rather than presenting
+ * a typed figure as if a rate table produced it (ADR-024).
+ */
+export type TaxProvenance = 'EnteredByPerson' | 'Pack' | 'Vendor';
+
+export interface TaxLineView {
+  id: string;
+  description: string;
+  jurisdiction: string;
+  /** What the rate was applied to. */
+  basis: number;
+  /** A fraction, not a percentage: 0.0625 is six and a quarter percent. */
+  rate: number;
+  amount: number;
+  provenance: TaxProvenance;
+  /** The pack that produced this and its version. Null when a person typed it. */
+  packId: string | null;
+  packVersion: number | null;
+}
+
+/** State and county separately, because a US rate depends on both. */
+export interface TaxAddressView {
+  administrativeArea: string | null;
+  county: string | null;
+  postalCode: string | null;
+  country: string;
 }
 
 // --- bringing records in, and taking them out ---

@@ -197,6 +197,7 @@ describe('the catalogues', () => {
     // or a loanword that has entered the trade.
     const sameWordEverywhere = new Map<string, string>([
       ['app.name', 'a product name'],
+      ['tax.fromPack', 'a pack id and a version number, with no words in it to translate'],
       ['signIn.code', 'the same word in French'],
       ['setPassword.code', 'the same word in French'],
       ['appearance.auto', 'the same abbreviation in French and German'],

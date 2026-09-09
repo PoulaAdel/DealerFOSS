@@ -412,7 +412,7 @@ one still open), **Build** (only engineering time), or **Done**.
 | Title history checks (NMVTIS) | Vehicle | Contract | Not started |
 | Plate to VIN lookup | Vehicle | Contract | Not started |
 | Registration and titling (EVR/ERT) | Compliance | Market | Not started — still needs a state list before a Service Provider contract exists |
-| Sales tax by state, county and city | Accounting | Build | **Part built 2026-09-09** — the taxable basis, tax as frozen evidence with provenance, and person-entered tax, with an API. No rate table, no screen, and no SST pack yet |
+| Sales tax by state, county and city | Accounting | Build | **Part built 2026-09-09** — the taxable basis, tax as frozen evidence with provenance, and person-entered tax, with a band on the deal desk. No rate table and no SST pack yet: nothing computes it |
 | Ambassadors to dealers | Business | Market | Not started |
 | Adopt STAR vocabulary for contracts | Integration | Done | Decided 2026-09-04: keep our own (ADR-023) |
 | How jurisdiction rules are carried at all | Compliance | Done | Decided 2026-09-05: baseline / pack / posture (ADR-024) |

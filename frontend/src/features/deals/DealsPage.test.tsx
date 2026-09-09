@@ -50,6 +50,9 @@ const detail = (over: Partial<DealDetail> = {}): DealDetail => ({
   approvedByUserId: null,
   approvedAt: null,
   termsAreOpen: true,
+  taxLines: [],
+  taxTotal: 0,
+  taxedAt: null,
   history: [
     { fromStatus: null, toStatus: 'Draft', occurredAt: '2026-08-04T09:00:00Z', changedByUserId: 's1', note: null, amountAtChange: 24000 },
   ],

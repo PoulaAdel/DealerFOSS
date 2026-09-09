@@ -921,6 +921,43 @@ tfoot td {
   color: var(--fail);
 }
 
+/* --- where a tax figure came from (ADR-024 R4) ---
+   Three chips, and the point of them is that a typed figure must not look like
+   one a rate table produced. Each says its own name in words, so the colour is
+   reinforcement and never the message. */
+
+.chip--tax-enteredbyperson {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip--tax-pack {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.chip--tax-vendor {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+/* The address the tax was resolved from. A fieldset because the four boxes are
+   one question, and a screen reader should hear it asked once. */
+.taxAddress {
+  margin-block: 12px 4px;
+  padding: 10px 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.taxAddress legend {
+  padding-inline: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
 /* --- the enquiry before the deal --- */
 
 .chip--new {

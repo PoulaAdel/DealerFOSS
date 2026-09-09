@@ -24,6 +24,7 @@ import { useSearchParams } from 'react-router';
 import { ApiError, api, openDocument, post } from '../../shared/api';
 import { DealTerms } from './DealTerms';
 import { DealProducts } from './DealProducts';
+import { DealTax, SoldTax } from './DealTax';
 import { StartDeal } from './StartDeal';
 import type { DealDetail, DealStatus, DealSummary } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
@@ -329,11 +330,13 @@ function DealPanel({
         <>
           <DealTerms deal={deal} onSaved={onChanged} />
           <DealProducts deal={deal} onChanged={onChanged} />
+          <DealTax deal={deal} onChanged={onChanged} />
         </>
       ) : (
         <>
           <p className="note">{t('deals.frozen')}</p>
           {deal.products.length === 0 ? null : <SoldProducts deal={deal} />}
+          {deal.taxLines.length === 0 ? null : <SoldTax deal={deal} />}
         </>
       )}
 

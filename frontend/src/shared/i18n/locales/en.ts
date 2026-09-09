@@ -619,6 +619,38 @@ export const en = {
   'products.saveFailed': 'That did not save.',
   'products.saveWhatIsSold': 'Save what is being sold',
 
+  // --- Tax on a deal (ADR-024) ----------------------------------------------
+  // Nothing computes this yet. The lede says so plainly rather than leaving a
+  // person to assume a rate table is behind the boxes.
+  'tax.title': 'Tax',
+  'tax.lede':
+    'Nothing works this out for you yet, so type what applies. Every line records that a person entered it, which is what a manager and an auditor need to see later.',
+  'tax.workedOutFrom': 'Address the tax is worked out from',
+  'tax.state': 'State or region',
+  'tax.county': 'County',
+  'tax.postalCode': 'Postcode',
+  'tax.country': 'Country',
+  'tax.colDescription': 'Tax',
+  'tax.colJurisdiction': 'Jurisdiction',
+  'tax.colBasis': 'Taxed on',
+  'tax.colRate': 'Rate %',
+  'tax.colAmount': 'Amount',
+  'tax.colSource': 'Where it came from',
+  'tax.descriptionOfLine': 'Tax on line {line}',
+  'tax.jurisdictionOfLine': 'Jurisdiction on line {line}',
+  'tax.basisOfLine': 'Amount taxed on line {line}',
+  'tax.rateOfLine': 'Rate on line {line}, as a percentage',
+  'tax.amountOfLine': 'Tax charged on line {line}',
+  'tax.none': 'No tax on this deal yet.',
+  'tax.totalIs': 'Tax on this deal: {total}.',
+  'tax.totalLabel': 'Tax',
+  'tax.addLine': 'Add a tax line',
+  'tax.save': 'Save the tax',
+  'tax.from.EnteredByPerson': 'a person entered it',
+  'tax.from.Pack': 'a rate table',
+  'tax.from.Vendor': 'a tax provider',
+  'tax.fromPack': '{pack} v{version}',
+
   // --- Starting a deal ------------------------------------------------------
   'startDeal.title': 'Start a deal',
   'startDeal.findBuyer': 'Find the buyer',
