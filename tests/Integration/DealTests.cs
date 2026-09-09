@@ -282,6 +282,123 @@ public sealed class DealTests(HostFixture fixture)
     /// it. A deal whose salesperson is the manager cannot be approved by them —
     /// that is the segregation-of-duties rule, not a quirk of the fixture.
     /// </summary>
+    // --- tax (ADR-024) -------------------------------------------------------
+
+    [Fact]
+    public async Task A_person_can_enter_the_tax_and_the_deal_records_that_a_person_did()
+    {
+        // The whole point of the Manual pack: a dealership in a jurisdiction
+        // nobody has written rates for is not blocked, and the record says so
+        // rather than presenting a typed figure as if a rate table produced it.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Manager, rooftopId);
+        await PriceAsync(dealId, Manager);
+
+        using var response = await PostAsync($"{Deals}/{dealId}/tax", Manager, new
+        {
+            lines = new[]
+            {
+                new
+                {
+                    description = "Sales tax",
+                    jurisdiction = "US-IL-SANGAMON",
+                    basis = 24000m,
+                    rate = 0.0625m,
+                    amount = 1500m,
+                    provenance = "EnteredByPerson",
+                },
+            },
+            taxedAt = new
+            {
+                administrativeArea = "IL",
+                county = "Sangamon",
+                postalCode = "62704",
+                country = "US",
+            },
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, because: await response.Content.ReadAsStringAsync());
+
+        var deal = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var line = deal.GetProperty("taxLines").EnumerateArray().Single();
+
+        line.GetProperty("provenance").GetString().Should().Be("EnteredByPerson");
+        line.GetProperty("packId").ValueKind.Should().Be(JsonValueKind.Null,
+            because: "a typed figure must not claim a pack produced it");
+
+        deal.GetProperty("taxTotal").GetDecimal().Should().Be(1500m);
+        deal.GetProperty("amountDue").GetDecimal().Should().Be(25500m,
+            because: "a total that leaves the tax out is the number disputed at delivery");
+
+        // State and county separately — the gap closed on 2026-09-05, and the
+        // reason the county column exists at all.
+        deal.GetProperty("taxedAt").GetProperty("administrativeArea").GetString().Should().Be("IL");
+        deal.GetProperty("taxedAt").GetProperty("county").GetString().Should().Be("Sangamon");
+    }
+
+    [Fact]
+    public async Task Tax_claiming_to_come_from_a_pack_it_cannot_name_is_refused()
+    {
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Manager, rooftopId);
+        await PriceAsync(dealId, Manager);
+
+        using var response = await PostAsync($"{Deals}/{dealId}/tax", Manager, new
+        {
+            lines = new[]
+            {
+                new
+                {
+                    description = "Sales tax",
+                    jurisdiction = "US-IL",
+                    basis = 24000m,
+                    rate = 0.0625m,
+                    amount = 1500m,
+                    provenance = "Pack",
+                },
+            },
+            taxedAt = new { administrativeArea = "IL", county = "Sangamon", postalCode = "62704", country = "US" },
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            because: "a rate-table figure that cannot name its table cannot be audited");
+    }
+
+    [Fact]
+    public async Task Tax_is_frozen_once_the_deal_leaves_draft()
+    {
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Manager, rooftopId);
+        await PriceAsync(dealId, Manager);
+
+        object tax(decimal amount) => new
+        {
+            lines = new[]
+            {
+                new
+                {
+                    description = "Sales tax",
+                    jurisdiction = "US-IL",
+                    basis = 24000m,
+                    rate = 0m,
+                    amount,
+                    provenance = "EnteredByPerson",
+                },
+            },
+            taxedAt = new { administrativeArea = "IL", county = "Sangamon", postalCode = "62704", country = "US" },
+        };
+
+        (await PostAsync($"{Deals}/{dealId}/tax", Manager, tax(1500m))).StatusCode
+            .Should().Be(HttpStatusCode.OK);
+
+        (await MoveAsync(dealId, Manager, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        using var late = await PostAsync($"{Deals}/{dealId}/tax", Manager, tax(1m));
+
+        late.StatusCode.Should().Be(HttpStatusCode.Conflict,
+            because: "the figures a manager approved are what the customer was told");
+    }
+
     private async Task<string> StartDealAsync(string email, string rooftopId, string? unitId = null)
     {
         var inventoryUnitId = unitId ?? await ReceiveAvailableUnitAsync(rooftopId);

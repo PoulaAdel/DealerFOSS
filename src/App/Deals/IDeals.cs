@@ -41,6 +41,16 @@ public interface IDeals
         IReadOnlyList<SoldProduct> products,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Replaces the tax on a Draft deal. Every line says where its figure came
+    /// from, and "a person typed it" is a valid answer — that is what lets the
+    /// product work in a jurisdiction nobody has written a pack for (ADR-024 R5).
+    /// </summary>
+    Task<Result<DealDetail>> SetTaxAsync(
+        Guid dealId,
+        DealTaxEntry tax,
+        CancellationToken cancellationToken);
+
     Task<Result<DealDetail>> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest change,
@@ -92,6 +102,16 @@ public sealed record DealDetail(
     Guid? ApprovedByUserId,
     DateTimeOffset? ApprovedAt,
     bool TermsAreOpen,
+
+    /// <summary>Every tax charged, each saying where its figure came from.</summary>
+    IReadOnlyList<TaxLineView> TaxLines,
+
+    /// <summary>The tax added up, so a screen does not have to.</summary>
+    decimal TaxTotal,
+
+    /// <summary>The address the tax was worked out from. Null when there is no tax.</summary>
+    TaxAddressView? TaxedAt,
+
     IReadOnlyList<DealHistoryEntry> History);
 
 public sealed record ChargeView(string Kind, string Description, decimal Amount);
@@ -167,3 +187,50 @@ public sealed record NewTradeIn(string Description, decimal Allowance, decimal P
 
 /// <summary>What a caller supplies to move a deal on.</summary>
 public sealed record DealStatusChangeRequest(string Status, string? Note = null);
+
+/// <summary>
+/// The tax to record on a deal, and the address it was worked out from.
+/// </summary>
+/// <remarks>
+/// The address is required as soon as there is a line, because it is how a rate
+/// is defended later. Sending no lines clears the tax and the address together.
+/// </remarks>
+public sealed record DealTaxEntry(
+    IReadOnlyList<NewTaxLine> Lines,
+    TaxAddressView? TaxedAt);
+
+/// <summary>
+/// One tax to charge. <c>Provenance</c> is required and says where the figure
+/// came from — a person, a jurisdiction pack, or a provider.
+/// </summary>
+/// <param name="Rate">
+/// A fraction, not a percentage: 0.0625 is six and a quarter percent. Zero when
+/// a person typed the amount rather than working it out from a rate.
+/// </param>
+public sealed record NewTaxLine(
+    string Description,
+    string Jurisdiction,
+    decimal Basis,
+    decimal Rate,
+    decimal Amount,
+    string Provenance,
+    string? PackId = null,
+    int? PackVersion = null);
+
+public sealed record TaxLineView(
+    Guid Id,
+    string Description,
+    string Jurisdiction,
+    decimal Basis,
+    decimal Rate,
+    decimal Amount,
+    string Provenance,
+    string? PackId,
+    int? PackVersion);
+
+/// <summary>State and county separately, because a US rate depends on both.</summary>
+public sealed record TaxAddressView(
+    string? AdministrativeArea,
+    string? County,
+    string? PostalCode,
+    string Country);

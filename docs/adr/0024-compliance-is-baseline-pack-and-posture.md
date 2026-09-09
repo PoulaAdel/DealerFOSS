@@ -267,6 +267,17 @@ the switches the dealership owns.
 
 - **The tax work can start without the market decision**, which is what D2 was
   blocking. `Manual` plus the basis arithmetic is buildable now and useful now.
+  **Built 2026-09-09**: `Deal.TaxableBasis(TaxBasisRules)` with the three flags,
+  `DealTaxLine` carrying amount, basis, rate, jurisdiction, pack and version,
+  `TaxAddress` recording what resolved it, `TaxProvenance` with
+  `EnteredByPerson` as a first-class answer, and `POST /deals/{id}/tax`. The
+  rate tables, the SST pack and a screen are not built. One deviation from R2/R3
+  worth naming: tax lines are **replaceable while the deal is Draft** and frozen
+  the moment it leaves — rather than `IAppendOnly` from the first keystroke —
+  because a salesperson fixing a postcode before anyone has seen the deal is not
+  correcting history, and forcing a reversing entry for it would bury the
+  corrections that matter. "Frozen at the moment of sale" is still exactly what
+  holds.
 - ~~**`customer.address.area` has to split.**~~ **Done 2026-09-05.** The gap
   ADR-023 found by measuring against STAR was on the critical path rather than a
   note: state and county are different jurisdictions and the county drives the

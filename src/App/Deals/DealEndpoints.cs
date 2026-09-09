@@ -40,6 +40,7 @@ internal static class DealEndpoints
         // F&I manager sells the products afterwards, so one call replacing both
         // would let either wipe the other's work.
         group.MapPost("/{dealId:guid}/products", SetProductsAsync);
+        group.MapPost("/{dealId:guid}/tax", SetTaxAsync);
         group.MapPost("/{dealId:guid}/status", ChangeStatusAsync);
     }
 
@@ -108,6 +109,20 @@ internal static class DealEndpoints
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
+    private static async Task<IResult> SetTaxAsync(
+        Guid dealId,
+        SetTaxRequest request,
+        IDeals deals,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await deals.SetTaxAsync(
+            dealId, new DealTaxEntry(request.Lines ?? [], request.TaxedAt), cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
     private static async Task<IResult> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest request,
@@ -125,3 +140,9 @@ internal static class DealEndpoints
 /// list, and sending an empty one is how a product is taken back off.
 /// </summary>
 internal sealed record SetProductsRequest(IReadOnlyList<SoldProduct>? Products);
+
+/// <summary>
+/// Sending no lines clears the tax. The address goes with them, because an
+/// address with no tax attached is a leftover rather than a record.
+/// </summary>
+internal sealed record SetTaxRequest(IReadOnlyList<NewTaxLine>? Lines, TaxAddressView? TaxedAt);

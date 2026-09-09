@@ -30,6 +30,7 @@ public sealed class Deal : AuditableEntity
     private readonly List<DealCharge> _charges = [];
     private readonly List<DealProduct> _products = [];
     private readonly List<DealStatusChange> _history = [];
+    private readonly List<DealTaxLine> _taxLines = [];
 
     public Guid Id { get; private set; }
 
@@ -80,14 +81,70 @@ public sealed class Deal : AuditableEntity
     /// </summary>
     public Money ProductGross => new(_products.Sum(p => p.Gross), Currency);
 
+    public IReadOnlyList<DealTaxLine> TaxLines => _taxLines;
+
+    /// <summary>
+    /// The address the tax was worked out from — the buyer's registration
+    /// address, which is what decides a vehicle rate, and not necessarily where
+    /// they get their post. Null until somebody sets the tax.
+    /// </summary>
+    public TaxAddress? TaxedAt { get; private set; }
+
+    /// <summary>Every tax on the deal, added up.</summary>
+    public Money TaxTotal => new(_taxLines.Sum(t => t.Amount), Currency);
+
     /// <summary>
     /// What the customer actually has to find: the subtotal, less what the trade
-    /// is worth, plus whatever is still owed on it.
+    /// is worth, plus whatever is still owed on it, plus tax.
     /// </summary>
     public Money AmountDue => new(
         _charges.Sum(c => c.Amount) + _products.Sum(p => p.Price)
-            - (Trade?.Allowance ?? 0m) + (Trade?.Payoff ?? 0m),
+            - (Trade?.Allowance ?? 0m) + (Trade?.Payoff ?? 0m)
+            + _taxLines.Sum(t => t.Amount),
         Currency);
+
+    /// <summary>
+    /// What this sale is taxed ON in a jurisdiction with these rules, before any
+    /// rate is applied. The arithmetic lives here rather than in a pack, because
+    /// a pack carries data and never logic (ADR-024 R1).
+    /// </summary>
+    /// <remarks>
+    /// The car, its accessories and any discount always count. The two kinds of
+    /// fee are separate questions, and the trade-in is the one a general retail
+    /// tax engine gets wrong — see <see cref="TaxBasisRules"/>.
+    ///
+    /// F&amp;I products are deliberately absent. Whether a service contract is
+    /// taxable is its own question with its own answer per state, and inventing
+    /// one here would be worse than the gap: it would be a wrong number that
+    /// looks like a considered one. When a pack needs it, it arrives as a fourth
+    /// flag.
+    ///
+    /// Never negative. A trade worth more than the car is a real deal and a
+    /// negative taxable amount is not a real tax.
+    /// </remarks>
+    public Money TaxableBasis(TaxBasisRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+
+        var basis = _charges
+            .Where(c => c.Kind switch
+            {
+                ChargeKind.VehiclePrice => true,
+                ChargeKind.Accessory => true,
+                ChargeKind.Discount => true,
+                ChargeKind.DocumentationFee => rules.DocumentationFeeIsTaxable,
+                ChargeKind.Fee => rules.OtherFeesAreTaxable,
+                _ => false,
+            })
+            .Sum(c => c.Amount);
+
+        if (rules.TradeInReducesBasis)
+        {
+            basis -= Trade?.Allowance ?? 0m;
+        }
+
+        return new Money(Math.Max(0m, basis), Currency);
+    }
 
     public bool TermsAreOpen => DealStatusRules.TermsAreOpen(Status);
 
@@ -204,6 +261,55 @@ public sealed class Deal : AuditableEntity
 
         _products.Clear();
         _products.AddRange(replacement);
+    }
+
+    /// <summary>
+    /// Replaces the tax on the deal, together with the address it was worked out
+    /// from. Only while it is Draft — after that the figures are what a manager
+    /// approved and what the customer was told.
+    /// </summary>
+    /// <remarks>
+    /// REPLACE WHILE DRAFT, FROZEN AFTER, and that is how ADR-024 R3's "frozen at
+    /// the moment of sale" is actually delivered. The alternative considered was
+    /// making these rows <c>IAppendOnly</c> so a correction had to be a reversing
+    /// entry; that is right for a posted ledger and wrong here, because a
+    /// salesperson fixing a postcode before anyone has seen the deal is not
+    /// correcting history, and forcing a reversal for it would fill the record
+    /// with noise that hides the corrections that matter. Once the deal leaves
+    /// Draft nothing can touch these lines, which is the property that counts.
+    /// </remarks>
+    public void SetTax(
+        IEnumerable<(string Description, string Jurisdiction, decimal Basis, decimal Rate, decimal Amount,
+            TaxProvenance Provenance, string? PackId, int? PackVersion)> lines,
+        TaxAddress? taxedAt)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+
+        if (!TermsAreOpen)
+        {
+            throw new InvalidOperationException(
+                $"A {Status} deal is frozen. Move it back to Draft to change the tax.");
+        }
+
+        var replacement = lines
+            .Select(l => new DealTaxLine(
+                Guid.NewGuid(), Id, l.Description, l.Jurisdiction,
+                l.Basis, l.Rate, l.Amount, l.Provenance, l.PackId, l.PackVersion))
+            .ToList();
+
+        // Somebody has to be able to say where every figure came from, and an
+        // address is how a rate is defended. Tax with no address is a number
+        // nobody can check.
+        if (replacement.Count > 0 && taxedAt is null)
+        {
+            throw new ArgumentException(
+                "Tax needs the address it was worked out from — that is what decides the rate.",
+                nameof(taxedAt));
+        }
+
+        _taxLines.Clear();
+        _taxLines.AddRange(replacement);
+        TaxedAt = replacement.Count == 0 ? null : taxedAt;
     }
 
     /// <summary>

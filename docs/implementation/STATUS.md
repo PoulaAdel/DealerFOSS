@@ -74,7 +74,7 @@ exists.
 | A CLI | **Spec, and doc 04 §8 claimed it existed until 2026-08-15** | — |
 | Warranty claim submission, manufacturer APIs, CSI | **Spec** — blocked on an OEM relationship | doc 11 §3 |
 | Credit reports, auctions, title history, plate lookup | **Spec** — blocked on commercial contracts | doc 11 §3 |
-| Tax by jurisdiction | **Spec** — no longer blocked. D2 settled 2026-09-05 by [ADR-024](../adr/0024-compliance-is-baseline-pack-and-posture.md); nothing is built yet | doc 11 §3.3 |
+| Tax on a deal | **API only** — the basis, tax as evidence with provenance, and person-entered tax (2026-09-09). No rate tables, no pack data, no screen | doc 11 §3.3 |
 | Titling and registration (EVR/ERT) | **Spec** — still blocked, on a state list and a Service Provider contract per state | doc 11 §3.3 |
 
 ## Exit criteria
@@ -976,3 +976,19 @@ to come.
   **What this does not say** is that I2 is behind. It was never claimed to be started, and the seam the missing pieces would hang from is real: compiled discovery, a versioned contract envelope, per-feed cursors with hold counting, quarantine with retention, run history, and CSV in and out with control totals and checksums. What changed today is that the gap is now written down instead of assumed either way.
 
   Evidence: 43 cited integration tests run and passing; `dotnet build` 0/0, `dotnet test` 694/694.
+
+- **2026-09-09 — a deal can carry tax, and every figure says where it came from.** The first build under [ADR-024](../adr/0024-compliance-is-baseline-pack-and-posture.md), and the part that needed no rate table and no market decision.
+
+  **The taxable basis is ours, and it is the part a general tax engine gets wrong.** `Deal.TaxableBasis(TaxBasisRules)` reads three flags a pack supplies — does the trade-in reduce the basis, is the documentation fee taxable, are other fees taxable — and does the arithmetic here, in code under test, because a pack carries data and never logic (R1). The pair of tests that matters is the same deal scored twice: **$19,500 in most states and $29,500 in California**, because CDTFA Publication 34 taxes the full price where most states tax price-less-trade. Ten thousand dollars of basis, on one ordinary deal, in a direction no general retail engine can express.
+
+  **`ChargeKind.DocumentationFee` is now its own kind**, separate from `Fee`. Tax treats them differently — the dealer's doc fee is part of the taxable price in most states while registration and title are government pass-throughs — and a basis calculation cannot tell them apart if they share a kind. **Named and not migrated:** existing deals that recorded a doc fee as `Fee` still read as `Fee`, so they would be taxed under the other flag. There are no real deals yet, so nothing was rewritten.
+
+  **A tax line is the answer, not a pointer to one** (R3). It carries the amount, the basis it was worked out on, the rate, the jurisdiction, the pack and version that produced it, and the address that resolved it. Rate is stored at six decimal places rather than money precision, because 8.6375% is a real combined US rate and rounding it to 8.64% would hide the rounding somewhere nobody can see.
+
+  **Provenance is required, and "a person typed it" is a real answer** (R4, R5). That is what lets the product work in a jurisdiction nobody has written a pack for — which is every jurisdiction today. Two refusals guard it in both directions: a line claiming `Pack` that cannot name its pack and version is rejected as unauditable, and a person-entered line carrying a pack id is rejected for claiming an authority nobody exercised. Tax with no address is refused too, because an address is how a rate is defended later.
+
+  **One deviation from a literal reading of R3, named rather than hidden.** Tax lines are **replaceable while the deal is Draft** and frozen the moment it leaves, rather than `IAppendOnly` from the first keystroke. A salesperson fixing a postcode before anyone has seen the deal is not correcting history, and forcing a reversing entry for it would fill the record with noise that hides the corrections that matter. "Frozen at the moment of sale" holds exactly as written.
+
+  **Not built, and none of it pretends to be:** rate tables, the `JurisdictionPacks` / `JurisdictionRates` / `JurisdictionRules` host-catalog data, the SST-23 pack, the resolution order, and any screen. Tax is API-only today.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **711/711** (was 694) — 14 new unit tests on the basis and the line, 3 new integration tests through the real endpoint — `verify-e2e.ps1` PASS.

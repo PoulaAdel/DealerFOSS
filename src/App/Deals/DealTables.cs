@@ -49,6 +49,7 @@ internal sealed class DealConfiguration : IEntityTypeConfiguration<Deal>
         builder.Ignore(x => x.Subtotal);
         builder.Ignore(x => x.AmountDue);
         builder.Ignore(x => x.TermsAreOpen);
+        builder.Ignore(x => x.TaxTotal);
 
         // The desk list: "what is open at my lot, and what is waiting for me".
         builder.HasIndex(x => new { x.RooftopId, x.Status });
@@ -86,6 +87,25 @@ internal sealed class DealConfiguration : IEntityTypeConfiguration<Deal>
             .WithOne()
             .HasForeignKey(h => h.DealId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // The address the tax was resolved from, stored on the deal as a snapshot
+        // rather than a reference. County is its own column beside the state
+        // because a US rate depends on both.
+        builder.OwnsOne(x => x.TaxedAt, at =>
+        {
+            at.Property(a => a.AdministrativeArea).HasColumnName("TaxedAtArea").HasMaxLength(120);
+            at.Property(a => a.County).HasColumnName("TaxedAtCounty").HasMaxLength(120);
+            at.Property(a => a.PostalCode).HasColumnName("TaxedAtPostalCode").HasMaxLength(20);
+            at.Property(a => a.Country).HasColumnName("TaxedAtCountry").HasMaxLength(2);
+        });
+
+        // Auto-included for the same reason as charges and products: every read
+        // of a deal needs its total, and the total includes tax.
+        builder.HasMany(x => x.TaxLines)
+            .WithOne()
+            .HasForeignKey(t => t.DealId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(x => x.TaxLines).AutoInclude();
 
         builder.ConfigureAudit();
     }
@@ -145,5 +165,28 @@ internal sealed class DealStatusChangeConfiguration : IEntityTypeConfiguration<D
         builder.Property(x => x.AmountAtChange).HasPrecision(18, 2);
         builder.Property(x => x.Sequence).ValueGeneratedOnAdd().UseIdentityColumn();
         builder.HasIndex(x => new { x.DealId, x.OccurredAt, x.Sequence });
+    }
+}
+
+internal sealed class DealTaxLineConfiguration : IEntityTypeConfiguration<DealTaxLine>
+{
+    public void Configure(EntityTypeBuilder<DealTaxLine> builder)
+    {
+        builder.ToTable("DealTaxLines", DealSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.Description).HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Jurisdiction).HasMaxLength(60).IsRequired();
+        builder.Property(x => x.Basis).HasPrecision(18, 2);
+
+        // Six decimal places, not two. A rate is not money: 0.0625 is a real
+        // rate and several US local rates run to four and five places once a
+        // district tax is added. Storing it at money precision would round
+        // 8.6375% to 8.64% and put the rounding somewhere nobody can see it.
+        builder.Property(x => x.Rate).HasPrecision(9, 6);
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.Provenance).HasConversion<string>().HasMaxLength(20);
+        builder.Property(x => x.PackId).HasMaxLength(60);
+        builder.HasIndex(x => x.DealId);
     }
 }

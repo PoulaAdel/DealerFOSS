@@ -84,4 +84,13 @@ public enum ChargeKind
 
     /// <summary>Mats, paint protection, a tow bar.</summary>
     Accessory = 3,
+
+    /// <summary>
+    /// The dealer's own documentation charge. Its OWN kind rather than a Fee,
+    /// because tax treats it differently: it is part of the taxable price in
+    /// most US states while registration and title fees are not, and several
+    /// states cap what may be charged for it. A basis calculation cannot make
+    /// that distinction if the two share a kind (ADR-024).
+    /// </summary>
+    DocumentationFee = 4,
 }

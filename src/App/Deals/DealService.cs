@@ -381,6 +381,66 @@ public sealed class DealService(
         return await DescribeAsync(deal, cancellationToken);
     }
 
+    public async Task<Result<DealDetail>> SetTaxAsync(
+        Guid dealId,
+        DealTaxEntry tax,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(tax);
+
+        var deal = await LoadAsync(dealId, tracked: true, cancellationToken);
+        if (deal is null)
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        var lines = new List<(string, string, decimal, decimal, decimal, TaxProvenance, string?, int?)>();
+
+        foreach (var line in tax.Lines)
+        {
+            // Parsed, never defaulted. A line whose provenance did not parse
+            // would otherwise silently become "a person typed it", which is the
+            // one answer nobody can challenge.
+            if (!Enum.TryParse<TaxProvenance>(line.Provenance, ignoreCase: true, out var provenance))
+            {
+                return Result.Failure<DealDetail>(DealErrors.UnknownTaxProvenance);
+            }
+
+            lines.Add((
+                line.Description, line.Jurisdiction, line.Basis, line.Rate,
+                line.Amount, provenance, line.PackId, line.PackVersion));
+        }
+
+        TaxAddress? taxedAt;
+
+        try
+        {
+            taxedAt = tax.TaxedAt is null
+                ? null
+                : TaxAddress.Create(
+                    tax.TaxedAt.AdministrativeArea, tax.TaxedAt.County,
+                    tax.TaxedAt.PostalCode, tax.TaxedAt.Country);
+
+            deal.SetTax(lines, taxedAt);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<DealDetail>(Error.Validation("deals.invalid_tax", ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Failure<DealDetail>(Error.Conflict("deals.terms_frozen", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        return await DescribeAsync(deal, cancellationToken);
+    }
+
     public async Task<Result<DealDetail>> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest change,
@@ -670,6 +730,17 @@ public sealed class DealService(
             deal.ApprovedByUserId,
             deal.ApprovedAt,
             deal.TermsAreOpen,
+            deal.TaxLines
+                .Select(t => new TaxLineView(
+                    t.Id, t.Description, t.Jurisdiction, t.Basis, t.Rate, t.Amount,
+                    t.Provenance.ToString(), t.PackId, t.PackVersion))
+                .ToList(),
+            deal.TaxTotal.Amount,
+            deal.TaxedAt is null
+                ? null
+                : new TaxAddressView(
+                    deal.TaxedAt.AdministrativeArea, deal.TaxedAt.County,
+                    deal.TaxedAt.PostalCode, deal.TaxedAt.Country),
             history
                 .OrderBy(h => h.OccurredAt)
                 .ThenBy(h => h.Sequence)
@@ -698,6 +769,10 @@ internal static class DealErrors
     public static Error UnknownStatus { get; } = Error.Validation(
         "deals.unknown_status",
         "That is not a deal status.");
+
+    public static Error UnknownTaxProvenance { get; } = Error.Validation(
+        "deals.unknown_tax_provenance",
+        "A tax line must say where its figure came from: EnteredByPerson, Pack, or Vendor.");
 
     public static Error UnknownChargeKind { get; } = Error.Validation(
         "deals.unknown_charge_kind",
