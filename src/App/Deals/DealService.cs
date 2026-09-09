@@ -578,8 +578,17 @@ public sealed class DealService(
             deal.Id.ToString(),
             deal.Currency,
             VehiclePrice: deal.Charges.Where(c => c.Kind == ChargeKind.VehiclePrice).Sum(c => c.Amount),
+            // DocumentationFee is listed explicitly and must stay listed. It
+            // became its own ChargeKind on 2026-09-09 so the taxable basis could
+            // treat it differently from a registration fee — and this mapping was
+            // not updated, so the fee sat in AmountDue with nothing credited
+            // against it and every delivery carrying one was refused for not
+            // balancing, out by exactly the fee. A new ChargeKind has to be
+            // answered here as well as in TaxableBasis.
             Fees: deal.Charges
-                .Where(c => c.Kind is ChargeKind.Fee or ChargeKind.Accessory)
+                .Where(c => c.Kind is ChargeKind.Fee
+                    or ChargeKind.Accessory
+                    or ChargeKind.DocumentationFee)
                 .Sum(c => c.Amount),
             Discount: deal.Charges.Where(c => c.Kind == ChargeKind.Discount).Sum(c => c.Amount),
             TradeAllowance: deal.Trade?.Allowance ?? 0m,
@@ -591,6 +600,7 @@ public sealed class DealService(
             // they are. Zero when nothing was sold with the car.
             ProductRevenue: deal.ProductRevenue.Amount,
             ProductCost: deal.ProductCost.Amount,
+            TaxCollected: deal.TaxTotal.Amount,
             Memo: $"Delivered deal {deal.Id}");
 
     private async Task<Deal?> LoadAsync(Guid dealId, bool tracked, CancellationToken cancellationToken)

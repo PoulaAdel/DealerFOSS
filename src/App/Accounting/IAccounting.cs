@@ -156,6 +156,14 @@ public sealed record DeliveryPosting(
     /// </summary>
     decimal ProductRevenue,
     decimal ProductCost,
+
+    /// <summary>
+    /// Sales tax taken from the customer. Credited to a LIABILITY, never to
+    /// revenue: the dealership is holding it for the state, not earning it.
+    /// Included in <c>AmountDue</c>, which is why leaving it out here makes the
+    /// entry fail to balance by exactly the tax.
+    /// </summary>
+    decimal TaxCollected,
     string Memo);
 
 /// <summary>

@@ -890,6 +890,11 @@ public sealed class AccountingService(
         Line(AccountCodes.CostOfFinanceProducts, d.ProductCost, 0m, "Paid to the providers");
         Line(AccountCodes.Cash, 0m, d.ProductCost, "Paid out to the providers");
 
+        // Tax the dealership is holding for the state. A liability, not revenue —
+        // and the line without which the entry does not balance, because
+        // AmountDue above already includes it.
+        Line(AccountCodes.SalesTaxPayable, 0m, d.TaxCollected, "Sales tax collected");
+
         // Relieving inventory at cost, so gross profit is visible.
         Line(AccountCodes.CostOfVehicleSales, d.VehicleCost, 0m, "Cost of the vehicle sold");
         Line(AccountCodes.VehicleInventory, 0m, d.VehicleCost, "Vehicle off the lot");

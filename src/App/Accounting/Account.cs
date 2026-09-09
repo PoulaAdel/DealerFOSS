@@ -145,6 +145,22 @@ public static class AccountCodes
     public const string InternalServiceCharge = "5400";
 
     /// <summary>
+    /// Sales tax taken from a customer and owed to the state. A LIABILITY, and
+    /// getting that wrong is not a presentation detail: the dealership never owns
+    /// this money, it collects it on somebody else's behalf and remits it. Booking
+    /// it as revenue would inflate the top line by the tax on every car and make
+    /// the return that eventually falls due look like a loss.
+    /// </summary>
+    /// <remarks>
+    /// Added 2026-09-09 with the first account of its kind in this chart. The
+    /// delivery posting debited the full amount due — tax included, since tax
+    /// landed on the deal that morning — and credited nothing against it, so a
+    /// deal carrying tax could not be delivered at all. Found by seeding a
+    /// dealership's worth of data and watching every delivery refuse.
+    /// </remarks>
+    public const string SalesTaxPayable = "2100";
+
+    /// <summary>
     /// The chart every dealership starts with, in one place.
     ///
     /// It used to be written out twice — once in the development seeder and once
@@ -165,6 +181,7 @@ public static class AccountCodes
         (VehicleInventory, "Vehicle inventory", AccountKind.Asset),
         (TradeInventory, "Trade-in inventory", AccountKind.Asset),
         (PartsInventory, "Parts inventory", AccountKind.Asset),
+        (SalesTaxPayable, "Sales tax payable", AccountKind.Liability),
         (VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
         (FeeRevenue, "Fee income", AccountKind.Revenue),
         (LabourRevenue, "Labour sales", AccountKind.Revenue),

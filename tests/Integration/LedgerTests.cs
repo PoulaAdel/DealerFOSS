@@ -77,6 +77,99 @@ public sealed class LedgerTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task A_car_sold_with_tax_on_it_can_actually_be_delivered()
+    {
+        // The regression this guards against shipped on 2026-09-09 and lasted
+        // half a day. Tax landed on the deal that morning and went into
+        // AmountDue; the delivery posting debited the full amount and credited
+        // nothing against the tax, so every delivery of a taxed car was refused
+        // with "an entry must balance", out by exactly the tax. No test caught
+        // it because no test delivered a deal that had any.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var suffix = $"{Guid.NewGuid():N}"[..8].ToUpperInvariant();
+
+        var customerId = await CreatedIdAsync("/api/v1/customers", new
+        {
+            kind = "Person", firstName = "Taxed", lastName = $"Delivery{suffix}",
+        });
+
+        var vehicleId = await CreatedIdAsync("/api/v1/vehicles", new
+        {
+            vin = $"TAXDEL{suffix}"[..13], modelYear = 2021, make = "Toyota", model = "Corolla",
+            vinExceptionReason = "Synthetic VIN for a ledger test.",
+        });
+
+        var unitId = await CreatedIdAsync("/api/v1/inventory", new
+        {
+            vehicleId, rooftopId, stockNumber = $"T{suffix}",
+            costAmount = 16000m, costCurrency = "USD",
+        });
+
+        using var available = await PostAsync($"/api/v1/inventory/{unitId}/status", Manager,
+            new { status = "Available" });
+        available.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var dealId = await CreatedIdAsync(Deals, new
+        {
+            rooftopId, customerId, inventoryUnitId = unitId, currency = "USD",
+            salespersonUserId = DevelopmentSeeder.DevUsers.Salesperson,
+        });
+
+        // A documentation fee as well as the car, because DocumentationFee became
+        // its own ChargeKind on the same day tax arrived and was left out of the
+        // posting's fee mapping — a second imbalance, out by exactly the fee, and
+        // missed for exactly the same reason: no test used the new kind.
+        using var terms = await PostAsync($"{Deals}/{dealId}/terms", Manager, new
+        {
+            charges = new object[]
+            {
+                new { kind = "VehiclePrice", description = "The car", amount = 20000m },
+                new { kind = "DocumentationFee", description = "Documentation", amount = 499m },
+            },
+        });
+        terms.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var taxed = await PostAsync($"{Deals}/{dealId}/tax", Manager, new
+        {
+            lines = new[]
+            {
+                new
+                {
+                    description = "Sales tax", jurisdiction = "US-IL",
+                    basis = 20000m, rate = 0.0725m, amount = 1450m,
+                    provenance = "EnteredByPerson",
+                },
+            },
+            taxedAt = new
+            {
+                administrativeArea = "IL", county = "Sangamon", postalCode = "62704", country = "US",
+            },
+        });
+        taxed.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        foreach (var status in new[] { "Submitted", "Approved", "Delivered" })
+        {
+            using var moved = await PostAsync($"{Deals}/{dealId}/status", Manager, new { status });
+            moved.StatusCode.Should().Be(HttpStatusCode.OK,
+                because: $"{status} must succeed on a taxed deal: "
+                    + await moved.Content.ReadAsStringAsync());
+        }
+
+        var entry = await EntryForAsync(dealId);
+
+        entry.GetProperty("totalDebits").GetDecimal().Should()
+            .Be(entry.GetProperty("totalCredits").GetDecimal());
+
+        // Credited to a liability. The dealership is holding this for the state,
+        // not earning it — booking it as revenue would inflate the top line by
+        // the tax on every car sold.
+        var taxLine = entry.GetProperty("lines").EnumerateArray()
+            .Single(l => l.GetProperty("accountCode").GetString() == "2100");
+
+        taxLine.GetProperty("credit").GetDecimal().Should().Be(1450m);
+    }
+
+    [Fact]
     public async Task A_delivery_is_never_posted_twice()
     {
         var sale = await DeliverAsync();

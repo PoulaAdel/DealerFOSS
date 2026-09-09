@@ -1008,3 +1008,21 @@ to come.
   **Still not built:** rate tables, the host-catalog pack data, the SST-23 pack, and the resolution order. Nothing computes tax; a person enters it, and the record says so.
 
   Evidence: `dotnet build` 0/0, `dotnet test` 711/711; `npm audit` clean at high, typecheck clean, **310 frontend tests** (was 303), production build clean.
+
+- **2026-09-09 — a dealership with 484 customers in it, and the two bugs that found.** The demo dataset exists because the maintainer said progress was not visible, and the measurement agreed: of 50 commits in 30 days, roughly seven changed anything a dealership would notice, and the demo database held **three customers, three cars and two deals**. Every finished feature looked like a prototype against empty tables.
+
+  `DemoData` fills a seeded tenant with **484 customers, 214 cars across every stock state, 143 enquiries, 94 deals of which 42 are delivered and 91 carry tax, and 162 repair orders with 84 invoiced**, spread over 95 days so the dashboard has a previous month to compare. Behind `Seed:Demo`, off by default — the test suite and `verify-e2e` both assert against the small set — deterministic from one fixed seed, and idempotent.
+
+  **It goes through the services, not through `TenantDb`.** Delivering a deal posts to the ledger and invoicing a repair order posts to the ledger; writing rows directly would have meant re-implementing both postings where they would drift. The result is a trial balance of **1,860,434.89 on each side** that balances because the application balanced it.
+
+  **And that is how it found two shipped bugs, both from this morning's tax commit, both invisible to the test suite.**
+
+  **A deal with tax on it could not be delivered at all.** Tax went into `AmountDue`, the delivery posting debited the full amount and credited nothing against it, so every taxed delivery was refused with "an entry must balance" — out by exactly the tax. There was no account for it either: sales tax collected is a **liability**, money the dealership holds for the state and never owns, and `AccountCodes` had no liability at all until now. Booking it as revenue would have inflated the top line by the tax on every car.
+
+  **A deal with a documentation fee could not be delivered either.** `ChargeKind.DocumentationFee` became its own kind this morning so the taxable basis could treat it differently from a registration fee, and the posting's fee mapping was never told — so the fee sat in the amount due with nothing credited against it, out by exactly 499.00.
+
+  **Both were missed for the same reason**, and it is worth naming: no test delivered a deal that carried tax, and no test used the new charge kind. The features were tested; their effect on the *next* step was not. One integration test now covers both, and reverting either fix fails it while the untaxed delivery test carries on passing — which is exactly how the gap looked from inside.
+
+  **The seeder resumes rather than restarting.** Each section guards itself, because the first run died on a VIN with 480 customers already written and a single top-level guard would have left the tenant permanently half full. A later run finished the job, and a `DeliverApprovedAsync` step recovered 53 deals stranded at Approved by the balance bug — which is why no database had to be dropped.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **712/712** (was 711), `verify-e2e.ps1` PASS.

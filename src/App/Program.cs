@@ -467,6 +467,14 @@ if (tenancyEnabled
     && app.Configuration.GetValue<bool>("Seed:Enabled"))
 {
     await DevelopmentSeeder.RunAsync(app, hostConnection!);
+
+    // A dealership with real volume in it, so screens can be judged against
+    // hundreds of rows rather than three. Its own flag, because the test suite
+    // and verify-e2e both assert against the small set above.
+    if (app.Configuration.GetValue<bool>("Seed:Demo"))
+    {
+        await DemoData.PopulateAsync(app, "northgroup", "citymotors");
+    }
 }
 
 app.Run();

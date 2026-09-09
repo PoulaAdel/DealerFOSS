@@ -14,6 +14,25 @@
     "HostCatalog": "Server=localhost,1433;Database=DealerFOSS_Host;User Id=sa;Password=Your_dev_password_here;TrustServerCertificate=True;Encrypt=True"
   },
 
+  "//Seed": [
+    "Enabled creates two sample dealerships with a handful of records each —",
+    "enough to sign in and see every screen working.",
+    "",
+    "Demo fills them out: around 480 customers, 210 cars across every stock",
+    "state, 140 enquiries, 90 deals from draft to delivered with tax, and 160",
+    "repair orders, spread over three months so the dashboard has a previous",
+    "month to compare against. Deliveries and invoices go through the real",
+    "services, so the ledger balances because the application balanced it.",
+    "",
+    "Leave Demo off if you are running the test suite or verify-e2e: both assert",
+    "against the small set. It is deterministic and idempotent, so turning it on",
+    "later gives the same dealership and running twice changes nothing."
+  ],
+  "Seed": {
+    "Enabled": true,
+    "Demo": false
+  },
+
   "//Secrets": [
     "Encrypts tenant connection strings at rest. Leave this out in Development and",
     "the application uses a pass-through instead — convenient locally, and it",
