@@ -58,14 +58,15 @@
      token is why that pair is stated once instead of hard-coded twice. */
   --on-accent: #ffffff;
 
-  /* THE MARK USES --accent AND HAS NO COLOUR OF ITS OWN. A brand red was tried
-     on 2026-09-09 and dropped: --accent is not decoration here, it is the "in
-     progress" colour on seven chips — reconditioning, provisioning, submitted,
-     appointment, warn, and two pay types — and --fail is already a red, so a
-     second red would have had "submitted" and "failed" reading as the same
-     thing. One accent, used for identity and for state, is the smaller idea and
-     the correct one. Measured 5.3:1 on --surface, comfortably past the 3:1 a
-     large graphic needs. */
+  /* The logo's two colours. THEY BELONG TO IDENTITY ONLY — the mark and the
+     wordmark, never a chip, a button or a state. --accent already means "in
+     progress" on seven chips and --fail is already a red; letting the brand red
+     leak into either would make "submitted" and "failed" read as the same thing.
+
+     The light theme uses the artwork's own values. Measured on --surface: navy
+     10.69:1, red 5.35:1. */
+  --brand-blue: #1b3e6f;
+  --brand-red: #d0202e;
   --done: #256a4d;
   --done-soft: #dff0e7;
   --fail: #a5342b;
@@ -90,6 +91,16 @@
   --accent: #e0973f;
   --accent-soft: #33240f;
   --on-accent: #16191f;
+
+  /* THE ARTWORK'S NAVY IS UNUSABLE HERE AND THAT IS NOT A JUDGEMENT CALL.
+     #1b3e6f measures 1.62:1 against this surface — invisible, not merely dim.
+     #6ba7e8 is the same hue lifted until it reads: 6.85:1. The red is a milder
+     case, 3.23:1, which passes for a large graphic and fails for anything
+     smaller, so it is lifted to #ff5c60 at 5.72:1. The light theme keeps the
+     artwork's exact colours; only this theme deviates, and only because the
+     alternative is a wordmark nobody can see. */
+  --brand-blue: #6ba7e8;
+  --brand-red: #ff5c60;
   --done: #4fae83;
   --done-soft: #12261d;
   --fail: #e07a6d;
@@ -371,14 +382,21 @@ textarea {
   color: var(--ink);
 }
 
-/* The colour lives here rather than on the brand span, because the name beside
-   the mark is a bare text node and would inherit a colour set on the parent —
-   giving an accent-coloured wordmark next to an accent-coloured mark, which is
-   the same thing said twice. */
 .mark {
   flex: none;
   display: block;
   color: var(--accent);
+}
+
+/* Two colours, the way the logo splits them. The spans butt together with no
+   space between them, so a screen reader still says "DealerFOSS" — check that
+   before adding any padding here. */
+.wordmark__lead {
+  color: var(--brand-blue);
+}
+
+.wordmark__tail {
+  color: var(--brand-red);
 }
 
 /* Wraps. The bar itself already wraps, but a nav that does not will push the

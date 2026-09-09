@@ -65,3 +65,34 @@ export function Mark({ size = 26, title }: { size?: number; title?: string }) {
     </svg>
   );
 }
+
+/**
+ * The name, in the logo's two colours: "Dealer" navy, "FOSS" red.
+ *
+ * Split here rather than in the message catalogue on purpose. `app.name` is the
+ * identical string "DealerFOSS" in all six locales — the i18n test calls it "a
+ * product name" — so this is a brand constant, not a translation, and slicing a
+ * translated string at a fixed index would be the fragile version of the same
+ * thing.
+ *
+ * THE HIDDEN COPY IS NOT BELT AND BRACES. Two coloured spans looked like they
+ * would concatenate to "DealerFOSS"; they do not. The accessible name algorithm
+ * puts a SPACE between adjacent element children, so assistive technology
+ * announced "Dealer FOSS" and the shell test stopped finding its heading. The
+ * visible halves are therefore hidden from the accessibility tree and the real
+ * name is given once, as text. Remove either half of that arrangement and the
+ * name silently gains a space again.
+ */
+export function Wordmark() {
+  return (
+    <span className="wordmark">
+      <span aria-hidden="true" className="wordmark__lead">
+        Dealer
+      </span>
+      <span aria-hidden="true" className="wordmark__tail">
+        FOSS
+      </span>
+      <span className="visually-hidden">DealerFOSS</span>
+    </span>
+  );
+}

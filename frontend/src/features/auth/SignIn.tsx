@@ -33,7 +33,7 @@ import { useSession } from '../../app/session';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { AppearanceControls } from '../../app/AppearanceControls';
-import { Mark } from '../../app/Mark';
+import { Mark, Wordmark } from '../../app/Mark';
 import { passkeysAvailable, usePasskey } from './webauthn';
 
 type Stage = { kind: 'credentials' } | { kind: 'code'; challengeToken: string };
@@ -174,7 +174,7 @@ export function SignIn() {
 
       <div className="signin__brand">
         <Mark size={44} />
-        <h1>{t('app.name')}</h1>
+        <h1><Wordmark /></h1>
       </div>
 
       {stage.kind === 'credentials' ? (
