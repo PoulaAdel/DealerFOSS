@@ -64,7 +64,7 @@ exists.
 | Month in review, stock aging | API · Screen | `App/Reporting` |
 | Printable paperwork (HTML, print stylesheet) | API · Screen | `App/Documents` |
 | Import from a file; export a dealership's records | API · Screen | `App/DataMigration` |
-| Connector runtime: cursors, runs, quarantine | API · Screen | `App/Integrations` |
+| Connector runtime: cursors, runs, quarantine | **API only** — corrected 2026-09-09, this row claimed a Screen and there is none: no connectors feature in the frontend, no route, so the certification status reaches no reader | `App/Integrations` |
 | Six languages, RTL for Arabic | Screen | `shared/i18n` |
 | A live connector to any real DMS | **Spec** — needs a provider agreement | doc 05 |
 | OIDC / SAML federation | **Spec** — needs an identity provider to test against | doc 06 §2 |
@@ -133,6 +133,33 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
   **Seen, on a real browser, 2026-08-03.** The earlier claim that this could only be checked by hand was wrong — an automated browser reaches this machine's localhost. Every screen was signed into and walked at 1280 and at 375 — the shell, stock list, trial balance, enrolment (QR drawn on its white quiet zone), the console, and the restricted administrator state. The page does not scroll horizontally at either width; the wide table scrolls inside its own container as intended. Two real defects were found and fixed, neither of which a DOM test could have caught. Still needing a person: whether a phone camera physically reads that QR code *(automated)*
 - [x] Tenant creation, migration, backup, and restore rehearsed — `deploy/backup.ps1` backs up the host catalog and every tenant with a manifest and per-file SHA-256; `deploy/restore.ps1 -Verify` restores alongside the original under a prefix, re-points the catalog, checks the restored databases are not empty, and then **runs the full end-to-end check against the restored copy**. Rehearsed 2026-08-04 on LocalDB: 3 databases out and back, `verify-e2e.ps1` PASS against `Restored_DealerFOSS_Host`. Damaging a manifest checksum was rehearsed too — the restore refuses before touching anything *(automated)*
 
+
+### I2 — integration runtime, migration, reconciliation, and export
+
+**Scored for the first time on 2026-09-09**, by running the checks rather than
+reading the code. This phase was never given a scorecard, while a good deal of
+I2-shaped work landed out of order — [doc 09](../09-Implementation-Roadmap.md)
+§4 requires that state be recorded here, and it had not been. Two of the seven
+criteria are met, three are part-met, and two are not met.
+
+- [x] **Killing and restarting a sync cannot lose committed records or advance an unsafe checkpoint.** Proven by five tests in `ConnectorRuntimeTests`: a provider that skips the start of a window **does not get the cursor moved past the hole**; a held window is asked for again next run rather than skipped; a provider that returns nothing still leaves a cursor a later run can use; a run that never finished leaves the evidence that it started; and two cursors for one feed are refused by the database. What is *not* tested is a literal process kill — the checkpoint safety is what is proven, and that is the substance of the criterion *(automated)*
+- [ ] **Duplicate, reordered, delete and partial-page tests pass** — two of four. **Duplicate** holds twice over: the same batch delivered twice produces one set of customers, and importing the same file twice creates no second copy. **Partial page** is the cursor-hole test above. **Reordered has no test at all.** **Deletes are not modelled** — there is no tombstone and no `IsDeleted` anywhere in `src/App/Integrations`, so a record removed at the provider is invisible to us
+- [ ] **Quarantined records are inspectable and replayable** — inspectable yes, replayable no. A rejected record is kept with the payload that caused it, stops being listed when its retention runs out, and leaves the queue but stays on the record when resolved. **Replay does not exist**, and the code says so itself: `QuarantinedRecord.cs` carries the comment *"Does not replay it — nothing replays yet."* Resolving a record marks it dealt with; it does not re-run it
+- [x] **A trial import is repeatable with stable counts and explicit exceptions.** A trial and the real run agree about an unusual VIN — the case where only the write would otherwise notice; the file is hashed so a trial and its run are provably about the same data; a bad row is reported by the line number a person sees in their spreadsheet and does not stop the others; and the counts add up to the row total *(automated)*
+- [ ] **Export round-trip tests preserve IDs, relationships and documents** — IDs yes, the other two no. Records survive a round trip into another dealership, a hand-typed customer with no external reference still exports and imports, and exporting twice unchanged produces the same checksum. But **export covers customer and vehicle columns only**: there is no relationship manifest, and documents are not exported at all even though a Documents capability exists
+- [ ] **Fixture-tested status is displayed honestly** — nothing is displayed. `CertificationStatus` exists with four levels and the one connector correctly declares `FixtureTested`, but **there is no connectors screen in the frontend**, so the status reaches no reader. A status that is never shown cannot be shown honestly
+- [x] **Production certification remains incomplete until external evidence exists.** Nothing anywhere claims `SandboxCertified` or `ProductionCertified`; the only connector declares `FixtureTested` and is a test double. Trivially met, and worth recording because it is the criterion most easily broken by an optimistic edit *(automated)*
+
+**Named and not built**, from the phase's own build list: a durable **inbox**, an
+**outbox**, **leases**, **replay**, a generic **SFTP** path, **profiling**,
+**versioned mappings**, and the **duplicate-candidate workflow**. None of these
+exist — checked by name across `src`, not inferred. Field ownership is a named
+concern in a comment in `CustomerRecordSink` and not a rule anything enforces.
+
+What *does* exist is the seam they would hang from: compiled connector
+discovery, a versioned contract envelope, per-feed cursors with hold counting,
+quarantine with retention, run history, and a CSV import/export path with
+control totals and checksums.
 ## Completed milestones
 
 - **2026-07-25 — Engineering baseline.** Solution, Core kernel, architecture tests, CI, health endpoints, telemetry. Evidence: `dotnet build` 0/0, `dotnet test` 5/5.
@@ -931,3 +958,21 @@ to come.
   The recommendation now carries a `DoneWhen` phrase, and the generator checks three independent signals before rendering it: that phrase appearing in `STATUS.md`, a matching register row marked `Done`, and a matching exit criterion now ticked. Any of them replaces the quiet note with a red **ALREADY DONE** banner, placed **above** the prompt rather than under it.
 
   Rehearsed by pointing `DoneWhen` at a phrase that is already in `STATUS.md`: the banner appeared, and disappeared again on restore. The lesson generalises past this page — a staleness warning that is quieter than the thing it warns about is decoration.
+
+- **2026-09-09 — I2 has a scorecard, and it says two of seven.** The phase was never scored. Meanwhile a good deal of I2-shaped work landed out of order, which [doc 09](../09-Implementation-Roadmap.md) §4 says must be recorded here — and it had not been, so nobody could say what the tax work would be built on.
+
+  Scored by running the checks rather than reading the code. **Two met, three part-met, two not met**, written up under Exit criteria above.
+
+  **Met:** checkpoint safety under interruption (five `ConnectorRuntimeTests` cases, including a provider that skips the start of a window not getting the cursor moved past the hole), and a repeatable trial import with stable counts. All 43 cited tests were run, not cited from memory.
+
+  **Part-met:** duplicate and partial-page handling hold, **reordering has no test and deletes are not modelled at all** — no tombstone, no `IsDeleted` anywhere in `src/App/Integrations`. Quarantine is inspectable but **not replayable**, and the code already admitted it: `QuarantinedRecord.cs` carries the comment *"Does not replay it — nothing replays yet."* Export preserves IDs but carries **no relationship manifest and no documents**, despite a Documents capability existing.
+
+  **Not met:** fixture-tested status is not displayed honestly because it is **not displayed at all** — `CertificationStatus` has four levels and the one connector correctly declares `FixtureTested`, but there is no connectors screen in the frontend. A status nobody can see cannot be shown honestly.
+
+  **A false claim corrected in this file's own table.** The "does it exist?" row for the connector runtime said `API · Screen`. There is no screen: no feature folder, no route, nothing. That table is the single home for "is X built" and other documents link to it instead of hedging, so a wrong row there is worse than a wrong sentence anywhere else.
+
+  **Named and not built**, checked by name across `src` rather than inferred: durable inbox, outbox, leases, replay, SFTP, profiling, versioned mappings, duplicate-candidate workflow. Field ownership is a concern named in a comment in `CustomerRecordSink`, not a rule anything enforces.
+
+  **What this does not say** is that I2 is behind. It was never claimed to be started, and the seam the missing pieces would hang from is real: compiled discovery, a versioned contract envelope, per-feed cursors with hold counting, quarantine with retention, run history, and CSV in and out with control totals and checksums. What changed today is that the gap is now written down instead of assumed either way.
+
+  Evidence: 43 cited integration tests run and passing; `dotnet build` 0/0, `dotnet test` 694/694.
