@@ -422,6 +422,24 @@ one still open), **Build** (only engineering time), or **Done**.
 | Equity mining and next-vehicle prediction | Sales | Decision | Not started |
 | Labour reports: hours sold, effective rate | Reporting | Done | Built, with a screen |
 | Passkeys alongside passwords | Security | Done | Built, with a screen |
+| Book a car into stock, with what it cost | Inventory | Build | **Not started — walked 2026-09-10, job B cannot start.** POST /inventory exists and is on no screen; nothing debits 1300, which stands at minus $993,190 |
+| Move a car between stock states from the screen | Inventory | Build | **Not started — walked 2026-09-10.** POST /inventory/{id}/status exists and is on no screen, so a car can never leave Reconditioning |
+| Customer receivables: sell to anyone but cash | Accounting | Build | **Not started — walked 2026-09-10, job C stops at Invoiced.** Every sale debits Cash; the only receivable in the chart is warranty. No account customers, no lender settlement, no deposits |
+| Tax as a line on the deal summary | Deals | Build | **Not started — walked 2026-09-10.** The column reads $33,000 and the total reads $36,331.25. Same defect the trade-in row's own comment warns about |
+| A documentation fee a person can add | Deals | Build | **Not started — walked 2026-09-10.** ChargeKind.DocumentationFee exists in the domain and in the ledger; contracts.ts and all six locales never learned it |
+| Enquiry list ordered by neglect, not recency | Leads | Build | **Not started — walked 2026-09-10.** "Nobody is chasing these" takes the 50 NEWEST and displays them oldest-first, so the two longest-waiting customers were not returned at all |
+| Put the parts picker on the repair-order line | Parts | Build | **Not started — walked 2026-09-10.** src/App/Parts is complete and verify-e2e proves average costing works; the RO line accepts a PartId and the screen never sends one, so every part billed in the browser is free text with no cost |
+| Paging on every list | Platform | Build | **Not started — walked 2026-09-10.** /leads caps at 50 and /customers at 100, both say so, and neither offers a way through |
+| Add a customer without leaving the enquiry | Leads | Build | **Not started — walked 2026-09-10.** A walk-in who is not already a customer cannot have an enquiry taken at all |
+| A URL for every record | Platform | Build | **Not started — walked 2026-09-10.** No /deals/:id, /customers/:id, /leads/:id or /inventory/:id; nothing can be linked, bookmarked or opened twice |
+| Search that runs without guessing Enter | Platform | Build | **Not started — walked 2026-09-10.** Every search box is a form with no submit button and no as-you-type query |
+| Pickers that work at dealership scale | Platform | Build | **Not started — walked 2026-09-10.** Booking a car in offers 100 of ~500 customers with no search, and 101 cars that do not filter by customer and carry no VIN or plate — 32 labels are exact duplicates |
+| Profit and loss, and a balance sheet | Reporting | Build | **Not started — walked 2026-09-10.** Accounting offers a trial balance and nothing else; there is no expense entry anywhere in the chart, so net profit does not exist |
+| Stock valued, not just counted | Reporting | Build | **Not started — walked 2026-09-10.** 161 unsold cars and no figure for what they are worth |
+| An address on a customer, and a registration address on a deal | Customer | Build | **Not started — walked 2026-09-10.** Address is a seven-field record collected nowhere; ADR-024 wanted a registration address frozen with the sale |
+| Rate x basis worked out on the tax band | Deals | Build | **Not started — walked 2026-09-10.** A person types basis, rate AND the resulting tax, and nothing checks the three agree. Deal.TaxableBasis(rules) exists and the screen does not call it |
+| Job number that says which rooftop | Service | Build | **Not started — walked 2026-09-10.** 162 repair orders, 82 distinct numbers, 80 used twice; the list mixes rooftops and shows the number without the location |
+| Hide actions a role cannot take | Platform | Build | **Not started — walked 2026-09-10.** A salesperson can fill in "Add somebody" and is refused only on submit |
 | Workflow triggers on data we already hold | Platform | Build | Not started |
 | Contributor on-ramp: issues and first tasks | Business | Done | Built |
 | Documentation restructure: reorganise all 18 docs | Product | Build | Done |

@@ -1026,3 +1026,15 @@ to come.
   **The seeder resumes rather than restarting.** Each section guards itself, because the first run died on a VIN with 480 customers already written and a single top-level guard would have left the tenant permanently half full. A later run finished the job, and a `DeliverApprovedAsync` step recovered 53 deals stranded at Approved by the balance bug — which is why no database had to be dropped.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **712/712** (was 711), `verify-e2e.ps1` PASS.
+
+- **2026-09-10 — Four ordinary dealership jobs were walked through the running application, and one of the four finishes.** Written up in [DEALER-DAY.md](DEALER-DAY.md), which names a file and line or a live measurement for every claim.
+
+  The walk existed because the numbers on this project had stopped meaning anything: 50 commits in 30 days, eight stages all showing progress, exit criteria climbing — and, it turns out, **no way to put a car into stock**. A walk-in becomes a sold car, end to end, including tax and an F&I product; a car arriving cannot even start; a service job reaches Invoiced and cannot be paid; and "what did the month make" can only be answered as gross.
+
+  **Three findings would stop a real installation.** Account 1300 Vehicle inventory stands at minus $993,190, because delivery credits inventory and nothing anywhere debits it — the ledger balances and is externally wrong. Every sale debits Cash on the spot and the chart has no customer receivable, so a fleet customer cannot be invoiced on account and a car sold on finance reads as cash from the buyer. And "The numbers on this deal" prints a column that comes to $33,000 above a total of $36,331.25, because tax is in `amountDue` and has no row — the same defect the trade-in row's own comment was written about.
+
+  **The scope register was rewritten from the walk.** It held four Build rows, all small, none of which would have moved any of the four jobs; it now holds 22, in the order a dealership feels them. `local/progress.html` leads with **1 of 4 jobs** and demotes the stage percentage to a planning indicator, because counting commits is what let 50 of them read as progress.
+
+  **Three of my own readings during the walk were wrong and are recorded as retractions** — F&I catalogue prices, the saved tax line, and duplicate charge lines were all fine, and `innerText` not reporting `<input>` values caught me three times in one session.
+
+  Nothing was changed in `src/` by this walk: it is a measurement, and the fixes are now register rows. Evidence: `dotnet build` 0/0, `dotnet test` 712/712, `verify-e2e.ps1` PASS.
