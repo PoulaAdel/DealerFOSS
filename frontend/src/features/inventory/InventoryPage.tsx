@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { ApiError, api } from '../../shared/api';
+import { ApiError, api, post } from '../../shared/api';
 import {
   inventoryStatuses,
   type InventoryStatus,
@@ -26,6 +26,7 @@ import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { RecallCheck } from '../vehicles/RecallCheck';
+import { TakeIntoStock } from './TakeIntoStock';
 
 /**
  * What the server will return at most, however many are asked for — it clamps
@@ -49,6 +50,7 @@ export function InventoryPage() {
   const [status, setStatus] = useState<InventoryStatus | ''>('');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [selected, setSelected] = useState<InventoryUnitDetail | null>(null);
+  const [taking, setTaking] = useState(false);
 
   // Somebody arrived here from a car named somewhere else — the dashboard's
   // oldest-stock list is the one that does this. Landing on the whole list
@@ -110,7 +112,26 @@ export function InventoryPage() {
             ))}
           </select>
         </div>
+
+        <button type="button" onClick={() => setTaking((open) => !open)}>
+          {t('stock.takeItIn')}
+        </button>
       </header>
+
+      {!taking ? null : (
+        <TakeIntoStock
+          onCancel={() => setTaking(false)}
+          onReceived={(unit) => {
+            setTaking(false);
+            // Opened straight away rather than announced and left to be found.
+            // Adding a customer closes its panel and changes nothing visible,
+            // and somebody has to search to learn it worked; a car arriving is
+            // the same event and gets the opposite treatment.
+            setSelected(unit);
+            void fetchUnits();
+          }}
+        />
+      )}
 
       {stockNumber === '' ? null : (
         <p className="notice" role="status">
@@ -131,7 +152,14 @@ export function InventoryPage() {
       />
 
       {selected === null ? null : (
-        <UnitDetail unit={selected} onClose={() => setSelected(null)} />
+        <UnitDetail
+          unit={selected}
+          onClose={() => setSelected(null)}
+          onMoved={(moved) => {
+            setSelected(moved);
+            void fetchUnits();
+          }}
+        />
       )}
     </>
   );
@@ -144,7 +172,15 @@ export function InventoryPage() {
  * filter and its scroll position, and going back is not an operation. A route
  * per record would lose all three every time somebody checked a cost.
  */
-function UnitDetail({ unit, onClose }: { unit: InventoryUnitDetail; onClose: () => void }) {
+function UnitDetail({
+  unit,
+  onClose,
+  onMoved,
+}: {
+  unit: InventoryUnitDetail;
+  onClose: () => void;
+  onMoved: (unit: InventoryUnitDetail) => void;
+}) {
   const { t, format } = useI18n();
   const label = useEnumLabel();
 
@@ -214,6 +250,8 @@ function UnitDetail({ unit, onClose }: { unit: InventoryUnitDetail; onClose: () 
           somebody presses the button; see RecallCheck's header. */}
       <RecallCheck vehicleId={unit.vehicleId} />
 
+      <MoveTheCar unit={unit} onMoved={onMoved} />
+
       <div className="actions">
         <button type="button" onClick={onClose}>
           {t('common.close')}
@@ -221,6 +259,117 @@ function UnitDetail({ unit, onClose }: { unit: InventoryUnitDetail; onClose: () 
       </div>
     </section>
   );
+}
+
+/**
+ * Where the car goes next.
+ *
+ * This existed as an endpoint and as nothing else until 2026-09-10: a car could
+ * be put into Reconditioning by a seeder and never leave it, because no screen
+ * called `POST /inventory/{id}/status`. The status filter above the list was
+ * therefore a filter over something nobody could change.
+ *
+ * Only the moves the domain actually allows from here are offered, and Sold is
+ * never one of them — a car is sold by delivering a deal, which is what posts
+ * the sale. Offering it here would be a second way to change the same fact, and
+ * the one that skips the ledger.
+ */
+function MoveTheCar({
+  unit,
+  onMoved,
+}: {
+  unit: InventoryUnitDetail;
+  onMoved: (unit: InventoryUnitDetail) => void;
+}) {
+  const { t } = useI18n();
+  const label = useEnumLabel();
+  const describe = useApiMessage();
+
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const moves = movesFrom(unit.status);
+
+  async function move(to: InventoryStatus) {
+    setError(null);
+    setBusy(true);
+
+    try {
+      onMoved(
+        await post<InventoryUnitDetail>(`/inventory/${unit.id}/status`, {
+          status: to,
+          note: note.trim() === '' ? null : note.trim(),
+        }),
+      );
+      setNote('');
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (moves.length === 0) {
+    return (
+      <p className="note">
+        {unit.status === 'Sold' ? t('stock.soldNote') : t('stock.noMovesNote')}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <h3>{t('stock.moveTitle')}</h3>
+
+      <label htmlFor="move-note">{t('stock.moveNote')}</label>
+      <input
+        id="move-note"
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
+        autoComplete="off"
+      />
+
+      {error === null ? null : (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="actions">
+        {moves.map((to) => (
+          <button key={to} type="button" disabled={busy} onClick={() => void move(to)}>
+            {t('stock.moveTo', { to: label('inventoryStatus', to) })}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/**
+ * The moves a person may make from a given state.
+ *
+ * Kept here rather than derived from the whole status list because most pairs
+ * are nonsense — a Sold car does not go back to Incoming, and a Removed one does
+ * not come back at all. The server is still the authority and refuses anything
+ * else; this only decides which buttons are worth showing.
+ */
+function movesFrom(status: InventoryStatus): InventoryStatus[] {
+  switch (status) {
+    case 'Incoming':
+      return ['Reconditioning', 'Available', 'Removed'];
+    case 'Reconditioning':
+      return ['Available', 'OnHold', 'Removed'];
+    case 'Available':
+      return ['Reconditioning', 'OnHold', 'Removed'];
+    case 'OnHold':
+      return ['Available', 'Reconditioning', 'Removed'];
+    default:
+      // Sold and Removed are ends. A sold car is unwound by reversing the deal,
+      // not by typing a different status onto the car.
+      return [];
+  }
 }
 
 function Body({

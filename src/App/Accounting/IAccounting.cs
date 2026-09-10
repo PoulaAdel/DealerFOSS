@@ -66,6 +66,27 @@ public interface IAccounting
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Records the accounting consequence of a car being taken into stock.
+    /// Called by Inventory when a unit is received with a cost; it is not
+    /// something a person does.
+    /// </summary>
+    /// <remarks>
+    /// This is the entry that did not exist until 2026-09-10, and its absence was
+    /// not subtle: delivery credited 1300 for every car sold and nothing ever
+    /// debited it, so a dealership that had sold thirty cars showed vehicle
+    /// inventory at minus $993,190 — an asset account nearly a million dollars
+    /// negative. The ledger balanced throughout, because both sides of every
+    /// delivery were present; it was the purchase that had no entry at all.
+    ///
+    /// Found by walking a day at the dealership rather than by a test, because
+    /// every test posted deliveries against stock that a seeder had placed
+    /// directly into the table. See <c>docs/implementation/DEALER-DAY.md</c>.
+    /// </remarks>
+    Task<Result<JournalEntryDetail>> PostStockPurchaseAsync(
+        StockPurchasePosting purchase,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Undoes a posted entry by posting its opposite. The original is untouched —
     /// that is the whole point.
     /// </summary>
@@ -164,6 +185,40 @@ public sealed record DeliveryPosting(
     /// entry fail to balance by exactly the tax.
     /// </summary>
     decimal TaxCollected,
+    string Memo);
+
+/// <summary>
+/// Everything the ledger needs to record a car being bought into stock: which
+/// lot it landed on, which car it is, and what it cost.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>The other side is Cash, and that is a decision rather than an obvious
+/// truth.</b> Most dealerships floorplan their stock — a lender pays for the car
+/// and is repaid when it sells — which would make the credit a liability rather
+/// than a reduction in cash. There is no floorplan account in the chart and no
+/// decision recorded about one, so this posts the way every other entry in this
+/// ledger already does: the dealership paid for it.
+/// </para>
+/// <para>
+/// That is honest and wrong in the same way the rest of the system is wrong, and
+/// it is deliberately not fixed here. Floorplan is a register row, and when it
+/// lands this credit becomes a choice made per unit rather than a constant.
+/// </para>
+/// <para>
+/// <see cref="Cost"/> must be positive. A car received without a cost does not
+/// post at all — the caller skips this entirely — because a zero-value entry
+/// would assert that the car was free, which is a different claim from not
+/// knowing yet.
+/// </para>
+/// </remarks>
+public sealed record StockPurchasePosting(
+    RooftopId RooftopId,
+
+    /// <summary>The stock number. One non-reversal entry per unit is the rule.</summary>
+    string Reference,
+    string Currency,
+    decimal Cost,
     string Memo);
 
 /// <summary>

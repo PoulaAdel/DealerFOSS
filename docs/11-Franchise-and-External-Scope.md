@@ -422,8 +422,10 @@ one still open), **Build** (only engineering time), or **Done**.
 | Equity mining and next-vehicle prediction | Sales | Decision | Not started |
 | Labour reports: hours sold, effective rate | Reporting | Done | Built, with a screen |
 | Passkeys alongside passwords | Security | Done | Built, with a screen |
-| Book a car into stock, with what it cost | Inventory | Build | **Not started — walked 2026-09-10, job B cannot start.** POST /inventory exists and is on no screen; nothing debits 1300, which stands at minus $993,190 |
-| Move a car between stock states from the screen | Inventory | Build | **Not started — walked 2026-09-10.** POST /inventory/{id}/status exists and is on no screen, so a car can never leave Reconditioning |
+| Book a car into stock, with what it cost | Inventory | Done | **Built 2026-09-10, with a screen.** Vehicle and unit created together; a cost posts 1300/1000. Job B now completes end to end — walked again to confirm |
+| Move a car between stock states from the screen | Inventory | Done | **Built 2026-09-10, with a screen.** Only the moves the domain allows, and never Sold: a car is sold by delivering a deal, which is what posts the sale |
+| Floorplan: stock financed rather than paid for in cash | Accounting | Build | **Not started — exposed 2026-09-10 by fixing the row above.** Buying stock now credits Cash, so the seeded dealership shows minus $2.5M. A real dealer's stock is paid for by a lender and repaid on sale; there is no floorplan account and no decision recorded about one |
+| Opening balances when a dealership is set up | Accounting | Build | **Not started — exposed 2026-09-10 alongside floorplan.** A new installation starts with no capital, no stock value and no cash, so its first purchase drives the bank negative. There is nowhere to state what the business already had on day one |
 | Customer receivables: sell to anyone but cash | Accounting | Build | **Not started — walked 2026-09-10, job C stops at Invoiced.** Every sale debits Cash; the only receivable in the chart is warranty. No account customers, no lender settlement, no deposits |
 | Tax as a line on the deal summary | Deals | Build | **Not started — walked 2026-09-10.** The column reads $33,000 and the total reads $36,331.25. Same defect the trade-in row's own comment warns about |
 | A documentation fee a person can add | Deals | Build | **Not started — walked 2026-09-10.** ChargeKind.DocumentationFee exists in the domain and in the ledger; contracts.ts and all six locales never learned it |

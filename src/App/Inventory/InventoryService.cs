@@ -16,6 +16,7 @@
 //   InventoryScopeTests.
 
 using Microsoft.EntityFrameworkCore;
+using DealerFOSS.Accounting;
 using DealerFOSS.Core;
 using DealerFOSS.Data;
 using DealerFOSS.Identity;
@@ -28,7 +29,8 @@ public sealed class InventoryService(
     IAccessDirectory access,
     ICurrentUser currentUser,
     IAuditSink audit,
-    IClock clock)
+    IClock clock,
+    IAccounting accounting)
     : IInventory
 {
     private const string ReadPermission = "Inventory.Read";
@@ -42,6 +44,7 @@ public sealed class InventoryService(
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
+    private readonly IAccounting _accounting = accounting;
 
     public async Task<Result<IReadOnlyList<InventoryUnitSummary>>> ListAsync(
         InventoryQuery query,
@@ -241,6 +244,12 @@ public sealed class InventoryService(
             unit.AcquiredOn,
             unit.Note);
 
+        // The unit and its ledger entry land together or not at all. A car in the
+        // stock list that the books have never heard of is exactly the state this
+        // whole change exists to end, so it must not be creatable by a posting
+        // that failed halfway.
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
         _db.InventoryUnits.Add(received);
 
         try
@@ -250,8 +259,40 @@ public sealed class InventoryService(
         catch (DbUpdateException)
         {
             // Two people numbering a car at the same moment; the index caught it.
+            await transaction.RollbackAsync(cancellationToken);
             return Result.Failure<InventoryUnitDetail>(InventoryErrors.StockNumberTaken(stockNumber));
         }
+
+        // The car is on the lot; now it is on the balance sheet. Until 2026-09-10
+        // this posting did not exist at all, and vehicle inventory only ever went
+        // down — delivery relieved 1300 for every car sold and nothing ever put
+        // one there, leaving the account at minus $993,190 on a dealership that
+        // had sold thirty cars.
+        //
+        // A cost is what makes it postable. A car received without one is a real
+        // and ordinary thing — a part-exchange still being appraised, stock
+        // arriving before the invoice does — so it is recorded and not posted,
+        // rather than refused or posted at zero. That unit is then a known gap
+        // rather than a silent one: it has no cost on it to report.
+        if (cost is { Amount: > 0m })
+        {
+            var posted = await _accounting.PostStockPurchaseAsync(
+                new StockPurchasePosting(
+                    unit.RooftopId,
+                    stockNumber,
+                    cost.Value.Currency,
+                    cost.Value.Amount,
+                    $"Stock {stockNumber} — {vehicle.DisplayName}"),
+                cancellationToken);
+
+            if (posted.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<InventoryUnitDetail>(posted.Error);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
 
         await _audit.RecordAsync(
             new AuditEntry(_currentUser.Id, ManagePermission, AuditOutcome.Allowed,

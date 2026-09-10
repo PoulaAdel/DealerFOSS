@@ -1038,3 +1038,17 @@ to come.
   **Three of my own readings during the walk were wrong and are recorded as retractions** — F&I catalogue prices, the saved tax line, and duplicate charge lines were all fine, and `innerText` not reporting `<input>` values caught me three times in one session.
 
   Nothing was changed in `src/` by this walk: it is a measurement, and the fixes are now register rows. Evidence: `dotnet build` 0/0, `dotnet test` 712/712, `verify-e2e.ps1` PASS.
+
+- **2026-09-10 — A dealership can now buy a car, not only sell one, and the balance sheet knows about it.** Job B of the dealer-day walk went from *cannot start* to *completes end to end* on the day it was found. Two of the four jobs now finish.
+
+  **Three things landed together, because none of them is any use alone.** A screen to take a car into stock, creating the vehicle record and the unit at once — a car arriving is almost always one nobody has seen, and making somebody create it elsewhere and come back is the shape that already makes a walk-in enquiry impossible. A way to move a car between stock states from its own record, so a car can finally leave Reconditioning; only the moves the domain allows are offered, and **Sold is never one of them**, because a car is sold by delivering a deal and that is what posts the sale. And the posting that had never existed: `IAccounting.PostStockPurchaseAsync`, debiting 1300 and crediting 1000.
+
+  **Account 1300 went from minus $993,190 to plus $2,697,960.** The seeded dealership's existing two hundred cars were back-filled rather than requiring the database to be dropped — a demo that has to be rebuilt to show a fix is one nobody looks at twice.
+
+  **Fixing it exposed the next lie, which is the point.** Cash is now minus $2,510,729, and that is the correct double-entry consequence of a chart with no way for a dealership to have any money: no opening balance, no capital, and no floorplan, so $3.7M of stock was bought out of an account that started at nothing. Before, inventory lied; now inventory is right and cash is wrong for a reason that has a name and two new register rows. Neither was visible while the first lie covered for the second.
+
+  **Two rehearsals on the backend and two on the frontend.** Disabling the posting failed exactly the two new ledger tests while the other thirteen — including both delivery tests — stayed green, which is precisely why this was missed for so long. Reversing the debit and credit still balanced and was still caught. On the frontend, defaulting an empty cost to zero failed the test that guards the distinction between *unknown* and *nothing*; adding Sold to the Available moves failed **nothing**, because that test only opened a car in Reconditioning — so it was broadened to every movable state, and then it caught it.
+
+  **A pre-existing test caught a real bug in the new code.** The first draft keyed the duplicate-posting check on the stock number alone, and `InventoryTests.The_same_stock_number_is_allowed_at_a_different_rooftop` refused it: a stock number is unique per rooftop, not per organization. It is the same mistake the workshop's job numbering makes on screen.
+
+  Verified again in a browser rather than assumed: WALK01, a 2022 Mazda CX-5 at $19,750, taken in, moved Incoming → Reconditioning → Available with a note on each move, posting `1300 D19750 / 1000 C19750`. Evidence: `dotnet build` 0/0, `dotnet test` **715/715** (was 712), `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **319/319** (was 310), `npm run build`.

@@ -166,3 +166,238 @@ describe('the stock list', () => {
     expect(last.path).not.toContain('stock=');
   });
 });
+
+/**
+ * Taking a car in, and moving it once it is there.
+ *
+ * Both endpoints existed and were tested from the day inventory was built. What
+ * did not exist was any way to reach them: the walk on 2026-09-10 found 205
+ * buttons on this screen and every one of them a stock number, so a car could
+ * only arrive from a seeder and could never leave Reconditioning. These tests
+ * are about the reaching.
+ */
+describe('taking a car into stock', () => {
+  const organization = {
+    id: '99999999-9999-9999-9999-999999999999',
+    name: 'North Auto Group',
+    legalEntities: [
+      {
+        id: '88888888-8888-8888-8888-888888888888',
+        name: 'North Auto Group LLC',
+        rooftops: [{ id: unit.rooftopId, code: 'NAG-01', name: 'North Auto Downtown' }],
+      },
+    ],
+  };
+
+  /** The unit the receive POST answers with, as the server really answers it. */
+  const received = {
+    ...unit,
+    costAmount: 14500,
+    costCurrency: 'USD',
+    acquiredOn: null,
+    history: [],
+  };
+
+  /**
+   * Replies to `/inventory` are sequential because the list GET and the receive
+   * POST share a path: the first list, then the unit the POST returns, then the
+   * refetch. Answering the POST with the list array instead made the detail band
+   * throw on `unit.status` — the tests still passed and Vitest reported two
+   * unhandled errors, which is the shape of a false positive.
+   */
+  function mockTakeIn() {
+    mockApi({
+      '/inventory': [
+        { ok: true, body: [unit] },
+        { ok: true, body: received },
+        { ok: true, body: [unit] },
+      ],
+      '/organization': { ok: true, body: organization },
+      '/vehicles': { ok: true, body: { id: unit.vehicleId } },
+    });
+  }
+
+  async function fillTheForm(cost: string) {
+    await userEvent.click(await screen.findByRole('button', { name: 'Take a car into stock' }));
+
+    await userEvent.type(await screen.findByLabelText('Stock'), 'NAG-1042');
+    await userEvent.type(screen.getByLabelText('Year'), '2021');
+    await userEvent.type(screen.getByLabelText('Make'), 'Toyota');
+    await userEvent.type(screen.getByLabelText('Model'), 'RAV4');
+
+    if (cost !== '') {
+      await userEvent.type(screen.getByLabelText('What it cost (optional)'), cost);
+    }
+  }
+
+  function bodyOf(path: string): Record<string, unknown> {
+    const call = [...apiCalls()].reverse().find((c) => c.path === path && c.init?.method === 'POST');
+    expect(call, `nothing was POSTed to ${path}`).toBeDefined();
+
+    return JSON.parse(call!.init!.body as string) as Record<string, unknown>;
+  }
+
+  it('creates the vehicle and the unit together, with what it cost', async () => {
+    mockTakeIn();
+    renderStock();
+    await fillTheForm('14500');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Take it in' }));
+
+    // The vehicle first, because the unit needs its id.
+    expect(bodyOf('/vehicles')).toMatchObject({ modelYear: 2021, make: 'Toyota', model: 'RAV4' });
+
+    expect(bodyOf('/inventory')).toMatchObject({
+      vehicleId: unit.vehicleId,
+      rooftopId: unit.rooftopId,
+      stockNumber: 'NAG-1042',
+      costAmount: 14500,
+      costCurrency: 'USD',
+    });
+  });
+
+  it('sends no cost rather than a cost of nothing when the box is left empty', async () => {
+    // The distinction the ledger depends on. A car received without a cost is
+    // recorded and not posted; a car received at zero would assert it was free.
+    mockTakeIn();
+    renderStock();
+    await fillTheForm('');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Take it in' }));
+
+    const received = bodyOf('/inventory');
+    expect(received.costAmount).toBeNull();
+    expect(received.costCurrency).toBeNull();
+  });
+
+  it('will not submit until it has the few things it cannot invent', async () => {
+    mockTakeIn();
+    renderStock();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Take a car into stock' }));
+    await userEvent.type(await screen.findByLabelText('Stock'), 'NAG-1042');
+
+    expect(screen.getByRole('button', { name: 'Take it in' })).toBeDisabled();
+  });
+
+  it('opens the car it just took in, rather than leaving it to be found', async () => {
+    // Adding a customer closes its panel and changes nothing visible, so nobody
+    // can tell it worked without searching. A car arriving is the same event and
+    // deliberately gets the opposite treatment.
+    mockTakeIn();
+    renderStock();
+    await fillTheForm('14500');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Take it in' }));
+
+    expect(await screen.findByRole('region', { name: 'Stock number NAG-1042' })).toBeVisible();
+  });
+
+  it('reports a refusal instead of pretending the car is on the lot', async () => {
+    mockTakeIn();
+    renderStock();
+    await fillTheForm('14500');
+
+    mockApi({
+      '/inventory': {
+        ok: false, status: 409, code: 'inventory.stock_number_taken',
+        detail: 'That stock number is already in use.',
+      },
+      '/organization': { ok: true, body: organization },
+      '/vehicles': { ok: true, body: { id: unit.vehicleId } },
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Take it in' }));
+
+    expect(await screen.findByRole('alert')).toBeVisible();
+  });
+});
+
+describe('moving a car between stock states', () => {
+  const detailAt = (status: InventoryUnitSummary['status']) => ({
+    ...unit,
+    status,
+    costAmount: 14500,
+    costCurrency: 'USD',
+    acquiredOn: null,
+    history: [],
+  });
+
+  it('offers the moves the domain allows from where the car is', async () => {
+    mockApi({
+      '/inventory': { ok: true, body: [unit] },
+      [`/inventory/${unit.id}`]: { ok: true, body: detailAt('Reconditioning') },
+    });
+    renderStock();
+
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+
+    expect(await screen.findByRole('button', { name: 'Move to Available' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Move to On hold' })).toBeVisible();
+
+    // Never Sold. A car is sold by delivering a deal, which is what posts the
+    // sale — a button here would be the route that skips the ledger.
+    expect(screen.queryByRole('button', { name: /Move to Sold/ })).not.toBeInTheDocument();
+  });
+
+  it('sends the new status and the note to the server', async () => {
+    mockApi({
+      '/inventory': { ok: true, body: [unit] },
+      [`/inventory/${unit.id}`]: { ok: true, body: detailAt('Reconditioning') },
+      [`/inventory/${unit.id}/status`]: { ok: true, body: detailAt('Available') },
+    });
+    renderStock();
+
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+    await userEvent.type(await screen.findByLabelText('Note (goes on the record)'), 'Valeted.');
+    await userEvent.click(screen.getByRole('button', { name: 'Move to Available' }));
+
+    const call = [...apiCalls()]
+      .reverse()
+      .find((c) => c.path === `/inventory/${unit.id}/status` && c.init?.method === 'POST');
+
+    expect(call, 'the move was never sent').toBeDefined();
+    expect(JSON.parse(call!.init!.body as string)).toMatchObject({
+      status: 'Available',
+      note: 'Valeted.',
+    });
+  });
+
+
+  it('never offers Sold, from any state a car can be moved from', async () => {
+    // Broadened after a rehearsal: the first version of this only opened a car
+    // in Reconditioning, so adding Sold to the Available moves broke nothing and
+    // the suite stayed green. Available is the state most cars are in.
+    for (const from of ['Incoming', 'Reconditioning', 'Available', 'OnHold'] as const) {
+      mockApi({
+        '/inventory': { ok: true, body: [unit] },
+        [`/inventory/${unit.id}`]: { ok: true, body: detailAt(from) },
+      });
+
+      const view = renderStock();
+      await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+      await screen.findByRole('heading', { name: 'Where it goes next' });
+
+      expect(
+        screen.queryByRole('button', { name: /Move to Sold/ }),
+        `${from} offered a way to sell a car without a deal`,
+      ).not.toBeInTheDocument();
+
+      view.unmount();
+    }
+  });
+
+  it('says why a sold car cannot be moved rather than showing dead buttons', async () => {
+    mockApi({
+      '/inventory': { ok: true, body: [unit] },
+      [`/inventory/${unit.id}`]: { ok: true, body: detailAt('Sold') },
+    });
+    renderStock();
+
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+
+    expect(
+      await screen.findByText('This car has been sold. Reverse the deal to undo that.'),
+    ).toBeVisible();
+  });
+});

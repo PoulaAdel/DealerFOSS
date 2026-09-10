@@ -170,6 +170,146 @@ public sealed class LedgerTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task Taking_a_car_into_stock_puts_it_on_the_balance_sheet()
+    {
+        // Until 2026-09-10 this entry did not exist. Delivery credited 1300 at
+        // cost for every car sold and nothing anywhere debited it, so a seeded
+        // dealership that had sold thirty cars showed vehicle inventory at minus
+        // $993,190 — an asset account nearly a million dollars negative. Every
+        // entry balanced; the purchase simply had no entry.
+        //
+        // No test caught it because every test posted deliveries against stock a
+        // seeder had written straight into the table, so the missing half was
+        // never on the path anything exercised. Found by walking a day at the
+        // dealership: docs/implementation/DEALER-DAY.md.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var suffix = $"{Guid.NewGuid():N}"[..8].ToUpperInvariant();
+        var stockNumber = $"P{suffix}";
+
+        var vehicleId = await CreatedIdAsync("/api/v1/vehicles", new
+        {
+            vin = $"STKBUY{suffix}"[..13], modelYear = 2022, make = "Kia", model = "Sportage",
+            vinExceptionReason = "Synthetic VIN for a ledger test.",
+        });
+
+        await CreatedIdAsync("/api/v1/inventory", new
+        {
+            vehicleId, rooftopId, stockNumber,
+            costAmount = 14500m, costCurrency = "USD",
+        });
+
+        var purchase = await EntryForReferenceAsync(stockNumber);
+
+        purchase.GetProperty("totalDebits").GetDecimal().Should()
+            .Be(purchase.GetProperty("totalCredits").GetDecimal());
+
+        SumFor(purchase, "1300", "debit").Should().Be(14500m,
+            because: "the car is an asset the moment it is on the lot");
+
+        SumFor(purchase, "1000", "credit").Should().Be(14500m,
+            because: "something paid for it, and until floorplan exists that is cash");
+    }
+
+    [Fact]
+    public async Task A_car_received_without_a_cost_is_recorded_and_not_posted()
+    {
+        // A part-exchange still being appraised, or stock that arrives before its
+        // invoice does. Both are ordinary. Posting them at zero would assert the
+        // car was free, which is a different claim from not knowing yet — so the
+        // unit stands and the ledger says nothing.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var suffix = $"{Guid.NewGuid():N}"[..8].ToUpperInvariant();
+        var stockNumber = $"N{suffix}";
+
+        var vehicleId = await CreatedIdAsync("/api/v1/vehicles", new
+        {
+            vin = $"NOCOST{suffix}"[..13], modelYear = 2019, make = "Ford", model = "Focus",
+            vinExceptionReason = "Synthetic VIN for a ledger test.",
+        });
+
+        var unitId = await CreatedIdAsync("/api/v1/inventory", new
+        {
+            vehicleId, rooftopId, stockNumber,
+        });
+
+        unitId.Should().NotBeNullOrWhiteSpace(because: "the car really is on the lot");
+
+        using var response = await SendAsync(
+            HttpMethod.Get, $"{Journal}?reference={stockNumber}", Manager);
+
+        var summaries = await response.Content.ReadFromJsonAsync<JsonElement>();
+        summaries.EnumerateArray().Should().BeEmpty(
+            because: "a cost we do not know is not a cost of nothing");
+    }
+
+    [Fact]
+    public async Task A_car_bought_and_sold_leaves_nothing_behind_on_inventory()
+    {
+        // The arithmetic that matters, and the one the walk's finding reduces to:
+        // received at cost and delivered at the same cost, account 1300 must come
+        // back to where it started. Either half alone looks fine in isolation —
+        // it is the pair that has to net.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var suffix = $"{Guid.NewGuid():N}"[..8].ToUpperInvariant();
+        var stockNumber = $"R{suffix}";
+        const decimal Cost = 17250m;
+
+        var customerId = await CreatedIdAsync("/api/v1/customers", new
+        {
+            kind = "Person", firstName = "Round", lastName = $"Trip{suffix}",
+        });
+
+        var vehicleId = await CreatedIdAsync("/api/v1/vehicles", new
+        {
+            vin = $"RNDTRP{suffix}"[..13], modelYear = 2023, make = "Honda", model = "CR-V",
+            vinExceptionReason = "Synthetic VIN for a ledger test.",
+        });
+
+        var unitId = await CreatedIdAsync("/api/v1/inventory", new
+        {
+            vehicleId, rooftopId, stockNumber,
+            costAmount = Cost, costCurrency = "USD",
+        });
+
+        using var available = await PostAsync($"/api/v1/inventory/{unitId}/status", Manager,
+            new { status = "Available" });
+        available.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var dealId = await CreatedIdAsync(Deals, new
+        {
+            rooftopId, customerId, inventoryUnitId = unitId, currency = "USD",
+            salespersonUserId = DevelopmentSeeder.DevUsers.Salesperson,
+        });
+
+        using var terms = await PostAsync($"{Deals}/{dealId}/terms", Manager, new
+        {
+            charges = new object[]
+            {
+                new { kind = "VehiclePrice", description = "The car", amount = 21000m },
+            },
+        });
+        terms.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        foreach (var status in new[] { "Submitted", "Approved", "Delivered" })
+        {
+            using var moved = await PostAsync($"{Deals}/{dealId}/status", Manager, new { status });
+            moved.StatusCode.Should().Be(HttpStatusCode.OK,
+                because: await moved.Content.ReadAsStringAsync());
+        }
+
+        var purchase = await EntryForReferenceAsync(stockNumber);
+        var delivery = await EntryForAsync(dealId);
+
+        var onto = SumFor(purchase, "1300", "debit");
+        var off = SumFor(delivery, "1300", "credit");
+
+        onto.Should().Be(Cost);
+        off.Should().Be(Cost);
+        (onto - off).Should().Be(0m,
+            because: "a car that came and went must leave inventory exactly as it found it");
+    }
+
+    [Fact]
     public async Task A_delivery_is_never_posted_twice()
     {
         var sale = await DeliverAsync();
@@ -328,6 +468,25 @@ public sealed class LedgerTests(HostFixture fixture)
         entry.GetProperty("lines").EnumerateArray()
             .Where(l => l.GetProperty("accountCode").GetString() == code)
             .Sum(l => l.GetProperty(side).GetDecimal());
+
+    /// <summary>
+    /// The entry filed under a reference that is not a deal — a stock number, for
+    /// a purchase. Same shape as <see cref="EntryForAsync"/>; kept separate so the
+    /// name says which kind of reference is being looked up.
+    /// </summary>
+    private async Task<JsonElement> EntryForReferenceAsync(string reference)
+    {
+        using var response = await SendAsync(HttpMethod.Get, $"{Journal}?reference={reference}", Manager);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var summaries = await response.Content.ReadFromJsonAsync<JsonElement>();
+        summaries.EnumerateArray().Should().NotBeEmpty(because: $"{reference} should have posted");
+
+        var id = summaries.EnumerateArray().First().GetProperty("id").GetString()!;
+
+        using var detail = await SendAsync(HttpMethod.Get, $"{Journal}/{id}", Manager);
+        return await detail.Content.ReadFromJsonAsync<JsonElement>();
+    }
 
     private async Task<JsonElement> EntryForAsync(string dealId)
     {

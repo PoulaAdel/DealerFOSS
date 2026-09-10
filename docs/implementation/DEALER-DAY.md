@@ -18,15 +18,52 @@ what you expected is not a walk.
 
 ## The four jobs
 
-| Job | Role | Result |
-|---|---|---|
-| A walk-in becomes a sold car | Salesperson, then manager | **Completed end to end** |
-| A car arrives, is reconditioned, goes on sale | Manager | **Cannot start** |
-| A customer books service and pays | Manager | **Reaches Invoiced, cannot reach paid** |
-| The manager asks what the month made | Manager | **Answered as gross only** |
+| Job | Role | Result on 2026-09-10 | Now |
+|---|---|---|---|
+| A walk-in becomes a sold car | Salesperson, then manager | **Completed end to end** | still does |
+| A car arrives, is reconditioned, goes on sale | Manager | **Cannot start** | **completes** (see below) |
+| A customer books service and pays | Manager | **Reaches Invoiced, cannot reach paid** | unchanged |
+| The manager asks what the month made | Manager | **Answered as gross only** | unchanged |
 
-One job of four can be completed. That is the honest number, and it is the number
-the progress page now reports.
+Two jobs of four can be completed. That is the number the progress page reports,
+and it moves only when somebody walks the job again.
+
+## What has been fixed since the walk
+
+Findings 1, 12 and 13 are done — the whole of Job B — in one change on the same
+day. The rest stand.
+
+- **A car can be taken into stock from a screen**, with what it cost, creating
+  the vehicle record and the unit together so a car nobody has seen before does
+  not require two screens and a round trip.
+- **A car can be moved between stock states from its own record.** Only the moves
+  the domain allows are offered, and Sold is never one of them: a car is sold by
+  delivering a deal, which is what posts the sale.
+- **Taking a car into stock posts to the ledger** — 1300 debited, 1000 credited —
+  and the seeded dealership's existing two hundred cars were back-filled rather
+  than requiring the database to be dropped.
+
+Walked again to confirm rather than assumed: WALK01, a 2022 Mazda CX-5 at
+$19,750, taken in, moved Incoming → Reconditioning ("Valet and two front tyres")
+→ Available ("Ready for the forecourt"), with a journal entry reading
+`1300 D19750 / 1000 C19750, Stock WALK01 — 2022 Mazda CX-5`.
+
+Account 1300 went from **minus $993,190 to plus $2,697,960**.
+
+### And it immediately exposed the next lie, which is the point
+
+Cash is now **minus $2,510,729**.
+
+That is not a regression, and it is not a defect in the posting — it is the
+correct double-entry consequence of a chart of accounts that has no way for a
+dealership to have any money. There is no opening balance, no capital, and no
+floorplan: the lender that really pays for a dealer's stock does not exist here,
+so $3.7M of cars was bought out of a cash account that started at nothing.
+
+Before, inventory lied. Now inventory is right and cash is wrong, for a reason
+that is written down and has a name. Both new register rows — floorplan, and
+opening balances when a dealership is set up — come straight from this, and
+neither was visible while the first lie was covering for the second.
 
 ## What the walk found
 

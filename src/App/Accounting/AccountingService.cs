@@ -492,6 +492,103 @@ public sealed class AccountingService(
         return Result.Success(await DescribeAsync(entry, cancellationToken));
     }
 
+    public async Task<Result<JournalEntryDetail>> PostStockPurchaseAsync(
+        StockPurchasePosting purchase,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(purchase);
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, PostPermission, purchase.RooftopId, cancellationToken))
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
+        }
+
+        // A car that cost nothing was not bought. Refused rather than posted as a
+        // pair of noughts, because an entry saying a car was free is a claim, and
+        // a missing entry is only an absence.
+        if (purchase.Cost <= 0m)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.cost_required", "A car taken into stock needs a cost above zero to post."));
+        }
+
+        var rooftop = await _organization.GetRooftopAsync(purchase.RooftopId, cancellationToken);
+        if (rooftop.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(rooftop.Error);
+        }
+
+        // The reference is the stock number, so buying the same unit twice is
+        // refused the way delivering the same deal twice is — but SCOPED TO THE
+        // ROOFTOP, because a stock number is only unique within one lot. Both
+        // rooftops of a group may legitimately hold a car numbered A1001, and the
+        // first draft of this refused the second one with "already posted".
+        //
+        // Caught by InventoryTests.The_same_stock_number_is_allowed_at_a_different_rooftop,
+        // which existed already and was right to. It is the same mistake the
+        // workshop's job numbering makes on screen — a per-rooftop identifier
+        // treated as though it were unique everywhere.
+        var alreadyPosted = await _db.JournalEntries
+            .AsNoTracking()
+            .AnyAsync(
+                e => e.Reference == purchase.Reference
+                    && e.RooftopId == purchase.RooftopId
+                    && e.Source == JournalSource.StockPurchase,
+                cancellationToken);
+
+        if (alreadyPosted)
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.AlreadyPosted);
+        }
+
+        var refusal = await PeriodRefusalAsync(
+            DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime), cancellationToken);
+
+        if (refusal is not null)
+        {
+            return Result.Failure<JournalEntryDetail>(refusal);
+        }
+
+        var accounts = await AccountMapAsync(cancellationToken);
+        if (accounts.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(accounts.Error);
+        }
+
+        JournalEntry entry;
+        try
+        {
+            entry = JournalEntry.Post(
+                Guid.NewGuid(),
+                rooftop.Value.LegalEntityId,
+                purchase.RooftopId,
+                DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime),
+                JournalSource.StockPurchase,
+                purchase.Reference,
+                purchase.Memo,
+                purchase.Currency,
+                BuildStockPurchaseLines(purchase, accounts.Value),
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.will_not_balance", ex.Message));
+        }
+
+        _db.JournalEntries.Add(entry);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, PostPermission, AuditOutcome.Allowed,
+                "JournalEntry", entry.Id.ToString(), purchase.RooftopId.Value,
+                $"Stock purchase {purchase.Reference}", null, null),
+            cancellationToken);
+
+        return Result.Success(await DescribeAsync(entry, cancellationToken));
+    }
+
     public async Task<Result<JournalEntryDetail>> PostServiceInvoiceAsync(
         ServiceInvoicePosting invoice,
         CancellationToken cancellationToken)
@@ -856,6 +953,31 @@ public sealed class AccountingService(
     /// Then the cost of the car sold is moved out of inventory and into cost of
     /// sales, which is what turns revenue into a gross profit anybody can check.
     /// </summary>
+    /// <summary>
+    /// A car bought onto the lot: the value arrives as an asset, and whatever
+    /// paid for it leaves. Two lines, and the smallest entry in this file.
+    /// </summary>
+    /// <remarks>
+    /// The pair to <see cref="BuildDeliveryLines"/>, which credits
+    /// <see cref="AccountCodes.VehicleInventory"/> at cost when the car goes out.
+    /// Received and delivered at the same cost, the two net to nothing on 1300
+    /// and leave the gross where it belongs — which is the arithmetic the
+    /// regression test asserts.
+    /// </remarks>
+    private static List<(string, Guid, decimal, decimal, string?)> BuildStockPurchaseLines(
+        StockPurchasePosting p,
+        IReadOnlyDictionary<string, Account> accounts)
+    {
+        var inventory = accounts[AccountCodes.VehicleInventory];
+        var cash = accounts[AccountCodes.Cash];
+
+        return
+        [
+            (inventory.Code, inventory.Id, p.Cost, 0m, "Car onto the lot"),
+            (cash.Code, cash.Id, 0m, p.Cost, "Paid for the car"),
+        ];
+    }
+
     private static List<(string, Guid, decimal, decimal, string?)> BuildDeliveryLines(
         DeliveryPosting d,
         IReadOnlyDictionary<string, Account> accounts)

@@ -259,6 +259,26 @@ export const de: Catalogue = {
   'stock.historyEmpty': 'Zu diesem Fahrzeug wurde noch nichts erfasst.',
   'stock.takenIn': 'Als {to} in den Bestand aufgenommen',
   'stock.moved': '{from} → {to}',
+  'stock.takeItIn': 'Fahrzeug in den Bestand nehmen',
+  'stock.confirmTakeIn': 'Aufnehmen',
+  'stock.takeInTitle': 'Fahrzeug in den Bestand nehmen',
+  'stock.takeInNote':
+    'Fahrzeug und Fahrzeugakte werden zusammen angelegt, denn ein ankommendes Auto ist fast immer eines, das Sie noch nie gesehen haben.',
+  'stock.whichLocation': 'Welcher Standort',
+  'stock.chooseLocation': 'Standort wählen…',
+  'stock.vinOptional': 'FIN (optional)',
+  'stock.modelYear': 'Baujahr',
+  'stock.make': 'Marke',
+  'stock.model': 'Modell',
+  'stock.trimOptional': 'Ausstattung (optional)',
+  'stock.costOptional': 'Einkaufspreis (optional)',
+  'stock.costNote':
+    'Ein Preis bringt das Fahrzeug in die Bilanz. Leer lassen, wenn er noch nicht bekannt ist — das wird als unbekannt erfasst, nicht als null.',
+  'stock.moveTitle': 'Wohin es als Nächstes geht',
+  'stock.moveNote': 'Notiz (bleibt im Vorgang)',
+  'stock.moveTo': 'Auf {to} setzen',
+  'stock.soldNote': 'Dieses Fahrzeug ist verkauft. Zum Rückgängigmachen den Vorgang stornieren.',
+  'stock.noMovesNote': 'Dieses Fahrzeug kann von hier aus nicht bewegt werden.',
 
   // HGB-Bilanzgliederung.
   'enum.accountKind.Asset': 'Aktiva',

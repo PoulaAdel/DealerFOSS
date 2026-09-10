@@ -176,4 +176,11 @@ public enum JournalSource
 
     /// <summary>Entered by hand. Not yet possible.</summary>
     Manual = 2,
+
+    /// <summary>
+    /// A car was bought into stock. The counterpart to
+    /// <see cref="DealDelivery"/>, which relieves the same account — without this
+    /// one, vehicle inventory only ever goes down.
+    /// </summary>
+    StockPurchase = 4,
 }

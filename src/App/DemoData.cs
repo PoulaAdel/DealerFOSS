@@ -26,6 +26,15 @@
 //   balances because the application balanced it, not because this file agreed
 //   with itself.
 //
+//   ONE EXCEPTION, AND IT IS NAMED HERE SO THE RULE ABOVE STAYS TRUE:
+//   PostStockPurchasesAsync writes its two ledger lines directly. IInventory
+//   receives and posts at the current instant, and this seeder spreads stock
+//   across ninety-five days precisely so the ageing bands and the month-on-month
+//   figures have something to show — going through the service would flatten
+//   every car onto today. The lines are the same two the service posts, and the
+//   arithmetic is asserted by a regression test rather than by the route taken.
+//   If you add a second exception, argue for it in the same way or do not add it.
+//
 //   DETERMINISTIC ON PURPOSE. One fixed seed, so two people running this see
 //   the same dealership and can talk about "the Okafor deal" and mean the same
 //   record. Never use Random() unseeded or DateTime.Now here.
@@ -34,6 +43,7 @@
 //   real person (doc 08 §8).
 
 using Microsoft.EntityFrameworkCore;
+using DealerFOSS.Accounting;
 using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.Data;
@@ -120,6 +130,12 @@ public static class DemoData
         {
             units = await AddStockAsync(db, rng, rooftops, today, 210);
         }
+
+        // Unconditional, and after the stock section rather than inside it: this
+        // back-fills the dealerships seeded before the purchase posting existed,
+        // which is every one of them created before 2026-09-10. Units that
+        // already have an entry are skipped, so a second run is free.
+        await PostStockPurchasesAsync(db, today);
 
         if (!await db.Leads.AnyAsync(l => l.Enquiry == LeadNote))
         {
@@ -370,7 +386,111 @@ public static class DemoData
         db.InventoryUnits.AddRange(units);
         await db.SaveChangesAsync();
 
+        // Purchases are posted from PopulateTenantAsync, which back-fills stock
+        // seeded before this posting existed as well as the cars just written.
+
         return stocked;
+    }
+
+    /// <summary>
+    /// Puts the cars this seeder placed onto the balance sheet, and back-fills
+    /// any that are already there without one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Written straight into the ledger rather than through
+    /// <c>IInventory.ReceiveAsync</c>, which is the exception to this file's rule
+    /// of going through the services. The service receives and posts at
+    /// <c>_clock.UtcNow</c>, and this seeder deliberately spreads stock across
+    /// ninety-five days so the ageing bands and the month-on-month figures are
+    /// worth looking at. Routing through the service would flatten every car onto
+    /// today and destroy the one thing this data exists to show.
+    /// </para>
+    /// <para>
+    /// <b>It back-fills on purpose.</b> This runs on every populate, not only
+    /// when stock is created, because the dealerships seeded before 2026-09-10
+    /// have two hundred cars and no purchase entries at all — dropping the
+    /// database was the alternative, and a demo that has to be rebuilt to show a
+    /// fix is a demo nobody looks at twice. Units that already have an entry are
+    /// skipped, so running it again is free.
+    /// </para>
+    /// <para>
+    /// Without this the seeded dealership showed vehicle inventory at minus
+    /// $993,190 — an asset account nearly a million dollars negative, because
+    /// every delivery relieved 1300 and nothing had ever put a car there. That is
+    /// what the dealer-day walk found.
+    /// </para>
+    /// </remarks>
+    private static async Task PostStockPurchasesAsync(TenantDb db, DateTimeOffset today)
+    {
+        var accounts = await db.Accounts
+            .Where(a => a.Code == AccountCodes.VehicleInventory || a.Code == AccountCodes.Cash)
+            .ToDictionaryAsync(a => a.Code);
+
+        if (accounts.Count < 2)
+        {
+            return;
+        }
+
+        // A stock number is unique per rooftop and not per organization, so what
+        // identifies an entry is the pair. Comparing on the number alone would
+        // decide that the second lot's A1001 had already been bought.
+        var posted = (await db.JournalEntries
+            .AsNoTracking()
+            .Where(e => e.Source == JournalSource.StockPurchase)
+            .Select(e => new { e.RooftopId, e.Reference })
+            .ToListAsync())
+            .Select(e => (e.RooftopId, e.Reference))
+            .ToHashSet();
+
+        var units = await db.InventoryUnits.AsNoTracking().ToListAsync();
+        var entities = await db.Rooftops.ToDictionaryAsync(r => r.Id, r => r.LegalEntityId);
+
+        var inventory = accounts[AccountCodes.VehicleInventory];
+        var cash = accounts[AccountCodes.Cash];
+        var entries = new List<JournalEntry>();
+
+        foreach (var unit in units)
+        {
+            if (unit.CostAmount is not { } amount || amount <= 0m)
+            {
+                continue;
+            }
+
+            if (posted.Contains((unit.RooftopId, unit.StockNumber)))
+            {
+                continue;
+            }
+
+            if (!entities.TryGetValue(unit.RooftopId, out var legalEntityId))
+            {
+                continue;
+            }
+
+            entries.Add(JournalEntry.Post(
+                Guid.NewGuid(),
+                legalEntityId,
+                unit.RooftopId,
+                unit.AcquiredOn ?? DateOnly.FromDateTime(today.UtcDateTime),
+                JournalSource.StockPurchase,
+                unit.StockNumber,
+                $"Stock {unit.StockNumber}",
+                unit.CostCurrency ?? "USD",
+                [
+                    (inventory.Code, inventory.Id, amount, 0m, "Car onto the lot"),
+                    (cash.Code, cash.Id, 0m, amount, "Paid for the car"),
+                ],
+                today,
+                DevelopmentSeeder.DevUsers.OrganizationWide));
+        }
+
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        db.JournalEntries.AddRange(entries);
+        await db.SaveChangesAsync();
     }
 
     // --- enquiries ------------------------------------------------------------

@@ -258,6 +258,26 @@ export const fr: Catalogue = {
   'stock.historyEmpty': 'Rien n’a encore été enregistré pour cette voiture.',
   'stock.takenIn': 'Entré en stock comme {to}',
   'stock.moved': '{from} → {to}',
+  'stock.takeItIn': 'Entrer une voiture en stock',
+  'stock.confirmTakeIn': 'Entrer en stock',
+  'stock.takeInTitle': 'Entrer une voiture en stock',
+  'stock.takeInNote':
+    'La voiture et sa fiche sont créées ensemble, car une voiture qui arrive est presque toujours une que vous ne connaissez pas.',
+  'stock.whichLocation': 'Quel site',
+  'stock.chooseLocation': 'Choisir un site…',
+  'stock.vinOptional': 'VIN (facultatif)',
+  'stock.modelYear': 'Année',
+  'stock.make': 'Marque',
+  'stock.model': 'Modèle',
+  'stock.trimOptional': 'Finition (facultatif)',
+  'stock.costOptional': 'Ce qu’elle a coûté (facultatif)',
+  'stock.costNote':
+    'Un coût inscrit la voiture au bilan. Laissez vide si vous ne le connaissez pas encore : ce sera enregistré comme inconnu, pas comme zéro.',
+  'stock.moveTitle': 'Où elle va ensuite',
+  'stock.moveNote': 'Note (reste au dossier)',
+  'stock.moveTo': 'Passer à {to}',
+  'stock.soldNote': 'Cette voiture est vendue. Contre-passez l’opération pour annuler.',
+  'stock.noMovesNote': 'Cette voiture ne peut aller nulle part depuis ici.',
 
   // Vocabulaire du plan comptable général.
   'enum.accountKind.Asset': 'Actif',
