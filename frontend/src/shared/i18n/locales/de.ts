@@ -982,6 +982,13 @@ export const de: Catalogue = {
   'workshop.hours': 'Stunden',
   'workshop.rate': 'Stundensatz',
   'workshop.amount': 'Betrag',
+  'workshop.fromTheShelf': 'Aus dem Lager',
+  'workshop.notFromStock': 'Nicht aus dem Lager (unten eintragen)',
+  'workshop.howMany': 'Wie viele',
+  'workshop.onTheShelf': {
+    one: '{number}: {count} am Lager.',
+    other: '{number}: {count} am Lager.',
+  },
   'workshop.addLine': 'Hinzufügen',
 
   'workshop.totalsCaption': 'Was der Auftrag ergibt.',

@@ -1094,3 +1094,15 @@ to come.
   **Known operational note, unchanged from yesterday:** the new accounts reach existing dealerships through the seeder and tenant provisioning, both of which top up from `AccountCodes.Standard`. A tenant provisioned before this and never re-provisioned would need them adding. There are none today; it is worth a real mechanism before there are.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **736/736** (was 725), `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **340/340** (was 327), `npm run build`.
+
+- **2026-09-11 — A part comes off the shelf at cost when somebody bills it in a browser.** The last obviously-false figure a dealer principal reads.
+
+  **This was never missing machinery.** `src/App/Parts` has been a complete capability since it was built — catalogue, stock receipts, average costing, stock levels — and `verify-e2e.ps1` has proved its costing on every run since: *booked in 20 at 7.00, sold 2, cost recorded 14.00, 18 left on the shelf*. The repair-order line contract has always accepted a `PartId`. The screen simply never sent one, so every part billed in a browser was free text: 5300 and 1400 never posted, and the dashboard stated a 100% margin on service as fact.
+
+  A picker on the line now offers what is on the shelf with the quantity beside it, fills the description from the catalogue and leaves it editable, and says what is in stock so nobody bills two of a part there is one of. **Free text is still there and is named as a choice** — "Not from stock (type it below)" — because a one-off item bought for one job never enters the catalogue and still has to be billable. A catalogue that will not load falls back to free text rather than stopping the workshop.
+
+  Walked: RO-1084, two brake pad sets billed at $24 off a shelf holding 20 at $7. The line froze `cost=14`, the entry read `1100 D24 / 5300 D14 / 1400 C14 / 4300 C24`, and the shelf went to 18. Service cost on the dashboard went from **$0 to $14** — the first parts cost ever recorded through a browser. It still *rounds* to a 100% margin, because every historical part in the seeded dealership was billed as free text and those lines are not rewritten; anything billed from now on carries its cost.
+
+  **Two rehearsals, and one of them was answered by the runner rather than an assertion.** Removing the `partId` from the payload — the exact defect that existed — failed two tests. Letting a catalogue-load failure escape instead of falling back did *not* fail any assertion: the picker still rendered and the line still sent, so the behaviour under test genuinely survived. It failed `npm test` anyway, on the unhandled rejection, with exit code 1. Worth recording that the `catch` is there to avoid an unhandled rejection rather than to keep the screen alive.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **736/736**, `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **346/346** (was 340), `npm run build`.

@@ -991,6 +991,13 @@ export const es: Catalogue = {
   'workshop.hours': 'Horas',
   'workshop.rate': 'Tarifa',
   'workshop.amount': 'Importe',
+  'workshop.fromTheShelf': 'De la estantería',
+  'workshop.notFromStock': 'No es de almacén (escríbelo abajo)',
+  'workshop.howMany': 'Cuántos',
+  'workshop.onTheShelf': {
+    one: '{number}: {count} en la estantería.',
+    other: '{number}: {count} en la estantería.',
+  },
   'workshop.addLine': 'Añadirlo',
 
   'workshop.totalsCaption': 'A cuánto asciende la orden.',

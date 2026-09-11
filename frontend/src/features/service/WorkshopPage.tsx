@@ -56,6 +56,7 @@ import {
   type RepairOrderSummary,
   type ServiceLineKind,
   type ServiceLineView,
+  type PartSummary,
   type ServicePayType,
   type StaffMember,
 } from '../../shared/contracts';
@@ -636,7 +637,34 @@ function AddLine({
   const [rate, setRate] = useState('');
   const [amount, setAmount] = useState('');
 
+  // The catalogue, and which part of it this line sells. Empty means free text,
+  // which stays a legitimate choice: a one-off item bought for a single job
+  // never enters the catalogue and still has to be billable.
+  const [catalogue, setCatalogue] = useState<PartSummary[]>([]);
+  const [partId, setPartId] = useState('');
+  const [quantity, setQuantity] = useState('1');
+
   const isLabour = kind === 'Labour';
+  const isPart = kind === 'Part';
+
+  useEffect(() => {
+    if (!isPart || catalogue.length > 0) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        setCatalogue(await api<PartSummary[]>('/parts?inStockOnly=true&limit=200'));
+      } catch {
+        // A catalogue that will not load must not stop the job being written up.
+        // The line falls back to free text, which is what it did before the
+        // picker existed at all.
+        setCatalogue([]);
+      }
+    })();
+  }, [isPart, catalogue.length]);
+
+  const chosen = catalogue.find((part) => part.id === partId) ?? null;
 
   function add() {
     void onAct(async () => {
@@ -647,14 +675,36 @@ function AddLine({
         rate: isLabour && rate !== '' ? Number(rate) : null,
         unitAmount: isLabour ? 0 : Number(amount || 0),
         payType,
+        // Sending these is what makes the part come off the shelf at cost when
+        // the job is invoiced. Until 2026-09-11 the screen never sent them, so
+        // every part billed in a browser was free text: 5300 and 1400 never
+        // posted and the dashboard showed a 100% margin on service.
+        partId: isPart && partId !== '' ? partId : null,
+        partQuantity: isPart && partId !== '' ? Number(quantity || 1) : null,
       });
 
       setDescription('');
       setHours('');
       setRate('');
       setAmount('');
+      setPartId('');
+      setQuantity('1');
       return created;
     });
+  }
+
+  /** Fills the description and the price from the catalogue, both still editable. */
+  function choosePart(id: string) {
+    setPartId(id);
+
+    const part = catalogue.find((p) => p.id === id);
+    if (part === undefined) {
+      return;
+    }
+
+    if (description.trim() === '') {
+      setDescription(part.description);
+    }
   }
 
   return (
@@ -744,6 +794,49 @@ function AddLine({
           </div>
         )}
       </div>
+
+      {!isPart ? null : (
+        <div className="row">
+          <div className="field">
+            <label htmlFor="line-part">{t('workshop.fromTheShelf')}</label>
+            <select
+              id="line-part"
+              value={partId}
+              onChange={(event) => choosePart(event.target.value)}
+            >
+              {/* Free text first, and named as a choice rather than an absence.
+                  A one-off item bought for one job never enters the catalogue. */}
+              <option value="">{t('workshop.notFromStock')}</option>
+              {catalogue.map((part) => (
+                <option key={part.id} value={part.id}>
+                  {part.partNumber} — {part.description} ({part.quantityOnHand})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {partId === '' ? null : (
+            <div className="field">
+              <label htmlFor="line-quantity">{t('workshop.howMany')}</label>
+              <input
+                id="line-quantity"
+                inputMode="decimal"
+                value={quantity}
+                onChange={(event) => setQuantity(event.target.value)}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {chosen === null ? null : (
+        <p className="note">
+          {t('workshop.onTheShelf', {
+            count: chosen.quantityOnHand,
+            number: chosen.partNumber,
+          })}
+        </p>
+      )}
 
       <div className="actions">
         <button

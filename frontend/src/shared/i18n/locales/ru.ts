@@ -1016,6 +1016,15 @@ export const ru: Catalogue = {
   'workshop.hours': 'Часы',
   'workshop.rate': 'Ставка',
   'workshop.amount': 'Сумма',
+  'workshop.fromTheShelf': 'Со склада',
+  'workshop.notFromStock': 'Не со склада (впишите ниже)',
+  'workshop.howMany': 'Сколько',
+  'workshop.onTheShelf': {
+    one: '{number}: {count} на складе.',
+    few: '{number}: {count} на складе.',
+    many: '{number}: {count} на складе.',
+    other: '{number}: {count} на складе.',
+  },
   'workshop.addLine': 'Добавить',
 
   'workshop.totalsCaption': 'Итог по заказ-наряду.',

@@ -199,6 +199,20 @@ found. The five marked **(stopper)** would stop a real installation.
    So this is not missing machinery. It is a picker that was never put on the
    screen, and it silently overstates parts gross by 100%.
 
+   **Done 2026-09-11.** A picker on the repair-order line, offering what is on
+   the shelf with the quantity beside it, filling the description from the
+   catalogue and leaving it editable. Free text is still there and is named as a
+   choice — "Not from stock (type it below)" — because a one-off item bought for
+   one job never enters the catalogue and still has to be billable. A catalogue
+   that will not load falls back to free text rather than stopping the workshop.
+
+   Walked: RO-1084 billed two brake pad sets at $24 off a shelf holding 20 at $7.
+   The line froze `cost=14`, the entry read `1100 D24 / 5300 D14 / 1400 C14 /
+   4300 C24`, and the shelf went to 18. Service cost on the dashboard went from
+   $0 to $14 — the first parts cost ever recorded through a browser. It still
+   *rounds* to a 100% margin, because every historical part in the seeded
+   dealership was billed as free text and those lines are not rewritten.
+
 4. **The dashboard states a 100% margin on service as fact.** "Service $17,286
    revenue, $0 cost, 100% margin" — finding 3 arriving on the screen a dealer
    principal reads most often, with nothing to hint the cost side was never

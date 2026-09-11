@@ -1008,6 +1008,13 @@ export const en = {
   'workshop.hours': 'Hours',
   'workshop.rate': 'Rate',
   'workshop.amount': 'Amount',
+  'workshop.fromTheShelf': 'Off the shelf',
+  'workshop.notFromStock': 'Not from stock (type it below)',
+  'workshop.howMany': 'How many',
+  'workshop.onTheShelf': {
+    one: '{number}: {count} on the shelf.',
+    other: '{number}: {count} on the shelf.',
+  },
 
   'workshop.totalsCaption': 'What the job comes to.',
   'workshop.totalLabour': 'Labour',

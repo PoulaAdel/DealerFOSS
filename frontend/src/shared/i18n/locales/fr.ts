@@ -979,6 +979,13 @@ export const fr: Catalogue = {
   'workshop.hours': 'Heures',
   'workshop.rate': 'Taux horaire',
   'workshop.amount': 'Montant',
+  'workshop.fromTheShelf': 'Pris en magasin',
+  'workshop.notFromStock': 'Pas en stock (à saisir ci-dessous)',
+  'workshop.howMany': 'Combien',
+  'workshop.onTheShelf': {
+    one: '{number} : {count} en magasin.',
+    other: '{number} : {count} en magasin.',
+  },
   'workshop.addLine': 'Ajouter',
 
   'workshop.totalsCaption': 'Le total de cet ordre de réparation.',

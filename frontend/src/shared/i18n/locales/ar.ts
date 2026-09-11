@@ -1038,6 +1038,17 @@ export const ar: Catalogue = {
   'workshop.hours': 'الساعات',
   'workshop.rate': 'سعر الساعة',
   'workshop.amount': 'المبلغ',
+  'workshop.fromTheShelf': 'من المخزن',
+  'workshop.notFromStock': 'ليست من المخزن (اكتبها أدناه)',
+  'workshop.howMany': 'الكمية',
+  'workshop.onTheShelf': {
+    zero: '{number}: لا يوجد في المخزن.',
+    one: '{number}: قطعة واحدة في المخزن.',
+    two: '{number}: قطعتان في المخزن.',
+    few: '{number}: {count} قطع في المخزن.',
+    many: '{number}: {count} قطعة في المخزن.',
+    other: '{number}: {count} في المخزن.',
+  },
   'workshop.addLine': 'أضِفه',
 
   'workshop.totalsCaption': 'ما يبلغه أمر الشغل.',

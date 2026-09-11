@@ -613,3 +613,137 @@ describe('who is doing the work', () => {
     expect(screen.queryByLabelText('Who is on it')).toBeNull();
   });
 });
+
+/**
+ * The parts picker on a job line.
+ *
+ * `src/App/Parts` was a complete capability from the day it was built, and
+ * verify-e2e proved its average costing on every run. What did not exist was any
+ * way to reach it: the write-up form sent a description and an amount and never a
+ * part id, so every part billed in a browser was free text with no cost, 5300 and
+ * 1400 never posted, and the dashboard stated a 100% margin on service as fact.
+ * These tests are about the reaching.
+ */
+describe('billing a part off the shelf', () => {
+  const brakePads = {
+    id: 'p1',
+    partNumber: 'BP-4471',
+    description: 'Front brake pads',
+    rooftopId: 'r1',
+    quantityOnHand: 12,
+    unitCost: 34.5,
+    currency: 'USD',
+  };
+
+  function mockWithCatalogue() {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders/ro1': { ok: true, body: detail({ status: 'InProgress' }) },
+      '/repair-orders/ro1/lines': { ok: true, body: detail({ status: 'InProgress' }) },
+      '/parts': { ok: true, body: [brakePads] },
+      '/staff': noStaff,
+    });
+  }
+
+  async function openPartLine() {
+    renderWorkshop();
+    await openJob();
+    await userEvent.selectOptions(screen.getByLabelText('What'), 'Part');
+  }
+
+  function lineBody(): Record<string, unknown> {
+    const call = [...apiCalls()]
+      .reverse()
+      .find((c) => c.path === '/repair-orders/ro1/lines' && c.init?.method === 'POST');
+
+    expect(call, 'the line was never sent').toBeDefined();
+    return JSON.parse(call!.init!.body as string) as Record<string, unknown>;
+  }
+
+  it('offers the catalogue only once the line is a part', async () => {
+    mockWithCatalogue();
+    renderWorkshop();
+    await openJob();
+
+    expect(screen.queryByLabelText('Off the shelf')).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('What'), 'Part');
+
+    expect(await screen.findByLabelText('Off the shelf')).toBeVisible();
+  });
+
+  it('sends the part and the quantity, so it comes off the shelf at cost', async () => {
+    mockWithCatalogue();
+    await openPartLine();
+
+    await userEvent.selectOptions(await screen.findByLabelText('Off the shelf'), 'p1');
+    await userEvent.clear(screen.getByLabelText('How many'));
+    await userEvent.type(screen.getByLabelText('How many'), '2');
+    await userEvent.type(screen.getByLabelText('Amount'), '68.40');
+    await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
+
+    expect(lineBody()).toMatchObject({
+      kind: 'Part',
+      partId: 'p1',
+      partQuantity: 2,
+      unitAmount: 68.4,
+    });
+  });
+
+  it('fills the description from the catalogue, and leaves it editable', async () => {
+    mockWithCatalogue();
+    await openPartLine();
+
+    await userEvent.selectOptions(await screen.findByLabelText('Off the shelf'), 'p1');
+
+    expect(screen.getByLabelText('Description')).toHaveValue('Front brake pads');
+  });
+
+  it('says what is on the shelf, so nobody bills two of a part there is one of', async () => {
+    mockWithCatalogue();
+    await openPartLine();
+
+    await userEvent.selectOptions(await screen.findByLabelText('Off the shelf'), 'p1');
+
+    expect(screen.getByText(/BP-4471: 12 on the shelf/)).toBeVisible();
+  });
+
+  it('still bills a one-off item nobody stocks', async () => {
+    // Free text stays a legitimate choice, not a shortcut: something bought for
+    // a single job never enters the catalogue and still has to be billable.
+    mockWithCatalogue();
+    await openPartLine();
+
+    await screen.findByLabelText('Off the shelf');
+    await userEvent.type(screen.getByLabelText('Description'), 'Special-order trim clip');
+    await userEvent.type(screen.getByLabelText('Amount'), '12');
+    await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
+
+    const body = lineBody();
+    expect(body.partId).toBeNull();
+    expect(body.partQuantity).toBeNull();
+    expect(body.description).toBe('Special-order trim clip');
+  });
+
+  it('writes the job up anyway when the catalogue will not load', async () => {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders/ro1': { ok: true, body: detail({ status: 'InProgress' }) },
+      '/repair-orders/ro1/lines': { ok: true, body: detail({ status: 'InProgress' }) },
+      '/parts': { ok: false, status: 403, code: 'parts.forbidden', detail: 'No.' },
+      '/staff': noStaff,
+    });
+    await openPartLine();
+
+    // The picker is there with only the free-text choice in it, and the line
+    // still goes on. A catalogue that will not load must not stop the workshop.
+    expect(await screen.findByLabelText('Off the shelf')).toBeVisible();
+    await userEvent.type(screen.getByLabelText('Description'), 'Oil filter');
+    await userEvent.type(screen.getByLabelText('Amount'), '9');
+    await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
+
+    expect(lineBody().description).toBe('Oil filter');
+  });
+});
