@@ -34,8 +34,11 @@ internal static class AccountingEndpoints
         group.MapGet("/accounts", ListAccountsAsync);
         group.MapGet("/balances", TrialBalanceAsync);
         group.MapGet("/performance", PerformanceAsync);
+        group.MapGet("/profit-and-loss", ProfitAndLossAsync);
+        group.MapGet("/balance-sheet", BalanceSheetAsync);
         group.MapGet("/journal", ListAsync);
         group.MapGet("/journal/{entryId:guid}", GetAsync);
+        group.MapPost("/journal", PostManualAsync);
         group.MapPost("/journal/{entryId:guid}/reverse", ReverseAsync);
 
         // Opening, closing, and reopening a month. Separate paths rather than one
@@ -129,6 +132,65 @@ internal static class AccountingEndpoints
         var result = await accounting.PerformanceAsync(query, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
+
+
+    private static async Task<IResult> ProfitAndLossAsync(
+        IAccounting accounting,
+        CancellationToken cancellationToken,
+        Guid? rooftopId = null,
+        DateOnly? from = null,
+        DateOnly? to = null)
+    {
+        var query = new BalanceQuery(
+            rooftopId is null ? null : new RooftopId(rooftopId.Value), from, to);
+
+        var result = await accounting.ProfitAndLossAsync(query, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> BalanceSheetAsync(
+        IAccounting accounting,
+        CancellationToken cancellationToken,
+        Guid? rooftopId = null,
+        DateOnly? asAt = null)
+    {
+        // No `from`: a balance sheet is a position, not a period. Offering one
+        // would invite a caller to ask for a month and get arithmetic nonsense.
+        var query = new BalanceQuery(
+            rooftopId is null ? null : new RooftopId(rooftopId.Value), null, asAt);
+
+        var result = await accounting.BalanceSheetAsync(query, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> PostManualAsync(
+        IAccounting accounting,
+        ManualEntryRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await accounting.PostManualAsync(
+            new ManualPosting(
+                new RooftopId(request.RooftopId),
+                request.EntryDate,
+                request.Memo,
+                request.Currency,
+                request.Lines),
+            cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <summary>
+    /// The wire shape for a hand-written entry. Separate from
+    /// <see cref="ManualPosting"/> only because the rooftop arrives as a plain
+    /// Guid over HTTP.
+    /// </summary>
+    internal sealed record ManualEntryRequest(
+        Guid RooftopId,
+        DateOnly EntryDate,
+        string Memo,
+        string Currency,
+        IReadOnlyList<ManualLine> Lines);
 
     private static async Task<IResult> ListAsync(
         IAccounting accounting,

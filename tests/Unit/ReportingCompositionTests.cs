@@ -249,6 +249,18 @@ public sealed class ReportingCompositionTests
             PaymentPosting payment, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        public Task<Result<ProfitAndLoss>> ProfitAndLossAsync(
+            BalanceQuery query, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<Result<BalanceSheet>> BalanceSheetAsync(
+            BalanceQuery query, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<Result<JournalEntryDetail>> PostManualAsync(
+            ManualPosting entry, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task<Result<JournalEntryDetail>> ReverseAsync(
             Guid entryId, string reason, CancellationToken cancellationToken) =>
             throw new NotSupportedException();

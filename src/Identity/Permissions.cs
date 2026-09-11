@@ -92,6 +92,18 @@ public static class Permissions
     public const string AccountingReverse = "Accounting.Reverse";
 
     /// <summary>
+    /// Writing a journal entry by hand — an expense, an opening balance, a
+    /// correction.
+    ///
+    /// Deliberately not <see cref="AccountingPost"/>, which a salesperson holds
+    /// because delivering a car posts the sale. That is posting a consequence of
+    /// work somebody did; this is choosing the accounts and the amounts, which is
+    /// the most powerful thing anyone can do to a set of books. Whoever holds it
+    /// can move money between any two accounts and make the result balance.
+    /// </summary>
+    public const string AccountingManualEntry = "Accounting.ManualEntry";
+
+    /// <summary>
     /// Opening a month and closing it at the end of the close work. Held
     /// organization-wide: the books close as a whole, not one lot at a time.
     /// </summary>
@@ -214,6 +226,7 @@ public static class Permissions
         AccountingRead,
         AccountingPost,
         AccountingReverse,
+        AccountingManualEntry,
         StaffRead,
         StaffManage,
         StaffResetPassword,

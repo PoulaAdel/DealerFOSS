@@ -58,6 +58,7 @@ export function TakeIntoStock({
 
   const [stockNumber, setStockNumber] = useState('');
   const [cost, setCost] = useState('');
+  const [floorplanned, setFloorplanned] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +112,7 @@ export function TakeIntoStock({
           // into "not recorded" rather than into a car that cost nothing.
           costAmount: typed === null || Number.isNaN(typed) ? null : typed,
           costCurrency: typed === null || Number.isNaN(typed) ? null : 'USD',
+          floorplanned,
         }),
       );
     } catch (failure) {
@@ -196,6 +198,18 @@ export function TakeIntoStock({
           onChange={(event) => setCost(event.target.value)}
         />
         <p className="note">{t('stock.costNote')}</p>
+
+        {/* A fact about THIS car, not a setting: most lots carry both. It decides
+            whether the purchase credits the floorplan lender or the bank. */}
+        <label className="check" htmlFor="take-floorplan">
+          <input
+            id="take-floorplan"
+            type="checkbox"
+            checked={floorplanned}
+            onChange={(event) => setFloorplanned(event.target.checked)}
+          />
+          {t('stock.floorplanned')}
+        </label>
 
         {error === null ? null : (
           <p className="error" role="alert">

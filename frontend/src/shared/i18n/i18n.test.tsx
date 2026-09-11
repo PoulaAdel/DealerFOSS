@@ -210,6 +210,8 @@ describe('the catalogues', () => {
       ['stock.status', 'the same word in German'],
       ['stock.colStatus', 'the same word in German'],
       ['trialBalance.total', 'the same word in French'],
+      ['reports.total', 'the same word in French'],
+      ['entry.lineNote', 'the same word in French'],
       ['customers.colName', 'the same word in German'],
       ['deals.stockLine', 'French uses "stock" for vehicle inventory'],
       ['staff.colName', 'the same word in German'],

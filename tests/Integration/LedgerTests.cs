@@ -645,6 +645,312 @@ public sealed class LedgerTests(HostFixture fixture)
         after.EnumerateArray().Select(r => r.GetProperty("id").GetString())
             .Should().NotContain(receivable, because: "the question is who still owes us");
     }
+
+    [Fact]
+    public async Task An_overhead_can_be_recorded_at_all()
+    {
+        // Before 2026-09-11 the chart held no expense account of any kind - not
+        // wages, not rent, not advertising - so a dealership could record
+        // everything it earned and nothing it spent. Its own permission, because
+        // choosing the accounts and the amounts is the most powerful thing
+        // anybody can do to a set of books.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+
+        using var posted = await PostAsync($"{Journal}", Manager, new
+        {
+            rooftopId,
+            entryDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            memo = "September rent",
+            currency = "USD",
+            lines = new[]
+            {
+                new { accountCode = "6100", debit = 4500m, credit = 0m, memo = "Premises" },
+                new { accountCode = "1000", debit = 0m, credit = 4500m, memo = "Paid from the bank" },
+            },
+        });
+
+        posted.StatusCode.Should().Be(HttpStatusCode.OK, because: await posted.Content.ReadAsStringAsync());
+
+        var entry = await posted.Content.ReadFromJsonAsync<JsonElement>();
+        entry.GetProperty("source").GetString().Should().Be("Manual");
+        SumFor(entry, "6100", "debit").Should().Be(4500m);
+        SumFor(entry, "1000", "credit").Should().Be(4500m);
+    }
+
+    [Fact]
+    public async Task Writing_an_entry_by_hand_is_not_something_a_salesperson_may_do()
+    {
+        // They hold Accounting.Post, because delivering a car posts the sale.
+        // That is posting a consequence of work they did; this is choosing the
+        // accounts, and it is a different right on purpose.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+
+        using var refused = await PostAsync($"{Journal}", Sales, new
+        {
+            rooftopId,
+            entryDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            memo = "Nothing to see here",
+            currency = "USD",
+            lines = new[]
+            {
+                new { accountCode = "1000", debit = 5000m, credit = 0m, memo = (string?)null },
+                new { accountCode = "3000", debit = 0m, credit = 5000m, memo = (string?)null },
+            },
+        });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task A_hand_written_entry_that_does_not_balance_is_refused_with_a_reason()
+    {
+        var rooftopId = await RooftopIdAsync("NAG-01");
+
+        using var refused = await PostAsync($"{Journal}", Manager, new
+        {
+            rooftopId,
+            entryDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            memo = "Wrong on purpose",
+            currency = "USD",
+            lines = new[]
+            {
+                new { accountCode = "6000", debit = 1000m, credit = 0m, memo = (string?)null },
+                new { accountCode = "1000", debit = 0m, credit = 900m, memo = (string?)null },
+            },
+        });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task An_entry_naming_an_account_that_does_not_exist_says_which()
+    {
+        var rooftopId = await RooftopIdAsync("NAG-01");
+
+        using var refused = await PostAsync($"{Journal}", Manager, new
+        {
+            rooftopId,
+            entryDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            memo = "Typo",
+            currency = "USD",
+            lines = new[]
+            {
+                new { accountCode = "9999", debit = 10m, credit = 0m, memo = (string?)null },
+                new { accountCode = "1000", debit = 0m, credit = 10m, memo = (string?)null },
+            },
+        });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await refused.Content.ReadAsStringAsync()).Should().Contain("9999");
+    }
+
+    [Fact]
+    public async Task An_entry_with_no_explanation_is_refused()
+    {
+        // The one somebody will be asked about in a year and nobody will be able
+        // to answer.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+
+        using var refused = await PostAsync($"{Journal}", Manager, new
+        {
+            rooftopId,
+            entryDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            memo = "   ",
+            currency = "USD",
+            lines = new[]
+            {
+                new { accountCode = "6000", debit = 10m, credit = 0m, memo = (string?)null },
+                new { accountCode = "1000", debit = 0m, credit = 10m, memo = (string?)null },
+            },
+        });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task A_profit_and_loss_takes_overheads_off_the_gross()
+    {
+        // The report this system could not produce at all before 2026-09-11.
+        // Gross comes from the same method the dashboard reads, so the two cannot
+        // disagree; what is new is everything below the gross line.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        using var wages = await PostAsync($"{Journal}", Manager, new
+        {
+            rooftopId,
+            entryDate = today,
+            memo = "Wages for the P&L test",
+            currency = "USD",
+            lines = new[]
+            {
+                new { accountCode = "6000", debit = 1200m, credit = 0m, memo = (string?)null },
+                new { accountCode = "1000", debit = 0m, credit = 1200m, memo = (string?)null },
+            },
+        });
+        wages.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await SendAsync(
+            HttpMethod.Get, $"/api/v1/accounting/profit-and-loss?from={today}&to={today}", Manager);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var report = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        var gross = report.GetProperty("grossProfit").GetDecimal();
+        var expenses = report.GetProperty("totalExpenses").GetDecimal();
+        var net = report.GetProperty("netProfit").GetDecimal();
+
+        expenses.Should().BeGreaterThanOrEqualTo(1200m, because: "the wages just posted are in there");
+        net.Should().Be(gross - expenses, because: "net is gross less what it costs to run the place");
+
+        // Every overhead account is listed, including the ones at nothing, so a
+        // missing figure and no spending do not look the same.
+        report.GetProperty("expenses").EnumerateArray().Select(e => e.GetProperty("code").GetString())
+            .Should().Contain(["6000", "6100", "6200", "6300", "6900"]);
+    }
+
+    [Fact]
+    public async Task Cost_of_sales_is_not_subtracted_twice()
+    {
+        // The mistake that reads as a plausible net profit about a million
+        // dollars too low: cost of sales is an expense account, so a report that
+        // took every AccountKind.Expense as an overhead would subtract it once
+        // inside the departmental gross and again below the line.
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        using var response = await SendAsync(
+            HttpMethod.Get, $"/api/v1/accounting/profit-and-loss?from={today}&to={today}", Manager);
+
+        var report = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var codes = report.GetProperty("expenses").EnumerateArray()
+            .Select(e => e.GetProperty("code").GetString()).ToList();
+
+        codes.Should().NotContain("5000", because: "cost of vehicle sales is already inside the gross");
+        codes.Should().NotContain("5300", because: "so is cost of parts sales");
+        codes.Should().NotContain("5500", because: "and the cost of F&I products");
+    }
+
+    [Fact]
+    public async Task A_balance_sheet_balances()
+    {
+        // Assets = liabilities + equity + what has been earned. If it ever does
+        // not, something has been posted this report cannot classify, and saying
+        // so is more useful than printing a plausible page with a hole in it.
+        using var response = await SendAsync(HttpMethod.Get, "/api/v1/accounting/balance-sheet", Manager);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var sheet = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        var assets = sheet.GetProperty("totalAssets").GetDecimal();
+        var liabilities = sheet.GetProperty("totalLiabilities").GetDecimal();
+        var equity = sheet.GetProperty("totalEquity").GetDecimal();
+        var earnings = sheet.GetProperty("earningsToDate").GetDecimal();
+
+        assets.Should().Be(liabilities + equity + earnings);
+        sheet.GetProperty("balances").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Capital_put_in_shows_as_equity_and_keeps_the_sheet_balanced()
+    {
+        // The other half of what the stock-purchase posting exposed: a business
+        // with no capital cannot buy anything, and a balance sheet with no equity
+        // section does not balance in any form a person would recognise.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+
+        using var opening = await PostAsync($"{Journal}", Manager, new
+        {
+            rooftopId,
+            entryDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            memo = "Capital introduced",
+            currency = "USD",
+            lines = new[]
+            {
+                new { accountCode = "1000", debit = 50000m, credit = 0m, memo = (string?)null },
+                new { accountCode = "3000", debit = 0m, credit = 50000m, memo = (string?)null },
+            },
+        });
+        opening.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await SendAsync(HttpMethod.Get, "/api/v1/accounting/balance-sheet", Manager);
+        var sheet = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        sheet.GetProperty("equity").EnumerateArray()
+            .Select(e => e.GetProperty("code").GetString())
+            .Should().Contain("3000");
+
+        sheet.GetProperty("totalEquity").GetDecimal().Should().BeGreaterThanOrEqualTo(50000m);
+        sheet.GetProperty("balances").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_floorplanned_car_is_owed_to_the_lender_rather_than_taken_from_the_bank()
+    {
+        // Most dealers floorplan their stock. Until 2026-09-11 every purchase
+        // credited Cash, which is what drove the seeded dealership's bank to
+        // minus $2.5M the moment stock became a real asset.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var suffix = $"{Guid.NewGuid():N}"[..8].ToUpperInvariant();
+        var stockNumber = $"F{suffix}";
+
+        var vehicleId = await CreatedIdAsync("/api/v1/vehicles", new
+        {
+            vin = $"FLRPLN{suffix}"[..13], modelYear = 2024, make = "Skoda", model = "Octavia",
+            vinExceptionReason = "Synthetic VIN for a ledger test.",
+        });
+
+        await CreatedIdAsync("/api/v1/inventory", new
+        {
+            vehicleId, rooftopId, stockNumber,
+            costAmount = 21000m, costCurrency = "USD",
+            floorplanned = true,
+        });
+
+        var purchase = await EntryForReferenceAsync(stockNumber);
+
+        SumFor(purchase, "1300", "debit").Should().Be(21000m, because: "the car is still an asset");
+        SumFor(purchase, "2000", "credit").Should().Be(21000m,
+            because: "the lender paid for it, and is owed until it sells");
+        SumFor(purchase, "1000", "credit").Should().Be(0m, because: "the bank was never touched");
+    }
+
+
+    [Fact]
+    public async Task Every_expense_account_appears_on_the_profit_and_loss()
+    {
+        // The hole this closes was found by adding the two reports up by hand and
+        // noticing they disagreed by $663.60. The first version of the report
+        // named five overhead accounts explicitly, so 5400 Internal service
+        // charge - an expense, and not a department's cost of sales - appeared on
+        // no part of the profit and loss at all. The seeded dealership had $1,196
+        // in it and the report did not mention it.
+        //
+        // Asked of the CHART rather than of a list, so a new expense account is on
+        // the report the day somebody adds it.
+        using var chart = await SendAsync(HttpMethod.Get, "/api/v1/accounting/accounts", Manager);
+        var expenseCodes = (await chart.Content.ReadFromJsonAsync<JsonElement>())
+            .EnumerateArray()
+            .Where(a => a.GetProperty("kind").GetString() == "Expense")
+            .Select(a => a.GetProperty("code").GetString()!)
+            .ToList();
+
+        using var response = await SendAsync(
+            HttpMethod.Get, "/api/v1/accounting/profit-and-loss", Manager);
+
+        var report = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var onReport = report.GetProperty("expenses").EnumerateArray()
+            .Select(e => e.GetProperty("code").GetString()!)
+            .ToList();
+
+        // Cost of sales is inside the departmental gross and must not be below the
+        // line as well. Everything else has to be somewhere a person can see it.
+        var costOfSales = new[] { "5000", "5300", "5500" };
+        var shouldBeListed = expenseCodes.Where(c => !costOfSales.Contains(c)).ToList();
+
+        onReport.Should().BeEquivalentTo(shouldBeListed,
+            because: "an expense account on no report is money nobody can account for");
+    }
+
     // --- helpers -----------------------------------------------------------
 
     /// <summary>The receivable id for a delivered deal, which delivery opened.</summary>

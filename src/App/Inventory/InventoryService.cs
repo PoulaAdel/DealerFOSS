@@ -282,7 +282,8 @@ public sealed class InventoryService(
                     stockNumber,
                     cost.Value.Currency,
                     cost.Value.Amount,
-                    $"Stock {stockNumber} — {vehicle.DisplayName}"),
+                    $"Stock {stockNumber} — {vehicle.DisplayName}",
+                    unit.Floorplanned),
                 cancellationToken);
 
             if (posted.IsFailure)

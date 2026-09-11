@@ -993,3 +993,85 @@ export const paymentMethods: PaymentMethod[] = [
   'Cheque',
   'Finance',
 ];
+
+/**
+ * A profit and loss. Departmental gross first, because that is how a dealership
+ * is run; overheads and net profit below it.
+ */
+export interface ProfitAndLoss {
+  from: string | null;
+  to: string | null;
+  currency: string;
+  departments: DepartmentResult[];
+  totalRevenue: number;
+  totalCost: number;
+  grossProfit: number;
+  expenses: ExpenseLine[];
+  totalExpenses: number;
+  netProfit: number;
+}
+
+export interface ExpenseLine {
+  code: string;
+  name: string;
+  amount: number;
+}
+
+/**
+ * What the business owns and owes, as at a date.
+ *
+ * `balances` is not decoration. Assets must equal liabilities plus equity plus
+ * what has been earned; if the server says they do not, show that rather than
+ * printing a plausible page with a hole in it.
+ */
+export interface BalanceSheet {
+  asAt: string | null;
+  currency: string;
+  assets: AccountBalance[];
+  liabilities: AccountBalance[];
+  equity: AccountBalance[];
+  totalAssets: number;
+  totalLiabilities: number;
+  totalEquity: number;
+  /** Revenue less every expense, for all time. Its own line: there is no year-end close. */
+  earningsToDate: number;
+  balances: boolean;
+}
+
+/** One line of an entry somebody writes by hand. */
+export interface ManualLine {
+  accountCode: string;
+  debit: number;
+  credit: number;
+  memo: string | null;
+}
+
+/** One line of the chart of accounts, for a picker to label amounts with. */
+export interface AccountView {
+  id: string;
+  code: string;
+  name: string;
+  kind: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
+}
+
+/** A posted journal entry, as the ledger hands it back. */
+export interface JournalEntryDetail {
+  id: string;
+  rooftopId: string;
+  entryDate: string;
+  source: string;
+  reference: string;
+  memo: string;
+  currency: string;
+  totalDebits: number;
+  totalCredits: number;
+  lines: JournalLineView[];
+}
+
+export interface JournalLineView {
+  accountCode: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  memo: string | null;
+}

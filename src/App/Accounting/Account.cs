@@ -180,6 +180,54 @@ public static class AccountCodes
     public const string SalesTaxPayable = "2100";
 
     /// <summary>
+    /// Stock financed by a lender rather than bought outright. A liability: the
+    /// cars are on the lot and the money for them belongs to somebody else until
+    /// each one sells.
+    /// </summary>
+    /// <remarks>
+    /// Added 2026-09-11, and it exists because fixing one lie exposed another.
+    /// Booking stock purchases (2026-09-10) made vehicle inventory a real asset
+    /// for the first time and drove Cash to minus $2.5M, because the chart had no
+    /// way for a dealership to pay for anything except out of a bank account that
+    /// started at nothing. Most dealers floorplan: the lender pays the invoice and
+    /// is repaid when the car sells.
+    /// </remarks>
+    public const string FloorplanPayable = "2000";
+
+    /// <summary>
+    /// What the owners put in. The other half of the same problem as
+    /// <see cref="FloorplanPayable"/>: a business with no capital cannot buy
+    /// anything, and a balance sheet with no equity section does not balance in
+    /// any form a person would recognise.
+    /// </summary>
+    public const string OwnersCapital = "3000";
+
+    // The expense accounts. Before 2026-09-11 there were NONE — not one — so the
+    // system could record everything a dealership earned and nothing it spent,
+    // and "what did the month make" could only ever be answered as gross. The
+    // five below are the ones a dealer principal reads; a real installation will
+    // want more, which is what makes replacing the chart a register row.
+
+    /// <summary>Wages, salaries and commission.</summary>
+    public const string Wages = "6000";
+
+    /// <summary>Rent, rates and the cost of the premises.</summary>
+    public const string Rent = "6100";
+
+    /// <summary>Advertising and marketing.</summary>
+    public const string Advertising = "6200";
+
+    /// <summary>
+    /// What the floorplan lender charges for carrying the stock. Its own line
+    /// because it is the cost of a car standing still, and a used-car manager who
+    /// cannot see it has no reason to move ageing stock.
+    /// </summary>
+    public const string FloorplanInterest = "6300";
+
+    /// <summary>Everything else, until somebody needs it split.</summary>
+    public const string OtherOperatingExpense = "6900";
+
+    /// <summary>
     /// The chart every dealership starts with, in one place.
     ///
     /// It used to be written out twice — once in the development seeder and once
@@ -201,7 +249,9 @@ public static class AccountCodes
         (VehicleInventory, "Vehicle inventory", AccountKind.Asset),
         (TradeInventory, "Trade-in inventory", AccountKind.Asset),
         (PartsInventory, "Parts inventory", AccountKind.Asset),
+        (FloorplanPayable, "Floorplan payable", AccountKind.Liability),
         (SalesTaxPayable, "Sales tax payable", AccountKind.Liability),
+        (OwnersCapital, "Owners' capital", AccountKind.Equity),
         (VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
         (FeeRevenue, "Fee income", AccountKind.Revenue),
         (LabourRevenue, "Labour sales", AccountKind.Revenue),
@@ -213,5 +263,48 @@ public static class AccountCodes
         (CostOfPartsSales, "Cost of parts sales", AccountKind.Expense),
         (InternalServiceCharge, "Internal service charge", AccountKind.Expense),
         (CostOfFinanceProducts, "Cost of finance products", AccountKind.Expense),
+        (Wages, "Wages and salaries", AccountKind.Expense),
+        (Rent, "Rent and premises", AccountKind.Expense),
+        (Advertising, "Advertising", AccountKind.Expense),
+        (FloorplanInterest, "Floorplan interest", AccountKind.Expense),
+        (OtherOperatingExpense, "Other operating expenses", AccountKind.Expense),
     ];
+
+    /// <summary>
+    /// The expense accounts already counted INSIDE a department's gross. A profit
+    /// and loss must not take these off a second time below the line.
+    /// </summary>
+    /// <remarks>
+    /// Subtracting them twice reads as a plausible net profit roughly a million
+    /// dollars too low, which is exactly the kind of wrong number nobody
+    /// questions.
+    /// </remarks>
+    public static IReadOnlyList<string> CostOfSales { get; } =
+    [
+        CostOfVehicleSales, CostOfPartsSales, CostOfFinanceProducts,
+    ];
+
+    /// <summary>
+    /// Whether an expense account belongs below the gross line — what it costs to
+    /// run the business, as opposed to what the things sold cost to buy.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Asked as a question about the chart rather than answered by a fixed list,
+    /// and that is the second version. The first named the five 6xxx accounts
+    /// explicitly, which double-counted nothing and quietly LOST something else:
+    /// 5400 Internal service charge is an expense, is not a department's cost of
+    /// sales, and so appeared on no part of the profit and loss at all. The
+    /// seeded dealership had $1,196 in it and the report simply did not mention
+    /// it — money spent into an account that showed on no report.
+    /// </para>
+    /// <para>
+    /// Found by adding up the two reports by hand and noticing they disagreed by
+    /// $663.60. Phrased this way, a new expense account is on the report the day
+    /// somebody adds it, and the only way to keep one off is to name it as a cost
+    /// of sales deliberately.
+    /// </para>
+    /// </remarks>
+    public static bool IsOperatingExpense(string code, AccountKind kind) =>
+        kind == AccountKind.Expense && !CostOfSales.Contains(code);
 }

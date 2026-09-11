@@ -166,7 +166,15 @@ public sealed record NewInventoryUnit(
     decimal? CostAmount = null,
     string? CostCurrency = null,
     DateOnly? AcquiredOn = null,
-    string? Note = null);
+    string? Note = null,
+
+    /// <summary>
+    /// True when a lender paid for this car and will be repaid when it sells;
+    /// false when the dealership bought it outright. Decides what the purchase
+    /// entry credits - 2000 Floorplan payable or 1000 Cash - and it is a fact
+    /// about THIS car rather than a setting, because most lots carry both.
+    /// </summary>
+    bool Floorplanned = false);
 
 /// <summary>What a caller supplies to move a unit to another status.</summary>
 public sealed record StatusChangeRequest(string Status, string? Note = null);

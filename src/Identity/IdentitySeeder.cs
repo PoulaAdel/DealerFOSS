@@ -114,6 +114,11 @@ public static class IdentitySeeder
             Permissions.AccountingPost,
             // The only role that may make a posted entry disappear.
             Permissions.AccountingReverse,
+            // Writing an entry by hand: an expense, an opening balance, a
+            // correction. The most powerful thing anybody can do to a set of
+            // books, and deliberately not implied by Accounting.Post — which a
+            // salesperson holds because delivering a car posts the sale.
+            Permissions.AccountingManualEntry,
             // Seeing and managing the people who work here. The manager holds it
             // organization-wide, which is what lets them add a starter and hand
             // out group-level access; a rooftop-scoped holder could do neither.

@@ -47,6 +47,13 @@ public sealed class AccountingService(
     /// </summary>
     private const string ReversePermission = Permissions.AccountingReverse;
 
+    /// <summary>
+    /// Writing an entry by hand. Its own right, and NOT implied by
+    /// <see cref="PostPermission"/> - a salesperson holds that because delivering
+    /// a car posts the sale, and choosing the accounts is a different act.
+    /// </summary>
+    private const string ManualEntryPermission = Permissions.AccountingManualEntry;
+
     private const string ClosePeriodPermission = Permissions.AccountingClosePeriod;
 
     /// <summary>
@@ -302,6 +309,264 @@ public sealed class AccountingService(
             departments.Sum(d => d.Gross),
             deliveries,
             invoices));
+    }
+
+    public async Task<Result<ProfitAndLoss>> ProfitAndLossAsync(
+        BalanceQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        // The departmental half is PerformanceAsync's, called rather than
+        // reimplemented. Two methods computing gross from the same accounts would
+        // be two places to disagree, and the dashboard already reads one of them.
+        var performance = await PerformanceAsync(query, cancellationToken);
+        if (performance.IsFailure)
+        {
+            return Result.Failure<ProfitAndLoss>(performance.Error);
+        }
+
+        var covered = await CoveredEntriesAsync(query, cancellationToken);
+        if (covered.IsFailure)
+        {
+            return Result.Failure<ProfitAndLoss>(covered.Error);
+        }
+
+        var (entries, _) = covered.Value;
+
+        var totals = await (
+            from line in _db.JournalLines.AsNoTracking()
+            join entry in entries on line.EntryId equals entry.Id
+            group line by line.AccountCode into byCode
+            select new
+            {
+                Code = byCode.Key,
+                Spent = byCode.Sum(l => l.Debit) - byCode.Sum(l => l.Credit),
+            }).ToListAsync(cancellationToken);
+
+        // Read from the CHART rather than from a list in code, so an expense
+        // account somebody adds is on the report the day they add it. The first
+        // version named five accounts explicitly and silently omitted 5400
+        // Internal service charge, which is an expense and is not a cost of
+        // sales — money spent into an account that appeared on no report.
+        var overheads = await _db.Accounts
+            .AsNoTracking()
+            .Where(a => a.Kind == AccountKind.Expense)
+            .OrderBy(a => a.Code)
+            .ToListAsync(cancellationToken);
+
+        // Every operating expense account is listed, including the ones at zero.
+        // A dealership that has recorded no advertising this month should see
+        // that, rather than a report that quietly omits the line and leaves
+        // somebody to wonder whether the figure is missing or the spending is.
+        var expenses = overheads
+            .Where(a => AccountCodes.IsOperatingExpense(a.Code, a.Kind))
+            .Select(a => new ExpenseLine(
+                a.Code,
+                a.Name,
+                totals.Find(t => t.Code == a.Code)?.Spent ?? 0m))
+            .ToList();
+
+        var totalExpenses = expenses.Sum(e => e.Amount);
+        var gross = performance.Value.TotalGross;
+
+        return Result.Success(new ProfitAndLoss(
+            query.From,
+            query.To,
+            performance.Value.Currency,
+            performance.Value.Departments,
+            performance.Value.TotalRevenue,
+            performance.Value.TotalCost,
+            gross,
+            expenses,
+            totalExpenses,
+            gross - totalExpenses));
+    }
+
+    public async Task<Result<BalanceSheet>> BalanceSheetAsync(
+        BalanceQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        // A balance sheet is a POSITION, not a period: everything ever posted up
+        // to the date, whatever From says. Honouring From would produce a page
+        // that looks like a balance sheet and is arithmetic nonsense — assets as
+        // at one month, with no opening position under them.
+        var asAt = new BalanceQuery(query.RooftopId, From: null, To: query.To);
+
+        var covered = await CoveredEntriesAsync(asAt, cancellationToken);
+        if (covered.IsFailure)
+        {
+            return Result.Failure<BalanceSheet>(covered.Error);
+        }
+
+        var (entries, currency) = covered.Value;
+
+        var totals = await (
+            from line in _db.JournalLines.AsNoTracking()
+            join entry in entries on line.EntryId equals entry.Id
+            group line by line.AccountId into byAccount
+            select new
+            {
+                AccountId = byAccount.Key,
+                Debits = byAccount.Sum(l => l.Debit),
+                Credits = byAccount.Sum(l => l.Credit),
+            }).ToListAsync(cancellationToken);
+
+        var accounts = await _db.Accounts.AsNoTracking().ToListAsync(cancellationToken);
+
+        var balances = totals
+            .Select(total =>
+            {
+                var account = accounts.Find(a => a.Id == total.AccountId);
+
+                return new
+                {
+                    Account = account,
+                    View = new AccountBalance(
+                        account?.Code ?? "?",
+                        account?.Name ?? "(unknown)",
+                        (account?.Kind ?? AccountKind.Asset).ToString(),
+                        total.Debits,
+                        total.Credits,
+                        account?.IncreasesOnDebit == true
+                            ? total.Debits - total.Credits
+                            : total.Credits - total.Debits),
+                };
+            })
+            .Where(b => b.Account is not null)
+            .OrderBy(b => b.View.Code, StringComparer.Ordinal)
+            .ToList();
+
+        List<AccountBalance> Of(AccountKind kind) =>
+            balances.Where(b => b.Account!.Kind == kind).Select(b => b.View).ToList();
+
+        var assets = Of(AccountKind.Asset);
+        var liabilities = Of(AccountKind.Liability);
+        var equity = Of(AccountKind.Equity);
+
+        // Revenue and expenses do not appear on a balance sheet as accounts; what
+        // they have added up to since the beginning does, as one line. There is no
+        // year-end close in this system, so folding it into capital would assert a
+        // process nobody has run.
+        var earnings =
+            balances.Where(b => b.Account!.Kind == AccountKind.Revenue).Sum(b => b.View.Balance)
+            - balances.Where(b => b.Account!.Kind == AccountKind.Expense).Sum(b => b.View.Balance);
+
+        var totalAssets = assets.Sum(a => a.Balance);
+        var totalLiabilities = liabilities.Sum(l => l.Balance);
+        var totalEquity = equity.Sum(e => e.Balance);
+
+        return Result.Success(new BalanceSheet(
+            query.To,
+            currency,
+            assets,
+            liabilities,
+            equity,
+            totalAssets,
+            totalLiabilities,
+            totalEquity,
+            earnings,
+            totalAssets == totalLiabilities + totalEquity + earnings));
+    }
+
+    public async Task<Result<JournalEntryDetail>> PostManualAsync(
+        ManualPosting entry,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        // ManualEntryPermission and not PostPermission. A salesperson holds the
+        // latter because delivering a car posts the sale; choosing the accounts
+        // and the amounts is a different act entirely.
+        if (!await _access.IsAuthorizedAsync(
+            _currentUser.Id, ManualEntryPermission, entry.RooftopId, cancellationToken))
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
+        }
+
+        if (entry.Lines.Count == 0)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.no_lines", "An entry needs at least two lines."));
+        }
+
+        if (string.IsNullOrWhiteSpace(entry.Memo))
+        {
+            // A hand-written entry with no explanation is the one somebody will be
+            // asked about in a year and nobody will be able to answer.
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.memo_required", "Say what this entry is for."));
+        }
+
+        var rooftop = await _organization.GetRooftopAsync(entry.RooftopId, cancellationToken);
+        if (rooftop.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(rooftop.Error);
+        }
+
+        // The date is the person's to choose — an expense is dated when it was
+        // incurred — so the period check uses THAT date rather than today's.
+        var refusal = await PeriodRefusalAsync(entry.EntryDate, cancellationToken);
+        if (refusal is not null)
+        {
+            return Result.Failure<JournalEntryDetail>(refusal);
+        }
+
+        var chart = await _db.Accounts
+            .AsNoTracking()
+            .ToDictionaryAsync(a => a.Code, cancellationToken);
+
+        var unknown = entry.Lines
+            .Select(l => l.AccountCode)
+            .Where(code => !chart.ContainsKey(code))
+            .Distinct()
+            .ToList();
+
+        if (unknown.Count > 0)
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.UnknownAccounts(unknown));
+        }
+
+        JournalEntry posted;
+        try
+        {
+            posted = JournalEntry.Post(
+                Guid.NewGuid(),
+                rooftop.Value.LegalEntityId,
+                entry.RooftopId,
+                entry.EntryDate,
+                JournalSource.Manual,
+                // No business record to point at, so the reference is the person's
+                // own words. An empty one would make the journal unsearchable.
+                entry.Memo.Trim(),
+                entry.Memo.Trim(),
+                entry.Currency,
+                entry.Lines.Select(l =>
+                    (l.AccountCode, chart[l.AccountCode].Id, l.Debit, l.Credit, l.Memo)),
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (ArgumentException ex)
+        {
+            // Unlike the automatic postings, an imbalance here is a PERSON's
+            // mistake rather than a defect in a mapping, so it comes back as
+            // something they can act on.
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.will_not_balance", ex.Message));
+        }
+
+        _db.JournalEntries.Add(posted);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, ManualEntryPermission, AuditOutcome.Allowed,
+                "JournalEntry", posted.Id.ToString(), entry.RooftopId.Value,
+                $"Manual entry: {entry.Memo.Trim()}", null, null),
+            cancellationToken);
+
+        return Result.Success(await DescribeAsync(posted, cancellationToken));
     }
 
     private static DepartmentResult Department(string name, decimal revenue, decimal cost)
@@ -1065,12 +1330,18 @@ public sealed class AccountingService(
         IReadOnlyDictionary<string, Account> accounts)
     {
         var inventory = accounts[AccountCodes.VehicleInventory];
-        var cash = accounts[AccountCodes.Cash];
+
+        // Whoever actually paid. A floorplanned car is the lender's money until it
+        // sells; an outright purchase is the dealership's own.
+        var paidBy = p.Floorplanned
+            ? accounts[AccountCodes.FloorplanPayable]
+            : accounts[AccountCodes.Cash];
 
         return
         [
             (inventory.Code, inventory.Id, p.Cost, 0m, "Car onto the lot"),
-            (cash.Code, cash.Id, 0m, p.Cost, "Paid for the car"),
+            (paidBy.Code, paidBy.Id, 0m, p.Cost,
+                p.Floorplanned ? "Financed by the floorplan lender" : "Paid for the car"),
         ];
     }
 
@@ -1287,6 +1558,15 @@ internal static class LedgerErrors
         "accounting.payer_split_disagrees",
         $"Work sold totals {byKind} but the customer, warranty and internal shares total {byPayer}. " +
         "Every line has to be paid for by exactly one of them.");
+
+    /// <summary>
+    /// A hand-written entry naming an account that is not in the chart. Distinct
+    /// from <see cref="ChartIncomplete"/>, which is the dealership missing an
+    /// account the SYSTEM needs: this is a person mistyping one.
+    /// </summary>
+    public static Error UnknownAccounts(IEnumerable<string> codes) => Error.Validation(
+        "accounting.unknown_accounts",
+        $"No account in the chart has the code {string.Join(", ", codes)}.");
 
     public static Error MixedCurrencies(IEnumerable<string> currencies) => Error.Validation(
         "accounting.mixed_currencies",

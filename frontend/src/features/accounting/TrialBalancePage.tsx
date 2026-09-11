@@ -18,6 +18,7 @@ import type { TrialBalance } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { RecordAnEntry } from './RecordAnEntry';
 
 type Load =
   | { kind: 'loading' }
@@ -56,6 +57,11 @@ export function TrialBalancePage() {
       </header>
 
       <Body load={load} onRetry={fetchBalance} />
+
+      {/* Below the balance, because reading the books is the common case and
+          writing an entry by hand is the rare one. It refuses itself for anyone
+          without Accounting.ManualEntry, which is most people. */}
+      <RecordAnEntry onPosted={() => void fetchBalance()} />
     </>
   );
 }

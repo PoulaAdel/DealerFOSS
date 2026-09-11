@@ -9,10 +9,25 @@
 //   any other way.
 //
 // Coding Instructions:
-//   There is deliberately no "create an entry from these lines" method on
-//   the public contract. An entry is the consequence of something that
-//   happened in the business, so the contract names the events — a delivery,
-//   a reversal — rather than offering a general-purpose posting hole.
+//   THE CONTRACT NAMES EVENTS, NOT ENTRIES. A delivery, an invoice, a stock
+//   purchase, a payment: each is something that happened in the business, and
+//   the caller says what happened rather than which accounts to move. Keep it
+//   that way — a capability that knows account codes is a second place to get
+//   them wrong, and Accounting owns the chart.
+//
+//   PostManualAsync is the one exception, added 2026-09-11, and this note used
+//   to say there would never be one. The reason it changed: a dealership has
+//   overheads. Wages, rent, advertising and floorplan interest are not the
+//   consequence of anything this system models, and until there was a way to
+//   record them the chart held no expense account at all and "what did the
+//   month make" could only be answered as gross. The same method is how a new
+//   installation states what it already owned on day one.
+//
+//   It is fenced rather than open: its own permission (Accounting.ManualEntry,
+//   which a salesperson does not hold even though they hold Accounting.Post),
+//   the period check every other posting gets, and JournalEntry.Post still
+//   refusing anything that does not balance. Do not add a second general-purpose
+//   hole; if a new business event needs posting, name the event.
 
 using DealerFOSS.Core;
 
@@ -100,6 +115,40 @@ public interface IAccounting
     /// </remarks>
     Task<Result<JournalEntryDetail>> PostPaymentAsync(
         PaymentPosting payment,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// What the business made over a period: revenue and cost of sales by
+    /// department, then what it costs to run the place, then the difference.
+    /// </summary>
+    /// <remarks>
+    /// The report a dealer principal actually reads, and the one this system
+    /// could not produce until 2026-09-11 because the chart contained no expense
+    /// account of any kind. A trial balance is a bookkeeping instrument; this is
+    /// a management report, and they are not the same thing.
+    /// </remarks>
+    Task<Result<ProfitAndLoss>> ProfitAndLossAsync(BalanceQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// What the business owns and owes, as at a date. Assets on one side;
+    /// liabilities, what the owners put in, and what has been earned since, on the
+    /// other.
+    /// </summary>
+    /// <remarks>
+    /// Always cumulative from the first entry ever posted, whatever
+    /// <see cref="BalanceQuery.From"/> says — a balance sheet is a position, not a
+    /// period, and one built from a single month's entries would be nonsense.
+    /// Only <see cref="BalanceQuery.To"/> is honoured, as the date it is "as at".
+    /// </remarks>
+    Task<Result<BalanceSheet>> BalanceSheetAsync(BalanceQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Writes an entry by hand — an expense, an opening balance, a correction.
+    /// Its own permission, because choosing the accounts and the amounts is the
+    /// most powerful thing anybody can do to a set of books.
+    /// </summary>
+    Task<Result<JournalEntryDetail>> PostManualAsync(
+        ManualPosting entry,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -209,17 +258,16 @@ public sealed record DeliveryPosting(
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The other side is Cash, and that is a decision rather than an obvious
-/// truth.</b> Most dealerships floorplan their stock — a lender pays for the car
-/// and is repaid when it sells — which would make the credit a liability rather
-/// than a reduction in cash. There is no floorplan account in the chart and no
-/// decision recorded about one, so this posts the way every other entry in this
-/// ledger already does: the dealership paid for it.
+/// <b>What is credited is a choice, made per car.</b> Most dealerships floorplan
+/// their stock — a lender pays for the car and is repaid when it sells — and
+/// some cars are bought outright. Both are ordinary, so the person taking the car
+/// in says which, and <see cref="Floorplanned"/> decides between 2000 Floorplan
+/// payable and 1000 Cash.
 /// </para>
 /// <para>
-/// That is honest and wrong in the same way the rest of the system is wrong, and
-/// it is deliberately not fixed here. Floorplan is a register row, and when it
-/// lands this credit becomes a choice made per unit rather than a constant.
+/// Until 2026-09-11 it was always Cash, because there was no floorplan account.
+/// That produced a dealership with $3.7M of stock and a bank balance of minus
+/// $2.5M — arithmetically correct and a description of nothing real.
 /// </para>
 /// <para>
 /// <see cref="Cost"/> must be positive. A car received without a cost does not
@@ -255,7 +303,13 @@ public sealed record StockPurchasePosting(
     string Reference,
     string Currency,
     decimal Cost,
-    string Memo);
+    string Memo,
+
+    /// <summary>
+    /// True when a lender paid for the car and will be repaid when it sells.
+    /// False when the dealership bought it outright.
+    /// </summary>
+    bool Floorplanned = false);
 
 /// <summary>
 /// Everything the ledger needs to record a service invoice, stated in business
@@ -443,3 +497,79 @@ public sealed record JournalQuery(
     DateOnly? From = null,
     DateOnly? To = null,
     int Limit = 50);
+
+/// <summary>
+/// What a person supplies to write an entry by hand. The lines are theirs to
+/// choose, which is what makes this the one operation with its own permission.
+/// </summary>
+/// <remarks>
+/// <see cref="JournalEntry.Post"/> still refuses anything that does not balance,
+/// so the worst a mistake can do is be wrong rather than be impossible to read.
+/// </remarks>
+public sealed record ManualPosting(
+    RooftopId RooftopId,
+    DateOnly EntryDate,
+    string Memo,
+    string Currency,
+    IReadOnlyList<ManualLine> Lines);
+
+/// <summary>One line of a hand-written entry: an account code, and one side.</summary>
+public sealed record ManualLine(string AccountCode, decimal Debit, decimal Credit, string? Memo);
+
+/// <summary>
+/// A profit and loss. Departmental gross comes first because that is how a
+/// dealership is run; overheads and net profit follow.
+/// </summary>
+public sealed record ProfitAndLoss(
+    DateOnly? From,
+    DateOnly? To,
+    string Currency,
+    IReadOnlyList<DepartmentResult> Departments,
+    decimal TotalRevenue,
+    decimal TotalCost,
+
+    /// <summary>Revenue less what the things sold cost. The dealer's daily number.</summary>
+    decimal GrossProfit,
+
+    IReadOnlyList<ExpenseLine> Expenses,
+    decimal TotalExpenses,
+
+    /// <summary>
+    /// Gross less overheads. The figure this system could not produce at all
+    /// before 2026-09-11, because it had nowhere to record an overhead.
+    /// </summary>
+    decimal NetProfit);
+
+/// <summary>One overhead account and what it came to over the period.</summary>
+public sealed record ExpenseLine(string Code, string Name, decimal Amount);
+
+/// <summary>
+/// What the business owns and owes, as at a date.
+/// </summary>
+/// <remarks>
+/// <see cref="Balances"/> is not decoration. Assets must equal liabilities plus
+/// equity plus what has been earned; if they ever do not, something has been
+/// posted that this report does not know how to classify, and saying so is more
+/// useful than printing a plausible page with a hole in it.
+/// </remarks>
+public sealed record BalanceSheet(
+    DateOnly? AsAt,
+    string Currency,
+    IReadOnlyList<AccountBalance> Assets,
+    IReadOnlyList<AccountBalance> Liabilities,
+    IReadOnlyList<AccountBalance> Equity,
+    decimal TotalAssets,
+    decimal TotalLiabilities,
+
+    /// <summary>What the owners put in, from the equity accounts alone.</summary>
+    decimal TotalEquity,
+
+    /// <summary>
+    /// Revenue less every expense, for all time. Shown as its own line rather
+    /// than folded into equity, because there is no year-end close in this system
+    /// yet and pretending earnings had been transferred to capital would be a
+    /// claim about a process nobody has run.
+    /// </summary>
+    decimal EarningsToDate,
+
+    bool Balances);

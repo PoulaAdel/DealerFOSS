@@ -23,10 +23,15 @@ what you expected is not a walk.
 | A walk-in becomes a sold car | Salesperson, then manager | **Completed end to end** | still does |
 | A car arrives, is reconditioned, goes on sale | Manager | **Cannot start** | **completes** (see below) |
 | A customer books service and pays | Manager | **Reaches Invoiced, cannot reach paid** | **completes** (see below) |
-| The manager asks what the month made | Manager | **Answered as gross only** | unchanged |
+| The manager asks what the month made | Manager | **Answered as gross only** | **completes** (see below) |
 
-Three jobs of four can be completed. That is the number the progress page
-reports, and it moves only when somebody walks the job again.
+All four jobs can be completed. That is the number the progress page reports,
+and it moves only when somebody walks the job again.
+
+Finishing them is not the same as finishing the product. The walk found thirty
+things and four of them are fixed; the rest are register rows, and the four jobs
+are the *ordinary* day rather than the whole job of running a dealership. What
+has changed is that the ordinary day no longer stops.
 
 ## What has been fixed since the walk
 
@@ -103,6 +108,51 @@ receivable ageing as a report, statements, and credit limits. The historical
 deliveries and invoices in the seeded dealership are *not* back-filled into the
 sub-ledger — they were genuinely posted as cash at the time, and rewriting a
 posted ledger to look tidier is the one thing an accounting system must not do.
+
+### Job D, on 2026-09-11
+
+Findings 5 and 6 are done, and so is the cash problem the stock work exposed.
+
+- **Expense accounts exist.** There were none — not one — so a dealership could
+  record everything it earned and nothing it spent. Wages, rent, advertising,
+  floorplan interest and a catch-all now sit in the chart.
+- **A journal entry can be written by hand**, behind its own permission
+  (`Accounting.ManualEntry`, which a salesperson does not hold even though they
+  hold `Accounting.Post`). It is how an overhead is recorded, how a new
+  installation states what it already owned, and how a mistake is corrected.
+- **A profit and loss**: departmental gross, then overheads, then net. The
+  departmental half calls the same method the dashboard reads, so the two cannot
+  disagree.
+- **A balance sheet** that says whether it balances, and says so loudly when it
+  does not.
+- **A floorplan liability**, chosen per car when it is taken in, so buying stock
+  can credit the lender rather than the bank.
+
+Walked again to confirm. Rent of $4,500 recorded by hand; an opening entry moving
+$2,717,710 of stock funding from the bank to the floorplan lender. The result:
+
+|  | before | after |
+|---|---|---|
+| Cash | −$2,530,239 | **+$182,971** |
+| Net profit | did not exist | **$223,378** |
+| Balance sheet | did not exist | assets $3,019,333 = liabilities $2,795,423 + equity $0 + earned $223,910 |
+
+**And the numbers caught a hole nothing else would have.** Adding the two reports
+up by hand, they disagreed by $663.60. The cause: the first version of the P&L
+named its five overhead accounts explicitly, so 5400 Internal service charge —
+an expense, and not a department's cost of sales — appeared on no part of the
+report at all. The seeded dealership had $1,196 in it and the page did not
+mention it. Money spent into an account that showed on no report.
+
+Now the report asks the *chart* which accounts are overheads rather than
+consulting a list in code, so a new expense account is on the report the day
+somebody adds it, and the only way to keep one off is to name it a cost of sales
+deliberately. With that fixed, all-time net profit and earnings-to-date agree
+exactly at $223,910.40.
+
+**What is deliberately not built:** a year-end close (hence earnings shown as
+their own line rather than folded into capital), comparatives against last year,
+departmental overhead allocation, and cash flow.
 
 ## What the walk found
 
