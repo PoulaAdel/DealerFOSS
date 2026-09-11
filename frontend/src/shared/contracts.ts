@@ -935,3 +935,61 @@ export const inventoryStatuses: InventoryStatus[] = [
   'Sold',
   'Removed',
 ];
+
+/**
+ * What one customer owes against one sale or one job.
+ *
+ * `outstanding` is derived on the server from the payments, never stored, so it
+ * cannot drift from the rows underneath it. Treat it as read-only here too:
+ * subtracting a payment locally to avoid a round trip is how the two would
+ * start disagreeing.
+ */
+export interface ReceivableSummary {
+  id: string;
+  rooftopId: string;
+  customerId: string;
+  customerName: string;
+  source: ReceivableSource;
+  reference: string;
+  amount: number;
+  paid: number;
+  outstanding: number;
+  currency: string;
+  billedAt: string;
+  /** Zero once settled: "still owed for 40 days" is a claim about the present. */
+  daysOutstanding: number;
+  isSettled: boolean;
+}
+
+export interface ReceivableDetail extends ReceivableSummary {
+  payments: PaymentView[];
+}
+
+export interface PaymentView {
+  id: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  receivedAt: string;
+  note: string | null;
+}
+
+export type ReceivableSource = 'Deal' | 'RepairOrder';
+
+/**
+ * How the money arrived. A record of fact, not a routing instruction — nothing
+ * here talks to a card terminal.
+ *
+ * `Finance` is a lender settling a car the customer signed for. It is a method
+ * rather than a different kind of debt, because what the dealership is owed does
+ * not change with who hands the money over.
+ */
+export type PaymentMethod = 'Cash' | 'Card' | 'BankTransfer' | 'Cheque' | 'Finance';
+
+export const paymentMethods: PaymentMethod[] = [
+  'Cash',
+  'Card',
+  'BankTransfer',
+  'Cheque',
+  'Finance',
+];

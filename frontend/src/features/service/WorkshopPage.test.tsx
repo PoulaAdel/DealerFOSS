@@ -259,7 +259,10 @@ describe('one job', () => {
     renderWorkshop();
     await openJob();
 
-    expect(await screen.findByText(/Nothing more to do/)).toBeVisible();
+    // The wording changed on 2026-09-11: "Nothing more to do" stopped being true
+    // the moment an invoiced job could be paid. The stage note now points at the
+    // money instead of declaring the job closed.
+    expect(await screen.findByText(/The work is finished/)).toBeVisible();
   });
 
   it('hides the write-up form once the work is frozen', async () => {

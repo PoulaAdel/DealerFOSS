@@ -183,4 +183,11 @@ public enum JournalSource
     /// one, vehicle inventory only ever goes down.
     /// </summary>
     StockPurchase = 4,
+
+    /// <summary>
+    /// Money arrived against something already billed. The counterpart to the two
+    /// entries that raise a debt — without it, a bill and its settlement were the
+    /// same event and nobody could owe anything.
+    /// </summary>
+    Payment = 5,
 }

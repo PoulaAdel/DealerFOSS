@@ -492,6 +492,82 @@ public sealed class AccountingService(
         return Result.Success(await DescribeAsync(entry, cancellationToken));
     }
 
+    public async Task<Result<JournalEntryDetail>> PostPaymentAsync(
+        PaymentPosting payment,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(payment);
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, PostPermission, payment.RooftopId, cancellationToken))
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
+        }
+
+        if (payment.Amount <= 0m)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.payment_invalid", "A payment is for an amount above zero."));
+        }
+
+        var rooftop = await _organization.GetRooftopAsync(payment.RooftopId, cancellationToken);
+        if (rooftop.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(rooftop.Error);
+        }
+
+        // No already-posted guard, and that is deliberate: a deposit followed by
+        // a balance is two payments against one reference. The receivable is what
+        // stops more than is owed being taken.
+        var refusal = await PeriodRefusalAsync(
+            DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime), cancellationToken);
+
+        if (refusal is not null)
+        {
+            return Result.Failure<JournalEntryDetail>(refusal);
+        }
+
+        var accounts = await AccountMapAsync(cancellationToken);
+        if (accounts.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(accounts.Error);
+        }
+
+        JournalEntry entry;
+        try
+        {
+            entry = JournalEntry.Post(
+                Guid.NewGuid(),
+                rooftop.Value.LegalEntityId,
+                payment.RooftopId,
+                DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime),
+                JournalSource.Payment,
+                payment.Reference,
+                payment.Memo,
+                payment.Currency,
+                BuildPaymentLines(payment, accounts.Value),
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.will_not_balance", ex.Message));
+        }
+
+        _db.JournalEntries.Add(entry);
+
+        // Deliberately NOT saved here. This is called inside the receivable's
+        // transaction, and its SaveChanges commits the payment row and this entry
+        // together — the pair is the whole point.
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, PostPermission, AuditOutcome.Allowed,
+                "JournalEntry", entry.Id.ToString(), payment.RooftopId.Value,
+                $"Payment against {payment.Reference}", null, null),
+            cancellationToken);
+
+        return Result.Success(await DescribeAsync(entry, cancellationToken));
+    }
+
     public async Task<Result<JournalEntryDetail>> PostStockPurchaseAsync(
         StockPurchasePosting purchase,
         CancellationToken cancellationToken)
@@ -954,6 +1030,26 @@ public sealed class AccountingService(
     /// sales, which is what turns revenue into a gross profit anybody can check.
     /// </summary>
     /// <summary>
+    /// Money arriving against a bill: the bank goes up and what the customer owes
+    /// goes down. It touches no revenue account, because the sale was recognised
+    /// when the car left or the job was invoiced — being paid is not a second
+    /// sale, and treating it as one would double every figure a dealer reads.
+    /// </summary>
+    private static List<(string, Guid, decimal, decimal, string?)> BuildPaymentLines(
+        PaymentPosting p,
+        IReadOnlyDictionary<string, Account> accounts)
+    {
+        var cash = accounts[AccountCodes.Cash];
+        var owed = accounts[AccountCodes.AccountsReceivable];
+
+        return
+        [
+            (cash.Code, cash.Id, p.Amount, 0m, "Money in"),
+            (owed.Code, owed.Id, 0m, p.Amount, "Off what they owed"),
+        ];
+    }
+
+    /// <summary>
     /// A car bought onto the lot: the value arrives as an asset, and whatever
     /// paid for it leaves. Two lines, and the smallest entry in this file.
     /// </summary>
@@ -998,7 +1094,13 @@ public sealed class AccountingService(
         // The discount arrives negative on the deal; it is a debit here.
         var discount = Math.Abs(d.Discount);
 
-        Line(AccountCodes.Cash, d.AmountDue, 0m, "Taken from the customer");
+        // Debited to what the customer OWES, not to cash. Until 2026-09-10 this
+        // line debited 1000 and asserted that every customer paid in full the
+        // moment they were billed — so a fleet account, a deposit, a part-payment
+        // and a lender's cheque were all unrepresentable, and the bank balance was
+        // wrong by everything anybody was still owed. Money arriving is a separate
+        // entry now: PostPaymentAsync moves 1100 to 1000 when it actually turns up.
+        Line(AccountCodes.AccountsReceivable, d.AmountDue, 0m, "Owed by the customer");
         Line(AccountCodes.TradeInventory, d.TradeAllowance, 0m, "Trade taken in");
         Line(AccountCodes.SalesDiscounts, discount, 0m, "Discount given");
         Line(AccountCodes.VehicleSalesRevenue, 0m, d.VehiclePrice, "Sale of vehicle");
@@ -1055,7 +1157,7 @@ public sealed class AccountingService(
         // The three payers, debited. Warranty is a receivable rather than cash
         // because the claim has not been paid — and internal is a charge to the
         // dealership rather than to anybody at all.
-        Line(AccountCodes.Cash, invoice.AmountDue, 0m, "Taken from the customer");
+        Line(AccountCodes.AccountsReceivable, invoice.AmountDue, 0m, "Owed by the customer");
         Line(AccountCodes.WarrantyReceivable, invoice.Warranty, 0m, "Claimed from the manufacturer");
         // Reconditioning a car we own is not an expense — it is part of what that
         // car cost us, and putting it anywhere else makes used-vehicle gross
@@ -1086,13 +1188,15 @@ public sealed class AccountingService(
 
         string[] required =
         [
-            AccountCodes.Cash, AccountCodes.VehicleInventory, AccountCodes.TradeInventory,
+            AccountCodes.Cash, AccountCodes.AccountsReceivable,
+            AccountCodes.VehicleInventory, AccountCodes.TradeInventory,
             AccountCodes.VehicleSalesRevenue, AccountCodes.FeeRevenue,
             AccountCodes.SalesDiscounts, AccountCodes.CostOfVehicleSales,
             AccountCodes.LabourRevenue, AccountCodes.PartsRevenue, AccountCodes.SubletRevenue,
             AccountCodes.PartsInventory, AccountCodes.CostOfPartsSales,
             AccountCodes.FinanceProductRevenue, AccountCodes.CostOfFinanceProducts,
             AccountCodes.WarrantyReceivable, AccountCodes.InternalServiceCharge,
+            AccountCodes.SalesTaxPayable,
         ];
 
         var missing = required.Where(code => !accounts.ContainsKey(code)).ToList();

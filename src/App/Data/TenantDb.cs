@@ -31,6 +31,7 @@ using DealerFOSS.Leads;
 using DealerFOSS.Organization;
 using DealerFOSS.Parts;
 using DealerFOSS.RepairOrders;
+using DealerFOSS.Receivables;
 using DealerFOSS.Vehicles;
 
 namespace DealerFOSS.Data;
@@ -109,6 +110,10 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, I
     public DbSet<ConnectorRun> ConnectorRuns => Set<ConnectorRun>();
 
     public DbSet<QuarantinedRecord> QuarantinedRecords => Set<QuarantinedRecord>();
+
+    public DbSet<Receivable> Receivables => Set<Receivable>();
+
+    public DbSet<Payment> Payments => Set<Payment>();
 
     public DbSet<Account> Accounts => Set<Account>();
 

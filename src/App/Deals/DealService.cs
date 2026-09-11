@@ -30,6 +30,7 @@ using DealerFOSS.Data;
 using DealerFOSS.Finance;
 using DealerFOSS.Identity;
 using DealerFOSS.Inventory;
+using DealerFOSS.Receivables;
 
 namespace DealerFOSS.Deals;
 
@@ -39,6 +40,7 @@ public sealed class DealService(
     ICustomers customers,
     IInventory inventory,
     IAccounting accounting,
+    IReceivables receivables,
     IFinanceProducts products,
     ICurrentUser currentUser,
     IAuditSink audit,
@@ -59,6 +61,7 @@ public sealed class DealService(
     private readonly ICustomers _customers = customers;
     private readonly IInventory _inventory = inventory;
     private readonly IAccounting _accounting = accounting;
+    private readonly IReceivables _receivables = receivables;
     private readonly IFinanceProducts _products = products;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
@@ -544,6 +547,26 @@ public sealed class DealService(
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return Result.Failure<DealDetail>(posted.Error);
+            }
+
+            // The ledger now says somebody owes this; the sub-ledger says WHO.
+            // Opened in the same transaction, because a debit to 1100 that nobody
+            // is recorded as owing is a figure with no way to chase it.
+            var owed = await _receivables.OpenAsync(
+                new NewReceivable(
+                    deal.RooftopId,
+                    deal.CustomerId,
+                    ReceivableSource.Deal,
+                    deal.Id.ToString(),
+                    deal.AmountDue.Amount,
+                    deal.AmountDue.Currency,
+                    _clock.UtcNow),
+                cancellationToken);
+
+            if (owed.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<DealDetail>(owed.Error);
             }
         }
 

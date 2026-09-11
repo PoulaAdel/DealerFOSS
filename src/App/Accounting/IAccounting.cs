@@ -87,6 +87,22 @@ public interface IAccounting
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Records money arriving against something already billed: cash up,
+    /// receivable down. Called by Receivables; it is not something a person does
+    /// directly.
+    /// </summary>
+    /// <remarks>
+    /// Unlike a delivery or an invoice, this has NO already-posted guard. Several
+    /// payments against one bill is the ordinary case — a deposit and a balance,
+    /// or a customer paying in instalments — so the reference is deliberately not
+    /// unique. What stops a payment being taken twice is the receivable itself,
+    /// which refuses more than is outstanding.
+    /// </remarks>
+    Task<Result<JournalEntryDetail>> PostPaymentAsync(
+        PaymentPosting payment,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Undoes a posted entry by posting its opposite. The original is untouched —
     /// that is the whole point.
     /// </summary>
@@ -212,6 +228,26 @@ public sealed record DeliveryPosting(
 /// knowing yet.
 /// </para>
 /// </remarks>
+/// <summary>
+/// Everything the ledger needs to record money arriving against a bill: which
+/// lot took it, what it was against, and how much.
+/// </summary>
+/// <remarks>
+/// It says nothing about HOW the money arrived. Cash, card, transfer and a
+/// lender's settlement all debit 1000 here, because this ledger has one bank
+/// account and no merchant settlement. The method is recorded on the payment in
+/// the sub-ledger, where it is a fact about the transaction rather than a
+/// routing instruction — nothing in this system talks to a card terminal.
+/// </remarks>
+public sealed record PaymentPosting(
+    RooftopId RooftopId,
+
+    /// <summary>The bill this settles, so the debit and its payments read together.</summary>
+    string Reference,
+    string Currency,
+    decimal Amount,
+    string Memo);
+
 public sealed record StockPurchasePosting(
     RooftopId RooftopId,
 

@@ -25,6 +25,7 @@ import { ApiError, api, openDocument, post } from '../../shared/api';
 import { DealTerms } from './DealTerms';
 import { DealProducts } from './DealProducts';
 import { DealTax, SoldTax } from './DealTax';
+import { TakePayment } from '../receivables/TakePayment';
 import { StartDeal } from './StartDeal';
 import type { DealDetail, DealStatus, DealSummary } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
@@ -337,6 +338,10 @@ function DealPanel({
           <p className="note">{t('deals.frozen')}</p>
           {deal.products.length === 0 ? null : <SoldProducts deal={deal} />}
           {deal.taxLines.length === 0 ? null : <SoldTax deal={deal} />}
+
+          {/* Renders nothing until the car is delivered, because nothing is
+              owed until then. A deal being worked is not a debt. */}
+          <TakePayment source="Deal" reference={deal.id} watch={deal.status} />
         </>
       )}
 

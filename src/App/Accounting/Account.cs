@@ -145,6 +145,25 @@ public static class AccountCodes
     public const string InternalServiceCharge = "5400";
 
     /// <summary>
+    /// What customers owe the dealership. An asset: the work is done or the car
+    /// is gone, and the money has not arrived yet.
+    /// </summary>
+    /// <remarks>
+    /// Added 2026-09-10, and its absence was the reason nothing could be sold
+    /// except for cash. Delivering a car and invoicing a repair order both
+    /// debited 1000 Cash for the whole amount on the spot, so the books asserted
+    /// that every customer paid in full the moment they were billed. A fleet
+    /// customer on account, a deposit, a part-payment and a lender's settlement
+    /// cheque were all unrepresentable, and the bank balance was wrong by
+    /// everything anybody was still owed.
+    ///
+    /// Found by walking a day at the dealership: the service job reached
+    /// Invoiced and there was nowhere to go. See
+    /// <c>docs/implementation/DEALER-DAY.md</c>.
+    /// </remarks>
+    public const string AccountsReceivable = "1100";
+
+    /// <summary>
     /// Sales tax taken from a customer and owed to the state. A LIABILITY, and
     /// getting that wrong is not a presentation detail: the dealership never owns
     /// this money, it collects it on somebody else's behalf and remits it. Booking
@@ -177,6 +196,7 @@ public static class AccountCodes
     public static IReadOnlyList<(string Code, string Name, AccountKind Kind)> Standard { get; } =
     [
         (Cash, "Cash", AccountKind.Asset),
+        (AccountsReceivable, "Customer accounts receivable", AccountKind.Asset),
         (WarrantyReceivable, "Warranty claims receivable", AccountKind.Asset),
         (VehicleInventory, "Vehicle inventory", AccountKind.Asset),
         (TradeInventory, "Trade-in inventory", AccountKind.Asset),

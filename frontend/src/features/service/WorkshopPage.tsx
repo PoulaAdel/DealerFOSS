@@ -48,6 +48,7 @@ import { ApiError, api, openDocument, post, remove } from '../../shared/api';
 import { DiaryPanel } from './DiaryPanel';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { TakePayment } from '../receivables/TakePayment';
 import {
   servicePayTypes,
   type RepairOrderDetail,
@@ -413,6 +414,11 @@ function Job({
       </div>
 
       <Moves job={job} busy={busy} note={note} onNote={setNote} onAct={act} />
+
+      {/* Renders nothing until the job is invoiced, because nothing is owed
+          until then. Before this existed a job reached Invoiced and stopped:
+          the only thing left to do was print it. */}
+      <TakePayment source="RepairOrder" reference={job.id} watch={job.status} />
 
       <h3>{t('workshop.whatHappened')}</h3>
       <ol className="history">

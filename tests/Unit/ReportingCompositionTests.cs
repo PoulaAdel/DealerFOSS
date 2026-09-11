@@ -245,6 +245,10 @@ public sealed class ReportingCompositionTests
             StockPurchasePosting purchase, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        public Task<Result<JournalEntryDetail>> PostPaymentAsync(
+            PaymentPosting payment, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task<Result<JournalEntryDetail>> ReverseAsync(
             Guid entryId, string reason, CancellationToken cancellationToken) =>
             throw new NotSupportedException();

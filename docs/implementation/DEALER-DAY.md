@@ -22,11 +22,11 @@ what you expected is not a walk.
 |---|---|---|---|
 | A walk-in becomes a sold car | Salesperson, then manager | **Completed end to end** | still does |
 | A car arrives, is reconditioned, goes on sale | Manager | **Cannot start** | **completes** (see below) |
-| A customer books service and pays | Manager | **Reaches Invoiced, cannot reach paid** | unchanged |
+| A customer books service and pays | Manager | **Reaches Invoiced, cannot reach paid** | **completes** (see below) |
 | The manager asks what the month made | Manager | **Answered as gross only** | unchanged |
 
-Two jobs of four can be completed. That is the number the progress page reports,
-and it moves only when somebody walks the job again.
+Three jobs of four can be completed. That is the number the progress page
+reports, and it moves only when somebody walks the job again.
 
 ## What has been fixed since the walk
 
@@ -64,6 +64,45 @@ Before, inventory lied. Now inventory is right and cash is wrong, for a reason
 that is written down and has a name. Both new register rows — floorplan, and
 opening balances when a dealership is set up — come straight from this, and
 neither was visible while the first lie was covering for the second.
+
+### Job C, on 2026-09-11
+
+Finding 2 is done. A bill is now something that can be **owed** and then
+**settled**, rather than an event the books recorded as cash on the spot.
+
+- **Account 1100, customer accounts receivable**, and a customer sub-ledger
+  behind it. Account 1100 alone answers "we are owed $84,000"; only the
+  sub-ledger answers "and $19,000 of it is Ashgrove Couriers, six weeks old".
+- **Delivering a car and invoicing a job now debit 1100, not 1000.** Money
+  arriving is a separate entry that moves 1100 to 1000 when it actually turns up.
+- **Part-payments are ordinary**, so a deposit is a real thing. What is
+  outstanding is derived from the payments and never stored, so it cannot drift
+  from the rows underneath it. Overpayment is refused rather than absorbed: the
+  difference belongs to the customer and somebody has to give it back.
+- **A lender settling a financed car is a payment method**, not a different kind
+  of debt — what the dealership is owed does not change with who hands it over.
+- **A payment band on the job sheet and the deal desk**, one component for both,
+  because the question is the same whether the thing sold was a car or a clutch.
+
+Walked again to confirm: RO-1083, a full service at $240, invoiced, then a $100
+deposit by card and a $140 balance in cash. The ledger read
+`1100 D240 / 4200 C240`, then `1000 D100 / 1100 C100`, then `1000 D140 / 1100 C140`.
+Account 1100 came back to zero on that job, and across the dealership the trial
+balance's 1100 ($110.00) equals the sub-ledger's total outstanding ($110.00) —
+which is the invariant the whole design exists to keep.
+
+**One defect only the walk could find.** The band looked its receivable up once,
+when the job was opened, and never again — so invoicing in the same session
+showed nothing at all. It rendered perfectly on a fresh page load, which is the
+one place nobody was looking. The unit tests all passed because they mount the
+band against a bill that already exists. Fixed, and there is now a test that
+fails without the fix.
+
+**What is deliberately not built:** credit balances (hence refusing overpayment),
+receivable ageing as a report, statements, and credit limits. The historical
+deliveries and invoices in the seeded dealership are *not* back-filled into the
+sub-ledger — they were genuinely posted as cash at the time, and rewriting a
+posted ledger to look tidier is the one thing an accounting system must not do.
 
 ## What the walk found
 

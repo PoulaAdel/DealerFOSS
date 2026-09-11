@@ -168,7 +168,11 @@ public sealed class RepairOrderTests(HostFixture fixture)
             HttpMethod.Get, $"{Ledger}/{posted.GetProperty("id").GetString()}", Manager);
         var lines = (await detail.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("lines");
 
-        Debit(lines, "1000").Should().Be(100m, because: "only the customer's share is cash");
+        // 1100 and not 1000: invoicing raises a debt, and being paid is a separate
+        // event. The other two payers are unchanged - warranty was always a
+        // receivable from the manufacturer, and internal work is the dealership
+        // charging itself, so neither is anybody's bill to settle.
+        Debit(lines, "1100").Should().Be(100m, because: "only the customer's share is a debt they owe");
         Debit(lines, "1200").Should().Be(80m, because: "the manufacturer owes it until the claim is paid");
         Debit(lines, "5400").Should().Be(40m, because: "the dealership carries its own work");
 
@@ -461,7 +465,7 @@ public sealed class RepairOrderTests(HostFixture fixture)
         // useless to a workshop manager; the split is the number they run on.
         Credit(lines, "4200").Should().Be(180m);
         Credit(lines, "4300").Should().Be(68.40m);
-        Debit(lines, "1000").Should().Be(248.40m);
+        Debit(lines, "1100").Should().Be(248.40m, because: "the whole job is owed by the customer");
     }
 
     [Fact]
@@ -524,6 +528,87 @@ public sealed class RepairOrderTests(HostFixture fixture)
     /// The labour report over a window wide enough to hold whatever this run has
     /// just invoiced, whichever day it happens to be run on.
     /// </summary>
+
+    [Fact]
+    public async Task An_invoiced_job_can_be_paid_and_the_job_is_finally_finished()
+    {
+        // The whole point of the receivables work. Before 2026-09-10 a job
+        // reached Invoiced and stopped: the only thing left to do was print it,
+        // the ledger had already debited Cash as though the customer had paid,
+        // and "a customer books service and pays" was a job this system could not
+        // finish. Walked and found on that day; see docs/implementation/DEALER-DAY.md.
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new { kind = "Labour", description = "Brakes", hours = 2m, rate = 95m });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var found = await SendAsync(
+            HttpMethod.Get, $"/api/v1/receivables/for/RepairOrder/{jobId}", Manager);
+
+        found.StatusCode.Should().Be(HttpStatusCode.OK, because: "the work is done and the money is not in");
+
+        var owed = await found.Content.ReadFromJsonAsync<JsonElement>();
+        owed.GetProperty("outstanding").GetDecimal().Should().Be(190m);
+
+        using var paid = await PostAsync(
+            $"/api/v1/receivables/{owed.GetProperty("id").GetString()}/payments", Manager,
+            new { amount = 190m, method = "Card" });
+
+        paid.StatusCode.Should().Be(HttpStatusCode.OK, because: await paid.Content.ReadAsStringAsync());
+
+        var settled = await paid.Content.ReadFromJsonAsync<JsonElement>();
+        settled.GetProperty("isSettled").GetBoolean().Should().BeTrue();
+
+        // And the money moved, rather than only the sub-ledger saying so.
+        using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
+        var payment = (await entries.Content.ReadFromJsonAsync<JsonElement>())
+            .EnumerateArray().Single(e => e.GetProperty("source").GetString() == "Payment");
+
+        using var detail = await SendAsync(
+            HttpMethod.Get, $"{Ledger}/{payment.GetProperty("id").GetString()}", Manager);
+        var lines = (await detail.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("lines");
+
+        Debit(lines, "1000").Should().Be(190m, because: "the money is in the bank now");
+        Credit(lines, "1100").Should().Be(190m, because: "and off what they owed");
+    }
+
+    [Fact]
+    public async Task Warranty_and_internal_work_are_nobodys_bill_to_pay()
+    {
+        // A job split three ways bills the customer for their share only. The
+        // manufacturer's part is already a receivable of its own kind and the
+        // dealership's own work is a charge to itself, so putting either into the
+        // customer sub-ledger would have somebody chasing a warranty claim.
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Service", hours = 1m, rate = 100m,
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 1m, rate = 80m, payType = "Warranty",
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Part", description = "Recon part for stock", unitAmount = 40m, payType = "Internal",
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var found = await SendAsync(
+            HttpMethod.Get, $"/api/v1/receivables/for/RepairOrder/{jobId}", Manager);
+
+        found.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var owed = await found.Content.ReadFromJsonAsync<JsonElement>();
+
+        owed.GetProperty("amount").GetDecimal().Should().Be(100m,
+            because: "the customer agreed to 100 of it; the rest is not theirs to settle");
+    }
     private async Task<JsonElement> LabourReportAsync(string email)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);

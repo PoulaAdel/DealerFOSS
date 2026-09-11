@@ -33,6 +33,7 @@ using DealerFOSS.Identity;
 using DealerFOSS.Inventory;
 using DealerFOSS.Data;
 using DealerFOSS.Parts;
+using DealerFOSS.Receivables;
 using DealerFOSS.Vehicles;
 
 namespace DealerFOSS.RepairOrders;
@@ -43,6 +44,7 @@ public sealed class RepairOrderService(
     ICustomers customers,
     IVehicles vehicles,
     IAccounting accounting,
+    IReceivables receivables,
     IParts parts,
     IInventory inventory,
     ICurrentUser currentUser,
@@ -64,6 +66,7 @@ public sealed class RepairOrderService(
     private readonly ICustomers _customers = customers;
     private readonly IVehicles _vehicles = vehicles;
     private readonly IAccounting _accounting = accounting;
+    private readonly IReceivables _receivables = receivables;
     private readonly IParts _parts = parts;
     private readonly IInventory _inventory = inventory;
     private readonly ICurrentUser _currentUser = currentUser;
@@ -639,6 +642,35 @@ public sealed class RepairOrderService(
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return Result.Failure<RepairOrderDetail>(posted.Error);
+            }
+
+            // Only the customer's share becomes a debt. Warranty is already a
+            // receivable of its own kind, from the manufacturer, and internal work
+            // is a charge to the dealership — neither is anybody's bill to pay, and
+            // putting them here would have somebody chasing a customer for a
+            // warranty claim.
+            if (order.AmountDue.Amount > 0m)
+            {
+                var owed = await _receivables.OpenAsync(
+                    new NewReceivable(
+                        order.RooftopId,
+                        order.CustomerId,
+                        ReceivableSource.RepairOrder,
+                        // The order ID, not its number: a job number is unique per
+                        // rooftop and two lots legitimately both have an RO-1080.
+                        // It is also what the ledger entry above is filed under, so
+                        // the debt and the debit share a reference.
+                        order.Id.ToString(),
+                        order.AmountDue.Amount,
+                        order.AmountDue.Currency,
+                        _clock.UtcNow),
+                    cancellationToken);
+
+                if (owed.IsFailure)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return Result.Failure<RepairOrderDetail>(owed.Error);
+                }
             }
         }
 

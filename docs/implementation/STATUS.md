@@ -1052,3 +1052,25 @@ to come.
   **A pre-existing test caught a real bug in the new code.** The first draft keyed the duplicate-posting check on the stock number alone, and `InventoryTests.The_same_stock_number_is_allowed_at_a_different_rooftop` refused it: a stock number is unique per rooftop, not per organization. It is the same mistake the workshop's job numbering makes on screen.
 
   Verified again in a browser rather than assumed: WALK01, a 2022 Mazda CX-5 at $19,750, taken in, moved Incoming → Reconditioning → Available with a note on each move, posting `1300 D19750 / 1000 C19750`. Evidence: `dotnet build` 0/0, `dotnet test` **715/715** (was 712), `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **319/319** (was 310), `npm run build`.
+
+- **2026-09-11 — A bill can be owed, and then paid. Three of the four dealership jobs now finish.** Job C went from *reaches Invoiced and stops* to *completes end to end*.
+
+  **The gap was not a missing screen, it was a missing idea.** Delivering a car and invoicing a job both debited 1000 Cash for the whole amount on the spot, so the books asserted that every customer paid in full the moment they were billed. A fleet customer on account, a deposit, a part-payment and a lender's settlement cheque were all unrepresentable, and the bank balance was wrong by everything anybody was still owed.
+
+  **Account 1100 and a customer sub-ledger.** Account 1100 alone answers "we are owed $84,000"; only the sub-ledger answers "and $19,000 of it is Ashgrove Couriers, six weeks old". Both are kept, and they must agree — the sum of what is outstanding in the sub-ledger is the balance of 1100 in the ledger. Verified live: 1100 read **$110.00** and "who owes us" totalled **$110.00**.
+
+  **What is outstanding is derived from the payments and never stored**, so it cannot drift from the rows underneath it. Overpayment is refused rather than absorbed, because the difference belongs to the customer and somebody has to give it back — credit balances are a real thing, are not built, and are now a register row rather than a silent rounding.
+
+  **A lender settling a financed car is a payment method**, not a different kind of debt: what the dealership is owed does not change with who hands the money over.
+
+  **One defect only walking it could find.** The payment band looked its receivable up once, when the record was opened, and never again — so invoicing a job in the same session showed no band at all. It rendered perfectly on a fresh page load, which is the one place nobody was looking, and every unit test passed because they mount the band against a bill that already exists. Fixed with an explicit dependency, and there is now a test that fails without it.
+
+  **Two rehearsals found weak tests rather than confirming strong ones.** Allowing overpayment failed the right test. But computing the outstanding figure locally instead of taking the server's answer **passed** — the fixture's numbers happened to equal naive subtraction, so the test was proving nothing; it now uses a server reply that local arithmetic cannot produce. Earlier the same day, adding Sold to the stock moves failed nothing because that test only opened a car in one state.
+
+  **A pre-existing test caught a real bug in the new code**, again: the first draft keyed the duplicate-posting check on a stock number alone, and a stock number is unique per rooftop, not per organization.
+
+  **Not back-filled, deliberately.** The seeded dealership's historical deliveries and invoices stay posted as cash. They were genuinely recorded that way at the time, and rewriting a posted ledger to look tidier is the one thing an accounting system must not do.
+
+  **Known operational note:** account 1100 reaches existing dealerships through the seeder and tenant provisioning, both of which top up missing accounts from `AccountCodes.Standard`. That is the same route account 2100 took on 2026-09-09. A tenant provisioned before this change and never re-provisioned would need the account adding before it could post — there are none today, and it is worth a real mechanism before there are.
+
+  Walked in a browser rather than assumed: RO-1083, a full service at $240, invoiced, then a $100 deposit by card and a $140 balance in cash, leaving `1100 D240 / 4200 C240` followed by two payments moving 1100 to 1000. Evidence: `dotnet build` 0/0, `dotnet test` **725/725** (was 715), `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **327/327** (was 319), `npm run build`. Built on .NET SDK 10.0.401 after the host installation went missing mid-session and was reinstalled; `global.json` rolls forward and needed no change.

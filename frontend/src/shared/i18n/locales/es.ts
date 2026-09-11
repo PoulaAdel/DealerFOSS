@@ -264,6 +264,27 @@ export const es: Catalogue = {
   'stock.historyEmpty': 'Todavía no se ha registrado nada sobre este vehículo.',
   'stock.takenIn': 'Dado de alta en stock como {to}',
   'stock.moved': '{from} → {to}',
+
+  'enum.paymentMethod.Cash': 'Efectivo',
+  'enum.paymentMethod.Card': 'Tarjeta',
+  'enum.paymentMethod.BankTransfer': 'Transferencia',
+  'enum.paymentMethod.Cheque': 'Cheque',
+  'enum.paymentMethod.Finance': 'Financiera',
+
+  'money.title': 'Lo que se debe',
+  'money.billed': 'Facturado',
+  'money.paid': 'Pagado hasta ahora',
+  'money.outstanding': 'Pendiente',
+  'money.settled': 'Pagado por completo. No queda nada pendiente.',
+  'money.owedFor': {
+    one: 'Pendiente desde hace {count} día.',
+    other: 'Pendiente desde hace {count} días.',
+  },
+  'money.paymentsTitle': 'Lo que se ha pagado',
+  'money.howMuch': 'Cuánto',
+  'money.howPaid': 'Cómo ha pagado',
+  'money.reference': 'Referencia (queda en el registro)',
+  'money.takeIt': 'Registrar el pago',
   'stock.takeItIn': 'Dar entrada a un coche',
   'stock.confirmTakeIn': 'Dar entrada',
   'stock.takeInTitle': 'Dar entrada a un coche',
@@ -932,7 +953,7 @@ export const es: Catalogue = {
   'workshop.nobodyYet': 'Todavía nadie',
   'workshop.caption2':
     'El trabajo en las sedes que usted cubre, del más reciente al más antiguo, hasta {limit}.',
-  'workshop.invoicedNothingMore': 'Facturada el {date}. No queda nada por hacer.',
+  'workshop.invoicedNothingMore': 'Facturada el {date}. El trabajo está terminado; lo que se debe está abajo.',
   'workshop.jobFinished': 'Esta orden está terminada.',
   'workshop.assignedElsewhere':
     'Asignada a alguien que no está en su lista de personal: puede que trabaje en otra sede.',
