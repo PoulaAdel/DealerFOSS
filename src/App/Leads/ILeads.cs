@@ -22,7 +22,8 @@ namespace DealerFOSS.Leads;
 /// </summary>
 public interface ILeads
 {
-    Task<Result<IReadOnlyList<LeadSummary>>> ListAsync(LeadQuery query, CancellationToken cancellationToken);
+    /// <summary>One page of enquiries, in the order the caller asked for, with a total.</summary>
+    Task<Result<LeadPage>> ListAsync(LeadQuery query, CancellationToken cancellationToken);
 
     Task<Result<LeadDetail>> GetAsync(Guid leadId, CancellationToken cancellationToken);
 
@@ -106,7 +107,66 @@ public sealed record LeadQuery(
     Guid? AssignedToUserId = null,
     Guid? CustomerId = null,
     bool OpenOnly = false,
-    int Limit = 50);
+    int Limit = 50,
+
+    /// <summary>
+    /// How many to skip. What makes the rows past the first page reachable at
+    /// all — before 2026-09-11 there was no way to see them and the screen said
+    /// so, which is honest and still a dead end.
+    /// </summary>
+    int Offset = 0,
+
+    /// <summary>
+    /// Which end of the list matters. See <see cref="LeadOrder"/>: getting this
+    /// wrong is not a presentation detail, it decides which rows are returned at
+    /// all once there are more than fit on a page.
+    /// </summary>
+    LeadOrder Order = LeadOrder.Newest);
+
+/// <summary>
+/// Which enquiries a page should contain when there are more than fit.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This exists because of a real defect rather than a preference. The panel
+/// headed "Nobody is chasing these" took the fifty NEWEST enquiries and then
+/// displayed them longest-waiting first, so the list whose entire purpose is to
+/// surface neglect was populated by recency and dropped exactly the rows it was
+/// for. Measured against the running application on 2026-09-10 with 52 open
+/// enquiries: the two longest-waiting customers, at 95 and 93 days, were not
+/// returned at all — and taking one new enquiry pushed the 95-day customer off
+/// the screen.
+/// </para>
+/// <para>
+/// Sorting the page after it arrives cannot fix that. The order has to be part
+/// of the query.
+/// </para>
+/// </remarks>
+public enum LeadOrder
+{
+    /// <summary>Most recently captured first. What a work list wants.</summary>
+    Newest = 0,
+
+    /// <summary>
+    /// Longest waiting first. What a chase list wants, and the only ordering
+    /// under which "nobody is chasing these" means anything.
+    /// </summary>
+    LongestWaiting = 1,
+}
+
+/// <summary>
+/// One page of enquiries, and how many there are altogether.
+/// </summary>
+/// <remarks>
+/// <see cref="Total"/> is the whole point of returning a page rather than a
+/// list. "Showing the first 50. There may be more" was true and useless; a
+/// dealership needs to know whether it is 51 or 5,100.
+/// </remarks>
+public sealed record LeadPage(
+    IReadOnlyList<LeadSummary> Rows,
+    int Total,
+    int Offset,
+    int Limit);
 
 /// <summary>What a caller supplies to capture an enquiry.</summary>
 public sealed record NewLead(

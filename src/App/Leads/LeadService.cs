@@ -53,7 +53,7 @@ public sealed class LeadService(
     private readonly IStaffDirectory _staff = staff;
     private readonly IClock _clock = clock;
 
-    public async Task<Result<IReadOnlyList<LeadSummary>>> ListAsync(
+    public async Task<Result<LeadPage>> ListAsync(
         LeadQuery query,
         CancellationToken cancellationToken)
     {
@@ -62,14 +62,14 @@ public sealed class LeadService(
         var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
         if (scope.GrantsNothing)
         {
-            return Result.Failure<IReadOnlyList<LeadSummary>>(LeadErrors.Forbidden);
+            return Result.Failure<LeadPage>(LeadErrors.Forbidden);
         }
 
         // Asking for one rooftop is answered with the same refusal whether the
         // caller may not see it or it does not exist.
         if (query.RooftopId is { } requested && !scope.Covers(requested))
         {
-            return Result.Failure<IReadOnlyList<LeadSummary>>(LeadErrors.Forbidden);
+            return Result.Failure<LeadPage>(LeadErrors.Forbidden);
         }
 
         LeadStatus? status = null;
@@ -77,7 +77,7 @@ public sealed class LeadService(
         {
             if (!Enum.TryParse(query.Status, ignoreCase: true, out LeadStatus parsed))
             {
-                return Result.Failure<IReadOnlyList<LeadSummary>>(LeadErrors.UnknownStatus);
+                return Result.Failure<LeadPage>(LeadErrors.UnknownStatus);
             }
 
             status = parsed;
@@ -119,8 +119,23 @@ public sealed class LeadService(
             leads = leads.Where(l => l.Status != LeadStatus.Won && l.Status != LeadStatus.Lost);
         }
 
-        var rows = await leads
-            .OrderByDescending(l => l.CapturedAt)
+        // Counted before the page is taken, and counted over the SAME filters.
+        // "Showing the first 50. There may be more" was true and useless; a
+        // dealership needs to know whether it is 51 or 5,100.
+        var total = await leads.CountAsync(cancellationToken);
+
+        // THE ORDER IS PART OF THE QUERY, not something the screen does to the
+        // page after it arrives. The panel headed "Nobody is chasing these" used
+        // to take the fifty NEWEST and display them longest-waiting first, so the
+        // list whose purpose is to surface neglect dropped exactly the rows it
+        // was for: with 52 open enquiries the two oldest, at 95 and 93 days, were
+        // never returned. Sorting afterwards cannot fix that.
+        var ordered = query.Order == LeadOrder.LongestWaiting
+            ? leads.OrderBy(l => l.CapturedAt)
+            : leads.OrderByDescending(l => l.CapturedAt);
+
+        var rows = await ordered
+            .Skip(Math.Max(0, query.Offset))
             .Take(take)
             .ToListAsync(cancellationToken);
 
@@ -131,7 +146,7 @@ public sealed class LeadService(
 
         if (names.IsFailure)
         {
-            return Result.Failure<IReadOnlyList<LeadSummary>>(names.Error);
+            return Result.Failure<LeadPage>(names.Error);
         }
 
         // The same reasoning as the customer names above: one query for the page,
@@ -145,7 +160,7 @@ public sealed class LeadService(
 
         if (cars.IsFailure)
         {
-            return Result.Failure<IReadOnlyList<LeadSummary>>(cars.Error);
+            return Result.Failure<LeadPage>(cars.Error);
         }
 
         // Printing a colleague's name is not the same act as reading the staff
@@ -159,7 +174,7 @@ public sealed class LeadService(
 
         var now = _clock.UtcNow;
 
-        return Result.Success<IReadOnlyList<LeadSummary>>(
+        return Result.Success(new LeadPage(
             rows.Select(l => new LeadSummary(
                 l.Id,
                 l.RooftopId,
@@ -172,7 +187,10 @@ public sealed class LeadService(
                 l.AssignedToUserId,
                 ChaserFor(chasers, l.AssignedToUserId),
                 l.CapturedAt,
-                DaysOpen(l, now))).ToList());
+                DaysOpen(l, now))).ToList(),
+            total,
+            Math.Max(0, query.Offset),
+            take));
     }
 
     public async Task<Result<LeadDetail>> GetAsync(Guid leadId, CancellationToken cancellationToken)

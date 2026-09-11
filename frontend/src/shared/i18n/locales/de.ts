@@ -554,6 +554,9 @@ export const de: Catalogue = {
   'leads.countCapped': 'Die ersten {count} Anfragen. Es können mehr sein.',
   'leads.cappedNote':
     'Es werden die ersten {count} angezeigt. Es können mehr sein — grenzen Sie es mit den Filtern ein, bis es eine Seitenblätterung gibt.',
+  'leads.showingRange': '{first}–{last} von {total} angezeigt.',
+  'leads.newer': 'Neuere',
+  'leads.older': 'Länger wartend',
 
   'leads.cameIn': 'eingegangen am {date}',
   'leads.unclaimed': 'Das hat noch niemand übernommen.',
@@ -585,6 +588,9 @@ export const de: Catalogue = {
   'leads.chooseSomebody': 'Jemanden wählen…',
   'leads.searchAboveNote':
     'Suchen Sie oben nach der Person. Eine Anfrage muss jemandem gehören — ist die Person neu, legen Sie sie zuerst auf der Kundenseite an.',
+  'leads.notOnFile': 'Nicht erfasst? Hier anlegen.',
+  'leads.newCustomerTitle': 'Jemand Neues',
+  'leads.addAndUse': 'Anlegen und verwenden',
   'leads.whichLocation': 'Welcher Standort',
   'leads.chooseLocation': 'Standort wählen…',
   'leads.onlyLocation':

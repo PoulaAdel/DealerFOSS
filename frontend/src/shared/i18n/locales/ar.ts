@@ -600,6 +600,9 @@ export const ar: Catalogue = {
   'leads.countCapped': 'أول {count} استفسار. قد يكون هناك المزيد.',
   'leads.cappedNote':
     'يُعرض أول {count}. قد يكون هناك المزيد — ضيِّق النطاق بالمرشِّحات إلى أن يتوفَّر تقسيم الصفحات.',
+  'leads.showingRange': 'عرض {first}–{last} من {total}.',
+  'leads.newer': 'الأحدث',
+  'leads.older': 'الأطول انتظارًا',
 
   'leads.cameIn': 'ورد في {date}',
   'leads.unclaimed': 'لم يتولَّ أحد هذا الاستفسار بعد.',
@@ -630,6 +633,9 @@ export const ar: Catalogue = {
   'leads.chooseSomebody': 'اختر شخصًا…',
   'leads.searchAboveNote':
     'ابحث عنه بالأعلى. لا بد أن يعود الاستفسار إلى شخص، فإن كان جديدًا فأضِفه أولًا من صفحة العملاء.',
+  'leads.notOnFile': 'غير مسجَّل؟ أضِفه هنا.',
+  'leads.newCustomerTitle': 'شخص جديد',
+  'leads.addAndUse': 'إضافته واستخدامه',
   'leads.whichLocation': 'أي فرع',
   'leads.chooseLocation': 'اختر فرعًا…',
   'leads.onlyLocation': 'هذا الاستفسار يخص {name} ({code})، وهو الفرع الوحيد الذي تعمل فيه.',

@@ -576,6 +576,9 @@ export const ru: Catalogue = {
   'leads.countCapped': 'Первые {count} обращений. Возможно, есть ещё.',
   'leads.cappedNote':
     'Показаны первые {count}. Возможно, есть ещё — уточните фильтрами, пока нет постраничного вывода.',
+  'leads.showingRange': 'Показано {first}–{last} из {total}.',
+  'leads.newer': 'Новее',
+  'leads.older': 'Ждут дольше',
 
   'leads.cameIn': 'поступило {date}',
   'leads.unclaimed': 'Пока никто не взял его в работу.',
@@ -607,6 +610,9 @@ export const ru: Catalogue = {
   'leads.chooseSomebody': 'Выберите человека…',
   'leads.searchAboveNote':
     'Найдите его через поиск выше. Обращение должно быть привязано к человеку: если клиент новый, сначала заведите его на странице «Клиенты».',
+  'leads.notOnFile': 'Нет в базе? Добавьте здесь.',
+  'leads.newCustomerTitle': 'Новый человек',
+  'leads.addAndUse': 'Добавить и выбрать',
   'leads.whichLocation': 'Какая площадка',
   'leads.chooseLocation': 'Выберите площадку…',
   'leads.onlyLocation':

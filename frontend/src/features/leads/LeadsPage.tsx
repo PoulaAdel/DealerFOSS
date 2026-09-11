@@ -25,7 +25,13 @@ import { useNavigate } from 'react-router';
 import { ApiError, api, post } from '../../shared/api';
 import { useSession } from '../../app/session';
 import { CaptureLead } from './CaptureLead';
-import type { LeadDetail, LeadStatus, LeadSummary, StaffMember } from '../../shared/contracts';
+import type {
+  LeadDetail,
+  LeadPage,
+  LeadStatus,
+
+  StaffMember,
+} from '../../shared/contracts';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
@@ -34,7 +40,7 @@ const PageSize = 50;
 
 type Load =
   | { kind: 'loading' }
-  | { kind: 'ready'; leads: LeadSummary[] }
+  | { kind: 'ready'; page: LeadPage }
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
@@ -49,13 +55,22 @@ export function LeadsPage() {
   const [selected, setSelected] = useState<LeadDetail | null>(null);
   const [capturing, setCapturing] = useState(false);
 
+  // Which page of the list. Reset whenever a filter changes, because page 3 of
+  // one filter is not page 3 of another and landing on an empty page reads as
+  // "there is nothing here".
+  const [offset, setOffset] = useState(0);
+
   const me = user?.userId ?? null;
 
   // Built here rather than inside the effect so that who "mine" is only matters
   // when the filter is on. Depending on the user id unconditionally made the list
   // load twice on every visit — once before /auth/me answered and once after.
+  // ORDERED BY LONGEST WAITING, and that is the fix rather than a preference.
+  // The band below used to sort the loaded page oldest-first while the server
+  // sent the NEWEST fifty, so the panel whose purpose is to surface neglect
+  // dropped exactly the rows it was for. An enquiry list is a chase list.
   const query =
-    `openOnly=${openOnly}&limit=${PageSize}` +
+    `openOnly=${openOnly}&limit=${PageSize}&offset=${offset}&order=longestWaiting` +
     (mineOnly && me !== null ? `&assignedTo=${me}` : '');
 
   const find = useCallback(async (filters: string) => {
@@ -64,7 +79,7 @@ export function LeadsPage() {
     try {
       setLoad({
         kind: 'ready',
-        leads: await api<LeadSummary[]>(`/leads?${filters}`),
+        page: await api<LeadPage>(`/leads?${filters}`),
       });
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 403) {
@@ -98,7 +113,7 @@ export function LeadsPage() {
           <select
             id="open-leads"
             value={openOnly ? 'open' : 'all'}
-            onChange={(e) => setOpenOnly(e.target.value === 'open')}
+            onChange={(e) => { setOpenOnly(e.target.value === 'open'); setOffset(0); }}
           >
             <option value="open">{t('leads.stillChasing')}</option>
             <option value="all">{t('leads.everything')}</option>
@@ -109,7 +124,7 @@ export function LeadsPage() {
               id="mine-only"
               type="checkbox"
               checked={mineOnly}
-              onChange={(e) => setMineOnly(e.target.checked)}
+              onChange={(e) => { setMineOnly(e.target.checked); setOffset(0); }}
             />
             {t('leads.onlyMine')}
           </label>
@@ -155,6 +170,7 @@ export function LeadsPage() {
         me={me}
         onRetry={() => void find(query)}
         onOpen={(id) => void open(id)}
+        onPage={setOffset}
       />
     </>
   );
@@ -189,7 +205,7 @@ function Untouched({
   }
 
   // Oldest first: the one that has been ignored longest is the one to call.
-  const waiting = load.leads
+  const waiting = load.page.rows
     .filter((lead) => lead.assignedTo === null && lead.status !== 'Won' && lead.status !== 'Lost')
     .sort((a, b) => b.daysOpen - a.daysOpen);
 
@@ -516,12 +532,13 @@ function moveKey(from: LeadStatus, to: LeadStatus): MessageKey {
 }
 
 function Body({
-  load, me, onRetry, onOpen,
+  load, me, onRetry, onOpen, onPage,
 }: {
   load: Load;
   me: string | null;
   onRetry: () => void;
   onOpen: (id: string) => void;
+  onPage: (offset: number) => void;
 }) {
   const { t } = useI18n();
 
@@ -551,32 +568,38 @@ function Body({
       );
 
     case 'ready':
-      return load.leads.length === 0 ? (
+      return load.page.total === 0 ? (
         <p className="state">{t('leads.empty')}</p>
       ) : (
-        <LeadTable leads={load.leads} me={me} onOpen={onOpen} />
+        <LeadTable page={load.page} me={me} onOpen={onOpen} onPage={onPage} />
       );
   }
 }
 
 function LeadTable({
-  leads, me, onOpen,
+  page, me, onOpen, onPage,
 }: {
-  leads: LeadSummary[];
+  page: LeadPage;
   me: string | null;
   onOpen: (id: string) => void;
+  onPage: (offset: number) => void;
 }) {
   const { t, format } = useI18n();
   const label = useEnumLabel();
-  const capped = leads.length >= PageSize;
+  const leads = page.rows;
+
+  // A real count, not "there may be more". The screen used to say "the first 50,
+  // there may be more" and offer nothing; a dealership needs to know whether it
+  // is 51 or 5,100, and needs a way to reach them.
+  const first = page.total === 0 ? 0 : page.offset + 1;
+  const last = page.offset + leads.length;
+  const hasMore = last < page.total;
 
   return (
     <div className="scroll">
       <table>
         <caption className="visually-hidden">
-          {capped
-            ? t('leads.countCapped', { count: leads.length })
-            : t('leads.count', { count: leads.length })}
+          {t('leads.showingRange', { first, last, total: page.total })}
         </caption>
         <thead>
           <tr>
@@ -618,9 +641,31 @@ function LeadTable({
         </tbody>
       </table>
 
-      {capped ? (
-        <p className="note note--footer">{t('leads.cappedNote', { count: leads.length })}</p>
-      ) : null}
+      {/* The rows past this page, reachable at last. Before 2026-09-11 the
+          screen said "the first 50, there may be more" and offered no way to
+          see them, so a dealership past the cap simply could not. */}
+      <div className="paging">
+        <p className="note note--footer">
+          {t('leads.showingRange', { first, last, total: page.total })}
+        </p>
+
+        <div className="actions">
+          <button
+            type="button"
+            disabled={page.offset === 0}
+            onClick={() => onPage(Math.max(0, page.offset - page.limit))}
+          >
+            {t('leads.newer')}
+          </button>
+          <button
+            type="button"
+            disabled={!hasMore}
+            onClick={() => onPage(page.offset + page.limit)}
+          >
+            {t('leads.older')}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

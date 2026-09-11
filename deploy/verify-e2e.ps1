@@ -355,12 +355,15 @@ try {
         -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped
     $vehicleCount = @($vehicles).Count
     "scoped user sees {0} vehicle(s)           (expect 1 or more: vehicles are shared)" -f $vehicleCount
-
     Write-Host "`n--- lead rooftop scope ---" -ForegroundColor Cyan
-    $managerLeads = Invoke-RestMethod "$baseUrl/api/v1/leads?limit=200" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
-    $scopedLeads = Invoke-RestMethod "$baseUrl/api/v1/leads?limit=200" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped
+
+    # .rows, not the response itself: the list endpoint returns a PAGE as of
+    # 2026-09-11. A bare array could say "the first 50, there may be more" and
+    # offered no way to reach them, so it now carries a total and an offset.
+    $managerLeads = (Invoke-RestMethod "$baseUrl/api/v1/leads?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide).rows
+    $scopedLeads = (Invoke-RestMethod "$baseUrl/api/v1/leads?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped).rows
 
     $siblingLeads = @($managerLeads | Where-Object { $_.rooftopId -eq $siblingId })
     $leakedLeads = @($scopedLeads | Where-Object { $_.rooftopId -eq $siblingId }).Count

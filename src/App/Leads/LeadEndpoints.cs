@@ -46,15 +46,32 @@ internal static class LeadEndpoints
         Guid? assignedTo = null,
         Guid? customerId = null,
         bool openOnly = false,
-        int limit = 50)
+        int limit = 50,
+        int offset = 0,
+        string? order = null)
     {
+        // An unknown ordering is refused rather than quietly treated as the
+        // default. The whole reason this parameter exists is that the wrong order
+        // silently returned the wrong rows, and a typo falling back to "newest"
+        // would reproduce exactly that.
+        var wanted = LeadOrder.Newest;
+        if (!string.IsNullOrWhiteSpace(order)
+            && !Enum.TryParse(order, ignoreCase: true, out wanted))
+        {
+            return Error
+                .Validation("leads.unknown_order", "Order enquiries by newest or longestWaiting.")
+                .ToProblem();
+        }
+
         var query = new LeadQuery(
             rooftopId is null ? null : new RooftopId(rooftopId.Value),
             status,
             assignedTo,
             customerId,
             openOnly,
-            limit);
+            limit,
+            offset,
+            wanted);
 
         var result = await leads.ListAsync(query, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();

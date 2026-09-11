@@ -25,7 +25,7 @@ import { LeadsPage } from './LeadsPage';
 import { SessionProvider } from '../../app/session';
 import { apiCalls, mockApi, mockApiUnreachable } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
-import type { LeadDetail, LeadSummary } from '../../shared/contracts';
+import type { LeadDetail, LeadPage, LeadSummary } from '../../shared/contracts';
 
 const me = 'u1';
 
@@ -67,6 +67,19 @@ const detail = (over: Partial<LeadDetail> = {}): LeadDetail => ({
 });
 
 /** The session is real, because the screen asks it who "mine" is. */
+/**
+ * The list endpoint returns a page rather than a bare array as of 2026-09-11.
+ * A list with no total could say "the first 50, there may be more" and nothing
+ * else, and offered no way to reach them.
+ */
+const page = (rows: LeadSummary[], over: Partial<LeadPage> = {}): LeadPage => ({
+  rows,
+  total: rows.length,
+  offset: 0,
+  limit: 50,
+  ...over,
+});
+
 function renderLeads() {
   setCurrentTenant('northgroup');
 
@@ -118,7 +131,7 @@ describe('handing an enquiry to a named colleague', () => {
     mockApi({
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail() },
-      '/leads': { ok: true, body: [summary] },
+      '/leads': { ok: true, body: page([summary]) },
       '/staff': { ok: true, body: [colleague()] },
     });
     renderLeads();
@@ -131,7 +144,7 @@ describe('handing an enquiry to a named colleague', () => {
     mockApi({
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail() },
-      '/leads': { ok: true, body: [summary] },
+      '/leads': { ok: true, body: page([summary]) },
       '/staff': { ok: true, body: [colleague({ assignments: [] })] },
     });
     renderLeads();
@@ -147,7 +160,7 @@ describe('handing an enquiry to a named colleague', () => {
     mockApi({
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail() },
-      '/leads': { ok: true, body: [summary] },
+      '/leads': { ok: true, body: page([summary]) },
       '/staff': { ok: false, status: 403, code: 'staff.read_forbidden', detail: 'No.' },
     });
     renderLeads();
@@ -160,7 +173,7 @@ describe('handing an enquiry to a named colleague', () => {
   it('names who is chasing it rather than saying "somebody else"', async () => {
     mockApi({
       '/auth/me': signedIn,
-      '/leads': { ok: true, body: [{ ...summary, assignedToUserId: 'u9', assignedTo: 'Ada Nwosu' }] },
+      '/leads': { ok: true, body: page([{ ...summary, assignedToUserId: 'u9', assignedTo: 'Ada Nwosu' }]) },
       '/staff': { ok: true, body: [] },
     });
     renderLeads();
@@ -171,7 +184,7 @@ describe('handing an enquiry to a named colleague', () => {
 
 describe('the enquiry list', () => {
   it('lists what is being chased, and what each one is about', async () => {
-    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [summary] } });
+    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: page([summary]) } });
     renderLeads();
 
     await screen.findByRole('table');
@@ -184,7 +197,7 @@ describe('the enquiry list', () => {
   });
 
   it('puts an enquiry nobody owns in the signal band, and takes it out once claimed', async () => {
-    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [summary] } });
+    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: page([summary]) } });
     renderLeads();
 
     // The band exists because the enquiry has nobody's name on it. That is the
@@ -201,7 +214,7 @@ describe('the enquiry list', () => {
     // reading the one spot they must not stop reading, so it disappears.
     mockApi({
       '/auth/me': signedIn,
-      '/leads': { ok: true, body: [{ ...summary, assignedToUserId: 'u9', assignedTo: 'Ada Nwosu' }] },
+      '/leads': { ok: true, body: page([{ ...summary, assignedToUserId: 'u9', assignedTo: 'Ada Nwosu' }]) },
     });
     renderLeads();
 
@@ -212,7 +225,7 @@ describe('the enquiry list', () => {
   });
 
   it('defaults to the ones still being chased', async () => {
-    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [summary] } });
+    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: page([summary]) } });
     renderLeads();
     await screen.findByRole('table');
 
@@ -220,7 +233,7 @@ describe('the enquiry list', () => {
   });
 
   it('narrows to mine without offering a rooftop to choose', async () => {
-    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [summary] } });
+    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: page([summary]) } });
     renderLeads();
     await screen.findByRole('table');
 
@@ -237,7 +250,7 @@ describe('the enquiry list', () => {
   });
 
   it('says the list is empty rather than showing an empty table', async () => {
-    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: [] } });
+    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: page([]) } });
     renderLeads();
 
     expect(await screen.findByText(/No enquiries here/)).toBeVisible();
@@ -265,7 +278,7 @@ describe('one enquiry', () => {
     mockApi({
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail() },
-      '/leads': { ok: true, body: [summary] },
+      '/leads': { ok: true, body: page([summary]) },
     });
 
     renderLeads();
@@ -281,7 +294,7 @@ describe('one enquiry', () => {
       // Deliberately a status whose real transition table this file does not
       // know. The screen must render what it was sent, not what it believes.
       '/leads/l1': { ok: true, body: detail({ status: 'Working', availableMoves: ['Appointment'] }) },
-      '/leads': { ok: true, body: [{ ...summary, status: 'Working' }] },
+      '/leads': { ok: true, body: page([{ ...summary, status: 'Working' }]) },
     });
 
     renderLeads();
@@ -296,7 +309,7 @@ describe('one enquiry', () => {
     mockApi({
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail({ status: 'Won', isOpen: false, availableMoves: [] }) },
-      '/leads': { ok: true, body: [{ ...summary, status: 'Won' }] },
+      '/leads': { ok: true, body: page([{ ...summary, status: 'Won' }]) },
     });
 
     renderLeads();
@@ -314,7 +327,7 @@ describe('one enquiry', () => {
         ok: true,
         body: detail({ status: 'Working', availableMoves: ['Appointment', 'Won', 'Lost'] }),
       },
-      '/leads': { ok: true, body: [summary] },
+      '/leads': { ok: true, body: page([summary]) },
     });
 
     renderLeads();
@@ -341,7 +354,7 @@ describe('one enquiry', () => {
         ok: false, status: 409, code: 'leads.status_not_allowed',
         detail: 'A New lead can only move to Working or Lost.',
       },
-      '/leads': { ok: true, body: [summary] },
+      '/leads': { ok: true, body: page([summary]) },
     });
 
     renderLeads();
@@ -358,7 +371,7 @@ describe('one enquiry', () => {
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail() },
       '/leads/l1/assign': { ok: true, body: detail({ assignedToUserId: me }) },
-      '/leads': { ok: true, body: [summary] },
+      '/leads': { ok: true, body: page([summary]) },
     });
 
     renderLeads();
@@ -378,7 +391,7 @@ describe('one enquiry', () => {
     mockApi({
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail() },
-      '/leads': { ok: true, body: [summary] },
+      '/leads': { ok: true, body: page([summary]) },
     });
 
     const { unmount } = renderLeads();
@@ -390,7 +403,7 @@ describe('one enquiry', () => {
     mockApi({
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail({ status: 'Won', availableMoves: [] }) },
-      '/leads': { ok: true, body: [{ ...summary, status: 'Won' }] },
+      '/leads': { ok: true, body: page([{ ...summary, status: 'Won' }]) },
     });
 
     renderLeads();
@@ -412,7 +425,7 @@ describe('one enquiry', () => {
           ],
         }),
       },
-      '/leads': { ok: true, body: [{ ...summary, status: 'Working' }] },
+      '/leads': { ok: true, body: page([{ ...summary, status: 'Working' }]) },
     });
 
     renderLeads();
@@ -448,7 +461,7 @@ describe('taking an enquiry', () => {
       '/organization': { ok: true, body: organization },
       '/inventory': { ok: true, body: [] },
       '/customers': { ok: true, body: [] },
-      '/leads': { ok: true, body: [] },
+      '/leads': { ok: true, body: page([]) },
     });
 
     renderLeads();
@@ -478,7 +491,7 @@ describe('taking an enquiry', () => {
       },
       '/inventory': { ok: true, body: [] },
       '/customers': { ok: true, body: [] },
-      '/leads': { ok: true, body: [] },
+      '/leads': { ok: true, body: page([]) },
     });
 
     renderLeads();
@@ -502,7 +515,11 @@ describe('taking an enquiry', () => {
         ok: true,
         body: [{ id: 'c1', displayName: 'Priya Raman', kind: 'Person', primaryEmail: null, primaryPhone: null }],
       },
-      '/leads': [{ ok: true, body: [] }, { ok: true, body: detail() }, { ok: true, body: [summary] }],
+      '/leads': [
+        { ok: true, body: page([]) },
+        { ok: true, body: detail() },
+        { ok: true, body: page([summary]) },
+      ],
     });
 
     renderLeads();
@@ -526,5 +543,132 @@ describe('taking an enquiry', () => {
         vehicleOfInterestId: 'v1',
       });
     });
+  });
+});
+
+/**
+ * Reaching the enquiries the first page does not hold, and recording somebody
+ * the dealership has never met.
+ *
+ * The walk on 2026-09-10 measured all three of these against the running
+ * application: the chase panel took the fifty NEWEST enquiries and dropped the
+ * two longest-waiting; the footer said "the first 50, there may be more" and
+ * offered no way through; and a walk-in who was not already a customer could not
+ * have an enquiry taken at all.
+ */
+describe('reaching every enquiry', () => {
+  it('asks the server for the longest waiting, rather than sorting a page of the newest', async () => {
+    // The heart of the defect. Sorting after the page arrives cannot fix a page
+    // that contains the wrong rows.
+    mockApi({ '/auth/me': signedIn, '/leads': { ok: true, body: page([summary]) } });
+    renderLeads();
+
+    await screen.findByRole('table');
+
+    expect(apiCalls().some((c) => c.path.includes('order=longestWaiting'))).toBe(true);
+  });
+
+  it('says how many there are, not that there may be more', async () => {
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads': { ok: true, body: page([summary], { total: 213, offset: 0, limit: 50 }) },
+    });
+    renderLeads();
+
+    // Said twice on purpose, to two audiences: the table's caption is what a
+    // screen reader announces, the footer note is what a sighted user reads.
+    // The capped note this replaces was written the same way.
+    expect(await screen.findAllByText(/Showing 1–1 of 213\./)).toHaveLength(2);
+  });
+
+  it('reaches the next page, and cannot go back from the first', async () => {
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads': { ok: true, body: page([summary], { total: 213, offset: 0, limit: 50 }) },
+    });
+    renderLeads();
+
+    await screen.findByRole('table');
+    expect(screen.getByRole('button', { name: 'Newer' })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Longer waiting' }));
+
+    expect(apiCalls().some((c) => c.path.includes('offset=50'))).toBe(true);
+  });
+
+  it('offers no next page on the last one', async () => {
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads': { ok: true, body: page([summary], { total: 1, offset: 0, limit: 50 }) },
+    });
+    renderLeads();
+
+    await screen.findByRole('table');
+    expect(screen.getByRole('button', { name: 'Longer waiting' })).toBeDisabled();
+  });
+});
+
+describe('a walk-in nobody has met', () => {
+  const organizationOnly = {
+    id: 'o1',
+    name: 'North Auto Group',
+    legalEntities: [{ id: 'e1', name: 'North Auto Group LLC', rooftops: [
+      { id: 'r1', code: 'NAG-01', name: 'North Auto Downtown' },
+    ] }],
+  };
+
+  function mockCapture() {
+    mockApi({
+      '/auth/me': signedIn,
+      '/organization': { ok: true, body: organizationOnly },
+      '/inventory': { ok: true, body: [] },
+      '/customers': { ok: true, body: [] },
+      '/leads': { ok: true, body: page([]) },
+    });
+  }
+
+  it('has a search button, rather than only answering to Enter', async () => {
+    // Typing a name and tabbing onward left the same first 25 customers showing,
+    // so the person concluded the customer was not on file.
+    mockCapture();
+    renderLeads();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Take an enquiry' }));
+
+    expect(await screen.findByRole('button', { name: 'Search' })).toBeVisible();
+  });
+
+  it('records somebody new without leaving the enquiry', async () => {
+    mockCapture();
+    renderLeads();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Take an enquiry' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Not on file/ }));
+
+    await userEvent.type(screen.getByLabelText('Last name'), 'Okonkwo');
+    await userEvent.type(screen.getByLabelText('Phone'), '5551234567');
+
+    mockApi({
+      '/auth/me': signedIn,
+      '/organization': { ok: true, body: organizationOnly },
+      '/inventory': { ok: true, body: [] },
+      '/customers': { ok: true, body: { id: 'c9', displayName: 'Okonkwo', kind: 'Person' } },
+      '/leads': { ok: true, body: page([]) },
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add and use them' }));
+
+    // Added AND selected, so the enquiry can be saved without going anywhere.
+    expect(await screen.findByRole('combobox', { name: 'Who is asking' })).toHaveValue('c9');
+  });
+
+  it('needs a surname before it will add anybody', async () => {
+    mockCapture();
+    renderLeads();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Take an enquiry' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Not on file/ }));
+
+    expect(screen.getByRole('button', { name: 'Add and use them' })).toBeDisabled();
   });
 });

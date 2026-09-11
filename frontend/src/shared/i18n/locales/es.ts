@@ -560,6 +560,9 @@ export const es: Catalogue = {
   'leads.countCapped': 'Las primeras {count} consultas. Puede que haya más.',
   'leads.cappedNote':
     'Mostrando las primeras {count}. Puede que haya más: acote con los filtros hasta que exista la paginación.',
+  'leads.showingRange': 'Mostrando {first}–{last} de {total}.',
+  'leads.newer': 'Más recientes',
+  'leads.older': 'Esperando más tiempo',
 
   'leads.cameIn': 'entró el {date}',
   'leads.unclaimed': 'Todavía nadie se ha hecho cargo de esta.',
@@ -591,6 +594,9 @@ export const es: Catalogue = {
   'leads.chooseSomebody': 'Elija a alguien…',
   'leads.searchAboveNote':
     'Búsquelo arriba. Una consulta tiene que pertenecer a alguien, así que si es nuevo créelo antes en la pantalla de clientes.',
+  'leads.notOnFile': '¿No está en la base? Añádelo aquí.',
+  'leads.newCustomerTitle': 'Alguien nuevo',
+  'leads.addAndUse': 'Añadir y usarlo',
   'leads.whichLocation': 'Qué sede',
   'leads.chooseLocation': 'Elija una sede…',
   'leads.onlyLocation': 'Esta consulta pertenece a {name} ({code}), la única sede en la que trabaja.',

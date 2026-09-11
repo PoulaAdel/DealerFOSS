@@ -552,6 +552,9 @@ export const fr: Catalogue = {
   'leads.countCapped': 'Les {count} premières demandes. Il peut y en avoir d’autres.',
   'leads.cappedNote':
     'Affichage des {count} premières. Il peut y en avoir d’autres — affinez avec les filtres en attendant la pagination.',
+  'leads.showingRange': 'Affichage de {first} à {last} sur {total}.',
+  'leads.newer': 'Plus récentes',
+  'leads.older': 'En attente depuis plus longtemps',
 
   'leads.cameIn': 'reçue le {date}',
   'leads.unclaimed': 'Personne ne s’en occupe encore.',
@@ -583,6 +586,9 @@ export const fr: Catalogue = {
   'leads.chooseSomebody': 'Choisir une personne…',
   'leads.searchAboveNote':
     'Cherchez ci-dessus pour la trouver. Une demande doit être rattachée à quelqu’un : si la personne est nouvelle, créez-la d’abord sur la page Clients.',
+  'leads.notOnFile': 'Pas au fichier ? Ajoutez-le ici.',
+  'leads.newCustomerTitle': 'Quelqu’un de nouveau',
+  'leads.addAndUse': 'Ajouter et utiliser',
   'leads.whichLocation': 'Quel site',
   'leads.chooseLocation': 'Choisir un site…',
   'leads.onlyLocation':

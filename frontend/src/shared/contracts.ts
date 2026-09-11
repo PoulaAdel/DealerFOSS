@@ -1075,3 +1075,26 @@ export interface JournalLineView {
   credit: number;
   memo: string | null;
 }
+
+/**
+ * One page of enquiries, and how many there are altogether.
+ *
+ * `total` is the whole point of a page rather than a list. "Showing the first
+ * 50. There may be more" was true and useless; a dealership needs to know
+ * whether it is 51 or 5,100.
+ */
+export interface LeadPage {
+  rows: LeadSummary[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+/**
+ * Which end of the enquiry list matters.
+ *
+ * Not a presentation choice. The panel headed "Nobody is chasing these" used to
+ * take the newest fifty and display them longest-waiting first, so it dropped
+ * exactly the rows it existed for. The order has to be part of the query.
+ */
+export type LeadOrder = 'newest' | 'longestWaiting';

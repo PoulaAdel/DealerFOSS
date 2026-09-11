@@ -567,6 +567,9 @@ export const en = {
   'leads.countCapped': 'The first {count} enquiries. There may be more.',
   'leads.cappedNote':
     'Showing the first {count}. There may be more — narrow it with the filters until paging exists.',
+  'leads.showingRange': 'Showing {first}–{last} of {total}.',
+  'leads.newer': 'Newer',
+  'leads.older': 'Longer waiting',
 
   'leads.cameIn': 'came in {date}',
   'leads.unclaimed': 'Nobody has picked this up yet.',
@@ -600,6 +603,9 @@ export const en = {
   'leads.chooseSomebody': 'Choose somebody…',
   'leads.searchAboveNote':
     'Search above to find them. An enquiry has to belong to somebody, so add them on the customers page first if they are new.',
+  'leads.notOnFile': 'Not on file? Add them here.',
+  'leads.newCustomerTitle': 'Somebody new',
+  'leads.addAndUse': 'Add and use them',
   'leads.whichLocation': 'Which location',
   'leads.chooseLocation': 'Choose a location…',
   'leads.onlyLocation':

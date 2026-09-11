@@ -217,6 +217,21 @@ public sealed class LeadTests(HostFixture fixture)
         return detail.GetProperty("id").GetString()!;
     }
 
+    /// <summary>An enquiry for a GIVEN customer, so a test can isolate its own rows.</summary>
+    private async Task<string> CaptureForAsync(string rooftopId, string customerId)
+    {
+        using var response = await PostAsync(Leads, Manager, new
+        {
+            rooftopId,
+            customerId,
+            source = "Website",
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var detail = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return detail.GetProperty("id").GetString()!;
+    }
+
     private async Task<string> CaptureAsync(string email, string rooftopId)
     {
         var customerId = await AddCustomerAsync(Unique());
@@ -233,13 +248,106 @@ public sealed class LeadTests(HostFixture fixture)
         return detail.GetProperty("id").GetString()!;
     }
 
+
+    [Fact]
+    public async Task The_longest_waiting_enquiries_are_the_ones_a_chase_list_returns()
+    {
+        // The defect this guards against was measured against the running
+        // application on 2026-09-10. The panel headed "Nobody is chasing these"
+        // took the fifty NEWEST enquiries and then displayed them longest-waiting
+        // first, so with 52 open the two oldest - at 95 and 93 days - were never
+        // returned at all, and taking one new enquiry pushed the 95-day customer
+        // off the screen. Sorting the page after it arrives cannot fix that; the
+        // order has to be part of the query.
+        //
+        // Scoped to one customer, because the seeded dealership's own enquiries
+        // are older than anything this test can make.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var customerId = await AddCustomerAsync(Unique());
+
+        var oldest = await CaptureForAsync(rooftopId, customerId);
+        await CaptureForAsync(rooftopId, customerId);
+        var newest = await CaptureForAsync(rooftopId, customerId);
+
+        var byAge = await ListIdsAsync(
+            $"{Leads}?customerId={customerId}&order=longestWaiting&limit=1", Manager);
+        var byRecency = await ListIdsAsync(
+            $"{Leads}?customerId={customerId}&order=newest&limit=1", Manager);
+
+        byAge.Should().ContainSingle().Which.Should().Be(oldest,
+            because: "a chase list that drops the oldest enquiry is worse than no chase list");
+
+        byRecency.Should().ContainSingle().Which.Should().Be(newest,
+            because: "a work list still wants what just came in");
+    }
+
+    [Fact]
+    public async Task A_page_says_how_many_there_are_altogether()
+    {
+        // "Showing the first 50. There may be more" was true and useless. A
+        // dealership needs to know whether it is 51 or 5,100.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var customerId = await AddCustomerAsync(Unique());
+
+        await CaptureForAsync(rooftopId, customerId);
+        await CaptureForAsync(rooftopId, customerId);
+        await CaptureForAsync(rooftopId, customerId);
+
+        using var response = await SendAsync(
+            HttpMethod.Get, $"{Leads}?customerId={customerId}&limit=1", Manager);
+
+        var page = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        page.GetProperty("rows").EnumerateArray().Should().HaveCount(1);
+        page.GetProperty("limit").GetInt32().Should().Be(1);
+        page.GetProperty("offset").GetInt32().Should().Be(0);
+        page.GetProperty("total").GetInt32().Should().Be(3,
+            because: "the total counts every enquiry the filters match, not the page");
+    }
+
+    [Fact]
+    public async Task The_rows_past_the_first_page_can_actually_be_reached()
+    {
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var customerId = await AddCustomerAsync(Unique());
+
+        var oldest = await CaptureForAsync(rooftopId, customerId);
+        var second = await CaptureForAsync(rooftopId, customerId);
+
+        var first = await ListIdsAsync(
+            $"{Leads}?customerId={customerId}&order=longestWaiting&limit=1&offset=0", Manager);
+        var next = await ListIdsAsync(
+            $"{Leads}?customerId={customerId}&order=longestWaiting&limit=1&offset=1", Manager);
+
+        first.Should().ContainSingle().Which.Should().Be(oldest);
+        next.Should().ContainSingle().Which.Should().Be(second,
+            because: "the second page is the next row, not the same one again");
+    }
+
+    [Fact]
+    public async Task An_ordering_nobody_recognises_is_refused_rather_than_guessed()
+    {
+        // The whole reason the parameter exists is that the wrong order silently
+        // returned the wrong rows. A typo quietly falling back to the default
+        // would reproduce exactly that.
+        using var response = await SendAsync(HttpMethod.Get, $"{Leads}?order=oldest", Manager);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    /// <summary>
+    /// The ids on one page. The endpoint returns a page rather than a bare array
+    /// as of 2026-09-11 — a list with no total could say "the first 50, there may
+    /// be more" and nothing else, which is honest and useless.
+    /// </summary>
     private async Task<IReadOnlyList<string>> ListIdsAsync(string path, string email)
     {
         using var response = await SendAsync(HttpMethod.Get, path, email);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var results = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return results.EnumerateArray().Select(l => l.GetProperty("id").GetString()!).ToList();
+        var page = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return page.GetProperty("rows").EnumerateArray()
+            .Select(l => l.GetProperty("id").GetString()!).ToList();
     }
 
     private static List<string> Moves(JsonElement lead) =>

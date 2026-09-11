@@ -24,6 +24,7 @@ import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import type {
+  CustomerDetail,
   CustomerSummary,
   InventoryUnitSummary,
   LeadDetail,
@@ -52,6 +53,7 @@ export function CaptureLead({
   const [vehicleId, setVehicleId] = useState('');
   const [enquiry, setEnquiry] = useState('');
   const [search, setSearch] = useState('');
+  const [adding, setAdding] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +145,11 @@ export function CaptureLead({
           placeholder={t('customers.findPlaceholder')}
           autoComplete="off"
         />
+
+        {/* The search ran only on Enter, with no button and no as-you-type
+            query, so somebody typing a name and tabbing onward saw the same
+            first 25 customers and concluded the person was not on file. */}
+        <button type="submit">{t('common.search')}</button>
       </form>
 
       <label htmlFor="enquirer">{t('leads.whoIsAsking')}</label>
@@ -157,6 +164,25 @@ export function CaptureLead({
       </select>
 
       {customers.length === 0 ? <p className="note">{t('leads.searchAboveNote')}</p> : null}
+
+      {/* A walk-in is by definition somebody you have never met, and "Walk-in"
+          is one of the five sources this very form offers. Until 2026-09-11 the
+          only way to record one was to abandon the enquiry, create the customer
+          on another screen, come back, and start again. */}
+      {adding ? (
+        <NewCustomer
+          onAdded={(customer) => {
+            setAdding(false);
+            setCustomers([customer]);
+            setCustomerId(customer.id);
+          }}
+          onCancel={() => setAdding(false)}
+        />
+      ) : (
+        <button type="button" className="link" onClick={() => setAdding(true)}>
+          {t('leads.notOnFile')}
+        </button>
+      )}
 
       {single === undefined ? (
         <>
@@ -226,5 +252,128 @@ export function CaptureLead({
         </button>
       </div>
     </section>
+  );
+}
+
+/**
+ * Somebody the dealership has never met, recorded without leaving the enquiry.
+ *
+ * The same four fields the customers screen asks for, and deliberately no more:
+ * a person standing at the desk is not going to wait while somebody fills in a
+ * full record, and an enquiry with a name and a phone number is worth far more
+ * than a perfect record nobody took.
+ */
+function NewCustomer({
+  onAdded,
+  onCancel,
+}: {
+  onAdded: (customer: CustomerSummary) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
+  const [kind, setKind] = useState<'Person' | 'Business'>('Person');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [phone, setPhone] = useState('');
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isPerson = kind === 'Person';
+  const ready = isPerson ? lastName.trim() !== '' : businessName.trim() !== '';
+
+  async function add() {
+    setError(null);
+    setBusy(true);
+
+    try {
+      const created = await post<CustomerDetail>('/customers', {
+        kind,
+        firstName: isPerson && firstName.trim() !== '' ? firstName.trim() : null,
+        lastName: isPerson ? lastName.trim() : null,
+        businessName: isPerson ? null : businessName.trim(),
+        phone: phone.trim() === '' ? null : phone.trim(),
+      });
+
+      onAdded({
+        id: created.id,
+        displayName: created.displayName,
+        kind: created.kind,
+        primaryEmail: null,
+        primaryPhone: phone.trim() === '' ? null : phone.trim(),
+      });
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="panel panel--nested">
+      <h3>{t('leads.newCustomerTitle')}</h3>
+
+      <label htmlFor="new-kind">{t('customers.kindLabel')}</label>
+      <select
+        id="new-kind"
+        value={kind}
+        onChange={(event) => setKind(event.target.value as 'Person' | 'Business')}
+      >
+        <option value="Person">{t('enum.customerKind.Person')}</option>
+        <option value="Business">{t('enum.customerKind.Business')}</option>
+      </select>
+
+      {isPerson ? (
+        <>
+          <label htmlFor="new-first">{t('customers.firstName')}</label>
+          <input
+            id="new-first"
+            value={firstName}
+            onChange={(event) => setFirstName(event.target.value)}
+            autoComplete="off"
+          />
+
+          <label htmlFor="new-last">{t('customers.lastName')}</label>
+          <input
+            id="new-last"
+            value={lastName}
+            onChange={(event) => setLastName(event.target.value)}
+            autoComplete="off"
+          />
+        </>
+      ) : (
+        <>
+          <label htmlFor="new-business">{t('customers.businessName')}</label>
+          <input
+            id="new-business"
+            value={businessName}
+            onChange={(event) => setBusinessName(event.target.value)}
+            autoComplete="off"
+          />
+        </>
+      )}
+
+      <label htmlFor="new-phone">{t('customers.phone')}</label>
+      <input
+        id="new-phone"
+        value={phone}
+        onChange={(event) => setPhone(event.target.value)}
+        autoComplete="off"
+      />
+
+      {error === null ? null : <p className="error" role="alert">{error}</p>}
+
+      <div className="actions">
+        <button type="button" disabled={!ready || busy} onClick={() => void add()}>
+          {t('leads.addAndUse')}
+        </button>
+        <button type="button" onClick={onCancel} disabled={busy}>
+          {t('common.cancel')}
+        </button>
+      </div>
+    </div>
   );
 }

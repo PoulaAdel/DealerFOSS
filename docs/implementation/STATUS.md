@@ -1106,3 +1106,19 @@ to come.
   **Two rehearsals, and one of them was answered by the runner rather than an assertion.** Removing the `partId` from the payload — the exact defect that existed — failed two tests. Letting a catalogue-load failure escape instead of falling back did *not* fail any assertion: the picker still rendered and the line still sent, so the behaviour under test genuinely survived. It failed `npm test` anyway, on the unhandled rejection, with exit code 1. Worth recording that the `catch` is there to avoid an unhandled rejection rather than to keep the screen alive.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **736/736**, `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **346/346** (was 340), `npm run build`.
+
+- **2026-09-11 — The enquiry list stops hiding the customers who have waited longest.** The single worst correctness defect the dealer-day walk found, and it was one line of ordering.
+
+  **The panel headed "Nobody is chasing these" took the fifty NEWEST enquiries and displayed them longest-waiting first.** So the list whose entire purpose is to surface neglect was populated by recency and dropped exactly the rows it existed for. Measured on 2026-09-10 with 52 open enquiries, the two longest-waiting customers — at 95 and 93 days — were never returned at all, and taking one new enquiry pushed the 95-day customer off the screen. Sorting the page after it arrives cannot fix a page that contains the wrong rows: **the order has to be part of the query**, and it is now `LeadOrder`.
+
+  **The list returns a page rather than a bare array.** `total` is the point: "Showing the first 50. There may be more" was true and useless, and a dealership needs to know whether it is 51 or 5,100. Walked against the seeded dealership: the chase list now leads with the 96-day customers, the footer reads **"Showing 1–50 of 108"**, and rows 51–100 are reachable for the first time.
+
+  **A walk-in who is not on file can be recorded without leaving the enquiry.** "Walk-in" is one of the five sources the form itself offers, and until now the only way to take one was to abandon the enquiry, create the customer on another screen, navigate back and start again. The customer search also has a button, instead of only answering to Enter — typing a name and tabbing onward left the previous results showing, so the person concluded the customer did not exist.
+
+  **An unknown ordering is refused rather than guessed.** The whole reason the parameter exists is that the wrong order silently returned the wrong rows; a typo quietly falling back to the default would reproduce exactly that.
+
+  **`verify-e2e.ps1` caught the contract change** — it parsed the list as an array and reported "manager sees 0 enquiry(ies)" before failing. Fixed in the same commit, which is what keeps the script honest.
+
+  Two rehearsals: always ordering newest-first failed the two ordering tests, and dropping `order=longestWaiting` from the screen's query failed the test that asserts it is asked for.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **740/740** (was 736), `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **353/353** (was 346), `npm run build`.
