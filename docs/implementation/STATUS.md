@@ -1122,3 +1122,15 @@ to come.
   Two rehearsals: always ordering newest-first failed the two ordering tests, and dropping `order=longestWaiting` from the screen's query failed the test that asserts it is asked for.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **740/740** (was 736), `verify-e2e.ps1` PASS, frontend `npm audit` clean, `npm run typecheck`, `npm test` **353/353** (was 346), `npm run build`.
+
+- **2026-09-11 — The application wears the real brand.** Colours, wordmark and tagline from the sheet supplied that day; the mark itself is still waiting on its file. Recorded in [BRAND.md](../BRAND.md).
+
+  The navy `#1b3e6f` and red `#d0202e` were a placeholder palette chosen before the brand existed. They are now the sheet's deep petrol teal and gold, the wordmark reads **Dealer** in teal and **FOSS** in gold, and **AUTOMOTIVE SOLUTIONS** sits beneath it on the sign-in page — hidden in the application bar, where the bar is already two rows and a third line of identity would push the navigation off a narrow screen.
+
+  **The gold is not the artwork's own value, and that is deliberate.** `#be9231` measures **2.86:1 on white** — under 4.5:1 for text and under even the 3:1 large-text bar, so the half of the name that says FOSS would be the half nobody could read. `#916f1e` is the same hue carried down until it measures 4.67:1. The artwork value is kept as `--brand-gold-artwork` for a graphic on a dark ground, where it measures 6.04:1. The teal needed no change in the light theme: 8.26:1 as supplied.
+
+  **The mark is still a placeholder** — a geometric stand-in now wearing the brand teal so it stops fighting the wordmark. It is artwork and cannot be reproduced from a picture of itself; hand-tracing it was attempted twice and rejected twice. BRAND.md says where to save the SVG.
+
+  **The printed paperwork is deliberately left unbranded.** The order, the invoice and the job sheet carry the dealership's name, not ours: a DMS prints the dealership's documents, and putting the vendor's colours on a customer's invoice would be branding somebody else's paperwork.
+
+  Evidence: `dotnet test` 740/740, `verify-e2e.ps1` PASS, frontend `npm test` 353/353, `npm run build`. The accessible name of the lockup is still exactly "DealerFOSS" — checked, because the accname algorithm inserting a space between adjacent spans has broken it once before.

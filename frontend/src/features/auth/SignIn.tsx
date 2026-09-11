@@ -174,7 +174,7 @@ export function SignIn() {
 
       <div className="signin__brand">
         <Mark size={44} />
-        <h1><Wordmark /></h1>
+        <h1><Wordmark tagline /></h1>
       </div>
 
       {stage.kind === 'credentials' ? (

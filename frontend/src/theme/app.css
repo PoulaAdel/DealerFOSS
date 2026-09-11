@@ -58,15 +58,29 @@
      token is why that pair is stated once instead of hard-coded twice. */
   --on-accent: #ffffff;
 
-  /* The logo's two colours. THEY BELONG TO IDENTITY ONLY — the mark and the
-     wordmark, never a chip, a button or a state. --accent already means "in
-     progress" on seven chips and --fail is already a red; letting the brand red
-     leak into either would make "submitted" and "failed" read as the same thing.
+  /* The logo's two colours, from the brand sheet supplied 2026-09-11: a deep
+     petrol teal and a gold. THEY BELONG TO IDENTITY ONLY — the mark, the
+     wordmark and the tagline, never a chip, a button or a state. --accent
+     already means "in progress" on seven chips, and letting a brand colour leak
+     into a state would make "submitted" and "failed" read as the same thing.
 
-     The light theme uses the artwork's own values. Measured on --surface: navy
-     10.69:1, red 5.35:1. */
-  --brand-blue: #1b3e6f;
-  --brand-red: #d0202e;
+     THE TEAL IS THE ARTWORK'S OWN VALUE. Measured on --surface: 8.26:1.
+
+     THE GOLD IS NOT, AND THAT IS DELIBERATE. The artwork's #be9231 measures
+     2.86:1 on white — below 4.5:1 for text and below even the 3:1 large-text
+     bar, so the half of the name that says FOSS would be the half nobody could
+     read. #916f1e is the same hue carried down until it measures 4.67:1. The
+     artwork value is kept below for the places it works: on the dark theme it
+     measures 6.04:1, and on the carbon banner of the brand sheet it is fine.
+
+     Replaced the previous navy #1b3e6f and red #d0202e, which were a placeholder
+     palette chosen before the real brand existed. */
+  --brand-teal: #14556b;
+  --brand-gold: #916f1e;
+
+  /* The artwork's untouched gold, for a graphic on a dark or coloured ground
+     where contrast is not the constraint. Never for text on --surface. */
+  --brand-gold-artwork: #be9231;
   --done: #256a4d;
   --done-soft: #dff0e7;
   --fail: #a5342b;
@@ -92,15 +106,18 @@
   --accent-soft: #33240f;
   --on-accent: #16191f;
 
-  /* THE ARTWORK'S NAVY IS UNUSABLE HERE AND THAT IS NOT A JUDGEMENT CALL.
-     #1b3e6f measures 1.62:1 against this surface — invisible, not merely dim.
-     #6ba7e8 is the same hue lifted until it reads: 6.85:1. The red is a milder
-     case, 3.23:1, which passes for a large graphic and fails for anything
-     smaller, so it is lifted to #ff5c60 at 5.72:1. The light theme keeps the
-     artwork's exact colours; only this theme deviates, and only because the
-     alternative is a wordmark nobody can see. */
-  --brand-blue: #6ba7e8;
-  --brand-red: #ff5c60;
+  /* THE ARTWORK'S TEAL IS UNUSABLE HERE AND THAT IS NOT A JUDGEMENT CALL.
+     #14556b measures 2.09:1 against this surface — dim to the point of
+     invisible. #63b3d4 is the same hue lifted until it reads: 7.35:1.
+
+     The gold goes the other way. The artwork's #be9231 is already fine here at
+     6.04:1 — it is the LIGHT theme that had to darken it — but the two halves of
+     one word should not be lifted by different amounts or the wordmark looks
+     assembled from two logos. #d9ae55 measures 8.34:1 and sits beside the
+     lifted teal. */
+  --brand-teal: #63b3d4;
+  --brand-gold: #d9ae55;
+  --brand-gold-artwork: #be9231;
   --done: #4fae83;
   --done-soft: #12261d;
   --fail: #e07a6d;
@@ -382,21 +399,45 @@ textarea {
   color: var(--ink);
 }
 
+/* PLACEHOLDER GEOMETRY, WEARING THE BRAND'S COLOUR.
+   The real mark is the winged F+D on the brand sheet, and it is artwork: it
+   cannot be reproduced from a picture, and hand-tracing it was tried twice and
+   rejected twice. What is here is a stand-in, and it is teal rather than amber
+   so it stops fighting the wordmark beside it. Replace the whole component the
+   day the SVG lands in frontend/src/assets. */
 .mark {
   flex: none;
   display: block;
-  color: var(--accent);
+  color: var(--brand-teal);
 }
 
 /* Two colours, the way the logo splits them. The spans butt together with no
    space between them, so a screen reader still says "DealerFOSS" — check that
    before adding any padding here. */
 .wordmark__lead {
-  color: var(--brand-blue);
+  color: var(--brand-teal);
 }
 
 .wordmark__tail {
-  color: var(--brand-red);
+  color: var(--brand-gold);
+}
+
+/* AUTOMOTIVE SOLUTIONS, set the way the brand sheet sets it: small, letter-spaced
+   and sitting under the name rather than beside it.
+
+   Hidden below the app bar's width, where the bar is already two rows and a
+   third line of identity would push the nav off the screen. It stays on the
+   sign-in page at every width, which is where somebody meets the product. */
+.wordmark__tagline {
+  display: block;
+  color: var(--ink-2);
+  font-size: 0.58em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  /* Caps come from the stylesheet, not the markup, so the text content stays a
+     normal string for anything that reads it. */
+  text-transform: uppercase;
 }
 
 /* Wraps. The bar itself already wraps, but a nav that does not will push the

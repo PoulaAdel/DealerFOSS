@@ -67,7 +67,8 @@ export function Mark({ size = 26, title }: { size?: number; title?: string }) {
 }
 
 /**
- * The name, in the logo's two colours: "Dealer" navy, "FOSS" red.
+ * The name, in the logo's two colours: "Dealer" teal, "FOSS" gold, with
+ * AUTOMOTIVE SOLUTIONS beneath it — the lockup as the brand sheet sets it.
  *
  * Split here rather than in the message catalogue on purpose. `app.name` is the
  * identical string "DealerFOSS" in all six locales — the i18n test calls it "a
@@ -83,7 +84,7 @@ export function Mark({ size = 26, title }: { size?: number; title?: string }) {
  * name is given once, as text. Remove either half of that arrangement and the
  * name silently gains a space again.
  */
-export function Wordmark() {
+export function Wordmark({ tagline = false }: { tagline?: boolean }) {
   return (
     <span className="wordmark">
       <span aria-hidden="true" className="wordmark__lead">
@@ -93,6 +94,16 @@ export function Wordmark() {
         FOSS
       </span>
       <span className="visually-hidden">DealerFOSS</span>
+
+      {/* Hidden from the accessibility tree for the same reason the two halves
+          are: it is part of the picture of the name, and announcing "DealerFOSS
+          automotive solutions" after every heading would be noise. The real
+          name is the visually-hidden span above, once. */}
+      {tagline ? (
+        <span aria-hidden="true" className="wordmark__tagline">
+          Automotive Solutions
+        </span>
+      ) : null}
     </span>
   );
 }
