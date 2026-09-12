@@ -1,3 +1,5 @@
+![DealerFOSS — Automotive Solutions](docs/assets/dealerfoss-banner.svg)
+
 # DealerFOSS
 
 **FOSS — Free and Open-Source Software.** DealerFOSS is a Dealer Management System for independent dealers and dealer groups, licensed under AGPLv3 with optional commercial terms.

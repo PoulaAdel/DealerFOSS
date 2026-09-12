@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DealerFOSS</title>
+    <!-- One SVG rather than a folder of .png sizes: the badge is a vector, so
+         the tab, the bookmark bar and a pinned tile all scale from the same
+         file. Browsers that cannot read an SVG icon fall back to /favicon.ico,
+         which does not exist, and show their default — which is what they
+         showed before this line, so nothing is lost. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- The same badge again as the icon of an installed copy. No `display`
+         member, deliberately: that is what would make a browser offer to
+         install this, and a dealership's staff being prompted to install their
+         DMS is the operator's decision, not ours. The manifest is here for the
+         name and the icon. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- The brand teal, so a mobile browser's chrome matches the application
+         bar instead of leaving a white strip above it. -->
+    <meta name="theme-color" content="#14556b" />
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,81 @@
+// Copyright (c) 2026 The DealerFOSS contributors.
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Overview: Purpose, File Design, and Engineering
+//   markPaths — the geometry of the DealerFOSS mark, and the only copy of it.
+//
+//   TWO PATHS, NOT A CONSTRUCTION. Earlier versions of this file built the mark
+//   out of parts — a spine, two arms, a bowl, three feathers — because it was
+//   being drawn from scratch. It is not drawn any more. These outlines were
+//   traced off the supplied artwork, so the wing is one swept shape with a split
+//   in it rather than three feathers, and the F's crossbar points left. Both
+//   were wrong in the hand-drawn version, and neither is something a person
+//   would guess from memory of the picture.
+//
+//   HOW THEY WERE PRODUCED, because it matters if they ever need redoing: the
+//   brand sheet was read at its own resolution and the mark isolated on the
+//   transparent-PNG tile. Each pixel then became a COVERAGE figure rather than a
+//   verdict — how much ink is in it, from saturation, split between the two
+//   colours by hue — and the half-coverage contour was taken with marching
+//   squares, which interpolates along cell edges and so lands between pixels.
+//
+//   THE FIRST ATTEMPT THRESHOLDED INSTEAD, and that is the thing to avoid on a
+//   retrace. A threshold rounds every edge to the nearest whole pixel and throws
+//   away the anti-aliasing, which is precisely the information that says where
+//   the edge really is; what came back was a staircase, and no amount of
+//   smoothing afterwards recovers what the rounding discarded. It looked
+//   chewed. The source is about 138 pixels wide, so that rounding was worth
+//   roughly a percent of the mark's width on every edge.
+//
+//   SO IT IS A TRACE OF THE ARTWORK, NOT THE ARTWORK. The shapes are the
+//   designer's. The exact edges are a reading of a small raster and wobble very
+//   slightly against a true vector. When the real .svg turns up, the two strings
+//   below are what it replaces, and nothing else in the repository changes.
+//
+// Usage:
+//   import { MARK_VIEWBOX, MARK_RATIO, GOLD_PATH, TEAL_PATH }
+//   width = height * MARK_RATIO
+//
+// Coding Instructions:
+//   THE MARK IS TWICE AS WIDE AS IT IS TALL. Every caller gives a height and
+//   derives the width. A hand-drawn stand-in that lived here for a while was
+//   nearly square, so anything that assumed square needs checking, not trusting.
+//
+//   GOLD IS PAINTED FIRST. The teal F overlaps the D, and swapping the order
+//   puts the bowl on top of the letter.
+//
+//   fill-rule="evenodd" ON BOTH. Neither path has an enclosed hole today — the
+//   D's counter is a bay that opens between the two letters, not a hole — but a
+//   retrace from a cleaner source may well produce one, and finding out by
+//   watching the D fill in solid is a poor use of an afternoon.
+
+/** The ink's exact bounds. No padding: the bar renders this at 26px tall. */
+export const MARK_VIEWBOX = '0 0 1000 492.2';
+
+/** Width ÷ height. Callers give a height; the mark is wider than it is tall. */
+export const MARK_RATIO = 1000 / 492.2;
+
+/** The D. Painted first, because the F sits over it. */
+export const GOLD_PATH = 'M777.5 1.3 C775.6 1.8 769.5 2.1 766.9 3.9 C764.4 5.8 764.9 2 762.1 12.5 C759.3 22.9 752.5 51.7 750 66.5 C747.5 81.4 746.5 94.7 747.2 101.4 C747.8 108.1 744.9 103.3 753.9 106.8 C762.9 110.3 790.4 118.1 801 122.4 C811.7 126.7 810.5 126.3 817.7 132.4 C824.8 138.5 837.6 150 844.2 158.8 C850.8 167.7 853.8 176.6 857.3 185.4 C860.7 194.2 863.4 201 865 211.5 C866.5 222.1 866.9 237.2 866.5 248.5 C866.1 259.8 865.2 268.8 862.5 279.3 C859.9 289.9 854.6 303.1 850.5 311.9 C846.4 320.6 844.5 324.2 837.9 331.8 C831.2 339.5 818.9 351.3 810.8 357.8 C802.6 364.3 797.2 367.2 788.9 370.9 C780.5 374.6 769.9 378 760.7 380 C751.5 382 751.2 382.4 733.4 383.1 C715.6 383.8 674.2 384.8 653.8 384.3 C633.4 383.8 618.9 381.8 610.9 380.1 C602.8 378.5 606.4 378.1 605.7 374.5 C605 370.9 602.8 378.1 606.6 358.6 C610.5 339.2 623.9 283.9 628.7 257.9 C633.4 231.9 635.2 212.5 635.1 202.6 C635.1 192.7 633.7 199.7 628.3 198.5 C623 197.2 616.2 195.5 603.1 195.1 C590.1 194.7 563.7 195.2 550.1 196 C536.4 196.8 527.5 197.9 521.4 199.7 C515.2 201.6 515.9 201.6 513 207.2 C510.1 212.8 513.5 189.4 504 233.2 C494.5 276.9 463.2 427.8 456 469.7 C448.8 511.6 456.4 480.8 460.6 484.5 C464.9 488.1 466.3 490.9 481.3 491.5 C496.3 492.2 512.8 488.6 550.8 488.5 C588.8 488.5 676.1 491.3 709.3 491.3 C742.5 491.3 734.1 490.3 750 488.7 C765.8 487.1 785.7 485.7 804.4 481.7 C823.1 477.7 842.5 474.8 862.1 464.6 C881.6 454.4 904.5 436.7 921.8 420.6 C939.1 404.5 954.6 385.1 965.9 368.3 C977.2 351.4 984.1 335 989.6 319.4 C995.1 303.9 997.3 292.3 998.9 274.9 C1000.5 257.4 1001.2 233.3 999.3 214.7 C997.3 196.1 992.1 178.1 987.2 163.1 C982.3 148.1 976.9 137.4 969.9 124.8 C962.9 112.3 953 97.9 945.3 88 C937.6 78 935.2 74.1 923.7 64.9 C912.2 55.6 891.5 41.2 876.4 32.5 C861.3 23.9 849.6 18.1 833.2 12.9 C816.8 7.7 787.5 3.2 778.2 1.3 C768.9 -0.7 779.4 0.9 777.5 1.3 Z';
+
+/** The winged F, including the swept wing and the white split through it. */
+export const TEAL_PATH = 'M684.5 0 C662.5 1 591.6 2.5 553.1 6 C514.7 9.6 490.8 13.8 453.9 21.5 C417.1 29.3 374.1 40.5 332 52.6 C289.8 64.8 233.4 85.7 201.2 94.4 C169 103.1 152.9 103.1 138.7 104.7 C124.5 106.3 121.6 104.6 116.1 103.9 C110.7 103.3 107.7 101.8 106 100.8 C104.4 99.9 98.7 99.4 106.2 98.3 C113.8 97.2 134.2 96.9 151.2 94 C168.2 91.1 184.9 88 208.1 80.8 C231.2 73.6 274.6 57.1 290.2 50.7 C305.7 44.4 308.2 43.3 301.7 42.7 C295.1 42.1 273 46.2 250.8 47.2 C228.7 48.2 196.6 49.6 168.9 48.9 C141.1 48.2 107.6 45.7 84.4 42.9 C61.3 40.1 42.8 34.1 30.2 32.1 C17.5 30 13.2 30.1 8.4 30.6 C3.7 31.1 3.1 32.2 1.8 35 C0.4 37.7 -0.4 41.7 0.4 47 C1.2 52.3 0.6 57.4 6.3 66.7 C12.1 76.1 24.8 93.4 35 103.1 C45.2 112.8 53.6 117.9 67.5 124.9 C81.5 131.9 101.8 140.3 118.6 145 C135.4 149.8 149.7 151.4 168.2 153.2 C186.7 155 209.3 156.3 229.5 155.6 C249.7 154.9 270 151.9 289.4 148.8 C308.8 145.6 331.8 138.9 346 136.6 C360.2 134.3 369.8 134.7 374.5 135 C379.3 135.3 376.8 135.1 374.5 138.6 C372.1 142.2 365.5 146.8 360.5 156.1 C355.5 165.4 348 187.3 344.5 194.3 C341 201.3 369.3 196.8 339.7 197.9 C310 199 197 197.8 166.6 200.9 C136.2 204.1 160.1 206.5 157.1 216.8 C154.2 227.2 148.6 252 148.7 263 C148.9 273.9 154.5 277.8 158.1 282.7 C161.8 287.5 166.3 290 170.5 292.2 C174.8 294.4 163.9 294.8 183.7 295.8 C203.4 296.8 266.5 296.9 289 297.9 C311.5 298.9 313.5 299.7 318.8 301.7 C324.1 303.8 325.8 284.4 320.7 310.4 C315.5 336.3 293.8 428.4 287.8 457.2 C281.7 486.1 283.4 478.2 284.5 483.3 C285.6 488.4 276 487 294.3 487.7 C312.7 488.5 376.2 488.6 394.5 488 C412.7 487.4 401.5 487.3 403.8 484.1 C406.2 480.8 396.8 520.9 408.7 468.5 C420.7 416.1 462.3 225.1 475.6 169.8 C488.8 114.5 483.5 144.6 488.2 136.6 C492.9 128.7 496 126.3 503.7 122 C511.5 117.8 515.1 113.9 534.9 110.9 C554.7 108 596.2 105.2 622.4 104.2 C648.7 103.1 677.5 105 692.4 104.7 C707.3 104.3 707.1 105.8 711.8 102 C716.5 98.2 717 97.9 720.4 81.8 C723.9 65.6 731.3 18.5 732.6 5.1 C733.9 -8.4 736 2 728.1 1.1 C720.3 0.3 692.8 0.1 685.5 0 C678.2 -0.2 706.6 -1 684.5 0 Z';
+
+/**
+ * The icon pack's circular badge: a ring, a disc, and the mark inside it.
+ *
+ * NO COMPONENT USES THESE, AND THAT IS THE POINT. The badge is an icon, so its
+ * job in a web application is the browser tab and the installed application
+ * icon — both of which are files, not components. It is drawn in
+ * public/favicon.svg and in docs/assets/dealerfoss-badge.svg, and the numbers
+ * live here so those two files have one source to be checked against.
+ *
+ * 0.42 is set against the mark's WIDTH, not its diagonal. Fitting the bounding
+ * box inside the ring gives 0.396 and looks under-filled, because the box's
+ * corners are empty in a shape this wide — the wing tip and the D's shoulder
+ * are nowhere near them.
+ */
+export const BADGE_VIEWBOX = '0 0 512 512';
+export const BADGE_RING_RADIUS = 236;
+export const BADGE_RING_WIDTH = 30;
+export const BADGE_MARK_TRANSFORM = 'translate(256,256) scale(0.42) translate(-500,-246.1)';

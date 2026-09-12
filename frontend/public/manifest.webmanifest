@@ -1,0 +1,16 @@
+{
+  "name": "DealerFOSS",
+  "short_name": "DealerFOSS",
+  "description": "A Dealer Management System for independent dealers and dealer groups.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#14556b",
+  "background_color": "#ffffff",
+  "start_url": "/"
+}

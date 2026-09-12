@@ -81,6 +81,13 @@
   /* The artwork's untouched gold, for a graphic on a dark or coloured ground
      where contrast is not the constraint. Never for text on --surface. */
   --brand-gold-artwork: #be9231;
+
+  /* THE MARK'S GOLD IS THE ARTWORK'S OWN, and the wordmark's is not. That is
+     not an inconsistency. The mark is a picture: it is aria-hidden, the name is
+     beside it as real text, and it carries no information a reader could lose —
+     so the 4.5:1 text bar does not apply to it, and darkening the D would make
+     the logo a different logo. The wordmark is text and stays at --brand-gold. */
+  --brand-mark-gold: #be9231;
   --done: #256a4d;
   --done-soft: #dff0e7;
   --fail: #a5342b;
@@ -118,6 +125,12 @@
   --brand-teal: #63b3d4;
   --brand-gold: #d9ae55;
   --brand-gold-artwork: #be9231;
+
+  /* The mark keeps the artwork's gold in the light theme and gives it up here.
+     #be9231 would be legible enough on this surface at 6.04:1 — but the mark
+     sits an inch from the wordmark's lifted #d9ae55, and two golds that close
+     together read as a printing fault rather than as a choice. */
+  --brand-mark-gold: #d9ae55;
   --done: #4fae83;
   --done-soft: #12261d;
   --fail: #e07a6d;
@@ -399,17 +412,34 @@ textarea {
   color: var(--ink);
 }
 
-/* PLACEHOLDER GEOMETRY, WEARING THE BRAND'S COLOUR.
-   The real mark is the winged F+D on the brand sheet, and it is artwork: it
-   cannot be reproduced from a picture, and hand-tracing it was tried twice and
-   rejected twice. What is here is a stand-in, and it is teal rather than amber
-   so it stops fighting the wordmark beside it. Replace the whole component the
-   day the SVG lands in frontend/src/assets. */
+/* The winged F+D from the brand sheet, traced off the supplied artwork. Every
+   number that draws it is in src/app/markPaths.ts and nowhere else; what is
+   here is only which of the two brand colours each half wears.
+
+   THE FILLS ARE SET IN CSS RATHER THAN ON THE PATHS so the mark follows the
+   theme. The artwork's teal measures 2.09:1 against the dark surface — a logo
+   nobody could see — and a hex code on a <path> would be wrong in one of the
+   two themes, which is the standing rule in this file.
+
+   IT IS TWICE AS WIDE AS IT IS TALL. Nothing here may assume square; the
+   component derives width from height. */
 .mark {
   flex: none;
   display: block;
-  color: var(--brand-teal);
 }
+
+.mark__letter {
+  fill: var(--brand-teal);
+}
+
+.mark__bowl {
+  fill: var(--brand-mark-gold);
+}
+
+/* There is no rule for the icon-pack badge here on purpose. It is an icon, so
+   it lives where icons live — public/favicon.svg and the web manifest — and a
+   file loaded through those cannot inherit from this stylesheet. Its colours
+   are literal, and its own media query is what carries it into a dark theme. */
 
 /* Two colours, the way the logo splits them. The spans butt together with no
    space between them, so a screen reader still says "DealerFOSS" — check that

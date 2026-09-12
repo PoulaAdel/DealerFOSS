@@ -2,66 +2,60 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Overview: Purpose, File Design, and Engineering
-//   Mark — the DealerFOSS logo. A mirrored F and a D sharing one spine: three
-//   bars sweep LEFT off a vertical spine, each cut on the same diagonal and
-//   each one step shorter than the last, with the D's bowl closing the right.
-//   The bars read as the air coming off a spoiler; the spine is both the F's
-//   stem and the D's straight side.
+//   Mark — the DealerFOSS logo from the brand sheet: a winged F over a D, the
+//   letter in teal and the bowl in gold.
+//
+//   The geometry is not here. It lives in markPaths.ts because four other
+//   drawings of the same shape are static .svg files that cannot import it: the
+//   browser tab icon, and the mark, badge and banner under docs/assets. A test
+//   keeps all five in step.
+//
+//   There is no badge component. The icon-pack treatment on the brand sheet is
+//   an ICON — its job in a web application is the tab and the installed app
+//   icon, both of which are files rather than components, so it is drawn in
+//   public/favicon.svg and pointed at from the manifest. A React version would
+//   have had no caller.
 //
 // Usage:
-//   <Mark />               in the shell bar, 26px
-//   <Mark size={44} />     on the sign-in panel
+//   <Mark />                 in the shell bar, 26 tall
+//   <Mark size={44} />       on the sign-in panel
+//   <Mark size={44} title="DealerFOSS" />   when no text name is beside it
+//   <Wordmark tagline />     the name, with AUTOMOTIVE SOLUTIONS under it
 //
 // Coding Instructions:
-//   TWO NUMBERS HOLD THE WHOLE MARK, and getting either wrong is what makes a
-//   logo look drawn rather than designed:
+//   `size` IS THE HEIGHT, NOT THE WIDTH, and the mark is twice as wide as it is
+//   tall. Passing `size` to both squashes it to half width. A near-square
+//   stand-in lived here for a while, so any caller written against that needs
+//   looking at rather than trusting.
 //
-//   - ONE STROKE WEIGHT, 64, everywhere. Spine, both bars, and the bowl at its
-//     widest. The first draft inherited four different weights from the
-//     reference artwork (47, 50, 52, 57) and that alone read as amateur.
-//   - ONE DIAGONAL, 32 across over 64 down — a clean 1:2 — on both bar ends. An
-//     earlier version had 27 and 31.6 degrees, which reads as a mistake at any
-//     size above a favicon.
+//   TWO COLOURS, AND THEY COME FROM app.css. The fills are classes rather than
+//   attributes so the mark follows the theme: the artwork's own teal measures
+//   2.09:1 on the dark surface, which is invisible, so both halves are lifted
+//   there. A hex code in this file would be wrong in one of the two themes.
 //
-//   THE BARS ARE THE SAME LENGTH, AND THAT WAS THE SECOND THING TO GO WRONG.
-//   A draft tapered them by 28 each, so the mark read as speed lines at 170px
-//   and as an unreadable blob at 26 — where it actually lives, in the shell bar.
-//   The shortest bar was 2px wide on screen. Equal bars, checked at 26px in a
-//   real browser: legibility at the size it is used beats a flourish at a size
-//   it never appears in.
-//
-//   The grid is a 288 box divided into bands of 64: bar, gap, bar, then spine
-//   alone. Keep the bands and keep both ends on the slope.
+//   GOLD FIRST. The teal F overlaps the D; swap the order and the bowl is
+//   painted over the letter.
 //
 //   IT IS DRAWN, NOT IMPORTED. An <img> would need a second request for the one
 //   element on every screen, could not follow the theme, and would soften on a
-//   scaled display. Inline SVG costs about 400 bytes in a bundle it is already
-//   part of.
-//
-//   currentColor, deliberately: the colour lives in app.css with every other
-//   colour, so the mark follows the theme. A hex code here would be wrong in
-//   one of the two themes, which is the standing rule in that file.
+//   scaled display.
+
+import { GOLD_PATH, MARK_RATIO, MARK_VIEWBOX, TEAL_PATH } from './markPaths';
 
 /** Decorative by default: the brand name is beside it as real text. */
 export function Mark({ size = 26, title }: { size?: number; title?: string }) {
   return (
     <svg
       className="mark"
-      width={size}
+      width={Math.round(size * MARK_RATIO)}
       height={size}
-      viewBox="0 0 480 480"
-      fill="currentColor"
+      viewBox={MARK_VIEWBOX}
       role={title ? 'img' : undefined}
       aria-hidden={title ? undefined : true}
     >
       {title ? <title>{title}</title> : null}
-      {/* the spine: the mirrored F's stem, and the D's straight side */}
-      <path d="M184 96 H248 V384 H184 Z" />
-      {/* the bowl */}
-      <path d="M248 96 A136 144 0 0 1 248 384 L248 320 A72 80 0 0 0 248 160 Z" />
-      {/* two bars sweeping left, equal length, both cut on the same 1:2 slope */}
-      <path d="M96 96 H184 V160 H128 Z" />
-      <path d="M96 224 H184 V288 H128 Z" />
+      <path className="mark__bowl" fillRule="evenodd" d={GOLD_PATH} />
+      <path className="mark__letter" fillRule="evenodd" d={TEAL_PATH} />
     </svg>
   );
 }
