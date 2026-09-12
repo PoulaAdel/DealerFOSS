@@ -1,4 +1,7 @@
-![DealerFOSS — Automotive Solutions](docs/assets/dealerfoss-banner.svg)
+<!-- The PNG rather than the SVG: GitHub renders a Markdown image through an
+     <img>, so the banner's type would fall back to whatever font the reader
+     happens to have. The PNG is the same drawing, fixed. -->
+![DealerFOSS — Automotive Solutions](docs/assets/dealerfoss-banner-1200x300.png)
 
 # DealerFOSS
 
@@ -75,6 +78,8 @@ tests/
 
 deploy/            docker compose for local services, and the end-to-end check script
 docs/              the engineering workbook (design decisions and specifications)
+└── assets/        the brand kit — logo, wordmark, badge and banner, as vector
+                   and as raster. See docs/BRAND.md before using any of them.
 .github/           CI workflow, contributing guide, security policy, code of conduct
 ```
 

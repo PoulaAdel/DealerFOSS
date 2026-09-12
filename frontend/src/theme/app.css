@@ -64,30 +64,41 @@
      already means "in progress" on seven chips, and letting a brand colour leak
      into a state would make "submitted" and "failed" read as the same thing.
 
-     THE TEAL IS THE ARTWORK'S OWN VALUE. Measured on --surface: 8.26:1.
+     BOTH VALUES ARE MEASURED OFF THE ARTWORK, not read off a swatch somebody
+     typed. The sheet is a JPEG, so the ink is sampled from the CORE of each
+     shape — eroded two pixels to keep bevels, glows and anti-aliased edges out
+     — and the commonest value taken. Teal came back #054b60 and gold #b38524.
+     An earlier pass here guessed #14556b and #be9231 by eye and both were too
+     light; if these are ever re-derived, erode first or the edge pixels drag
+     the answer toward the background.
 
-     THE GOLD IS NOT, AND THAT IS DELIBERATE. The artwork's #be9231 measures
-     2.86:1 on white — below 4.5:1 for text and below even the 3:1 large-text
-     bar, so the half of the name that says FOSS would be the half nobody could
-     read. #916f1e is the same hue carried down until it measures 4.67:1. The
-     artwork value is kept below for the places it works: on the dark theme it
-     measures 6.04:1, and on the carbon banner of the brand sheet it is fine.
+     THE TEAL IS THE ARTWORK'S OWN VALUE, and it needs no help: 9.63:1 on
+     --surface, 8.43:1 on --ground.
+
+     THE GOLD IS NOT, AND THAT IS DELIBERATE. The artwork's #b38524 measures
+     3.33:1 on white and 2.92:1 on --ground — below 4.5:1 for text. Shipped as
+     supplied, the half of the name that says FOSS would be the half nobody
+     could read. #8b671c is the same hue carried down until it clears the bar on
+     the worse of the two grounds: 5.18:1 on white, 4.54:1 on --ground. The
+     artwork value is kept below for the places it works.
 
      Replaced the previous navy #1b3e6f and red #d0202e, which were a placeholder
      palette chosen before the real brand existed. */
-  --brand-teal: #14556b;
-  --brand-gold: #916f1e;
+  --brand-teal: #054b60;
+  --brand-gold: #8b671c;
 
   /* The artwork's untouched gold, for a graphic on a dark or coloured ground
      where contrast is not the constraint. Never for text on --surface. */
-  --brand-gold-artwork: #be9231;
+  --brand-gold-artwork: #b38524;
 
   /* THE MARK'S GOLD IS THE ARTWORK'S OWN, and the wordmark's is not. That is
      not an inconsistency. The mark is a picture: it is aria-hidden, the name is
      beside it as real text, and it carries no information a reader could lose —
      so the 4.5:1 text bar does not apply to it, and darkening the D would make
-     the logo a different logo. The wordmark is text and stays at --brand-gold. */
-  --brand-mark-gold: #be9231;
+     the logo a different logo. The wordmark is text and stays at --brand-gold.
+     The standalone logo FILES under docs/assets are the same case as the mark
+     and carry the artwork values throughout. */
+  --brand-mark-gold: #b38524;
   --done: #256a4d;
   --done-soft: #dff0e7;
   --fail: #a5342b;
@@ -114,23 +125,30 @@
   --on-accent: #16191f;
 
   /* THE ARTWORK'S TEAL IS UNUSABLE HERE AND THAT IS NOT A JUDGEMENT CALL.
-     #14556b measures 2.09:1 against this surface — dim to the point of
-     invisible. #63b3d4 is the same hue lifted until it reads: 7.35:1.
+     #054b60 measures 1.80:1 against this surface — dim to the point of
+     invisible. The brand sheet's own dark banner leaves it at 1.80:1 and gets
+     away with it because a logo is not text; a whole interface cannot.
 
-     The gold goes the other way. The artwork's #be9231 is already fine here at
-     6.04:1 — it is the LIGHT theme that had to darken it — but the two halves of
-     one word should not be lifted by different amounts or the wordmark looks
-     assembled from two logos. #d9ae55 measures 8.34:1 and sits beside the
-     lifted teal. */
-  --brand-teal: #63b3d4;
-  --brand-gold: #d9ae55;
-  --brand-gold-artwork: #be9231;
+     #3fa5c4 KEEPS THE HUE AND GIVES UP SATURATION. 194 degrees exactly, the
+     artwork's own, but eased from 0.95 saturated to 0.68 as it lifts. Lifting a
+     0.95-saturated colour without easing it gives electric cyan — #0ba5d3 was
+     tried and looked like a different brand. 6.08:1 on --surface, 6.61:1 on
+     --ground.
 
-  /* The mark keeps the artwork's gold in the light theme and gives it up here.
-     #be9231 would be legible enough on this surface at 6.04:1 — but the mark
-     sits an inch from the wordmark's lifted #d9ae55, and two golds that close
-     together read as a printing fault rather than as a choice. */
-  --brand-mark-gold: #d9ae55;
+     The gold is lifted to MATCH, not to what it needs. The artwork's #b38524
+     would already pass here at 5.18:1 — it is the LIGHT theme that had to
+     darken it — but two halves of one word lifted by different amounts make the
+     wordmark look assembled from two logos. #c2922b measures 6.12:1, within
+     four hundredths of the teal, and the pair reads as one word. */
+  --brand-teal: #3fa5c4;
+  --brand-gold: #c2922b;
+  --brand-gold-artwork: #b38524;
+
+  /* The mark keeps the artwork's gold in the light theme and gives it up here,
+     for the same reason the wordmark does: it sits an inch from the lifted
+     wordmark, and two golds that close together read as a printing fault
+     rather than as a choice. */
+  --brand-mark-gold: #c2922b;
   --done: #4fae83;
   --done-soft: #12261d;
   --fail: #e07a6d;

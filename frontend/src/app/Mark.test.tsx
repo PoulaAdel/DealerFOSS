@@ -2,23 +2,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Overview: Purpose, File Design, and Engineering
-//   Mark.test — the logo is drawn in five places and this is what stops them
-//   becoming five different logos.
+//   Mark.test — the logo is drawn in six places and this is what stops them
+//   becoming six different logos.
 //
-//   Four of the five are static .svg files that cannot import the geometry: the
-//   browser tab icon and the three documentation assets. They hold copies of
-//   the path data, and a copy with nothing watching it is a copy that goes
-//   stale. Both outlines from markPaths.ts are asserted to appear in every one
-//   of those files, so retracing the mark and forgetting the rest names the
-//   files that fell behind instead of shipping a logo that is subtly wrong on
-//   the tab and right in the application.
+//   Five of the six are static files that cannot import anything: the browser
+//   tab icon and the four drawings under docs/assets. They hold copies of the
+//   path data, and a copy with nothing watching it is a copy that goes stale.
+//
+//   THE COLOURS ARE READ OUT OF app.css RATHER THAN WRITTEN HERE. Putting the
+//   hexes in this file would make it a third place a brand colour lives, which
+//   is the exact thing BRAND.md exists to prevent — and a test that carries its
+//   own copy of the thing it is checking cannot fail when that thing is wrong.
 //
 // Usage:
 //   npm test
 //
 // Coding Instructions:
 //   IF A NEW STATIC DRAWING OF THE MARK IS ADDED, ADD IT TO `copies`. That list
-//   is the whole point of this file.
+//   is the whole point of this file. `dealerfoss-wordmark.svg` is deliberately
+//   NOT in it: it is the name only and carries no path data.
+//
+//   THE BANNER IS THE ONE FILE THAT WEARS THE DARK PAIR unconditionally, and it
+//   is asserted separately. Its ground is dark in both themes, so the artwork's
+//   own teal would measure 1.8:1 against it.
 //
 //   THE WORDMARK'S ACCESSIBLE NAME MUST HAVE NO SPACE IN IT. The accname
 //   algorithm inserts one between adjacent element children, so two coloured
@@ -61,7 +67,24 @@ function repoRoot(): string {
 }
 
 const root = repoRoot();
+const read = (file: string) => readFileSync(join(root, file), 'utf8');
 
+/** Both declarations of a token, light theme first, dark second. */
+function token(name: string): { light: string; dark: string } {
+  const css = read('frontend/src/theme/app.css');
+  const [light, dark] = [...css.matchAll(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'g'))].map(
+    (m) => m[1],
+  );
+  // Checked rather than asserted: a length test does not narrow an index, and
+  // the token genuinely can be missing — that is the failure worth reporting.
+  if (!light || !dark) throw new Error(`--${name} is not declared in both themes`);
+  return { light, dark };
+}
+
+const teal = token('brand-teal');
+const gold = token('brand-mark-gold');
+
+/** Every static drawing that carries the path data. The banner is one of them. */
 const copies = [
   'frontend/public/favicon.svg',
   'docs/assets/dealerfoss-mark.svg',
@@ -70,9 +93,12 @@ const copies = [
   'docs/assets/dealerfoss-banner.svg',
 ];
 
+/** The ones that sit on a light ground and therefore carry both themes. */
+const lightGround = copies.filter((f) => !f.endsWith('banner.svg'));
+
 describe('the static drawings of the mark', () => {
   it.each(copies)('%s carries the geometry from markPaths.ts', (file) => {
-    const svg = readFileSync(join(root, file), 'utf8');
+    const svg = read(file);
 
     expect(svg, `${file} has lost the D`).toContain(GOLD_PATH);
     expect(svg, `${file} has lost the winged F`).toContain(TEAL_PATH);
@@ -82,14 +108,36 @@ describe('the static drawings of the mark', () => {
     // The letter overlaps the bowl. Reversed, the gold is painted over the teal
     // and the F disappears behind the D.
     for (const file of copies) {
-      const svg = readFileSync(join(root, file), 'utf8');
+      const svg = read(file);
       expect(svg.indexOf(GOLD_PATH), file).toBeLessThan(svg.indexOf(TEAL_PATH));
     }
   });
 
+  it('wears the same brand colours app.css declares', () => {
+    // Markdown renderers strip <style> out of an SVG, so each shape needs a
+    // literal fill as well as a class. This checks the literal is the RIGHT
+    // colour, against the stylesheet rather than against a copy kept here.
+    for (const file of lightGround) {
+      const svg = read(file);
+      expect(svg, `${file} is not using the artwork teal`).toContain(`fill="${teal.light}"`);
+      expect(svg, `${file} is not using the artwork gold`).toContain(`fill="${gold.light}"`);
+      expect(svg, `${file} has no dark theme`).toContain(teal.dark);
+      expect(svg, `${file} has no dark theme`).toContain(gold.dark);
+    }
+  });
+
+  it('the banner wears the lifted pair, because its ground is dark in both themes', () => {
+    const svg = read('docs/assets/dealerfoss-banner.svg');
+
+    expect(svg).toContain(`fill="${teal.dark}"`);
+    expect(svg).toContain(`fill="${gold.dark}"`);
+    expect(svg, 'the banner must not use the artwork teal: 1.8:1 on its own weave')
+      .not.toContain(`fill="${teal.light}"`);
+  });
+
   it('the badge drawings place the mark the way markPaths.ts says to', () => {
     for (const file of ['frontend/public/favicon.svg', 'docs/assets/dealerfoss-badge.svg']) {
-      const svg = readFileSync(join(root, file), 'utf8');
+      const svg = read(file);
 
       expect(svg).toContain(BADGE_MARK_TRANSFORM);
       expect(svg).toContain(`r="${BADGE_RING_RADIUS}"`);
@@ -97,26 +145,49 @@ describe('the static drawings of the mark', () => {
   });
 
   it('the standalone mark is cropped to the ink and nothing else', () => {
-    expect(readFileSync(join(root, 'docs/assets/dealerfoss-mark.svg'), 'utf8')).toContain(MARK_VIEWBOX);
+    expect(read('docs/assets/dealerfoss-mark.svg')).toContain(MARK_VIEWBOX);
+  });
+});
+
+describe('the icon pack', () => {
+  // It has no component: these files and the links to them ARE how it is used.
+  const icons = [
+    'frontend/public/favicon.svg',
+    'frontend/public/favicon.ico',
+    'frontend/public/apple-touch-icon.png',
+    'frontend/public/icon-192.png',
+    'frontend/public/icon-512.png',
+  ];
+
+  it.each(icons)('%s exists', (file) => {
+    expect(existsSync(join(root, file)), `${file} is missing`).toBe(true);
   });
 
-  it('the tab icon is the badge, and the manifest points at the same file', () => {
-    // The icon pack has no component: this pair of links is how it is used.
-    expect(readFileSync(join(root, 'frontend/index.html'), 'utf8')).toContain('href="/favicon.svg"');
+  it('is linked from the page head', () => {
+    const html = read('frontend/index.html');
 
-    const manifest = JSON.parse(readFileSync(join(root, 'frontend/public/manifest.webmanifest'), 'utf8'));
-
-    expect(manifest.icons.map((i: { src: string }) => i.src)).toContain('/favicon.svg');
+    expect(html).toContain('href="/favicon.svg"');
+    expect(html).toContain('href="/favicon.ico"');
+    expect(html).toContain('rel="apple-touch-icon"');
+    expect(html).toContain('href="/manifest.webmanifest"');
   });
 
-  it('every drawing keeps a literal fill beside its class', () => {
-    // Markdown renderers strip <style> out of an SVG. Without the attribute the
-    // logo renders black in the documentation and nobody notices for a month.
-    for (const file of copies) {
-      const svg = readFileSync(join(root, file), 'utf8');
-      expect(svg, file).toMatch(/fill="#(14556b|63b3d4)"/);
-      expect(svg, file).toMatch(/fill="#(be9231|d9ae55)"/);
-    }
+  it('is declared in the manifest, at the sizes an installed copy asks for', () => {
+    const manifest = JSON.parse(read('frontend/public/manifest.webmanifest'));
+    const srcs = manifest.icons.map((i: { src: string }) => i.src);
+
+    expect(srcs).toContain('/favicon.svg');
+    expect(srcs).toContain('/icon-192.png');
+    expect(srcs).toContain('/icon-512.png');
+    expect(manifest.theme_color).toBe(teal.light);
+  });
+
+  it('does not offer to install itself', () => {
+    // A `display` member is what makes a browser prompt. Installing a
+    // dealership's DMS is the operator's decision, not ours.
+    const manifest = JSON.parse(read('frontend/public/manifest.webmanifest'));
+
+    expect(manifest.display).toBeUndefined();
   });
 });
 
@@ -148,7 +219,7 @@ describe('Mark', () => {
 
   it('leaves its colours to the stylesheet', () => {
     // A hex code on a path would be wrong in one of the two themes: the
-    // artwork teal measures 2.09:1 against the dark surface.
+    // artwork teal measures 1.8:1 against the dark surface.
     const { container } = render(<Mark />);
 
     for (const path of container.querySelectorAll('path')) {

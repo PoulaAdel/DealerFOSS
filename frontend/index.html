@@ -4,21 +4,32 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DealerFOSS</title>
-    <!-- One SVG rather than a folder of .png sizes: the badge is a vector, so
-         the tab, the bookmark bar and a pinned tile all scale from the same
-         file. Browsers that cannot read an SVG icon fall back to /favicon.ico,
-         which does not exist, and show their default — which is what they
-         showed before this line, so nothing is lost. -->
+
+    <!-- The icon-pack badge, in the four forms browsers actually ask for.
+         The SVG is the real one and scales to anything; the .ico is the
+         fallback for anything that will not read an SVG icon, and browsers
+         request /favicon.ico by name whether or not it is declared. -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64" />
+
+    <!-- iOS ignores the manifest for the home-screen icon and reads this. It
+         must be a PNG with no transparency behind it, which is why the badge's
+         disc is painted rather than left clear. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
     <!-- The same badge again as the icon of an installed copy. No `display`
          member, deliberately: that is what would make a browser offer to
          install this, and a dealership's staff being prompted to install their
          DMS is the operator's decision, not ours. The manifest is here for the
          name and the icon. -->
     <link rel="manifest" href="/manifest.webmanifest" />
+
     <!-- The brand teal, so a mobile browser's chrome matches the application
-         bar instead of leaving a white strip above it. -->
-    <meta name="theme-color" content="#14556b" />
+         bar instead of leaving a white strip above it. Two, because the teal
+         that works on a light chrome is invisible on a dark one - the same
+         problem the stylesheet solves for the mark. -->
+    <meta name="theme-color" content="#054b60" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#3fa5c4" media="(prefers-color-scheme: dark)" />
   </head>
   <body>
     <div id="root"></div>

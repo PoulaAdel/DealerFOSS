@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 486 200" role="img" aria-label="DealerFOSS - Automotive Solutions">
+  <!--
+    Copyright (c) 2026 The DealerFOSS contributors.
+    SPDX-License-Identifier: AGPL-3.0-or-later
+
+    Overview: the name on its own - "Dealer" teal, "FOSS" gold, AUTOMOTIVE
+    SOLUTIONS beneath - matching the third PNG tile on the brand sheet, which
+    shows the wordmark without the mark.
+
+    Usage: anywhere too narrow for the full lockup, and as a text-only credit.
+
+    Coding Instructions: this file has no path data, so nothing here can drift
+    from markPaths.ts. The layout numbers are the lockup's, shifted left by the
+    mark's width: name baseline 118 from x 8 spanning 470, tagline baseline 158
+    from x 12 spanning 445. See dealerfoss-lockup.svg for why textLength is set.
+  -->
+  <style>
+    .teal { fill: #054b60; }
+    .gold { fill: #b38524; }
+    .name { font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-weight: 700; }
+    .tag  { font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-weight: 600; fill: #4a5560; }
+    @media (prefers-color-scheme: dark) {
+      .teal { fill: #3fa5c4; }
+      .gold { fill: #c2922b; }
+      .tag  { fill: #a3adba; }
+    }
+  </style>
+
+  <text class="name" x="8" y="118" font-size="88" textLength="470" lengthAdjust="spacing"><tspan class="teal" fill="#054b60">Dealer</tspan><tspan class="gold" fill="#b38524">FOSS</tspan></text>
+  <text class="tag" fill="#4a5560" x="12" y="158" font-size="24" textLength="445" lengthAdjust="spacing">AUTOMOTIVE SOLUTIONS</text>
+</svg>

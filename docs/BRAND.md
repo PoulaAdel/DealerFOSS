@@ -31,30 +31,63 @@ navigation off a narrow screen.
 
 ## The colours
 
-| Token | Light | Dark | Artwork |
+### The artwork's own values, measured
+
+| | Hex | On white | On `--ground` | On the dark surface |
+|---|---|---|---|---|
+| **teal** | `#054b60` | 9.63:1 | 8.43:1 | 1.80:1 |
+| **gold** | `#b38524` | 3.33:1 | 2.92:1 | 5.18:1 |
+
+**These were measured, not read off a swatch.** The brand sheet is a JPEG, so
+the ink was sampled from the **core** of each shape — eroded two pixels so that
+bevels, glows and anti-aliased edges cannot drag the answer toward the
+background — and the commonest value taken. An earlier pass guessed `#14556b`
+and `#be9231` by eye and both were too light. If these are ever re-derived,
+erode first.
+
+### The tokens
+
+| Token | Light | Dark | What it is |
 |---|---|---|---|
-| `--brand-teal` | `#14556b` | `#63b3d4` | `#14556b` |
-| `--brand-gold` | `#916f1e` | `#d9ae55` | `#be9231` |
-| `--brand-gold-artwork` | `#be9231` | `#be9231` | `#be9231` |
+| `--brand-teal` | `#054b60` | `#3fa5c4` | the teal, as text and as ink |
+| `--brand-gold` | `#8b671c` | `#c2922b` | the gold, **as text** |
+| `--brand-mark-gold` | `#b38524` | `#c2922b` | the gold, **as the mark** |
+| `--brand-gold-artwork` | `#b38524` | `#b38524` | the untouched value, for reference |
 
-**The teal is the artwork's own value in the light theme.** It measures 8.26:1 on
-white.
+**The teal needs no help in the light theme**: 9.63:1 on `--surface`.
 
-**The gold is not, and that is deliberate.** The artwork's `#be9231` measures
-**2.86:1 on white** — under 4.5:1 for text, and under even the 3:1 large-text
-bar. Shipped as supplied, the half of the name that says FOSS would be the half
-nobody could read. `#916f1e` is the same hue carried down until it measures
-4.67:1.
+**The gold does, and only as text.** `#b38524` measures 3.33:1 on white and
+2.92:1 on `--ground` — below the 4.5:1 bar. Shipped as supplied, the half of the
+name that says FOSS would be the half nobody could read. `#8b671c` is the same
+hue carried down until it clears the bar on the worse of the two grounds: 5.18:1
+on white, 4.54:1 on `--ground`.
 
-`--brand-gold-artwork` keeps the untouched value for a graphic on a dark or
-coloured ground — the carbon banner on the brand sheet, for instance — where
-contrast is not the constraint. It measures 6.04:1 on the dark theme's surface.
-**Never use it for text on `--surface`.**
+**The mark keeps the artwork's gold, because it is a picture.** It is
+`aria-hidden` with the name beside it as real text, so it carries nothing a
+reader could lose and the text bar does not apply. Darkening the D would make
+the logo a different logo. The standalone logo **files** under `docs/assets` are
+the same case and carry the artwork values throughout.
 
-The dark theme lifts both: the artwork teal measures 2.09:1 there, which is dim
-to the point of invisible. Both halves are lifted by a similar amount on purpose
-— lift one and not the other and the wordmark looks assembled from two different
-logos.
+### The dark theme keeps the hue and gives up saturation
+
+The artwork teal measures **1.80:1** on the dark surface — invisible.
+
+> **The brand sheet's own banner leaves it there** and gets away with it, because
+> a logo is not text and the eye forgives a large shape. A whole interface does
+> not get that licence.
+
+`#3fa5c4` is **194 degrees exactly — the artwork's own hue** — eased from 0.95
+saturated to 0.68 as it lifts. Lifting a 0.95-saturated colour without easing it
+gives electric cyan: `#0ba5d3` was tried and looked like a different brand.
+
+The gold is lifted to **match**, not to what it needs. `#b38524` would already
+pass on the dark surface at 5.18:1, but two halves of one word lifted by
+different amounts make the wordmark look assembled from two logos.
+
+| Dark pair | On `--surface` | On `--ground` | On the banner weave |
+|---|---|---|---|
+| `#3fa5c4` | 6.08:1 | 6.61:1 | 6.33:1 |
+| `#c2922b` | 6.12:1 | 6.65:1 | 6.37:1 |
 
 ### Where brand colour may be used
 
@@ -84,27 +117,42 @@ drawing and measured instead.
 
 The outlines in the repository were produced mechanically from the brand sheet:
 
-1. the sheet read at its own resolution, and the mark isolated on the
-   transparent-PNG tile, where nothing else is near it;
-2. each pixel turned into a **coverage figure, not a verdict** — how much ink is
-   in it, taken from saturation, and split between the two colours by hue. Hue
-   rather than distance to a swatch because the artwork is shaded: one teal runs
-   from near-black to a pale highlight, and hue is what survives that;
-3. the **half-coverage contour** taken with marching squares, which interpolates
+1. the sheet read at its own resolution, and the **primary logo** copy used — at
+   147×73 source pixels it is the largest of the four that sit on a light
+   ground;
+2. that crop upscaled bicubically, then each pixel turned into a **coverage
+   figure, not a verdict** — how much ink is in it, taken from saturation, and
+   split between the two colours by hue. Hue rather than distance to a swatch
+   because the artwork is shaded: one teal runs from near-black to a pale
+   highlight, and hue is what survives that;
+3. the field **blurred very slightly**, to take the JPEG's ringing out *before*
+   the contour exists — which is not the same as smoothing the polygon
+   afterwards: that pulls corners in, this does not;
+4. the **half-coverage contour** taken with marching squares, which interpolates
    along cell edges and therefore lands *between* pixels;
-4. lightly smoothed, simplified, and re-interpolated as Catmull-Rom curves.
+5. simplified hard and re-interpolated as Catmull-Rom curves.
 
-> **The first attempt thresholded the image into a hard mask first, and that is
-> the mistake to avoid on a retrace.** A threshold rounds every edge to the
-> nearest whole pixel and throws away the anti-aliasing — which is exactly the
+**Three things were tried and are not worth retrying.**
+
+> **Thresholding into a hard mask first.** It rounds every edge to the nearest
+> whole pixel and throws away the anti-aliasing — which is exactly the
 > information that says where the edge really is. What comes back is a
 > staircase, and no amount of smoothing afterwards recovers what the rounding
-> discarded; it looked chewed. On a source this small that rounding is worth
-> about a percent of the mark's width on every edge.
+> discarded; it looked chewed.
 
-> **The source is about 138 pixels wide.** That is the ceiling on how crisp this
-> can be. The *shapes* are the designer's; the exact edges are a reading of a
-> small raster and wobble very slightly against a true vector. At 26px in the
+> **Averaging all four copies** to beat the compression noise. It is the right
+> instinct — four renderings at four sizes, each with its own sampling phase —
+> but their bounding boxes are whole pixels, so their scales disagree by about
+> 1.5% and no translation can align them. The average tore the D's shoulder off.
+
+> **The banner copy**, which is the largest on the sheet at 158×81. Coverage
+> comes from saturation, and that only works over a **light** ground: scaling
+> every channel toward black leaves saturation unchanged, so a half-covered
+> pixel over the dark weave reads as solid and the whole shape fattens.
+
+> **The source is 147 pixels wide.** That is the ceiling on how crisp this can
+> be. The *shapes* are the designer's; the exact edges are a reading of a small
+> raster and wobble very slightly against a true vector. At 26px in the
 > application bar the difference does not exist. At 160px on the sign-in panel a
 > designer would see it.
 
@@ -133,18 +181,55 @@ the colour table above exists — see the dark-theme row. The static files carry
 **both** a class and a literal `fill`, because Markdown renderers strip `<style>`
 out of an SVG and the attribute is what survives that.
 
-### The parts, and where each one is used
+### The kit
 
-| File | What it is | Used by |
-|---|---|---|
-| `frontend/src/app/markPaths.ts` | the geometry, and the only copy | everything below |
-| `frontend/src/app/Mark.tsx` | `<Mark>` and `<Wordmark>` | the app bar, sign-in, the admin shell |
-| `frontend/public/favicon.svg` | the icon-pack badge | the browser tab |
-| `frontend/public/manifest.webmanifest` | name, icon, theme colour | an installed copy |
-| `docs/assets/dealerfoss-mark.svg` | the mark alone | this file |
-| `docs/assets/dealerfoss-badge.svg` | the badge | documentation |
-| `docs/assets/dealerfoss-lockup.svg` | mark, name and tagline | documentation |
-| `docs/assets/dealerfoss-banner.svg` | the 1200×300 banner | `README.md` |
+**The geometry and the layout numbers**
+
+| File | What it is |
+|---|---|
+| `frontend/src/app/markPaths.ts` | the outlines, and **the only copy** |
+| `frontend/src/app/Mark.tsx` | `<Mark>` and `<Wordmark>` — the app bar, sign-in, the admin shell |
+
+**Vector — the masters. Every raster below is an export of one of these.**
+
+| File | What it is |
+|---|---|
+| `docs/assets/dealerfoss-mark.svg` | the mark alone, cropped to the ink |
+| `docs/assets/dealerfoss-lockup.svg` | the primary logo: mark, name, tagline |
+| `docs/assets/dealerfoss-wordmark.svg` | the name and tagline, no mark |
+| `docs/assets/dealerfoss-badge.svg` | the icon-pack badge |
+| `docs/assets/dealerfoss-banner.svg` | the 1200×300 banner |
+
+**Raster — for the places that cannot take a vector**
+
+| File | For |
+|---|---|
+| `dealerfoss-mark-512.png`, `-1024.png` | transparent, any light ground |
+| `dealerfoss-badge-512.png` | avatars, tiles |
+| `dealerfoss-lockup-1024.png` | transparent |
+| `dealerfoss-lockup-1024.jpg` | on white, for anything that refuses alpha |
+| `dealerfoss-banner-1200x300.png` / `.jpg` | the README banner |
+| `dealerfoss-social-1200x630.png` | the repository's social preview card |
+
+**The web application's icons**
+
+| File | Asked for by |
+|---|---|
+| `frontend/public/favicon.svg` | the browser tab |
+| `frontend/public/favicon.ico` | anything that will not read an SVG icon — 16/32/48/64 in one file |
+| `frontend/public/apple-touch-icon.png` | iOS home screen, which ignores the manifest |
+| `frontend/public/icon-192.png`, `icon-512.png` | an installed copy |
+| `frontend/public/manifest.webmanifest` | name, icons, theme colour |
+
+**The rasters are drawn from the path data, not screenshotted from the SVGs.**
+There is no SVG rasteriser on this machine and adding one would be a dependency
+for a job GDI+ already does — so a PNG cannot disagree with the vector it is an
+export of. The rasteriser understands `M`, `C` and `Z` only, which is all the
+tracer emits, and throws on anything else rather than drawing it wrong.
+
+`dealerfoss-social-1200x630.png` is a **file, not a setting**: GitHub's social
+preview is uploaded in the repository's settings and cannot be committed into
+place. Upload it there once.
 
 **The mark is twice as wide as it is tall.** Every caller gives a height and
 derives the width. The rejected stand-in was nearly square, so any code written
@@ -171,16 +256,23 @@ and stays that way.
 
 | | |
 |---|---|
-| Colour tokens, both themes, contrast measured | done |
-| Wordmark in the two brand colours | done |
-| AUTOMOTIVE SOLUTIONS tagline | done, on sign-in |
+| Colours measured off the artwork, both themes, contrast checked | done |
+| Wordmark and AUTOMOTIVE SOLUTIONS tagline | done |
 | The mark, on screen in both themes | done — **as a trace** |
-| The icon-pack badge, as the tab icon and the app icon | done |
-| The lockup and the banner, in the documentation | done |
+| The icon pack: tab icon, `.ico`, Apple touch icon, installed-app icons | done |
+| Logo, wordmark, badge, banner as SVG | done |
+| PNG, JPEG and social-card exports | done |
+| The application, the Coming Soon page, and the README | done |
 | The mark replaced by the supplied vector | **still open** |
-| PNG raster exports | not needed — every use above is a vector |
+| GitHub social preview *uploaded* in repository settings | **needs a person** |
 
-The one row still open is one file, and it is a quality question rather than a
-missing feature: the mark is on screen and it is the right mark. Dropping the
-designer's own outlines into `markPaths.ts` sharpens it and changes nothing
-else.
+Only two rows are open, and neither is a missing feature.
+
+**The vector** is a quality question: the mark is on screen and it is the right
+mark. Dropping the designer's own outlines into `markPaths.ts` sharpens the
+edges and changes nothing else — the component, the five static drawings and
+every raster are all regenerated from those two strings.
+
+**The social preview** is a setting rather than a file. The image is committed
+at `docs/assets/dealerfoss-social-1200x630.png`; somebody has to upload it under
+*Settings → General → Social preview* once.
