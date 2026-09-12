@@ -73,7 +73,7 @@ public sealed class RepairOrderService(
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
 
-    public async Task<Result<IReadOnlyList<RepairOrderSummary>>> ListAsync(
+    public async Task<Result<Page<RepairOrderSummary>>> ListAsync(
         RepairOrderQuery query,
         CancellationToken cancellationToken)
     {
@@ -82,12 +82,12 @@ public sealed class RepairOrderService(
         var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
         if (scope.GrantsNothing)
         {
-            return Result.Failure<IReadOnlyList<RepairOrderSummary>>(ServiceErrors.Forbidden);
+            return Result.Failure<Page<RepairOrderSummary>>(ServiceErrors.Forbidden);
         }
 
         if (query.RooftopId is { } requested && !scope.Covers(requested))
         {
-            return Result.Failure<IReadOnlyList<RepairOrderSummary>>(ServiceErrors.Forbidden);
+            return Result.Failure<Page<RepairOrderSummary>>(ServiceErrors.Forbidden);
         }
 
         RepairOrderStatus? status = null;
@@ -95,13 +95,14 @@ public sealed class RepairOrderService(
         {
             if (!Enum.TryParse(query.Status, ignoreCase: true, out RepairOrderStatus parsed))
             {
-                return Result.Failure<IReadOnlyList<RepairOrderSummary>>(ServiceErrors.UnknownStatus);
+                return Result.Failure<Page<RepairOrderSummary>>(ServiceErrors.UnknownStatus);
             }
 
             status = parsed;
         }
 
-        var take = Math.Clamp(query.Limit <= 0 ? 50 : query.Limit, 1, MaxResults);
+        var take = Paging.Limit(query.Limit);
+        var skip = Paging.Offset(query.Offset);
         var orders = _db.RepairOrders.AsNoTracking();
 
         if (!scope.IsOrganizationWide)
@@ -141,19 +142,24 @@ public sealed class RepairOrderService(
                 o.Status != RepairOrderStatus.Invoiced && o.Status != RepairOrderStatus.Cancelled);
         }
 
+        // Counted over the same filters as the page, and before it is taken.
+        var total = await orders.CountAsync(cancellationToken);
+
         var rows = await orders
             .Include(o => o.Lines)
             .OrderByDescending(o => o.CreatedAt)
+            .ThenBy(o => o.Id)
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
 
         var context = await LookupAsync(rows, cancellationToken);
         if (context.IsFailure)
         {
-            return Result.Failure<IReadOnlyList<RepairOrderSummary>>(context.Error);
+            return Result.Failure<Page<RepairOrderSummary>>(context.Error);
         }
 
-        return Result.Success<IReadOnlyList<RepairOrderSummary>>(
+        return Result.Success(new Page<RepairOrderSummary>(
             rows.Select(o => new RepairOrderSummary(
                 o.Id,
                 o.RooftopId,
@@ -169,7 +175,10 @@ public sealed class RepairOrderService(
                 o.AdvisorUserId,
                 o.TechnicianUserId,
                 o.AwaitingAnswer.Count,
-                o.CreatedAt)).ToList());
+                o.CreatedAt)).ToList(),
+            total,
+            skip,
+            take));
     }
 
     public async Task<Result<LabourPerformance>> LabourAsync(

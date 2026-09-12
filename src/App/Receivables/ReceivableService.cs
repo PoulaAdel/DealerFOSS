@@ -60,7 +60,7 @@ public sealed class ReceivableService(
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
 
-    public async Task<Result<IReadOnlyList<ReceivableSummary>>> ListAsync(
+    public async Task<Result<Page<ReceivableSummary>>> ListAsync(
         ReceivableQuery query,
         CancellationToken cancellationToken)
     {
@@ -69,15 +69,16 @@ public sealed class ReceivableService(
         var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
         if (scope.GrantsNothing)
         {
-            return Result.Failure<IReadOnlyList<ReceivableSummary>>(ReceivableErrors.Forbidden);
+            return Result.Failure<Page<ReceivableSummary>>(ReceivableErrors.Forbidden);
         }
 
         if (query.RooftopId is { } requested && !scope.Covers(requested))
         {
-            return Result.Failure<IReadOnlyList<ReceivableSummary>>(ReceivableErrors.Forbidden);
+            return Result.Failure<Page<ReceivableSummary>>(ReceivableErrors.Forbidden);
         }
 
-        var take = Math.Clamp(query.Limit <= 0 ? 50 : query.Limit, 1, MaxResults);
+        var take = Paging.Limit(query.Limit);
+        var skip = Paging.Offset(query.Offset);
         var rows = _db.Receivables.AsNoTracking().Include(r => r.Payments).AsQueryable();
 
         if (!scope.IsOrganizationWide)
@@ -96,25 +97,42 @@ public sealed class ReceivableService(
             rows = rows.Where(r => r.CustomerId == customer);
         }
 
-        // Outstanding is derived from the payments, so this cannot be a WHERE on
-        // a stored column. The filter is applied after the rows are materialised,
-        // and the row cap is raised to compensate rather than silently returning
-        // fewer than asked for. It is the honest cost of not storing a balance
-        // somebody could write to.
-        var loaded = await rows
-            .OrderByDescending(r => r.BilledAt)
-            .Take(query.OutstandingOnly ? MaxResults : take)
-            .ToListAsync(cancellationToken);
-
+        // OUTSTANDING IS NOW A WHERE, AND IT HAS TO BE. It is still derived from
+        // the payments rather than stored — nobody may write a balance — but it
+        // is expressed as a correlated sum so the database applies it. This used
+        // to filter in memory: take MaxResults rows, drop the settled ones, then
+        // take the page. That cannot be paged at all. Skipping 50 rows means
+        // skipping 50 rows the filter has not seen yet, so page two started in
+        // the wrong place and a total counted over the unfiltered set would have
+        // promised rows that do not exist.
+        //
+        // Overpayment is refused when a payment is taken, so outstanding is
+        // never negative and "not settled" is exactly "paid less than billed".
         if (query.OutstandingOnly)
         {
-            loaded = loaded.Where(r => !r.IsSettled).Take(take).ToList();
+            rows = rows.Where(r => r.Payments.Sum(p => p.Amount) < r.Amount);
         }
+
+        var total = await rows.CountAsync(cancellationToken);
+
+        // Id breaks ties. Several invoices raised in the same second is ordinary
+        // — a delivery bills the car, the warranty and the plates together — and
+        // an order that is not total lets the database return one of them on two
+        // pages and another on none.
+        var loaded = await rows
+            .OrderByDescending(r => r.BilledAt)
+            .ThenBy(r => r.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
 
         var names = await NamesAsync(loaded.Select(r => r.CustomerId), cancellationToken);
 
-        return Result.Success<IReadOnlyList<ReceivableSummary>>(
-            loaded.Select(r => Summarize(r, names)).ToList());
+        return Result.Success(new Page<ReceivableSummary>(
+            loaded.Select(r => Summarize(r, names)).ToList(),
+            total,
+            skip,
+            take));
     }
 
     public async Task<Result<ReceivableDetail>> GetAsync(Guid receivableId, CancellationToken cancellationToken)

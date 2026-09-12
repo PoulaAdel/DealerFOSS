@@ -20,7 +20,7 @@ namespace DealerFOSS.RepairOrders;
 public interface IRepairOrders
 {
     /// <summary>The work at a rooftop, newest first, capped.</summary>
-    Task<Result<IReadOnlyList<RepairOrderSummary>>> ListAsync(
+    Task<Result<Page<RepairOrderSummary>>> ListAsync(
         RepairOrderQuery query,
         CancellationToken cancellationToken);
 
@@ -89,7 +89,8 @@ public sealed record RepairOrderQuery(
     Guid? VehicleId = null,
     Guid? TechnicianUserId = null,
     bool OpenOnly = false,
-    int Limit = 50);
+    int Limit = 50,
+    int Offset = 0);
 
 /// <summary>Enough to run a workshop's day from one list.</summary>
 public sealed record RepairOrderSummary(

@@ -46,6 +46,7 @@ internal static class PartEndpoints
         string? search,
         bool? inStockOnly,
         int? limit,
+        int? offset,
         CancellationToken cancellationToken)
     {
         var result = await parts.ListAsync(
@@ -53,7 +54,8 @@ internal static class PartEndpoints
                 rooftopId is { } id ? new RooftopId(id) : null,
                 search,
                 inStockOnly ?? false,
-                limit ?? 100),
+                limit ?? 100,
+                offset ?? 0),
             cancellationToken);
 
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();

@@ -20,7 +20,7 @@ import { describe, expect, it } from 'vitest';
 import { App } from '../../app/App';
 import { SecondFactorSetup } from './SecondFactorSetup';
 import { SessionProvider } from '../../app/session';
-import { apiCalls, mockApi } from '../../test/setup';
+import { apiCalls, mockApi, page } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
 
 const enrolment = {
@@ -171,7 +171,7 @@ describe('when the dealership requires it', () => {
       ],
       '/auth/mfa/enrol': { ok: true, body: enrolment },
       '/auth/mfa/confirm': { ok: true, body: { recoveryCodes } },
-      '/inventory': { ok: true, body: [] },
+      '/inventory': { ok: true, body: page([]) },
     });
 
     render(<App />);

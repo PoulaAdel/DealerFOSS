@@ -447,7 +447,7 @@ public sealed class DealTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var results = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return results.EnumerateArray().Select(d => d.GetProperty("id").GetString()!).ToList();
+        return results.Rows().Select(d => d.GetProperty("id").GetString()!).ToList();
     }
 
     private async Task<string> RooftopIdAsync(string code)

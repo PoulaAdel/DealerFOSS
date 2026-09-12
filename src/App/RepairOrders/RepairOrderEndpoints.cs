@@ -81,7 +81,8 @@ internal static class RepairOrderEndpoints
         Guid? vehicleId = null,
         Guid? technicianUserId = null,
         bool openOnly = false,
-        int limit = 50)
+        int limit = 50,
+        int offset = 0)
     {
         var query = new RepairOrderQuery(
             rooftopId is null ? null : new RooftopId(rooftopId.Value),
@@ -90,7 +91,8 @@ internal static class RepairOrderEndpoints
             vehicleId,
             technicianUserId,
             openOnly,
-            limit);
+            limit,
+            offset);
 
         var result = await repairOrders.ListAsync(query, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();

@@ -38,7 +38,7 @@ public interface IAccounting
     /// <summary>The chart of accounts, for a screen to label amounts with.</summary>
     Task<Result<IReadOnlyList<AccountView>>> ListAccountsAsync(CancellationToken cancellationToken);
 
-    Task<Result<IReadOnlyList<JournalEntrySummary>>> ListAsync(
+    Task<Result<Page<JournalEntrySummary>>> ListAsync(
         JournalQuery query,
         CancellationToken cancellationToken);
 
@@ -496,7 +496,8 @@ public sealed record JournalQuery(
     string? Reference = null,
     DateOnly? From = null,
     DateOnly? To = null,
-    int Limit = 50);
+    int Limit = 50,
+    int Offset = 0);
 
 /// <summary>
 /// What a person supplies to write an entry by hand. The lines are theirs to

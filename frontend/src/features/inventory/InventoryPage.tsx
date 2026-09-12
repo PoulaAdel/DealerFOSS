@@ -21,10 +21,12 @@ import {
   type InventoryStatus,
   type InventoryUnitDetail,
   type InventoryUnitSummary,
+  type Page,
 } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { Pager, usePageCaption } from '../../shared/Pager';
 import { RecallCheck } from '../vehicles/RecallCheck';
 import { TakeIntoStock } from './TakeIntoStock';
 
@@ -34,11 +36,11 @@ import { TakeIntoStock } from './TakeIntoStock';
  * indistinguishable from "that is all of them" and saying the wrong one puts a
  * false number in front of somebody counting their own stock.
  */
-const PageSize = 200;
+const PageSize = 50;
 
 type Load =
   | { kind: 'loading' }
-  | { kind: 'ready'; units: InventoryUnitSummary[] }
+  | { kind: 'ready'; page: Page<InventoryUnitSummary> }
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
@@ -48,6 +50,11 @@ export function InventoryPage() {
   const describe = useApiMessage();
 
   const [status, setStatus] = useState<InventoryStatus | ''>('');
+
+  // Which page. Reset whenever a filter changes: page 3 of "Available" is not
+  // page 3 of "Reconditioning", and landing on an empty page reads as "there is
+  // nothing here" rather than as "you are past the end".
+  const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [selected, setSelected] = useState<InventoryUnitDetail | null>(null);
   const [taking, setTaking] = useState(false);
@@ -63,13 +70,14 @@ export function InventoryPage() {
 
     const filters = [
       `limit=${PageSize}`,
+      `offset=${offset}`,
       ...(status ? [`status=${encodeURIComponent(status)}`] : []),
       ...(stockNumber ? [`stock=${encodeURIComponent(stockNumber)}`] : []),
     ];
 
     try {
       const query = `?${filters.join('&')}`;
-      setLoad({ kind: 'ready', units: await api<InventoryUnitSummary[]>(`/inventory${query}`) });
+      setLoad({ kind: 'ready', page: await api<Page<InventoryUnitSummary>>(`/inventory${query}`) });
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 403) {
         setLoad({ kind: 'denied' });
@@ -78,7 +86,7 @@ export function InventoryPage() {
 
       setLoad({ kind: 'failed', message: describe(failure) });
     }
-  }, [status, stockNumber, describe]);
+  }, [status, stockNumber, offset, describe]);
 
   useEffect(() => {
     void fetchUnits();
@@ -102,7 +110,10 @@ export function InventoryPage() {
           <select
             id="status"
             value={status}
-            onChange={(e) => setStatus(e.target.value as InventoryStatus | '')}
+            onChange={(e) => {
+              setStatus(e.target.value as InventoryStatus | '');
+              setOffset(0);
+            }}
           >
             <option value="">{t('common.all')}</option>
             {inventoryStatuses.map((s) => (
@@ -149,6 +160,7 @@ export function InventoryPage() {
         onRetry={fetchUnits}
         selectedId={selected?.id ?? null}
         onOpen={(id) => void open(id)}
+        onPage={setOffset}
       />
 
       {selected === null ? null : (
@@ -373,12 +385,13 @@ function movesFrom(status: InventoryStatus): InventoryStatus[] {
 }
 
 function Body({
-  load, onRetry, selectedId, onOpen,
+  load, onRetry, selectedId, onOpen, onPage,
 }: {
   load: Load;
   onRetry: () => void;
   selectedId: string | null;
   onOpen: (unitId: string) => void;
+  onPage: (offset: number) => void;
 }) {
   const { t } = useI18n();
 
@@ -408,41 +421,34 @@ function Body({
       );
 
     case 'ready':
-      return load.units.length === 0 ? (
+      return load.page.total === 0 ? (
         <p className="state">{t('stock.empty')}</p>
       ) : (
-        <UnitTable units={load.units} selectedId={selectedId} onOpen={onOpen} />
+        <UnitTable page={load.page} selectedId={selectedId} onOpen={onOpen} onPage={onPage} />
       );
   }
 }
 
 function UnitTable({
-  units, selectedId, onOpen,
+  page, selectedId, onOpen, onPage,
 }: {
-  units: InventoryUnitSummary[];
+  page: Page<InventoryUnitSummary>;
   selectedId: string | null;
   onOpen: (unitId: string) => void;
+  onPage: (offset: number) => void;
 }) {
   const { t } = useI18n();
   const label = useEnumLabel();
-
-  // A full page means there are probably more, and we cannot know how many.
-  // Saying "200 vehicles in stock" to somebody with 400 cars is a false
-  // statement on a screen they are using to count their own stock.
-  const capped = units.length >= PageSize;
+  const caption = usePageCaption();
+  const units = page.rows;
 
   return (
     <div className="scroll">
       <table>
-        <caption className="visually-hidden">
-          {/* A plural entry rather than `n === 1 ? 'vehicle' : 'vehicles'`.
-              Russian needs four forms of this sentence and Arabic six, and
-              somebody arriving from a link that named one car is exactly the
-              case that used to read "1 vehicles". */}
-          {capped
-            ? t('stock.countCapped', { count: units.length })
-            : t('stock.count', { count: units.length })}
-        </caption>
+        {/* A real range and a real total, replacing "200 vehicles in stock",
+            which was a false statement to anybody with 400 cars — the screen
+            could not tell a full page from the end of the list. */}
+        <caption className="visually-hidden">{caption(page)}</caption>
         <thead>
           <tr>
             <th scope="col">{t('stock.colStock')}</th>
@@ -485,9 +491,7 @@ function UnitTable({
         </tbody>
       </table>
 
-      {capped ? (
-        <p className="note note--footer">{t('stock.cappedNote', { count: units.length })}</p>
-      ) : null}
+      <Pager page={page} onPage={onPage} />
     </div>
   );
 }

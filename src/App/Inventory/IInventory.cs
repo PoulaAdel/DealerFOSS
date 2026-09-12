@@ -26,7 +26,7 @@ public interface IInventory
     /// What is in stock. Narrow it by rooftop, by status, or by stock number —
     /// all within the caller's authorized rooftops.
     /// </summary>
-    Task<Result<IReadOnlyList<InventoryUnitSummary>>> ListAsync(
+    Task<Result<Page<InventoryUnitSummary>>> ListAsync(
         InventoryQuery query,
         CancellationToken cancellationToken);
 
@@ -156,7 +156,8 @@ public sealed record InventoryQuery(
     string? Status = null,
     string? StockNumber = null,
     string? Search = null,
-    int Limit = 50);
+    int Limit = 50,
+    int Offset = 0);
 
 /// <summary>What a caller supplies to take a vehicle into stock.</summary>
 public sealed record NewInventoryUnit(

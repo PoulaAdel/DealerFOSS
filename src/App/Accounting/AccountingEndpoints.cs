@@ -199,14 +199,16 @@ internal static class AccountingEndpoints
         string? reference = null,
         DateOnly? from = null,
         DateOnly? to = null,
-        int limit = 50)
+        int limit = 50,
+        int offset = 0)
     {
         var query = new JournalQuery(
             rooftopId is null ? null : new RooftopId(rooftopId.Value),
             reference,
             from,
             to,
-            limit);
+            limit,
+            offset);
 
         var result = await accounting.ListAsync(query, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();

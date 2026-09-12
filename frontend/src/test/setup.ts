@@ -15,6 +15,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
+import type { Page } from '../shared/contracts';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -174,4 +175,20 @@ export function headerOn(path: string, header: string): string | undefined {
   expect(call, `no call was made to ${path}`).toBeDefined();
 
   return (call!.init?.headers as Record<string, string> | undefined)?.[header];
+}
+
+/**
+ * One page of a list, as a list endpoint returns it.
+ *
+ * Every list endpoint answers with `Page<T>` rather than a bare array, so a
+ * fixture that hands back `[row]` produces a component reading `.rows` of
+ * undefined — which surfaces as a render crash rather than as "the fixture is
+ * the wrong shape". This exists so the shape is written once.
+ *
+ * `total` defaults to the number of rows given, which is what nearly every test
+ * wants: one page, and that is all of them. Override it to arrange a list with
+ * more pages than the one under test.
+ */
+export function page<T>(rows: T[], over: Partial<Page<T>> = {}): Page<T> {
+  return { rows, total: rows.length, offset: 0, limit: 50, ...over };
 }

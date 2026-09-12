@@ -31,6 +31,7 @@ import type {
   LeadSource,
   OrganizationSummary,
   RooftopSummary,
+  Page,
 } from '../../shared/contracts';
 
 export function CaptureLead({
@@ -76,7 +77,7 @@ export function CaptureLead({
         // What they came in asking about. Cars already sold are no use here, but
         // one on hold for somebody else still is — an enquiry is not a claim on
         // the car, and the second person's interest is worth recording.
-        setUnits(await api<InventoryUnitSummary[]>('/inventory?limit=200'));
+        setUnits((await api<Page<InventoryUnitSummary>>('/inventory?limit=200')).rows);
       } catch {
         // A stock list that will not load must not stop an enquiry being taken.
         // The car of interest is optional; the enquiry is the thing.
@@ -95,7 +96,7 @@ export function CaptureLead({
         ? '?limit=25'
         : `?search=${encodeURIComponent(term.trim())}&limit=25`;
 
-      setCustomers(await api<CustomerSummary[]>(`/customers${query}`));
+      setCustomers((await api<Page<CustomerSummary>>(`/customers${query}`)).rows);
     } catch (failure) {
       setError(describe(failure));
     }

@@ -48,6 +48,7 @@ import { ApiError, api, openDocument, post, remove } from '../../shared/api';
 import { DiaryPanel } from './DiaryPanel';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { Pager, usePageCaption } from '../../shared/Pager';
 import { TakePayment } from '../receivables/TakePayment';
 import {
   servicePayTypes,
@@ -59,13 +60,14 @@ import {
   type PartSummary,
   type ServicePayType,
   type StaffMember,
+  type Page,
 } from '../../shared/contracts';
 
 const PageSize = 50;
 
 type Load =
   | { kind: 'loading' }
-  | { kind: 'ready'; jobs: RepairOrderSummary[] }
+  | { kind: 'ready'; page: Page<RepairOrderSummary> }
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
@@ -123,8 +125,12 @@ export function WorkshopPage() {
   const { t } = useI18n();
   const money = useMoney();
   const describe = useApiMessage();
+  const caption = usePageCaption();
 
   const [openOnly, setOpenOnly] = useState(true);
+
+  // Which page. Reset when the filter changes.
+  const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [selected, setSelected] = useState<RepairOrderDetail | null>(null);
 
@@ -137,7 +143,7 @@ export function WorkshopPage() {
   //
   // A first load and a filter change still show the loading state, because
   // then there is genuinely nothing to look at.
-  const find = useCallback(async (open: boolean, quiet = false) => {
+  const find = useCallback(async (open: boolean, from: number, quiet = false) => {
     if (!quiet) {
       setLoad({ kind: 'loading' });
     }
@@ -145,8 +151,8 @@ export function WorkshopPage() {
     try {
       setLoad({
         kind: 'ready',
-        jobs: await api<RepairOrderSummary[]>(
-          `/repair-orders?openOnly=${open}&limit=${PageSize}`,
+        page: await api<Page<RepairOrderSummary>>(
+          `/repair-orders?openOnly=${open}&limit=${PageSize}&offset=${from}`,
         ),
       });
     } catch (failure) {
@@ -163,8 +169,8 @@ export function WorkshopPage() {
   }, []);
 
   useEffect(() => {
-    void find(openOnly);
-  }, [find, openOnly]);
+    void find(openOnly, offset);
+  }, [find, openOnly, offset]);
 
   async function open(jobId: string) {
     setSelected(await api<RepairOrderDetail>(`/repair-orders/${jobId}`));
@@ -188,7 +194,7 @@ export function WorkshopPage() {
       <section className="page">
         <h1>{t('workshop.title')}</h1>
         <p className="error">{load.message}</p>
-        <button type="button" onClick={() => void find(openOnly)}>
+        <button type="button" onClick={() => void find(openOnly, offset)}>
           {t('common.retry')}
         </button>
       </section>
@@ -197,7 +203,7 @@ export function WorkshopPage() {
 
   // The advisor's real worklist: the calls they owe. Drawn from the summary, so
   // it costs no extra request.
-  const waiting = load.jobs.filter((job) => job.linesAwaitingAnswer > 0);
+  const waiting = load.page.rows.filter((job) => job.linesAwaitingAnswer > 0);
 
   return (
     <section className="page">
@@ -208,7 +214,10 @@ export function WorkshopPage() {
             id="workshop-open"
             type="checkbox"
             checked={openOnly}
-            onChange={(event) => setOpenOnly(event.target.checked)}
+            onChange={(event) => {
+              setOpenOnly(event.target.checked);
+              setOffset(0);
+            }}
           />
           {t('workshop.openOnly')}
         </label>
@@ -224,7 +233,7 @@ export function WorkshopPage() {
       <DiaryPanel
         onArrived={(job) => {
           setSelected(job);
-          void find(openOnly, true);
+          void find(openOnly, offset, true);
         }}
       />
 
@@ -258,21 +267,19 @@ export function WorkshopPage() {
           onClose={() => setSelected(null)}
           onChanged={async (updated) => {
             setSelected(updated);
-            await find(openOnly, true);
+            await find(openOnly, offset, true);
           }}
         />
       )}
 
-      {load.jobs.length === 0 ? (
+      {load.page.total === 0 ? (
         <p className="note">
           {openOnly ? t('workshop.nothingOpen') : t('workshop.empty')}
         </p>
       ) : (
         <div className="scroll">
           <table className="table">
-            <caption className="visually-hidden">
-              {t('workshop.caption2', { limit: PageSize })}
-            </caption>
+            <caption className="visually-hidden">{caption(load.page)}</caption>
             <thead>
               <tr>
                 <th scope="col">{t('workshop.colJob')}</th>
@@ -287,7 +294,7 @@ export function WorkshopPage() {
               </tr>
             </thead>
             <tbody>
-              {load.jobs.map((job) => (
+              {load.page.rows.map((job) => (
                 <tr key={job.id}>
                   <td>
                     <button type="button" className="link" onClick={() => void open(job.id)}>
@@ -319,9 +326,7 @@ export function WorkshopPage() {
         </div>
       )}
 
-      {load.jobs.length >= PageSize ? (
-        <p className="note note--footer">{t('workshop.cappedNote', { limit: PageSize })}</p>
-      ) : null}
+      <Pager page={load.page} onPage={setOffset} />
     </section>
   );
 }
@@ -654,7 +659,7 @@ function AddLine({
 
     void (async () => {
       try {
-        setCatalogue(await api<PartSummary[]>('/parts?inStockOnly=true&limit=200'));
+        setCatalogue((await api<Page<PartSummary>>('/parts?inStockOnly=true&limit=200')).rows);
       } catch {
         // A catalogue that will not load must not stop the job being written up.
         // The line falls back to free text, which is what it did before the

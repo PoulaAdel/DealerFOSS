@@ -21,7 +21,7 @@ import { MemoryRouter } from 'react-router';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DealsPage } from './DealsPage';
-import { apiCalls, mockApi, mockApiUnreachable } from '../../test/setup';
+import { apiCalls, mockApi, mockApiUnreachable, page } from '../../test/setup';
 import type { DealDetail, DealSummary } from '../../shared/contracts';
 
 const summary: DealSummary = {
@@ -82,10 +82,10 @@ describe('the deal desk', () => {
     mockApi({
       '/deals': {
         ok: true,
-        body: [
+        body: page([
           { ...summary, id: 'd1', status: 'Submitted' },
           { ...summary, id: 'd2', status: 'Draft' },
-        ],
+        ]),
       },
     });
 
@@ -102,7 +102,7 @@ describe('the deal desk', () => {
   });
 
   it('says nothing at all when no deal is waiting', async () => {
-    mockApi({ '/deals': { ok: true, body: [{ ...summary, status: 'Draft' }] } });
+    mockApi({ '/deals': { ok: true, body: page([{ ...summary, status: 'Draft' }]) } });
     renderDeals();
     await screen.findByRole('button', { name: 'Marisol Alvarez' });
 
@@ -112,7 +112,7 @@ describe('the deal desk', () => {
   });
 
   it('lists what is being worked', async () => {
-    mockApi({ '/deals': { ok: true, body: [summary] } });
+    mockApi({ '/deals': { ok: true, body: page([summary]) } });
     renderDeals();
 
     expect(await screen.findByRole('button', { name: 'Marisol Alvarez' })).toBeVisible();
@@ -122,7 +122,7 @@ describe('the deal desk', () => {
   });
 
   it('defaults to the ones still being worked', async () => {
-    mockApi({ '/deals': { ok: true, body: [summary] } });
+    mockApi({ '/deals': { ok: true, body: page([summary]) } });
     renderDeals();
     await screen.findByRole('button', { name: 'Marisol Alvarez' });
 
@@ -131,7 +131,7 @@ describe('the deal desk', () => {
   });
 
   it('says the desk is empty rather than showing an empty table', async () => {
-    mockApi({ '/deals': { ok: true, body: [] } });
+    mockApi({ '/deals': { ok: true, body: page([]) } });
     renderDeals();
 
     expect(await screen.findByText(/No deals here/)).toBeVisible();
@@ -155,7 +155,7 @@ describe('one deal', () => {
   it('shows the numbers and what they add up to', async () => {
     mockApi({
       '/deals/d1': { ok: true, body: detail() },
-      '/deals': { ok: true, body: [summary] },
+      '/deals': { ok: true, body: page([summary]) },
     });
 
     renderDeals();
@@ -173,7 +173,7 @@ describe('one deal', () => {
     mockApi({
       '/deals/d1': { ok: true, body: detail({ status: 'Delivered', termsAreOpen: false }) },
       '/finance/products': { ok: true, body: [] },
-      '/deals': { ok: true, body: [summary] },
+      '/deals': { ok: true, body: page([summary]) },
     });
     renderDeals();
     await openDeal();
@@ -211,7 +211,7 @@ describe('one deal', () => {
         }),
       },
       '/finance/products': { ok: true, body: [] },
-      '/deals': { ok: true, body: [summary] },
+      '/deals': { ok: true, body: page([summary]) },
     });
 
     renderDeals();
@@ -238,7 +238,7 @@ describe('one deal', () => {
           },
         }),
       },
-      '/deals': { ok: true, body: [summary] },
+      '/deals': { ok: true, body: page([summary]) },
     });
 
     renderDeals();
@@ -266,7 +266,7 @@ describe('one deal', () => {
           },
         }),
       },
-      '/deals': { ok: true, body: [summary] },
+      '/deals': { ok: true, body: page([summary]) },
     });
 
     renderDeals();
@@ -290,7 +290,7 @@ describe('one deal', () => {
           },
         }),
       },
-      '/deals': { ok: true, body: [summary] },
+      '/deals': { ok: true, body: page([summary]) },
     });
 
     renderDeals();
@@ -304,7 +304,7 @@ describe('one deal', () => {
   it('offers only the move the deal’s stage allows', async () => {
     mockApi({
       '/deals/d1': { ok: true, body: detail({ status: 'Draft' }) },
-      '/deals': { ok: true, body: [summary] },
+      '/deals': { ok: true, body: page([summary]) },
     });
 
     renderDeals();
@@ -318,7 +318,7 @@ describe('one deal', () => {
   it('offers approval once it has been submitted, and says who may not do it', async () => {
     mockApi({
       '/deals/d1': { ok: true, body: detail({ status: 'Submitted', termsAreOpen: false }) },
-      '/deals': { ok: true, body: [{ ...summary, status: 'Submitted' }] },
+      '/deals': { ok: true, body: page([{ ...summary, status: 'Submitted' }]) },
     });
 
     renderDeals();
@@ -336,7 +336,7 @@ describe('one deal', () => {
         ok: false, status: 403, code: 'deals.self_approval',
         detail: 'You cannot approve a deal you built.',
       },
-      '/deals': { ok: true, body: [{ ...summary, status: 'Submitted' }] },
+      '/deals': { ok: true, body: page([{ ...summary, status: 'Submitted' }]) },
     });
 
     renderDeals();
@@ -352,7 +352,7 @@ describe('one deal', () => {
     mockApi({
       '/deals/d1': { ok: true, body: detail({ status: 'Draft' }) },
       '/deals/d1/status': { ok: true, body: detail({ status: 'Submitted', termsAreOpen: false }) },
-      '/deals': { ok: true, body: [summary] },
+      '/deals': { ok: true, body: page([summary]) },
     });
 
     renderDeals();
@@ -365,7 +365,7 @@ describe('one deal', () => {
   it('offers nothing on a finished deal', async () => {
     mockApi({
       '/deals/d1': { ok: true, body: detail({ status: 'Delivered' }) },
-      '/deals': { ok: true, body: [{ ...summary, status: 'Delivered' }] },
+      '/deals': { ok: true, body: page([{ ...summary, status: 'Delivered' }]) },
     });
 
     renderDeals();
@@ -384,8 +384,8 @@ describe('one deal', () => {
           primaryEmail: null, primaryPhone: null,
         },
       },
-      '/inventory': { ok: true, body: [] },
-      '/deals': { ok: true, body: [] },
+      '/inventory': { ok: true, body: page([]) },
+      '/deals': { ok: true, body: page([]) },
     });
 
     renderDeals('/deals?leadId=l1&customerId=c1');
@@ -409,12 +409,12 @@ describe('one deal', () => {
       },
       '/inventory': {
         ok: true,
-        body: [{
+        body: page([{
           id: 'u1', stockNumber: 'NAG-1042', rooftopId: 'r1', status: 'Available',
           vehicleId: 'v1', vin: '1HGCM82633A004352', vehicleDisplayName: '2021 Toyota RAV4 XLE',
-        }],
+        }]),
       },
-      '/deals': [{ ok: true, body: [] }, { ok: true, body: detail({ leadId: 'l1' }) }, { ok: true, body: [summary] }],
+      '/deals': [{ ok: true, body: page([]) }, { ok: true, body: detail({ leadId: 'l1' }) }, { ok: true, body: page([summary]) }],
     });
 
     renderDeals('/deals?leadId=l1&customerId=c1');
@@ -442,7 +442,7 @@ describe('one deal', () => {
           ],
         }),
       },
-      '/deals': { ok: true, body: [{ ...summary, status: 'Submitted' }] },
+      '/deals': { ok: true, body: page([{ ...summary, status: 'Submitted' }]) },
     });
 
     renderDeals();

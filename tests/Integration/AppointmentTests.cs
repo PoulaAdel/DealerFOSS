@@ -130,7 +130,7 @@ public sealed class AppointmentTests(HostFixture fixture)
         var forThatCar = await ListAsync(
             $"{Jobs}?vehicleId={view.GetProperty("vehicleId").GetString()}", Manager);
 
-        forThatCar.EnumerateArray().Should().ContainSingle(
+        forThatCar.Rows().Should().ContainSingle(
             because: "a second arrival must not leave an orphaned job behind");
     }
 

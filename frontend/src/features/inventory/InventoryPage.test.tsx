@@ -17,7 +17,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';
 import { InventoryPage } from './InventoryPage';
-import { apiCalls, mockApi, mockApiPending, mockApiUnreachable } from '../../test/setup';
+import { apiCalls, mockApi, mockApiPending, mockApiUnreachable, page } from '../../test/setup';
 import type { InventoryUnitSummary } from '../../shared/contracts';
 
 const unit: InventoryUnitSummary = {
@@ -51,7 +51,7 @@ describe('the stock list', () => {
   });
 
   it('draws a car once the list arrives', async () => {
-    mockApi({ '/inventory': { ok: true, body: [unit] } });
+    mockApi({ '/inventory': { ok: true, body: page([unit]) } });
     renderStock();
 
     expect(await screen.findByText('NAG-1042')).toBeVisible();
@@ -61,7 +61,7 @@ describe('the stock list', () => {
   });
 
   it('explains an empty lot instead of showing an empty table', async () => {
-    mockApi({ '/inventory': { ok: true, body: [] } });
+    mockApi({ '/inventory': { ok: true, body: page([]) } });
     renderStock();
 
     expect(
@@ -87,7 +87,7 @@ describe('the stock list', () => {
     mockApi({
       '/inventory': [
         { ok: false, status: 500, code: 'unknown', detail: 'The server answered 500.' },
-        { ok: true, body: [unit] },
+        { ok: true, body: page([unit]) },
       ],
     });
     renderStock();
@@ -106,26 +106,40 @@ describe('the stock list', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not reach the server/);
   });
 
-  it('does not claim a full page is the whole lot', async () => {
-    // The server clamps to 200. A dealership with 400 cars would otherwise be
-    // told, on a screen they use to count their own stock, that they have 200.
-    const full = Array.from({ length: 200 }, (_, i) => ({
+  it('says which cars these are out of how many, and reaches the rest', async () => {
+    // A dealership with 412 cars used to be told, on the screen they count
+    // their own stock with, that they had 200 and "there may be more".
+    const full = Array.from({ length: 50 }, (_, i) => ({
       ...unit,
       id: `${i}`.padStart(8, '0') + '-1111-1111-1111-111111111111',
       stockNumber: `NAG-${1000 + i}`,
     }));
 
-    mockApi({ '/inventory': { ok: true, body: full } });
+    mockApi({ '/inventory': { ok: true, body: page(full, { total: 412 }) } });
     renderStock();
 
     // Said twice on purpose, to two different audiences: the table's caption is
     // what a screen reader announces, the note is what a sighted user reads.
-    expect(await screen.findByText(/Showing the first 200/)).toBeVisible();
-    expect(screen.getAllByText(/There may be more/)).toHaveLength(2);
+    expect(await screen.findAllByText('Showing 1–50 of 412.')).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(
+      apiCalls().some((call) => call.path.includes('offset=50')),
+      'the second page has to be asked for, not sliced off the first',
+    ).toBe(true);
+  });
+
+  it('cannot go back from the first page', async () => {
+    mockApi({ '/inventory': { ok: true, body: page([unit], { total: 90 }) } });
+    renderStock();
+
+    await screen.findByRole('table');
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
   });
 
   it('says the count plainly when it is the whole lot', async () => {
-    mockApi({ '/inventory': { ok: true, body: [unit] } });
+    mockApi({ '/inventory': { ok: true, body: page([unit]) } });
     renderStock();
 
     await screen.findByText('NAG-1042');
@@ -133,7 +147,7 @@ describe('the stock list', () => {
   });
 
   it('asks the server again when the status filter changes', async () => {
-    mockApi({ '/inventory': { ok: true, body: [unit] } });
+    mockApi({ '/inventory': { ok: true, body: page([unit]) } });
     renderStock();
     await screen.findByText('NAG-1042');
 
@@ -147,7 +161,7 @@ describe('the stock list', () => {
   it('narrows to one car when sent here from somewhere that named it', async () => {
     // The dashboard's oldest-stock list links here. Landing on the whole list
     // would make that link a promise the screen does not keep.
-    mockApi({ '/inventory': { ok: true, body: [unit] } });
+    mockApi({ '/inventory': { ok: true, body: page([unit]) } });
     renderStock('/inventory?stock=NAG-1042');
 
     await screen.findByText('2021 Toyota RAV4');
@@ -157,7 +171,7 @@ describe('the stock list', () => {
   });
 
   it('offers the way back to the whole list', async () => {
-    mockApi({ '/inventory': { ok: true, body: [unit] } });
+    mockApi({ '/inventory': { ok: true, body: page([unit]) } });
     renderStock('/inventory?stock=NAG-1042');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Show everything' }));
@@ -208,9 +222,9 @@ describe('taking a car into stock', () => {
   function mockTakeIn() {
     mockApi({
       '/inventory': [
-        { ok: true, body: [unit] },
+        { ok: true, body: page([unit]) },
         { ok: true, body: received },
-        { ok: true, body: [unit] },
+        { ok: true, body: page([unit]) },
       ],
       '/organization': { ok: true, body: organization },
       '/vehicles': { ok: true, body: { id: unit.vehicleId } },
@@ -325,7 +339,7 @@ describe('moving a car between stock states', () => {
 
   it('offers the moves the domain allows from where the car is', async () => {
     mockApi({
-      '/inventory': { ok: true, body: [unit] },
+      '/inventory': { ok: true, body: page([unit]) },
       [`/inventory/${unit.id}`]: { ok: true, body: detailAt('Reconditioning') },
     });
     renderStock();
@@ -342,7 +356,7 @@ describe('moving a car between stock states', () => {
 
   it('sends the new status and the note to the server', async () => {
     mockApi({
-      '/inventory': { ok: true, body: [unit] },
+      '/inventory': { ok: true, body: page([unit]) },
       [`/inventory/${unit.id}`]: { ok: true, body: detailAt('Reconditioning') },
       [`/inventory/${unit.id}/status`]: { ok: true, body: detailAt('Available') },
     });
@@ -370,7 +384,7 @@ describe('moving a car between stock states', () => {
     // the suite stayed green. Available is the state most cars are in.
     for (const from of ['Incoming', 'Reconditioning', 'Available', 'OnHold'] as const) {
       mockApi({
-        '/inventory': { ok: true, body: [unit] },
+        '/inventory': { ok: true, body: page([unit]) },
         [`/inventory/${unit.id}`]: { ok: true, body: detailAt(from) },
       });
 
@@ -389,7 +403,7 @@ describe('moving a car between stock states', () => {
 
   it('says why a sold car cannot be moved rather than showing dead buttons', async () => {
     mockApi({
-      '/inventory': { ok: true, body: [unit] },
+      '/inventory': { ok: true, body: page([unit]) },
       [`/inventory/${unit.id}`]: { ok: true, body: detailAt('Sold') },
     });
     renderStock();

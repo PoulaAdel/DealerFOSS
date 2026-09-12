@@ -333,10 +333,10 @@ try {
     # Counts are not asserted: the integration suite runs against the same
     # databases and adds units of its own. What must hold is that none of the
     # sibling rooftop's units ever reaches a scoped caller.
-    $managerUnits = Invoke-RestMethod "$baseUrl/api/v1/inventory?limit=200" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
-    $scopedUnits = Invoke-RestMethod "$baseUrl/api/v1/inventory?limit=200" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped
+    $managerUnits = (Invoke-RestMethod "$baseUrl/api/v1/inventory?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide).rows
+    $scopedUnits = (Invoke-RestMethod "$baseUrl/api/v1/inventory?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped).rows
 
     $siblingUnits = @($managerUnits | Where-Object { $_.rooftopId -eq $siblingId })
     $leaked = @($scopedUnits | Where-Object { $_.rooftopId -eq $siblingId }).Count
@@ -351,8 +351,8 @@ try {
     "scoped user -> list filtered to NAG-02 -> HTTP $siblingFilterStatus (expect 403)"
 
     # Vehicles are organization-shared, so the same user may read them all.
-    $vehicles = Invoke-RestMethod "$baseUrl/api/v1/vehicles?limit=200" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped
+    $vehicles = (Invoke-RestMethod "$baseUrl/api/v1/vehicles?limit=200" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $scoped).rows
     $vehicleCount = @($vehicles).Count
     "scoped user sees {0} vehicle(s)           (expect 1 or more: vehicles are shared)" -f $vehicleCount
     Write-Host "`n--- lead rooftop scope ---" -ForegroundColor Cyan
@@ -448,8 +448,8 @@ try {
 
     $null = Invoke-Api "/api/v1/deals/$($deal.id)/status" $orgWide @{ status = "Delivered" }
 
-    $entries = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($deal.id)" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $entries = (Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($deal.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide).rows
     $entryCount = @($entries).Count
     "delivering the car posted {0} entry(ies)  (expect exactly 1)" -f $entryCount
 
@@ -542,8 +542,8 @@ try {
     $invoiced = Invoke-Api "/api/v1/repair-orders/$($job.id)/status" $orgWide @{ status = "Invoiced" }
     "once answered, the job bills {0}     (expect 464)" -f $invoiced.amountDue
 
-    $serviceEntries = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($job.id)" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $serviceEntries = (Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($job.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide).rows
     $serviceEntry = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal/$(@($serviceEntries)[0].id)" `
         -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
 
@@ -595,8 +595,8 @@ try {
 
     # And the books carry it: cost of parts sales debited, parts inventory
     # credited. That pair is what turns revenue into a profit figure.
-    $partsEntries = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($partsJob.id)" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    $partsEntries = (Invoke-RestMethod "$baseUrl/api/v1/accounting/journal?reference=$($partsJob.id)" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide).rows
     $partsEntry = Invoke-RestMethod "$baseUrl/api/v1/accounting/journal/$(@($partsEntries)[0].id)" `
         -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
     $cogs = (@($partsEntry.lines | Where-Object { $_.accountCode -eq "5300" }) | Measure-Object -Property debit -Sum).Sum
@@ -889,10 +889,15 @@ try {
     $trial = Submit-Import "Trial" $file
     "a practice run says {0} would be added   (expect 2)" -f $trial.rowsCreated
 
-    # An empty JSON array comes back as $null, and @($null).Count is 1 — so
-    # counting the naive way would report a car that is not there.
-    $found = Invoke-RestMethod "$baseUrl/api/v1/vehicles?search=$vinStem" `
-        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide
+    # .rows, because the list endpoint returns a PAGE. Counting the response
+    # itself gives 1 whatever it holds — the page object is one object — which
+    # is exactly the reading this check exists to catch, so it would have
+    # reported a car the practice run had not created.
+    #
+    # An empty JSON array still comes back as $null, and @($null).Count is 1, so
+    # the guard below stays.
+    $found = (Invoke-RestMethod "$baseUrl/api/v1/vehicles?search=$vinStem" `
+        -Headers @{ "X-Tenant" = "northgroup" } -WebSession $orgWide).rows
     $beforeApply = if ($null -eq $found) { 0 } else { @($found).Count }
     "...and changed nothing: {0} car(s) here    (expect 0)" -f $beforeApply
 

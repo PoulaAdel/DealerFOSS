@@ -45,17 +45,19 @@ public sealed class VehicleService(
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
 
-    public async Task<Result<IReadOnlyList<VehicleSummary>>> SearchAsync(
+    public async Task<Result<Page<VehicleSummary>>> SearchAsync(
         string? term,
         int limit,
+        int offset,
         CancellationToken cancellationToken)
     {
         if (!await IsAllowedAnywhereAsync(ReadPermission, cancellationToken))
         {
-            return Result.Failure<IReadOnlyList<VehicleSummary>>(VehicleErrors.Forbidden);
+            return Result.Failure<Page<VehicleSummary>>(VehicleErrors.Forbidden);
         }
 
-        var take = Math.Clamp(limit <= 0 ? 25 : limit, 1, MaxResults);
+        var take = Paging.Limit(limit, fallback: 25);
+        var skip = Paging.Offset(offset);
         var query = _db.Vehicles.AsNoTracking();
 
         var search = (term ?? string.Empty).Trim();
@@ -71,15 +73,25 @@ public sealed class VehicleService(
                 || EF.Functions.Like(v.Model, $"%{search}%"));
         }
 
+        var total = await query.CountAsync(cancellationToken);
+
+        // Id breaks ties: a dealership stocking six identical model-year Civics
+        // has six rows the sort cannot separate, and an order that is not total
+        // lets one of them appear on two pages and another on none.
         var vehicles = await query
             .OrderByDescending(v => v.ModelYear)
             .ThenBy(v => v.Make)
             .ThenBy(v => v.Model)
+            .ThenBy(v => v.Id)
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
 
-        return Result.Success<IReadOnlyList<VehicleSummary>>(
-            vehicles.Select(Summarize).ToList());
+        return Result.Success(new Page<VehicleSummary>(
+            vehicles.Select(Summarize).ToList(),
+            total,
+            skip,
+            take));
     }
 
     public async Task<Result<VehicleDetail>> GetAsync(Guid vehicleId, CancellationToken cancellationToken)

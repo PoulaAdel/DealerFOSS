@@ -149,6 +149,56 @@ public sealed class InventoryTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task The_cars_past_the_first_page_can_actually_be_reached()
+    {
+        // Before 2026-09-12 this list took a limit and had no offset at all, so
+        // a dealership with more cars than the cap could not see the rest of
+        // them by any route the application offered.
+        var rooftop = await RooftopIdAsync("NAG-01");
+
+        using var one = await ReceiveAsync(Manager, rooftop, UniqueStock());
+        using var two = await ReceiveAsync(Manager, rooftop, UniqueStock());
+        one.StatusCode.Should().Be(HttpStatusCode.Created);
+        two.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var first = await PageAsync($"{Inventory}?limit=1&offset=0", Manager);
+        var next = await PageAsync($"{Inventory}?limit=1&offset=1", Manager);
+
+        first.Rows().Should().ContainSingle();
+        next.Rows().Should().ContainSingle();
+
+        first.Rows()[0].GetProperty("id").GetGuid()
+            .Should().NotBe(next.Rows()[0].GetProperty("id").GetGuid(),
+                because: "the second page is the next row, not the same one again");
+
+        // The total is counted over the whole filtered set, not over the page.
+        // Without it the screen can only say "the first 50, there may be more",
+        // which is what it used to say.
+        first.Total().Should().BeGreaterThan(1);
+        first.Total().Should().Be(next.Total());
+        first.Offset().Should().Be(0);
+        next.Offset().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Asking_for_more_rows_than_the_cap_is_answered_with_the_cap()
+    {
+        // A list endpoint must not be a way to ask the database for everything.
+        var page = await PageAsync($"{Inventory}?limit=100000", Manager);
+
+        page.GetProperty("limit").GetInt32().Should().Be(200);
+    }
+
+    /// <summary>One page, as the endpoint returns it, for asserting on its counts.</summary>
+    private async Task<JsonElement> PageAsync(string path, string email)
+    {
+        using var response = await SendAsync(HttpMethod.Get, path, email);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return await response.Content.ReadFromJsonAsync<JsonElement>();
+    }
+
+    [Fact]
     public async Task A_stock_number_cannot_be_used_twice_at_the_same_rooftop()
     {
         var rooftop = await RooftopIdAsync("NAG-01");
@@ -303,7 +353,7 @@ public sealed class InventoryTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var found = await response.Content.ReadFromJsonAsync<JsonElement>();
-        found.EnumerateArray().Should().BeEmpty(
+        found.Rows().Should().BeEmpty(
             because: "a unit belongs to one dealer organization's database");
     }
 
@@ -454,7 +504,7 @@ public sealed class InventoryTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var results = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return results.EnumerateArray()
+        return results.Rows()
             .Select(u => u.GetProperty("stockNumber").GetString()!)
             .ToList();
     }
@@ -466,7 +516,7 @@ public sealed class InventoryTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var results = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return results.EnumerateArray()
+        return results.Rows()
             .Select(v => v.GetProperty("vin").GetString()!)
             .ToList();
     }

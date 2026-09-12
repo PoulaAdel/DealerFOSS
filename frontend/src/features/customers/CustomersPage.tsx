@@ -25,10 +25,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
 import { useDebounced } from '../../shared/useDebounced';
-import type { CustomerDetail, CustomerSummary, NewCustomer } from '../../shared/contracts';
+import type { CustomerDetail, CustomerSummary, NewCustomer, Page } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { Pager, usePageCaption } from '../../shared/Pager';
 
 /**
  * What the server will return at most, however many are asked for. The screen
@@ -39,7 +40,7 @@ const PageSize = 100;
 
 type Load =
   | { kind: 'loading' }
-  | { kind: 'ready'; customers: CustomerSummary[] }
+  | { kind: 'ready'; page: Page<CustomerSummary> }
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
@@ -58,6 +59,10 @@ export function CustomersPage() {
   const describe = useApiMessage();
 
   const [search, setSearch] = useState('');
+
+  // Which page. Reset on every keystroke, below: page 3 of one search term is
+  // not page 3 of another.
+  const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
 
   const [selected, setSelected] = useState<CustomerDetail | null>(null);
@@ -66,17 +71,21 @@ export function CustomersPage() {
   const [draft, setDraft] = useState<NewCustomer>(empty);
   const [error, setError] = useState<string | null>(null);
 
-  const find = useCallback(async (term: string, signal?: AbortSignal) => {
+  const find = useCallback(async (term: string, from: number, signal?: AbortSignal) => {
     setLoad({ kind: 'loading' });
 
     try {
-      const query = term.trim() === ''
-        ? `?limit=${PageSize}`
-        : `?search=${encodeURIComponent(term.trim())}&limit=${PageSize}`;
+      // The search term leads, so that a request for a term is distinguishable
+      // from the unfiltered first load by its prefix alone.
+      const filters = term.trim() === ''
+        ? []
+        : [`search=${encodeURIComponent(term.trim())}`];
+
+      filters.push(`limit=${PageSize}`, `offset=${from}`);
 
       setLoad({
         kind: 'ready',
-        customers: await api<CustomerSummary[]>(`/customers${query}`, { signal }),
+        page: await api<Page<CustomerSummary>>(`/customers?${filters.join('&')}`, { signal }),
       });
     } catch (failure) {
       // Superseded by a later keystroke. Not a failure, and the request that
@@ -101,9 +110,9 @@ export function CustomersPage() {
 
   useEffect(() => {
     const stop = new AbortController();
-    void find(settled, stop.signal);
+    void find(settled, offset, stop.signal);
     return () => stop.abort();
-  }, [find, settled]);
+  }, [find, settled, offset]);
 
   async function open(customerId: string) {
     try {
@@ -131,11 +140,11 @@ export function CustomersPage() {
       const found = new Map<string, CustomerSummary>();
 
       for (const term of terms) {
-        const matches = await api<CustomerSummary[]>(
+        const matches = await api<Page<CustomerSummary>>(
           `/customers?search=${encodeURIComponent(term)}&limit=10`,
         );
 
-        for (const match of matches) {
+        for (const match of matches.rows) {
           found.set(match.id, match);
         }
       }
@@ -167,7 +176,7 @@ export function CustomersPage() {
 
       setDraft(empty);
       setAdding({ step: 'closed' });
-      await find(search);
+      await find(search, offset);
     } catch (failure) {
       setError(describe(failure));
       setAdding({ step: 'form' });
@@ -189,7 +198,10 @@ export function CustomersPage() {
           <input
             id="search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setOffset(0);
+            }}
             placeholder={t('customers.findPlaceholder')}
             // Not type="search": the browser's clear button does not fire an
             // input event in every engine, so the list could disagree with the box.
@@ -223,9 +235,10 @@ export function CustomersPage() {
 
       <Results
         load={load}
-        onRetry={() => void find(search)}
+        onRetry={() => void find(search, offset)}
         selectedId={selected?.id ?? null}
         onOpen={(id) => void open(id)}
+        onPage={setOffset}
       />
 
       {selected === null ? null : (
@@ -450,12 +463,13 @@ function AddPanel({
 }
 
 function Results({
-  load, onRetry, selectedId, onOpen,
+  load, onRetry, selectedId, onOpen, onPage,
 }: {
   load: Load;
   onRetry: () => void;
   selectedId: string | null;
   onOpen: (customerId: string) => void;
+  onPage: (offset: number) => void;
 }) {
   const { t } = useI18n();
 
@@ -485,35 +499,31 @@ function Results({
       );
 
     case 'ready':
-      return load.customers.length === 0 ? (
+      return load.page.total === 0 ? (
         <p className="state">{t('customers.noMatches')}</p>
       ) : (
-        <CustomerTable customers={load.customers} selectedId={selectedId} onOpen={onOpen} />
+        <CustomerTable page={load.page} selectedId={selectedId} onOpen={onOpen} onPage={onPage} />
       );
   }
 }
 
 function CustomerTable({
-  customers, selectedId, onOpen,
+  page, selectedId, onOpen, onPage,
 }: {
-  customers: CustomerSummary[];
+  page: Page<CustomerSummary>;
   selectedId: string | null;
   onOpen: (customerId: string) => void;
+  onPage: (offset: number) => void;
 }) {
   const { t } = useI18n();
   const label = useEnumLabel();
-
-  // A full page probably means there are more, and we cannot know how many.
-  const capped = customers.length >= PageSize;
+  const caption = usePageCaption();
+  const customers = page.rows;
 
   return (
     <div className="scroll">
       <table>
-        <caption className="visually-hidden">
-          {capped
-            ? t('customers.countCapped', { count: customers.length })
-            : t('customers.count', { count: customers.length })}
-        </caption>
+        <caption className="visually-hidden">{caption(page)}</caption>
         <thead>
           <tr>
             <th scope="col">{t('customers.colName')}</th>
@@ -548,11 +558,7 @@ function CustomerTable({
         </tbody>
       </table>
 
-      {capped ? (
-        <p className="note note--footer">
-          {t('customers.cappedNote', { count: customers.length })}
-        </p>
-      ) : null}
+      <Pager page={page} onPage={onPage} />
     </div>
   );
 }

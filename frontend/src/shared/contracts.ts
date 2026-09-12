@@ -1077,14 +1077,23 @@ export interface JournalLineView {
 }
 
 /**
- * One page of enquiries, and how many there are altogether.
+ * One page of a list, and how many rows there are altogether.
+ *
+ * ONE TYPE FOR EVERY LIST. Every list endpoint returns this shape, so the
+ * browser has one contract to read and one component to render it. There was a
+ * `LeadPage` here once, for the only list that could be paged; the rest returned
+ * bare arrays with a limit and no way past it.
  *
  * `total` is the whole point of a page rather than a list. "Showing the first
  * 50. There may be more" was true and useless; a dealership needs to know
- * whether it is 51 or 5,100.
+ * whether it is 51 or 5,100, and needs a way to reach them.
+ *
+ * `offset` and `limit` come back from the SERVER rather than being assumed from
+ * what was asked for: the limit is clamped there, so a screen that asked for
+ * 10,000 rows is told it got 200.
  */
-export interface LeadPage {
-  rows: LeadSummary[];
+export interface Page<T> {
+  rows: T[];
   total: number;
   offset: number;
   limit: number;

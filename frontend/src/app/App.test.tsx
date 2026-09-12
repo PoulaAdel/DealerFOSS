@@ -18,7 +18,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { App } from './App';
-import { mockApi, mockApiUnreachable } from '../test/setup';
+import { mockApi, mockApiUnreachable, page } from '../test/setup';
 import { setCurrentTenant } from '../shared/api';
 import type { MonthInReview } from '../shared/contracts';
 
@@ -104,7 +104,7 @@ describe('the application shell', () => {
 
   it('takes a keyboard-only user between screens without a mouse', async () => {
     setCurrentTenant('northgroup');
-    mockApi({ ...signedIn, '/inventory': { ok: true, body: [] } });
+    mockApi({ ...signedIn, '/inventory': { ok: true, body: page([]) } });
 
     render(<App />);
     await screen.findByText('So far this month.');

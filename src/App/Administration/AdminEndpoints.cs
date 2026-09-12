@@ -189,11 +189,21 @@ internal static class AdminEndpoints
 
     private static async Task<IResult> ListTenantsAsync(
         HostDb hostCatalog,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int limit = 50,
+        int offset = 0)
     {
-        var tenants = await hostCatalog.Tenants
-            .AsNoTracking()
+        var take = Paging.Limit(limit);
+        var skip = Paging.Offset(offset);
+
+        var rows = hostCatalog.Tenants.AsNoTracking();
+        var total = await rows.CountAsync(cancellationToken);
+
+        // Slug is unique, so it is already a total order and needs no tiebreak.
+        var tenants = await rows
             .OrderBy(t => t.Slug)
+            .Skip(skip)
+            .Take(take)
             .Select(t => new
             {
                 t.Slug,
@@ -204,7 +214,7 @@ internal static class AdminEndpoints
             })
             .ToListAsync(cancellationToken);
 
-        return Results.Ok(tenants);
+        return Results.Ok(new Page<object>(tenants, total, skip, take));
     }
 
     private static async Task<IResult> SetTenantStatusAsync(

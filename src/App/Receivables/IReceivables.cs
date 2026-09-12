@@ -26,7 +26,7 @@ namespace DealerFOSS.Receivables;
 public interface IReceivables
 {
     /// <summary>Who owes what, newest first, scoped to the caller's rooftops.</summary>
-    Task<Result<IReadOnlyList<ReceivableSummary>>> ListAsync(
+    Task<Result<Page<ReceivableSummary>>> ListAsync(
         ReceivableQuery query,
         CancellationToken cancellationToken);
 
@@ -83,7 +83,8 @@ public sealed record ReceivableQuery(
     /// Settled rows are history and are asked for deliberately.
     /// </summary>
     bool OutstandingOnly = true,
-    int Limit = 50);
+    int Limit = 50,
+    int Offset = 0);
 
 public sealed record ReceivableSummary(
     Guid Id,

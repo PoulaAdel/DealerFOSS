@@ -21,7 +21,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, post } from '../../shared/api';
-import type { CustomerSummary, DealDetail, InventoryUnitSummary } from '../../shared/contracts';
+import type { CustomerSummary, DealDetail, InventoryUnitSummary, Page } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { Emphasised } from '../../shared/i18n/Emphasised';
@@ -55,7 +55,7 @@ export function StartDeal({
   useEffect(() => {
     void (async () => {
       try {
-        setUnits(await api<InventoryUnitSummary[]>('/inventory?status=Available&limit=200'));
+        setUnits((await api<Page<InventoryUnitSummary>>('/inventory?status=Available&limit=200')).rows);
       } catch (failure) {
         setError(describe(failure));
       }
@@ -92,7 +92,7 @@ export function StartDeal({
         ? '?limit=25'
         : `?search=${encodeURIComponent(term.trim())}&limit=25`;
 
-      setCustomers(await api<CustomerSummary[]>(`/customers${query}`));
+      setCustomers((await api<Page<CustomerSummary>>(`/customers${query}`)).rows);
     } catch (failure) {
       setError(describe(failure));
     }

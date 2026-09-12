@@ -19,7 +19,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';
 import { WorkshopPage } from './WorkshopPage';
-import { apiCalls, mockApi } from '../../test/setup';
+import { apiCalls, mockApi, page } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
 import type {
   RepairOrderDetail,
@@ -124,7 +124,7 @@ async function openJob() {
 
 describe('the workshop list', () => {
   it('shows the jobs in the workshop', async () => {
-    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
+    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: page([summary()]) }, '/staff': noStaff });
     renderWorkshop();
 
     expect(await screen.findByRole('button', { name: 'RO-1001' })).toBeVisible();
@@ -135,7 +135,7 @@ describe('the workshop list', () => {
   it('leads with the calls somebody owes, because each one blocks an invoice', async () => {
     mockApi({
       '/appointments': noDiary,
-      '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 2 })] },
+      '/repair-orders': { ok: true, body: page([summary({ linesAwaitingAnswer: 2 })]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -146,7 +146,7 @@ describe('the workshop list', () => {
   });
 
   it('says nothing about calls when there are none to make', async () => {
-    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
+    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: page([summary()]) }, '/staff': noStaff });
     renderWorkshop();
     await screen.findByRole('button', { name: 'RO-1001' });
 
@@ -154,7 +154,7 @@ describe('the workshop list', () => {
   });
 
   it('defaults to jobs still open', async () => {
-    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
+    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: page([summary()]) }, '/staff': noStaff });
     renderWorkshop();
     await screen.findByRole('button', { name: 'RO-1001' });
 
@@ -184,7 +184,7 @@ describe('the workshop list', () => {
   });
 
   it('keeps the wide table scrolling inside its own box', async () => {
-    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: [summary()] }, '/staff': noStaff });
+    mockApi({ '/appointments': noDiary, '/repair-orders': { ok: true, body: page([summary()]) }, '/staff': noStaff });
     const { container } = renderWorkshop();
     await screen.findByRole('button', { name: 'RO-1001' });
 
@@ -200,7 +200,7 @@ describe('one job', () => {
         ok: true,
         body: detail({ labourTotal: 180, partsTotal: 284, amountDue: 464 }),
       },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -221,7 +221,7 @@ describe('one job', () => {
           lines: [line({ authorization: 'Declined', amount: 0, description: 'Replace discs' })],
         }),
       },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -235,7 +235,7 @@ describe('one job', () => {
     mockApi({
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail({ availableMoves: ['Completed', 'Cancelled'] }) },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -253,7 +253,7 @@ describe('one job', () => {
         ok: true,
         body: detail({ status: 'Invoiced', availableMoves: [], invoicedAt: '2026-08-04T10:00:00Z' }),
       },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -272,7 +272,7 @@ describe('one job', () => {
         ok: true,
         body: detail({ status: 'Completed', linesAreOpen: false, availableMoves: ['Invoiced'] }),
       },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -295,7 +295,7 @@ describe('work nobody has agreed to', () => {
     mockApi({
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: unanswered },
-      '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 1 })] },
+      '/repair-orders': { ok: true, body: page([summary({ linesAwaitingAnswer: 1 })]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -308,7 +308,7 @@ describe('work nobody has agreed to', () => {
     mockApi({
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: unanswered },
-      '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 1 })] },
+      '/repair-orders': { ok: true, body: page([summary({ linesAwaitingAnswer: 1 })]) },
       '/repair-orders/ro1/lines/l2/answer': { ok: true, body: detail() },
       '/staff': noStaff,
     });
@@ -333,7 +333,7 @@ describe('work nobody has agreed to', () => {
     mockApi({
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: unanswered },
-      '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 1 })] },
+      '/repair-orders': { ok: true, body: page([summary({ linesAwaitingAnswer: 1 })]) },
       '/repair-orders/ro1/lines/l2/answer': { ok: true, body: detail() },
       '/staff': noStaff,
     });
@@ -364,7 +364,7 @@ describe('work nobody has agreed to', () => {
           lines: [line({ id: 'l2', description: 'Replace discs', authorization: 'Pending' })],
         }),
       },
-      '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 1 })] },
+      '/repair-orders': { ok: true, body: page([summary({ linesAwaitingAnswer: 1 })]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -391,7 +391,7 @@ describe('work nobody has agreed to', () => {
           lines: [line({ id: 'l2', description: 'Replace discs', authorization: 'Pending' })],
         }),
       },
-      '/repair-orders': { ok: true, body: [summary({ linesAwaitingAnswer: 1 })] },
+      '/repair-orders': { ok: true, body: page([summary({ linesAwaitingAnswer: 1 })]) },
       '/repair-orders/ro1/status': {
         ok: false,
         status: 409,
@@ -436,7 +436,7 @@ describe('who pays for the work', () => {
     mockApi({
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: mixed },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
 
@@ -494,7 +494,7 @@ describe('who pays for the work', () => {
     mockApi({
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail() },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -518,8 +518,8 @@ describe('who pays for the work', () => {
       '/repair-orders/ro1': { ok: true, body: detail() },
       '/repair-orders/ro1/lines': { ok: true, body: detail() },
       '/repair-orders': [
-        { ok: true, body: [summary()] },
-        { ok: true, body: [summary()], delayMs: 50 },
+        { ok: true, body: page([summary()]) },
+        { ok: true, body: page([summary()]), delayMs: 50 },
       ],
       '/staff': noStaff,
     });
@@ -539,7 +539,7 @@ describe('who pays for the work', () => {
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail() },
       '/repair-orders/ro1/lines': { ok: true, body: detail() },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -558,7 +558,7 @@ describe('who pays for the work', () => {
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail() },
       '/repair-orders/ro1/lines': { ok: true, body: detail() },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': noStaff,
     });
     renderWorkshop();
@@ -590,7 +590,7 @@ describe('who is doing the work', () => {
     mockApi({
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail() },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': { ok: true, body: [technician] },
     });
     renderWorkshop();
@@ -603,7 +603,7 @@ describe('who is doing the work', () => {
     mockApi({
       '/appointments': noDiary,
       '/repair-orders/ro1': { ok: true, body: detail() },
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/staff': { ok: false, status: 403, code: 'staff.read_forbidden', detail: 'No.' },
     });
     renderWorkshop();
@@ -638,10 +638,10 @@ describe('billing a part off the shelf', () => {
   function mockWithCatalogue() {
     mockApi({
       '/appointments': noDiary,
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/repair-orders/ro1': { ok: true, body: detail({ status: 'InProgress' }) },
       '/repair-orders/ro1/lines': { ok: true, body: detail({ status: 'InProgress' }) },
-      '/parts': { ok: true, body: [brakePads] },
+      '/parts': { ok: true, body: page([brakePads]) },
       '/staff': noStaff,
     });
   }
@@ -729,7 +729,7 @@ describe('billing a part off the shelf', () => {
   it('writes the job up anyway when the catalogue will not load', async () => {
     mockApi({
       '/appointments': noDiary,
-      '/repair-orders': { ok: true, body: [summary()] },
+      '/repair-orders': { ok: true, body: page([summary()]) },
       '/repair-orders/ro1': { ok: true, body: detail({ status: 'InProgress' }) },
       '/repair-orders/ro1/lines': { ok: true, body: detail({ status: 'InProgress' }) },
       '/parts': { ok: false, status: 403, code: 'parts.forbidden', detail: 'No.' },

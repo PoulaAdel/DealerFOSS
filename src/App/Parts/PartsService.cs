@@ -50,7 +50,7 @@ public sealed class PartsService(
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
 
-    public async Task<Result<IReadOnlyList<PartSummary>>> ListAsync(
+    public async Task<Result<Page<PartSummary>>> ListAsync(
         PartQuery query,
         CancellationToken cancellationToken)
     {
@@ -59,16 +59,17 @@ public sealed class PartsService(
         var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
         if (scope.GrantsNothing)
         {
-            return Result.Failure<IReadOnlyList<PartSummary>>(PartErrors.Forbidden);
+            return Result.Failure<Page<PartSummary>>(PartErrors.Forbidden);
         }
 
         if (query.RooftopId is { } requested && !scope.Covers(requested))
         {
-            return Result.Failure<IReadOnlyList<PartSummary>>(PartErrors.Forbidden);
+            return Result.Failure<Page<PartSummary>>(PartErrors.Forbidden);
         }
 
         var method = await MethodAsync(cancellationToken);
-        var take = Math.Clamp(query.Limit <= 0 ? 100 : query.Limit, 1, MaxResults);
+        var take = Paging.Limit(query.Limit, fallback: 100);
+        var skip = Paging.Offset(query.Offset);
 
         var parts = _db.Parts.AsNoTracking();
 
@@ -84,8 +85,18 @@ public sealed class PartsService(
                 p.PartNumber.Contains(normalized) || p.Description.Contains(text));
         }
 
+        // THE PAGE UNIT HERE IS THE PART, NOT THE ROW, and the two are not the
+        // same number. A part held at three rooftops becomes three summaries
+        // below, so a page of 100 parts can return rather more than 100 rows.
+        // Total counts PARTS, for the same reason the page does: the part number
+        // is what somebody searched for, and splitting a part across pages
+        // because one of its rooftops fell over the boundary would be worse than
+        // a page that runs long.
+        var total = await parts.CountAsync(cancellationToken);
+
         var rows = await parts
             .OrderBy(p => p.PartNumber)
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
 
@@ -141,8 +152,11 @@ public sealed class PartsService(
             }
         }
 
-        return Result.Success<IReadOnlyList<PartSummary>>(
-            summaries.OrderBy(s => s.PartNumber, StringComparer.Ordinal).ToList());
+        return Result.Success(new Page<PartSummary>(
+            summaries.OrderBy(s => s.PartNumber, StringComparer.Ordinal).ToList(),
+            total,
+            skip,
+            take));
     }
 
     public async Task<Result<PartDetail>> GetAsync(Guid partId, CancellationToken cancellationToken)

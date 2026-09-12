@@ -182,7 +182,7 @@ public sealed class CustomerTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var found = await response.Content.ReadFromJsonAsync<JsonElement>();
-        found.EnumerateArray().Should().BeEmpty(
+        found.Rows().Should().BeEmpty(
             because: "a customer belongs to one dealer organization's database");
     }
 
@@ -259,7 +259,7 @@ public sealed class CustomerTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var results = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return results.EnumerateArray()
+        return results.Rows()
             .Select(c => c.GetProperty("displayName").GetString()!)
             .ToList();
     }

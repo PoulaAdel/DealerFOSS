@@ -67,7 +67,7 @@ public sealed class DealService(
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
 
-    public async Task<Result<IReadOnlyList<DealSummary>>> ListAsync(
+    public async Task<Result<Page<DealSummary>>> ListAsync(
         DealQuery query,
         CancellationToken cancellationToken)
     {
@@ -76,12 +76,12 @@ public sealed class DealService(
         var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
         if (scope.GrantsNothing)
         {
-            return Result.Failure<IReadOnlyList<DealSummary>>(DealErrors.Forbidden);
+            return Result.Failure<Page<DealSummary>>(DealErrors.Forbidden);
         }
 
         if (query.RooftopId is { } requested && !scope.Covers(requested))
         {
-            return Result.Failure<IReadOnlyList<DealSummary>>(DealErrors.Forbidden);
+            return Result.Failure<Page<DealSummary>>(DealErrors.Forbidden);
         }
 
         DealStatus? status = null;
@@ -89,13 +89,14 @@ public sealed class DealService(
         {
             if (!Enum.TryParse(query.Status, ignoreCase: true, out DealStatus parsed))
             {
-                return Result.Failure<IReadOnlyList<DealSummary>>(DealErrors.UnknownStatus);
+                return Result.Failure<Page<DealSummary>>(DealErrors.UnknownStatus);
             }
 
             status = parsed;
         }
 
-        var take = Math.Clamp(query.Limit <= 0 ? 50 : query.Limit, 1, MaxResults);
+        var take = Paging.Limit(query.Limit);
+        var skip = Paging.Offset(query.Offset);
         var deals = _db.Deals.AsNoTracking();
 
         if (!scope.IsOrganizationWide)
@@ -129,19 +130,23 @@ public sealed class DealService(
             deals = deals.Where(d => d.Status != DealStatus.Delivered && d.Status != DealStatus.Cancelled);
         }
 
+        // Counted over the same filters as the page, and before it is taken.
+        var total = await deals.CountAsync(cancellationToken);
+
         var rows = await deals
             .Include(d => d.Charges)
             .OrderByDescending(d => d.CreatedAt)
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
 
         var context = await LookupAsync(rows, cancellationToken);
         if (context.IsFailure)
         {
-            return Result.Failure<IReadOnlyList<DealSummary>>(context.Error);
+            return Result.Failure<Page<DealSummary>>(context.Error);
         }
 
-        return Result.Success<IReadOnlyList<DealSummary>>(
+        return Result.Success(new Page<DealSummary>(
             rows.Select(d =>
             {
                 var unit = context.Value.Unit(d.InventoryUnitId);
@@ -158,7 +163,10 @@ public sealed class DealService(
                     d.Currency,
                     d.SalespersonUserId,
                     d.ApprovedByUserId is not null);
-            }).ToList());
+            }).ToList(),
+            total,
+            skip,
+            take));
     }
 
     public async Task<Result<DealDetail>> GetAsync(Guid dealId, CancellationToken cancellationToken)

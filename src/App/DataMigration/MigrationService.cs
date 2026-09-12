@@ -166,22 +166,31 @@ public sealed class MigrationService(
             : Result.Success(Describe(job));
     }
 
-    public async Task<Result<IReadOnlyList<ImportJobView>>> ListAsync(
+    public async Task<Result<Page<ImportJobView>>> ListAsync(
         int limit,
+        int offset,
         CancellationToken cancellationToken)
     {
         if (!await MayImportAsync(cancellationToken))
         {
-            return Result.Failure<IReadOnlyList<ImportJobView>>(MigrationErrors.Forbidden);
+            return Result.Failure<Page<ImportJobView>>(MigrationErrors.Forbidden);
         }
 
-        var jobs = await _db.ImportJobs
-            .AsNoTracking()
+        var take = Paging.Limit(limit, fallback: 25, max: MaxJobs);
+        var skip = Paging.Offset(offset);
+        var queued = _db.ImportJobs.AsNoTracking();
+
+        var total = await queued.CountAsync(cancellationToken);
+
+        var jobs = await queued
             .OrderByDescending(j => j.QueuedAt)
-            .Take(Math.Clamp(limit <= 0 ? 25 : limit, 1, MaxJobs))
+            .ThenBy(j => j.Id)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync(cancellationToken);
 
-        return Result.Success<IReadOnlyList<ImportJobView>>(jobs.Select(Describe).ToList());
+        return Result.Success(new Page<ImportJobView>(
+            jobs.Select(Describe).ToList(), total, skip, take));
     }
 
     public async Task<Result<IReadOnlyList<ImportRowView>>> GetRowsAsync(

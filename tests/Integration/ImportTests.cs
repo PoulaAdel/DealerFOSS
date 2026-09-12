@@ -309,8 +309,8 @@ public sealed class ImportTests(HostFixture fixture)
         using var response = await SendAsync(
             HttpMethod.Get, $"/api/v1/vehicles?search={Uri.EscapeDataString(vin)}", Manager);
 
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return body.GetArrayLength() == 0 ? null : body[0];
+        var rows = (await response.Content.ReadFromJsonAsync<JsonElement>()).Rows();
+        return rows.Count == 0 ? null : rows[0];
     }
 
     private async Task<JsonElement?> FindCustomerAsync(string term)
@@ -318,8 +318,8 @@ public sealed class ImportTests(HostFixture fixture)
         using var response = await SendAsync(
             HttpMethod.Get, $"/api/v1/customers?search={Uri.EscapeDataString(term)}", Manager);
 
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return body.GetArrayLength() == 0 ? null : body[0];
+        var rows = (await response.Content.ReadFromJsonAsync<JsonElement>()).Rows();
+        return rows.Count == 0 ? null : rows[0];
     }
 
     private Task<HttpResponseMessage> SubmitAsync(

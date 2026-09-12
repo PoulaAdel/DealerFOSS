@@ -66,7 +66,7 @@ public sealed class PartsTests(HostFixture fixture)
 
         using var response = await SendAsync(HttpMethod.Get, PartsApi, Manager);
         var listed = (await response.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray()
+            .Rows()
             .SingleOrDefault(p => p.GetProperty("id").GetGuid() == part);
 
         listed.ValueKind.Should().NotBe(JsonValueKind.Undefined,
@@ -83,7 +83,7 @@ public sealed class PartsTests(HostFixture fixture)
 
         using var response = await SendAsync(HttpMethod.Get, $"{PartsApi}?inStockOnly=true", Manager);
         (await response.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray()
+            .Rows()
             .Should().NotContain(p => p.GetProperty("id").GetGuid() == part);
     }
 
@@ -366,7 +366,7 @@ public sealed class PartsTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK, because: await response.Content.ReadAsStringAsync());
 
         return (await response.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().First().GetProperty(property).GetGuid();
+            .Rows()[0].GetProperty(property).GetGuid();
     }
 
     private async Task<Guid> RooftopIdAsync()

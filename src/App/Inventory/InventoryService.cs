@@ -46,7 +46,7 @@ public sealed class InventoryService(
     private readonly IClock _clock = clock;
     private readonly IAccounting _accounting = accounting;
 
-    public async Task<Result<IReadOnlyList<InventoryUnitSummary>>> ListAsync(
+    public async Task<Result<Page<InventoryUnitSummary>>> ListAsync(
         InventoryQuery query,
         CancellationToken cancellationToken)
     {
@@ -55,14 +55,14 @@ public sealed class InventoryService(
         var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
         if (scope.GrantsNothing)
         {
-            return Result.Failure<IReadOnlyList<InventoryUnitSummary>>(InventoryErrors.Forbidden);
+            return Result.Failure<Page<InventoryUnitSummary>>(InventoryErrors.Forbidden);
         }
 
         // Asking for one rooftop is answered with the same refusal whether the
         // caller may not see it or it does not exist.
         if (query.RooftopId is { } requested && !scope.Covers(requested))
         {
-            return Result.Failure<IReadOnlyList<InventoryUnitSummary>>(InventoryErrors.Forbidden);
+            return Result.Failure<Page<InventoryUnitSummary>>(InventoryErrors.Forbidden);
         }
 
         InventoryStatus? status = null;
@@ -70,13 +70,14 @@ public sealed class InventoryService(
         {
             if (!Enum.TryParse(query.Status, ignoreCase: true, out InventoryStatus parsed))
             {
-                return Result.Failure<IReadOnlyList<InventoryUnitSummary>>(InventoryErrors.UnknownStatus);
+                return Result.Failure<Page<InventoryUnitSummary>>(InventoryErrors.UnknownStatus);
             }
 
             status = parsed;
         }
 
-        var take = Math.Clamp(query.Limit <= 0 ? 50 : query.Limit, 1, MaxResults);
+        var take = Paging.Limit(query.Limit);
+        var skip = Paging.Offset(query.Offset);
         var units = _db.InventoryUnits.AsNoTracking();
 
         // The scope filter is applied to the query itself, not to the results:
@@ -118,13 +119,19 @@ public sealed class InventoryService(
                     || EF.Functions.Like(v.Model, $"%{search}%"))));
         }
 
-        var rows = await Join(units.OrderBy(u => u.StockNumber).Take(take))
+        // Counted over the same filters as the page, and before it is taken.
+        var total = await units.CountAsync(cancellationToken);
+
+        var rows = await Join(units.OrderBy(u => u.StockNumber).Skip(skip).Take(take))
             .ToListAsync(cancellationToken);
 
-        return Result.Success<IReadOnlyList<InventoryUnitSummary>>(
+        return Result.Success(new Page<InventoryUnitSummary>(
             rows.OrderBy(row => row.Unit.StockNumber, StringComparer.Ordinal)
                 .Select(row => Summarize(row.Unit, row.Vehicle))
-                .ToList());
+                .ToList(),
+            total,
+            skip,
+            take));
     }
 
     public async Task<Result<InventoryUnitDetail>> GetAsync(Guid unitId, CancellationToken cancellationToken)

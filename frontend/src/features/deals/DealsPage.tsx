@@ -27,16 +27,17 @@ import { DealProducts } from './DealProducts';
 import { DealTax, SoldTax } from './DealTax';
 import { TakePayment } from '../receivables/TakePayment';
 import { StartDeal } from './StartDeal';
-import type { DealDetail, DealStatus, DealSummary } from '../../shared/contracts';
+import type { DealDetail, DealStatus, DealSummary, Page } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { Pager, usePageCaption } from '../../shared/Pager';
 
 const PageSize = 50;
 
 type Load =
   | { kind: 'loading' }
-  | { kind: 'ready'; deals: DealSummary[] }
+  | { kind: 'ready'; page: Page<DealSummary> }
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
@@ -53,17 +54,23 @@ export function DealsPage() {
   const forCustomer = params.get('customerId');
 
   const [openOnly, setOpenOnly] = useState(true);
+
+  // Which page. Reset when the filter changes: page 3 of the open deals is not
+  // page 3 of all of them.
+  const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [selected, setSelected] = useState<DealDetail | null>(null);
   const [starting, setStarting] = useState(fromLead !== null);
 
-  const find = useCallback(async (open: boolean) => {
+  const find = useCallback(async (open: boolean, from: number) => {
     setLoad({ kind: 'loading' });
 
     try {
       setLoad({
         kind: 'ready',
-        deals: await api<DealSummary[]>(`/deals?openOnly=${open}&limit=${PageSize}`),
+        page: await api<Page<DealSummary>>(
+          `/deals?openOnly=${open}&limit=${PageSize}&offset=${from}`,
+        ),
       });
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 403) {
@@ -76,8 +83,8 @@ export function DealsPage() {
   }, [describe]);
 
   useEffect(() => {
-    void find(openOnly);
-  }, [find, openOnly]);
+    void find(openOnly, offset);
+  }, [find, openOnly, offset]);
 
   async function open(dealId: string) {
     try {
@@ -91,7 +98,7 @@ export function DealsPage() {
   // is only the list of what is blocked, and it is drawn from the summary
   // already on screen rather than fetched again.
   const awaitingApproval =
-    load.kind === 'ready' ? load.deals.filter((deal) => deal.status === 'Submitted') : [];
+    load.kind === 'ready' ? load.page.rows.filter((deal) => deal.status === 'Submitted') : [];
 
   return (
     <>
@@ -103,7 +110,10 @@ export function DealsPage() {
           <select
             id="open-only"
             value={openOnly ? 'open' : 'all'}
-            onChange={(e) => setOpenOnly(e.target.value === 'open')}
+            onChange={(e) => {
+              setOpenOnly(e.target.value === 'open');
+              setOffset(0);
+            }}
           >
             <option value="open">{t('deals.stillWorked')}</option>
             <option value="all">{t('deals.everything')}</option>
@@ -121,7 +131,7 @@ export function DealsPage() {
             // The handoff is spent. Leaving it in the address bar would restart
             // the same deal on a refresh, or on the back button.
             setParams({}, { replace: true });
-            await find(openOnly);
+            await find(openOnly, offset);
           }}
           onCancel={() => {
             setStarting(false);
@@ -173,13 +183,18 @@ export function DealsPage() {
           deal={selected}
           onChanged={async (updated) => {
             setSelected(updated);
-            await find(openOnly);
+            await find(openOnly, offset);
           }}
           onClose={() => setSelected(null)}
         />
       )}
 
-      <Body load={load} onRetry={() => void find(openOnly)} onOpen={(id) => void open(id)} />
+      <Body
+        load={load}
+        onRetry={() => void find(openOnly, offset)}
+        onOpen={(id) => void open(id)}
+        onPage={setOffset}
+      />
     </>
   );
 }
@@ -429,10 +444,11 @@ function Actions({
 }
 
 function Body({
-  load, onRetry, onOpen,
+  load, onRetry, onOpen, onPage,
 }: {
   load: Load;
   onRetry: () => void;
+  onPage: (offset: number) => void;
   onOpen: (id: string) => void;
 }) {
   const { t } = useI18n();
@@ -463,10 +479,10 @@ function Body({
       );
 
     case 'ready':
-      return load.deals.length === 0 ? (
+      return load.page.total === 0 ? (
         <p className="state">{t('deals.empty')}</p>
       ) : (
-        <DealTable deals={load.deals} onOpen={onOpen} />
+        <DealTable page={load.page} onOpen={onOpen} onPage={onPage} />
       );
   }
 }
@@ -517,18 +533,23 @@ function SoldProducts({ deal }: { deal: DealDetail }) {
   );
 }
 
-function DealTable({ deals, onOpen }: { deals: DealSummary[]; onOpen: (id: string) => void }) {
+function DealTable({
+  page, onOpen, onPage,
+}: {
+  page: Page<DealSummary>;
+  onOpen: (id: string) => void;
+  onPage: (offset: number) => void;
+}) {
   const { t, format } = useI18n();
   const label = useEnumLabel();
-  const capped = deals.length >= PageSize;
+  const caption = usePageCaption();
+  const deals = page.rows;
 
   return (
     <div className="scroll">
       <table>
         <caption className="visually-hidden">
-          {capped
-            ? t('deals.countCapped', { count: deals.length })
-            : t('deals.count', { count: deals.length })}
+          {caption(page)}
         </caption>
         <thead>
           <tr>
@@ -567,9 +588,7 @@ function DealTable({ deals, onOpen }: { deals: DealSummary[]; onOpen: (id: strin
         </tbody>
       </table>
 
-      {capped ? (
-        <p className="note note--footer">{t('deals.cappedNote', { count: deals.length })}</p>
-      ) : null}
+      <Pager page={page} onPage={onPage} />
     </div>
   );
 }

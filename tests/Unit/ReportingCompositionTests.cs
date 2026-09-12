@@ -222,7 +222,7 @@ public sealed class ReportingCompositionTests
         public Task<Result<IReadOnlyList<AccountView>>> ListAccountsAsync(CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
-        public Task<Result<IReadOnlyList<JournalEntrySummary>>> ListAsync(
+        public Task<Result<Page<JournalEntrySummary>>> ListAsync(
             JournalQuery query, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
@@ -307,7 +307,7 @@ public sealed class ReportingCompositionTests
                 new StockAging(query.AsOf ?? default, 0, [], [])));
         }
 
-        public Task<Result<IReadOnlyList<InventoryUnitSummary>>> ListAsync(
+        public Task<Result<Page<InventoryUnitSummary>>> ListAsync(
             InventoryQuery query, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 

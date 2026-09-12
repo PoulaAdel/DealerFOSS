@@ -42,6 +42,7 @@ import type {
   Diary,
   RepairOrderDetail,
   VehicleSummary,
+  Page,
 } from '../../shared/contracts';
 
 type Load =
@@ -350,14 +351,14 @@ function BookCar({
   useEffect(() => {
     void (async () => {
       try {
-        setCustomers(await api<CustomerSummary[]>('/customers?limit=200'));
-        setVehicles(await api<VehicleSummary[]>('/vehicles?limit=200'));
+        setCustomers((await api<Page<CustomerSummary>>('/customers?limit=200')).rows);
+        setVehicles((await api<Page<VehicleSummary>>('/vehicles?limit=200')).rows);
 
         // The workshop this person covers. Taken from a job they can already
         // see rather than asked for, because somebody at one location has
         // exactly one answer and being made to pick it is noise.
-        const jobs = await api<{ rooftopId: string }[]>('/repair-orders?limit=1');
-        setRooftopId(jobs[0]?.rooftopId ?? null);
+        const jobs = await api<Page<{ rooftopId: string }>>('/repair-orders?limit=1');
+        setRooftopId(jobs.rows[0]?.rooftopId ?? null);
       } catch (failure) {
         setError(describe(failure));
       }

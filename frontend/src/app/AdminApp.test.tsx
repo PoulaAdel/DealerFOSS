@@ -18,7 +18,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
-import { apiCalls, mockApi } from '../test/setup';
+import { apiCalls, mockApi, page } from '../test/setup';
 
 const administrator = {
   administratorId: 'a1',
@@ -73,7 +73,7 @@ describe('the administration console', () => {
     atAdmin();
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
     });
 
     render(<App />);
@@ -91,7 +91,7 @@ describe('the administration console', () => {
     mockApi({
       '/admin/me': { ok: true, body: administrator },
       '/admin/tenants': [
-        { ok: true, body: tenants },
+        { ok: true, body: page(tenants) },
         {
           ok: true,
           body: {
@@ -102,7 +102,7 @@ describe('the administration console', () => {
             openedBooksFrom: '2026-08-07T09:00:00Z',
           },
         },
-        { ok: true, body: tenants },
+        { ok: true, body: page(tenants) },
       ],
     });
 
@@ -130,7 +130,7 @@ describe('the administration console', () => {
     atAdmin();
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
     });
 
     render(<App />);
@@ -144,7 +144,7 @@ describe('the administration console', () => {
     atAdmin();
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
     });
 
     render(<App />);
@@ -159,7 +159,7 @@ describe('the administration console', () => {
     atAdmin();
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
       '/admin/tenants/northgroup/status': { ok: true, body: { slug: 'northgroup', status: 'Suspended' } },
     });
 
@@ -179,7 +179,7 @@ describe('the administration console', () => {
     window.history.pushState({}, '', '/admin/support-access');
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
       '/admin/support-access': { ok: true, body: [] },
     });
 
@@ -200,7 +200,7 @@ describe('the administration console', () => {
     window.history.pushState({}, '', '/admin/support-access');
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
       '/admin/support-access': [
         { ok: true, body: [] },
         {
@@ -230,7 +230,7 @@ describe('the administration console', () => {
     window.history.pushState({}, '', '/admin/support-access');
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
       '/admin/support-access': {
         ok: true,
         body: [{ ...grant, isActive: false, endedAt: '2026-08-03T09:20:00Z' }],
@@ -270,7 +270,7 @@ describe('the administration console', () => {
         body: { secret: 'JBSWY3DPEHPK3PXP', enrolmentUri: 'otpauth://totp/x?secret=JBSWY3DPEHPK3PXP' },
       },
       '/admin/mfa/confirm': { ok: true, status: 204 },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
     });
 
     render(<App />);
@@ -286,7 +286,7 @@ describe('the administration console', () => {
     atAdmin();
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
     });
 
     render(<App />);
@@ -302,7 +302,7 @@ describe('the administration console', () => {
     atAdmin();
     mockApi({
       '/admin/me': { ok: true, body: administrator },
-      '/admin/tenants': { ok: true, body: tenants },
+      '/admin/tenants': { ok: true, body: page(tenants) },
     });
 
     render(<App />);

@@ -24,7 +24,7 @@ namespace DealerFOSS.Parts;
 public interface IParts
 {
     /// <summary>The catalogue with what is on hand at the caller's rooftops.</summary>
-    Task<Result<IReadOnlyList<PartSummary>>> ListAsync(PartQuery query, CancellationToken cancellationToken);
+    Task<Result<Page<PartSummary>>> ListAsync(PartQuery query, CancellationToken cancellationToken);
 
     Task<Result<PartDetail>> GetAsync(Guid partId, CancellationToken cancellationToken);
 
@@ -62,7 +62,8 @@ public sealed record PartQuery(
     RooftopId? RooftopId = null,
     string? Search = null,
     bool InStockOnly = false,
-    int Limit = 100);
+    int Limit = 100,
+    int Offset = 0);
 
 /// <summary>A catalogue row with the stock position at one rooftop.</summary>
 public sealed record PartSummary(

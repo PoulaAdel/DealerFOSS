@@ -40,17 +40,19 @@ public sealed class CustomerService(
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
 
-    public async Task<Result<IReadOnlyList<CustomerSummary>>> SearchAsync(
+    public async Task<Result<Page<CustomerSummary>>> SearchAsync(
         string? term,
         int limit,
+        int offset,
         CancellationToken cancellationToken)
     {
         if (!await IsAllowedAsync(ReadPermission, cancellationToken))
         {
-            return Result.Failure<IReadOnlyList<CustomerSummary>>(CustomerErrors.Forbidden);
+            return Result.Failure<Page<CustomerSummary>>(CustomerErrors.Forbidden);
         }
 
-        var take = Math.Clamp(limit <= 0 ? 25 : limit, 1, MaxResults);
+        var take = Paging.Limit(limit, fallback: 25);
+        var skip = Paging.Offset(offset);
         var query = _db.Customers.AsNoTracking().Where(c => !c.IsArchived);
 
         var search = (term ?? string.Empty).Trim();
@@ -69,14 +71,24 @@ public sealed class CustomerService(
                     || (digits.Length > 0 && p.Value.Contains(digits))));
         }
 
+        var total = await query.CountAsync(cancellationToken);
+
+        // Id breaks ties. Two customers called J. Smith is not a hypothetical,
+        // and without a total order the database may put one of them on page one
+        // and page two and the other on neither.
         var customers = await query
             .OrderBy(c => c.LastName)
             .ThenBy(c => c.FirstName)
+            .ThenBy(c => c.Id)
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
 
-        return Result.Success<IReadOnlyList<CustomerSummary>>(
-            customers.Select(Summarize).ToList());
+        return Result.Success(new Page<CustomerSummary>(
+            customers.Select(Summarize).ToList(),
+            total,
+            skip,
+            take));
     }
 
     public async Task<Result<CustomerDetail>> GetAsync(Guid customerId, CancellationToken cancellationToken)

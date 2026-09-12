@@ -236,7 +236,7 @@ public sealed class FinanceProductTests(HostFixture fixture)
             HttpMethod.Get, $"/api/v1/accounting/journal?reference={deal}", Manager);
 
         var entryId = (await entries.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().First().GetProperty("id").GetGuid();
+            .Rows()[0].GetProperty("id").GetGuid();
 
         using var entry = await SendAsync(HttpMethod.Get, $"/api/v1/accounting/journal/{entryId}", Manager);
         var lines = (await entry.Content.ReadFromJsonAsync<JsonElement>())
@@ -356,7 +356,7 @@ public sealed class FinanceProductTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK, because: await response.Content.ReadAsStringAsync());
 
         return (await response.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().First().GetProperty(property).GetGuid();
+            .Rows()[0].GetProperty(property).GetGuid();
     }
 
     private async Task<Guid> RooftopIdAsync()

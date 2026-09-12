@@ -131,12 +131,12 @@ public sealed class ControlPlaneTests(HostFixture fixture)
             because: await response.Content.ReadAsStringAsync());
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        var slugs = body.EnumerateArray().Select(t => t.GetProperty("slug").GetString()).ToList();
+        var slugs = body.Rows().Select(t => t.GetProperty("slug").GetString()).ToList();
         slugs.Should().Contain(["northgroup", "citymotors"]);
 
         // Routing and lifecycle only. A field carrying anything a dealership
         // would call theirs does not belong on this endpoint.
-        var first = body.EnumerateArray().First();
+        var first = body.Rows()[0];
         first.TryGetProperty("connectionString", out _).Should().BeFalse();
         first.TryGetProperty("protectedConnectionString", out _).Should().BeFalse();
     }

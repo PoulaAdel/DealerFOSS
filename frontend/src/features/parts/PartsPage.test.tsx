@@ -20,7 +20,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';
 import { PartsPage } from './PartsPage';
-import { apiCalls, mockApi } from '../../test/setup';
+import { apiCalls, mockApi, page } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
 import type { PartDetail, PartSummary, PartsCostingSetting } from '../../shared/contracts';
 
@@ -95,7 +95,7 @@ function withParts(parts: PartSummary[]) {
   mockApi({
     '/parts/costing': { ok: true, body: costing },
     '/parts/p1': { ok: true, body: detail },
-    '/parts': { ok: true, body: parts },
+    '/parts': { ok: true, body: page(parts) },
     '/organization': organization,
   });
 }
@@ -167,7 +167,7 @@ describe('how parts are costed', () => {
         { ok: true, body: { ...costing, method: 'Fifo' } },
       ],
       '/parts/p1': { ok: true, body: detail },
-      '/parts': { ok: true, body: [summary] },
+      '/parts': { ok: true, body: page([summary]) },
       '/organization': organization,
     });
     renderParts();
@@ -185,7 +185,7 @@ describe('how parts are costed', () => {
         { ok: false, status: 403, code: 'parts.costing_forbidden', detail: 'This needs organization-wide permission.' },
       ],
       '/parts/p1': { ok: true, body: detail },
-      '/parts': { ok: true, body: [summary] },
+      '/parts': { ok: true, body: page([summary]) },
       '/organization': organization,
     });
     renderParts();
@@ -215,7 +215,7 @@ describe('one part', () => {
       '/parts/costing': { ok: true, body: costing },
       '/parts/p1/receipts': { ok: true, body: detail },
       '/parts/p1': { ok: true, body: detail },
-      '/parts': { ok: true, body: [summary] },
+      '/parts': { ok: true, body: page([summary]) },
       '/organization': organization,
     });
     renderParts();

@@ -18,7 +18,7 @@ import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { CustomersPage } from './CustomersPage';
-import { apiCalls, mockApi, mockApiUnreachable } from '../../test/setup';
+import { apiCalls, mockApi, mockApiUnreachable, page } from '../../test/setup';
 import type { CustomerSummary } from '../../shared/contracts';
 
 const ada: CustomerSummary = {
@@ -44,7 +44,7 @@ async function fillNewCustomer(lastName: string) {
 
 describe('finding customers', () => {
   it('lists who is already here', async () => {
-    mockApi({ '/customers': { ok: true, body: [ada, garage] } });
+    mockApi({ '/customers': { ok: true, body: page([ada, garage]) } });
     render(<CustomersPage />);
 
     expect(await screen.findByText('Ada Lovelace')).toBeVisible();
@@ -53,7 +53,7 @@ describe('finding customers', () => {
   });
 
   it('asks the server to do the matching', async () => {
-    mockApi({ '/customers': { ok: true, body: [ada] } });
+    mockApi({ '/customers': { ok: true, body: page([ada]) } });
     render(<CustomersPage />);
     await screen.findByText('Ada Lovelace');
 
@@ -68,7 +68,7 @@ describe('finding customers', () => {
   });
 
   it('collapses a burst of typing into one search', async () => {
-    mockApi({ '/customers': { ok: true, body: [ada] } });
+    mockApi({ '/customers': { ok: true, body: page([ada]) } });
     render(<CustomersPage />);
     await screen.findByText('Ada Lovelace');
 
@@ -96,10 +96,10 @@ describe('finding customers', () => {
     mockApi({
       // Slow first, fast second. Without cancellation the stale reply lands last.
       '/customers?search=': [
-        { ok: true, body: [ada], delayMs: 400 },
-        { ok: true, body: [grace] },
+        { ok: true, body: page([ada]), delayMs: 400 },
+        { ok: true, body: page([grace]) },
       ],
-      '/customers': { ok: true, body: [ada] },
+      '/customers': { ok: true, body: page([ada]) },
     });
 
     render(<CustomersPage />);
@@ -126,7 +126,7 @@ describe('finding customers', () => {
   });
 
   it('says nobody matches rather than showing an empty table', async () => {
-    mockApi({ '/customers': { ok: true, body: [] } });
+    mockApi({ '/customers': { ok: true, body: page([]) } });
     render(<CustomersPage />);
 
     expect(await screen.findByText('Nobody matches that.')).toBeVisible();
@@ -148,23 +148,25 @@ describe('finding customers', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
   });
 
-  it('does not claim a full page is everybody', async () => {
+  it('says which people these are out of how many', async () => {
     const many = Array.from({ length: 100 }, (_, i) => ({
       ...ada,
       id: `${i}`.padStart(8, '0') + '-1111-1111-1111-111111111111',
       displayName: `Person ${i}`,
     }));
 
-    mockApi({ '/customers': { ok: true, body: many } });
+    mockApi({ '/customers': { ok: true, body: page(many, { total: 2140, limit: 100 }) } });
     render(<CustomersPage />);
 
-    expect(await screen.findByText(/Showing the first 100/)).toBeVisible();
+    // Not "the first 100, there may be more", which was true and useless to
+    // somebody trying to find out how many customers they have.
+    expect(await screen.findAllByText('Showing 1–100 of 2,140.')).toHaveLength(2);
   });
 });
 
 describe('adding a customer', () => {
   it('looks for an existing record before creating one', async () => {
-    mockApi({ '/customers': { ok: true, body: [ada] } });
+    mockApi({ '/customers': { ok: true, body: page([ada]) } });
     render(<CustomersPage />);
     await screen.findByText('Ada Lovelace');
 
@@ -177,7 +179,7 @@ describe('adding a customer', () => {
   });
 
   it('shows who it found, with enough to recognise them', async () => {
-    mockApi({ '/customers': { ok: true, body: [ada] } });
+    mockApi({ '/customers': { ok: true, body: page([ada]) } });
     render(<CustomersPage />);
     await screen.findByText('Ada Lovelace');
 
@@ -190,7 +192,7 @@ describe('adding a customer', () => {
   });
 
   it('creates nobody when the person says it is one of these', async () => {
-    mockApi({ '/customers': { ok: true, body: [ada] } });
+    mockApi({ '/customers': { ok: true, body: page([ada]) } });
     render(<CustomersPage />);
     await screen.findByText('Ada Lovelace');
 
@@ -207,10 +209,10 @@ describe('adding a customer', () => {
   it('lets somebody add anyway, because two people do share a name', async () => {
     mockApi({
       '/customers': [
-        { ok: true, body: [ada] },
-        { ok: true, body: [ada] },
+        { ok: true, body: page([ada]) },
+        { ok: true, body: page([ada]) },
         { ok: true, body: { id: 'new', displayName: 'Grace Lovelace' } },
-        { ok: true, body: [ada] },
+        { ok: true, body: page([ada]) },
       ],
     });
 
@@ -231,10 +233,10 @@ describe('adding a customer', () => {
   it('creates directly when nobody matches', async () => {
     mockApi({
       '/customers': [
-        { ok: true, body: [] },
-        { ok: true, body: [] },
+        { ok: true, body: page([]) },
+        { ok: true, body: page([]) },
         { ok: true, body: { id: 'new', displayName: 'Nobody Likethis' } },
-        { ok: true, body: [] },
+        { ok: true, body: page([]) },
       ],
     });
 
@@ -253,7 +255,7 @@ describe('adding a customer', () => {
   });
 
   it('checks the phone and the email too, not only the name', async () => {
-    mockApi({ '/customers': { ok: true, body: [] } });
+    mockApi({ '/customers': { ok: true, body: page([]) } });
     render(<CustomersPage />);
     await screen.findByText('Nobody matches that.');
 
@@ -274,7 +276,7 @@ describe('adding a customer', () => {
   });
 
   it('will not submit without a name', async () => {
-    mockApi({ '/customers': { ok: true, body: [] } });
+    mockApi({ '/customers': { ok: true, body: page([]) } });
     render(<CustomersPage />);
     await screen.findByText('Nobody matches that.');
 
@@ -284,7 +286,7 @@ describe('adding a customer', () => {
   });
 
   it('asks for a business name rather than a last name for a business', async () => {
-    mockApi({ '/customers': { ok: true, body: [] } });
+    mockApi({ '/customers': { ok: true, body: page([]) } });
     render(<CustomersPage />);
     await screen.findByText('Nobody matches that.');
 
@@ -299,8 +301,8 @@ describe('adding a customer', () => {
   it('surfaces the server’s own refusal', async () => {
     mockApi({
       '/customers': [
-        { ok: true, body: [] },
-        { ok: true, body: [] },
+        { ok: true, body: page([]) },
+        { ok: true, body: page([]) },
         { ok: false, status: 403, code: 'customers.forbidden', detail: 'You cannot add customers.' },
       ],
     });

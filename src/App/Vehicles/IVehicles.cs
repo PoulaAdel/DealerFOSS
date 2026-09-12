@@ -28,9 +28,10 @@ public interface IVehicles
     /// Finds vehicles by VIN — whole or partial — or by make and model. An empty
     /// term returns a first page, so a screen has something before typing.
     /// </summary>
-    Task<Result<IReadOnlyList<VehicleSummary>>> SearchAsync(
+    Task<Result<Page<VehicleSummary>>> SearchAsync(
         string? term,
         int limit,
+        int offset,
         CancellationToken cancellationToken);
 
     Task<Result<VehicleDetail>> GetAsync(Guid vehicleId, CancellationToken cancellationToken);

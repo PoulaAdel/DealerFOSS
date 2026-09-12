@@ -251,9 +251,6 @@ export const ru: Catalogue = {
     many: '{count} машин в наличии',
     other: '{count} машины в наличии',
   },
-  'stock.countCapped': 'Первые {count} машин в наличии. Возможно, есть ещё.',
-  'stock.cappedNote':
-    'Показаны первые {count}. Возможно, есть ещё — сузьте выборку фильтром по статусу, пока нет постраничного вывода.',
   'stock.detailFor': 'Складской номер {stock}',
   'stock.cost': 'Себестоимость',
   'stock.costUnknown': 'не указана',
@@ -404,9 +401,6 @@ export const ru: Catalogue = {
     many: '{count} клиентов',
     other: '{count} клиента',
   },
-  'customers.countCapped': 'Первые {count} клиентов. Возможно, есть ещё.',
-  'customers.cappedNote':
-    'Показаны первые {count}. Возможно, есть ещё — уточните запрос, пока нет постраничного вывода.',
 
   'customers.kindLabel': 'Физлицо или компания',
   'customers.firstName': 'Имя',
@@ -573,12 +567,9 @@ export const ru: Catalogue = {
     many: '{count} обращений',
     other: '{count} обращения',
   },
-  'leads.countCapped': 'Первые {count} обращений. Возможно, есть ещё.',
-  'leads.cappedNote':
-    'Показаны первые {count}. Возможно, есть ещё — уточните фильтрами, пока нет постраничного вывода.',
-  'leads.showingRange': 'Показано {first}–{last} из {total}.',
-  'leads.newer': 'Новее',
-  'leads.older': 'Ждут дольше',
+  'paging.showingRange': 'Показано {first}–{last} из {total}.',
+  'paging.previous': 'Назад',
+  'paging.next': 'Далее',
 
   'leads.cameIn': 'поступило {date}',
   'leads.unclaimed': 'Пока никто не взял его в работу.',
@@ -650,9 +641,6 @@ export const ru: Catalogue = {
     many: '{count} сделок',
     other: '{count} сделки',
   },
-  'deals.countCapped': 'Первые {count} сделок. Возможно, есть ещё.',
-  'deals.cappedNote':
-    'Показаны первые {count}. Возможно, есть ещё — уточните фильтром, пока нет постраничного вывода.',
 
   'deals.printOrder': 'Распечатать заказ',
   'deals.stockLine': 'Складской № {stock}',
@@ -849,7 +837,6 @@ export const ru: Catalogue = {
     'Артикул находится в любом написании: MZ-690411, mz690411 и MZ 690 411 приведут к одной и той же запчасти.',
   'parts.catalogueEmpty': 'В каталоге пока пусто.',
   'parts.noMatches': 'Ничего не найдено.',
-  'parts.caption': 'Запчасти и их остатки на площадках, которые вы обслуживаете.',
   'parts.colNumber': 'Артикул',
   'parts.colDescription': 'Описание',
   'parts.colWhere': 'Где',
@@ -1041,7 +1028,6 @@ export const ru: Catalogue = {
 
   'workshop.whoIsOnIt': 'Кто выполняет',
   'workshop.nobodyYet': 'Пока никто',
-  'workshop.caption2': 'Работы на площадках, которые вы обслуживаете, начиная с последних, не более {limit}.',
   'workshop.invoicedNothingMore': 'Счёт выставлен {date}. Работа закончена; что осталось оплатить — ниже.',
   'workshop.jobFinished': 'Этот заказ-наряд завершён.',
   'workshop.assignedElsewhere':
@@ -1050,7 +1036,6 @@ export const ru: Catalogue = {
   'workshop.moveNote': 'Примечание (останется в записи)',
   'workshop.howObtainedHint':
     'Именно это важно, если счёт когда-нибудь оспорят. Укажите, с кем и когда вы говорили.',
-  'workshop.cappedNote': 'Первые {limit}, самые новые сверху — возможно, есть и другие.',
   'workshop.toAsk': {
     one: '{count} на согласование',
     few: '{count} на согласование',

@@ -23,7 +23,7 @@ namespace DealerFOSS.Leads;
 public interface ILeads
 {
     /// <summary>One page of enquiries, in the order the caller asked for, with a total.</summary>
-    Task<Result<LeadPage>> ListAsync(LeadQuery query, CancellationToken cancellationToken);
+    Task<Result<Page<LeadSummary>>> ListAsync(LeadQuery query, CancellationToken cancellationToken);
 
     Task<Result<LeadDetail>> GetAsync(Guid leadId, CancellationToken cancellationToken);
 
@@ -153,20 +153,6 @@ public enum LeadOrder
     /// </summary>
     LongestWaiting = 1,
 }
-
-/// <summary>
-/// One page of enquiries, and how many there are altogether.
-/// </summary>
-/// <remarks>
-/// <see cref="Total"/> is the whole point of returning a page rather than a
-/// list. "Showing the first 50. There may be more" was true and useless; a
-/// dealership needs to know whether it is 51 or 5,100.
-/// </remarks>
-public sealed record LeadPage(
-    IReadOnlyList<LeadSummary> Rows,
-    int Total,
-    int Offset,
-    int Limit);
 
 /// <summary>What a caller supplies to capture an enquiry.</summary>
 public sealed record NewLead(

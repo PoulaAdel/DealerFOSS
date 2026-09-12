@@ -248,9 +248,6 @@ export const de: Catalogue = {
   'stock.colVin': 'FIN',
   'stock.colStatus': 'Status',
   'stock.count': { one: '{count} Fahrzeug im Bestand', other: '{count} Fahrzeuge im Bestand' },
-  'stock.countCapped': 'Die ersten {count} Fahrzeuge im Bestand. Es können mehr sein.',
-  'stock.cappedNote':
-    'Es werden die ersten {count} angezeigt. Es können mehr sein — grenzen Sie es mit dem Statusfilter ein, bis es eine Seitenblätterung gibt.',
   'stock.detailFor': 'Bestandsnummer {stock}',
   'stock.cost': 'Kosten',
   'stock.costUnknown': 'nicht erfasst',
@@ -396,9 +393,6 @@ export const de: Catalogue = {
   'customers.colEmail': 'E-Mail',
   'customers.colPhone': 'Telefon',
   'customers.count': { one: '{count} Kunde', other: '{count} Kunden' },
-  'customers.countCapped': 'Die ersten {count} Kunden. Es können mehr sein.',
-  'customers.cappedNote':
-    'Es werden die ersten {count} angezeigt. Es können mehr sein — grenzen Sie die Suche ein, bis es eine Seitenblätterung gibt.',
 
   'customers.kindLabel': 'Privatperson oder Firma',
   'customers.firstName': 'Vorname',
@@ -551,12 +545,9 @@ export const de: Catalogue = {
   'leads.you': 'Sie',
   'leads.somebodyElse': 'Jemand anderes',
   'leads.count': { one: '{count} Anfrage', other: '{count} Anfragen' },
-  'leads.countCapped': 'Die ersten {count} Anfragen. Es können mehr sein.',
-  'leads.cappedNote':
-    'Es werden die ersten {count} angezeigt. Es können mehr sein — grenzen Sie es mit den Filtern ein, bis es eine Seitenblätterung gibt.',
-  'leads.showingRange': '{first}–{last} von {total} angezeigt.',
-  'leads.newer': 'Neuere',
-  'leads.older': 'Länger wartend',
+  'paging.showingRange': '{first}–{last} von {total} angezeigt.',
+  'paging.previous': 'Zurück',
+  'paging.next': 'Weiter',
 
   'leads.cameIn': 'eingegangen am {date}',
   'leads.unclaimed': 'Das hat noch niemand übernommen.',
@@ -624,9 +615,6 @@ export const de: Catalogue = {
   'deals.colDue': 'Offen',
   'deals.colStage': 'Stand',
   'deals.count': { one: '{count} Verkauf', other: '{count} Verkäufe' },
-  'deals.countCapped': 'Die ersten {count} Verkäufe. Es können mehr sein.',
-  'deals.cappedNote':
-    'Es werden die ersten {count} angezeigt. Es können mehr sein — grenzen Sie es mit dem Filter ein, bis es eine Seitenblätterung gibt.',
 
   'deals.printOrder': 'Bestellung drucken',
   'deals.stockLine': 'Bestandsnr. {stock}',
@@ -818,7 +806,6 @@ export const de: Catalogue = {
     'Die Nummer wird unabhängig von der Schreibweise gefunden — MZ-690411, mz690411 und MZ 690 411 führen zum selben Teil.',
   'parts.catalogueEmpty': 'Der Katalog ist noch leer.',
   'parts.noMatches': 'Dazu passt nichts.',
-  'parts.caption': 'Teile, mit dem Bestand an den Standorten, die Sie betreuen.',
   'parts.colNumber': 'Nummer',
   'parts.colDescription': 'Bezeichnung',
   'parts.colWhere': 'Wo',
@@ -1005,7 +992,6 @@ export const de: Catalogue = {
 
   'workshop.whoIsOnIt': 'Wer daran arbeitet',
   'workshop.nobodyYet': 'Noch niemand',
-  'workshop.caption2': 'Die Arbeiten an den Standorten, die Sie betreuen, neueste zuerst, bis zu {limit}.',
   'workshop.invoicedNothingMore': 'Berechnet am {date}. Die Arbeit ist fertig; was offen ist, steht unten.',
   'workshop.jobFinished': 'Dieser Auftrag ist abgeschlossen.',
   'workshop.assignedElsewhere':
@@ -1014,8 +1000,6 @@ export const de: Catalogue = {
   'workshop.moveNote': 'Notiz (kommt in die Akte)',
   'workshop.howObtainedHint':
     'Darauf kommt es an, falls die Rechnung je bestritten wird. Halten Sie fest, mit wem Sie wann gesprochen haben.',
-  'workshop.cappedNote':
-    'Die ersten {limit}, neueste zuerst — es können mehr sein.',
   'workshop.toAsk': {
     one: '{count} nachzufragen',
     other: '{count} nachzufragen',

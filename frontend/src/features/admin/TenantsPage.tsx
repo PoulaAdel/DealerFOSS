@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi, adminPost } from '../../shared/adminApi';
-import type { ProvisionedTenant, TenantRow } from '../../shared/contracts';
+import type { Page, ProvisionedTenant, TenantRow } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { useEnumLabel } from '../../shared/i18n/enums';
@@ -43,7 +43,13 @@ export function TenantsPage() {
     setLoad({ kind: 'loading' });
 
     try {
-      setLoad({ kind: 'ready', tenants: await adminApi<TenantRow[]>('/tenants') });
+      // Only the rows are kept: the control plane pages this list like every
+      // other, but an operator with more dealerships than one page holds is a
+      // problem worth having and not one this screen has yet.
+      setLoad({
+        kind: 'ready',
+        tenants: (await adminApi<Page<TenantRow>>('/tenants?limit=200')).rows,
+      });
     } catch (failure) {
       setLoad({ kind: 'failed', message: describe(failure) });
     }

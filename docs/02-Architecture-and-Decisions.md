@@ -123,6 +123,10 @@ An integration that cannot show what a provider actually sent cannot be operated
 
 There is no single jurisdiction dial. A **baseline** is what every deployment must do and cannot switch off (encryption, MFA, audit, retention machinery, erasure, export). A **pack** is one jurisdiction's *data* — rates, boundaries, fee caps, taxability flags, effective dates — versioned, sourced, and reviewed before it is marked Supported; a pack carries data and declarations, never logic. A **posture** is what the dealership itself chooses. Tax is resolved from the registration address recorded on the deal, never from an IP address or a browser locale, and the charged tax is frozen on the deal as evidence with its pack version and provenance — including `entered-by-person`, which is what makes an unsupported jurisdiction a label rather than an error. Settles open decision D2. See [`adr/0024`](adr/0024-compliance-is-baseline-pack-and-posture.md).
 
+### ADR-025 — Every list returns one page type, and a limit without an offset is a defect — Accepted
+
+`Page<T>` in Core carries `rows`, `total`, `offset` and `limit`, and every list endpoint returns it. Eleven capabilities each had their own clamp, two of the copies disagreed about the cap, and only one list had an offset — so ten screens honestly said "showing the first 50" and offered no way to reach the rest. **`total` is counted over the same filters as the page**, which is what turns "there may be more" into "51 of 5,100". **The order is part of the query and must be total**: skipping an unordered set lets the database return one row on two pages and another on none, so every paged query carries a tiebreaker. Filters that a page is taken against must be expressed in the query rather than applied to the rows afterwards — receivables filtered "still owed" in memory, which cannot be paged at all. Offset paging, not keyset: the row counts are a dealership's, and the screens are page-numbered.
+
 ## 4. Technology stack
 
 Versions follow supported LTS/current stable releases and are pinned centrally. Upgrades require compatibility tests, not a new ADR unless the technology changes.

@@ -278,7 +278,7 @@ public sealed class AccountingPeriodTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK, because: await response.Content.ReadAsStringAsync());
 
         return (await response.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().First().GetProperty(property).GetGuid();
+            .Rows()[0].GetProperty(property).GetGuid();
     }
 
     private async Task<Guid> RooftopIdAsync()

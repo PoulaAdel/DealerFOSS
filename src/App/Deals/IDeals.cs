@@ -21,7 +21,7 @@ namespace DealerFOSS.Deals;
 /// </summary>
 public interface IDeals
 {
-    Task<Result<IReadOnlyList<DealSummary>>> ListAsync(DealQuery query, CancellationToken cancellationToken);
+    Task<Result<Page<DealSummary>>> ListAsync(DealQuery query, CancellationToken cancellationToken);
 
     Task<Result<DealDetail>> GetAsync(Guid dealId, CancellationToken cancellationToken);
 
@@ -165,7 +165,8 @@ public sealed record DealQuery(
     Guid? CustomerId = null,
     Guid? SalespersonUserId = null,
     bool OpenOnly = false,
-    int Limit = 50);
+    int Limit = 50,
+    int Offset = 0);
 
 /// <summary>What a caller supplies to start a deal.</summary>
 public sealed record NewDeal(

@@ -52,7 +52,8 @@ internal static class DealEndpoints
         Guid? customerId = null,
         Guid? salesperson = null,
         bool openOnly = false,
-        int limit = 50)
+        int limit = 50,
+        int offset = 0)
     {
         var query = new DealQuery(
             rooftopId is null ? null : new RooftopId(rooftopId.Value),
@@ -60,7 +61,8 @@ internal static class DealEndpoints
             customerId,
             salesperson,
             openOnly,
-            limit);
+            limit,
+            offset);
 
         var result = await deals.ListAsync(query, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();

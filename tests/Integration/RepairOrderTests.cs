@@ -162,7 +162,7 @@ public sealed class RepairOrderTests(HostFixture fixture)
 
         using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
         var posted = (await entries.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().Should().ContainSingle().Subject;
+            .Rows().Should().ContainSingle().Subject;
 
         using var detail = await SendAsync(
             HttpMethod.Get, $"{Ledger}/{posted.GetProperty("id").GetString()}", Manager);
@@ -220,7 +220,7 @@ public sealed class RepairOrderTests(HostFixture fixture)
 
         using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
         var posted = (await entries.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().Should().ContainSingle().Subject;
+            .Rows().Should().ContainSingle().Subject;
 
         using var detail = await SendAsync(
             HttpMethod.Get, $"{Ledger}/{posted.GetProperty("id").GetString()}", Manager);
@@ -452,7 +452,7 @@ public sealed class RepairOrderTests(HostFixture fixture)
         entries.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var posted = (await entries.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().Should().ContainSingle().Subject;
+            .Rows().Should().ContainSingle().Subject;
 
         posted.GetProperty("source").GetString().Should().Be("ServiceInvoice");
         posted.GetProperty("total").GetDecimal().Should().Be(248.40m);
@@ -478,7 +478,7 @@ public sealed class RepairOrderTests(HostFixture fixture)
 
         using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
         (await entries.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().Should().BeEmpty(
+            .Rows().Should().BeEmpty(
                 because: "the posting and the status change share a transaction");
     }
 
@@ -564,7 +564,7 @@ public sealed class RepairOrderTests(HostFixture fixture)
         // And the money moved, rather than only the sub-ledger saying so.
         using var entries = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
         var payment = (await entries.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().Single(e => e.GetProperty("source").GetString() == "Payment");
+            .Rows().Single(e => e.GetProperty("source").GetString() == "Payment");
 
         using var detail = await SendAsync(
             HttpMethod.Get, $"{Ledger}/{payment.GetProperty("id").GetString()}", Manager);
@@ -735,7 +735,7 @@ public sealed class RepairOrderTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var results = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return results.EnumerateArray().Select(j => j.GetProperty("id").GetString()!).ToList();
+        return results.Rows().Select(j => j.GetProperty("id").GetString()!).ToList();
     }
 
     private async Task<string> RooftopIdAsync(string code)

@@ -256,9 +256,6 @@ export const en = {
   'stock.colVin': 'VIN',
   'stock.colStatus': 'Status',
   'stock.count': { one: '{count} car in stock', other: '{count} cars in stock' },
-  'stock.countCapped': 'The first {count} cars in stock. There may be more.',
-  'stock.cappedNote':
-    'Showing the first {count}. There may be more — narrow it with the status filter until paging exists.',
   'stock.detailFor': 'Stock number {stock}',
   'stock.cost': 'Cost',
   'stock.costUnknown': 'not recorded',
@@ -404,9 +401,6 @@ export const en = {
   'customers.colEmail': 'Email',
   'customers.colPhone': 'Phone',
   'customers.count': { one: '{count} customer', other: '{count} customers' },
-  'customers.countCapped': 'The first {count} customers. There may be more.',
-  'customers.cappedNote':
-    'Showing the first {count}. There may be more — narrow the search until paging exists.',
 
   'customers.kindLabel': 'Person or business',
   'customers.firstName': 'First name',
@@ -564,12 +558,9 @@ export const en = {
   'leads.you': 'You',
   'leads.somebodyElse': 'Somebody else',
   'leads.count': { one: '{count} enquiry', other: '{count} enquiries' },
-  'leads.countCapped': 'The first {count} enquiries. There may be more.',
-  'leads.cappedNote':
-    'Showing the first {count}. There may be more — narrow it with the filters until paging exists.',
-  'leads.showingRange': 'Showing {first}–{last} of {total}.',
-  'leads.newer': 'Newer',
-  'leads.older': 'Longer waiting',
+  'paging.showingRange': 'Showing {first}–{last} of {total}.',
+  'paging.previous': 'Previous',
+  'paging.next': 'Next',
 
   'leads.cameIn': 'came in {date}',
   'leads.unclaimed': 'Nobody has picked this up yet.',
@@ -639,9 +630,6 @@ export const en = {
   'deals.colDue': 'Due',
   'deals.colStage': 'Stage',
   'deals.count': { one: '{count} deal', other: '{count} deals' },
-  'deals.countCapped': 'The first {count} deals. There may be more.',
-  'deals.cappedNote':
-    'Showing the first {count}. There may be more — narrow it with the filter until paging exists.',
 
   'deals.printOrder': 'Print the order',
   'deals.stockLine': 'Stock {stock}',
@@ -838,7 +826,6 @@ export const en = {
     'The number is matched however it was typed — MZ-690411, mz690411, and MZ 690 411 all find the same part.',
   'parts.catalogueEmpty': 'Nothing in the catalogue yet.',
   'parts.noMatches': 'Nothing matches that.',
-  'parts.caption': 'Parts, with what is on the shelf at the locations you cover.',
   'parts.colNumber': 'Number',
   'parts.colDescription': 'Description',
   'parts.colWhere': 'Where',
@@ -1030,7 +1017,6 @@ export const en = {
 
   'workshop.whoIsOnIt': 'Who is on it',
   'workshop.nobodyYet': 'Nobody yet',
-  'workshop.caption2': 'The work at the locations you cover, newest first, up to {limit}.',
   'workshop.invoicedNothingMore': 'Invoiced {date}. The work is finished; what is owed is below.',
   'workshop.jobFinished': 'This job is finished.',
   'workshop.assignedElsewhere':
@@ -1040,7 +1026,6 @@ export const en = {
   'workshop.moveNote': 'Note (goes on the record)',
   'workshop.howObtainedHint':
     'This is the part that matters if the bill is ever questioned. Say who you spoke to and when.',
-  'workshop.cappedNote': 'The first {limit}, newest first — there may be more.',
   'workshop.toAsk': {
     one: '{count} to ask',
     other: '{count} to ask',

@@ -36,9 +36,10 @@ internal static class CustomerEndpoints
         ICustomers customers,
         CancellationToken cancellationToken,
         string? search = null,
-        int limit = 25)
+        int limit = 25,
+        int offset = 0)
     {
-        var result = await customers.SearchAsync(search, limit, cancellationToken);
+        var result = await customers.SearchAsync(search, limit, offset, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 

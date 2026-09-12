@@ -87,9 +87,10 @@ internal static class MigrationEndpoints
     private static async Task<IResult> ListAsync(
         IMigration migration,
         CancellationToken cancellationToken,
-        int limit = 25)
+        int limit = 25,
+        int offset = 0)
     {
-        var result = await migration.ListAsync(limit, cancellationToken);
+        var result = await migration.ListAsync(limit, offset, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 

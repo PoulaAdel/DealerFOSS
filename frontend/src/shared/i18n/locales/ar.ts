@@ -262,9 +262,6 @@ export const ar: Catalogue = {
     many: '{count} سيارة في المخزون',
     other: '{count} سيارة في المخزون',
   },
-  'stock.countCapped': 'أول {count} سيارة في المخزون. قد يكون هناك المزيد.',
-  'stock.cappedNote':
-    'يُعرض أول {count}. قد يكون هناك المزيد — ضيِّق النطاق بمرشِّح الحالة إلى أن يتوفَّر تقسيم الصفحات.',
   'stock.detailFor': 'رقم المخزون {stock}',
   'stock.cost': 'التكلفة',
   'stock.costUnknown': 'غير مسجَّلة',
@@ -418,9 +415,6 @@ export const ar: Catalogue = {
     many: '{count} عميلًا',
     other: '{count} عميل',
   },
-  'customers.countCapped': 'أول {count} عميل. قد يكون هناك المزيد.',
-  'customers.cappedNote':
-    'يُعرض أول {count}. قد يكون هناك المزيد — ضيِّق البحث إلى أن يتوفَّر تقسيم الصفحات.',
 
   'customers.kindLabel': 'فرد أم شركة',
   'customers.firstName': 'الاسم الأول',
@@ -597,12 +591,9 @@ export const ar: Catalogue = {
     many: '{count} استفسارًا',
     other: '{count} استفسار',
   },
-  'leads.countCapped': 'أول {count} استفسار. قد يكون هناك المزيد.',
-  'leads.cappedNote':
-    'يُعرض أول {count}. قد يكون هناك المزيد — ضيِّق النطاق بالمرشِّحات إلى أن يتوفَّر تقسيم الصفحات.',
-  'leads.showingRange': 'عرض {first}–{last} من {total}.',
-  'leads.newer': 'الأحدث',
-  'leads.older': 'الأطول انتظارًا',
+  'paging.showingRange': 'عرض {first}–{last} من {total}.',
+  'paging.previous': 'السابق',
+  'paging.next': 'التالي',
 
   'leads.cameIn': 'ورد في {date}',
   'leads.unclaimed': 'لم يتولَّ أحد هذا الاستفسار بعد.',
@@ -674,9 +665,6 @@ export const ar: Catalogue = {
     many: '{count} صفقةً',
     other: '{count} صفقة',
   },
-  'deals.countCapped': 'أول {count} صفقة. قد يكون هناك المزيد.',
-  'deals.cappedNote':
-    'يُعرض أول {count}. قد يكون هناك المزيد — ضيِّق النطاق بالمرشِّح إلى أن يتوفَّر تقسيم الصفحات.',
 
   'deals.printOrder': 'طباعة أمر البيع',
   'deals.stockLine': 'رقم المخزون {stock}',
@@ -871,7 +859,6 @@ export const ar: Catalogue = {
     'يُطابَق الرقم مهما كانت طريقة كتابته — MZ-690411 وmz690411 وMZ 690 411 كلها تؤدي إلى القطعة نفسها.',
   'parts.catalogueEmpty': 'لا شيء في الدليل بعد.',
   'parts.noMatches': 'لا شيء يطابق ذلك.',
-  'parts.caption': 'قطع الغيار وما هو متوفر منها في الفروع التي تغطيها.',
   'parts.colNumber': 'الرقم',
   'parts.colDescription': 'الوصف',
   'parts.colWhere': 'أين',
@@ -1065,7 +1052,6 @@ export const ar: Catalogue = {
 
   'workshop.whoIsOnIt': 'من يتولّاه',
   'workshop.nobodyYet': 'لا أحد بعد',
-  'workshop.caption2': 'الأعمال في الفروع التي تغطيها، الأحدث أولًا، بحد أقصى {limit}.',
   'workshop.invoicedNothingMore': 'صدرت الفاتورة في {date}. انتهى العمل؛ والمستحَق مبيَّن أدناه.',
   'workshop.jobFinished': 'انتهى أمر الشغل هذا.',
   'workshop.assignedElsewhere':
@@ -1074,7 +1060,6 @@ export const ar: Catalogue = {
   'workshop.moveNote': 'ملاحظة (تُحفَظ في السجل)',
   'workshop.howObtainedHint':
     'هذا ما يهم إذا اعتُرِض على الفاتورة يومًا ما. اذكر مع مَن تحدَّثت ومتى.',
-  'workshop.cappedNote': 'أول {limit}، الأحدث أولًا — وقد يكون هناك المزيد.',
   'workshop.toAsk': {
     zero: 'لا شيء للسؤال عنه',
     one: 'بند واحد للسؤال عنه',

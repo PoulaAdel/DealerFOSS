@@ -42,7 +42,6 @@ public sealed class LeadService(
     private const string ManagePermission = Permissions.LeadsManage;
 
     /// <summary>Caps how many rows a single list can return, however it is called.</summary>
-    private const int MaxResults = 200;
 
     private readonly TenantDb _db = db;
     private readonly IAccessDirectory _access = access;
@@ -53,7 +52,7 @@ public sealed class LeadService(
     private readonly IStaffDirectory _staff = staff;
     private readonly IClock _clock = clock;
 
-    public async Task<Result<LeadPage>> ListAsync(
+    public async Task<Result<Page<LeadSummary>>> ListAsync(
         LeadQuery query,
         CancellationToken cancellationToken)
     {
@@ -62,14 +61,14 @@ public sealed class LeadService(
         var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
         if (scope.GrantsNothing)
         {
-            return Result.Failure<LeadPage>(LeadErrors.Forbidden);
+            return Result.Failure<Page<LeadSummary>>(LeadErrors.Forbidden);
         }
 
         // Asking for one rooftop is answered with the same refusal whether the
         // caller may not see it or it does not exist.
         if (query.RooftopId is { } requested && !scope.Covers(requested))
         {
-            return Result.Failure<LeadPage>(LeadErrors.Forbidden);
+            return Result.Failure<Page<LeadSummary>>(LeadErrors.Forbidden);
         }
 
         LeadStatus? status = null;
@@ -77,13 +76,14 @@ public sealed class LeadService(
         {
             if (!Enum.TryParse(query.Status, ignoreCase: true, out LeadStatus parsed))
             {
-                return Result.Failure<LeadPage>(LeadErrors.UnknownStatus);
+                return Result.Failure<Page<LeadSummary>>(LeadErrors.UnknownStatus);
             }
 
             status = parsed;
         }
 
-        var take = Math.Clamp(query.Limit <= 0 ? 50 : query.Limit, 1, MaxResults);
+        var take = Paging.Limit(query.Limit);
+        var skip = Paging.Offset(query.Offset);
         var leads = _db.Leads.AsNoTracking();
 
         // Applied to the query, not the results: another rooftop's rows must never
@@ -135,7 +135,7 @@ public sealed class LeadService(
             : leads.OrderByDescending(l => l.CapturedAt);
 
         var rows = await ordered
-            .Skip(Math.Max(0, query.Offset))
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
 
@@ -146,7 +146,7 @@ public sealed class LeadService(
 
         if (names.IsFailure)
         {
-            return Result.Failure<LeadPage>(names.Error);
+            return Result.Failure<Page<LeadSummary>>(names.Error);
         }
 
         // The same reasoning as the customer names above: one query for the page,
@@ -160,7 +160,7 @@ public sealed class LeadService(
 
         if (cars.IsFailure)
         {
-            return Result.Failure<LeadPage>(cars.Error);
+            return Result.Failure<Page<LeadSummary>>(cars.Error);
         }
 
         // Printing a colleague's name is not the same act as reading the staff
@@ -174,7 +174,7 @@ public sealed class LeadService(
 
         var now = _clock.UtcNow;
 
-        return Result.Success(new LeadPage(
+        return Result.Success(new Page<LeadSummary>(
             rows.Select(l => new LeadSummary(
                 l.Id,
                 l.RooftopId,
@@ -189,7 +189,7 @@ public sealed class LeadService(
                 l.CapturedAt,
                 DaysOpen(l, now))).ToList(),
             total,
-            Math.Max(0, query.Offset),
+            skip,
             take));
     }
 

@@ -243,7 +243,7 @@ public sealed class LedgerTests(HostFixture fixture)
             HttpMethod.Get, $"{Journal}?reference={stockNumber}", Manager);
 
         var summaries = await response.Content.ReadFromJsonAsync<JsonElement>();
-        summaries.EnumerateArray().Should().BeEmpty(
+        summaries.Rows().Should().BeEmpty(
             because: "a cost we do not know is not a cost of nothing");
     }
 
@@ -631,7 +631,7 @@ public sealed class LedgerTests(HostFixture fixture)
         open.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var before = await open.Content.ReadFromJsonAsync<JsonElement>();
-        before.EnumerateArray().Select(r => r.GetProperty("id").GetString())
+        before.Rows().Select(r => r.GetProperty("id").GetString())
             .Should().Contain(receivable);
 
         using var paid = await PostAsync(
@@ -642,7 +642,7 @@ public sealed class LedgerTests(HostFixture fixture)
         using var stillOpen = await SendAsync(HttpMethod.Get, "/api/v1/receivables?limit=200", Manager);
         var after = await stillOpen.Content.ReadFromJsonAsync<JsonElement>();
 
-        after.EnumerateArray().Select(r => r.GetProperty("id").GetString())
+        after.Rows().Select(r => r.GetProperty("id").GetString())
             .Should().NotContain(receivable, because: "the question is who still owes us");
     }
 
@@ -971,7 +971,7 @@ public sealed class LedgerTests(HostFixture fixture)
         using var response = await SendAsync(HttpMethod.Get, $"{Journal}?reference={reference}", Manager);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        return (await response.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().ToList();
+        return (await response.Content.ReadFromJsonAsync<JsonElement>()).Rows().ToList();
     }
 
     private async Task<JsonElement> EntryDetailAsync(string entryId)
@@ -1002,9 +1002,10 @@ public sealed class LedgerTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var summaries = await response.Content.ReadFromJsonAsync<JsonElement>();
-        summaries.EnumerateArray().Should().NotBeEmpty(because: $"{reference} should have posted");
+        var rows = summaries.Rows();
+        rows.Should().NotBeEmpty(because: $"{reference} should have posted");
 
-        var id = summaries.EnumerateArray().First().GetProperty("id").GetString()!;
+        var id = rows[0].GetProperty("id").GetString()!;
 
         using var detail = await SendAsync(HttpMethod.Get, $"{Journal}/{id}", Manager);
         return await detail.Content.ReadFromJsonAsync<JsonElement>();
@@ -1016,7 +1017,7 @@ public sealed class LedgerTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var summaries = await response.Content.ReadFromJsonAsync<JsonElement>();
-        var id = summaries.EnumerateArray().First().GetProperty("id").GetString()!;
+        var id = summaries.Rows()[0].GetProperty("id").GetString()!;
 
         using var detail = await SendAsync(HttpMethod.Get, $"{Journal}/{id}", Manager);
         return await detail.Content.ReadFromJsonAsync<JsonElement>();
@@ -1104,7 +1105,7 @@ public sealed class LedgerTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var results = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return results.EnumerateArray().Select(e => e.GetProperty("id").GetString()!).ToList();
+        return results.Rows().Select(e => e.GetProperty("id").GetString()!).ToList();
     }
 
     private async Task<string> RooftopIdAsync(string code)

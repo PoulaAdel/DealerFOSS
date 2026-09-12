@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { adminApi, adminPost } from '../../shared/adminApi';
-import type { GrantedSupportAccess, SupportAccessRecord, TenantRow } from '../../shared/contracts';
+import type { GrantedSupportAccess, Page, SupportAccessRecord, TenantRow } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 
@@ -53,8 +53,8 @@ export function SupportAccessPage() {
 
   useEffect(() => {
     void fetchGrants();
-    void adminApi<TenantRow[]>('/tenants')
-      .then(setTenants)
+    void adminApi<Page<TenantRow>>('/tenants?limit=200')
+      .then((listed) => setTenants(listed.rows))
       .catch(() => {
         // The list is a convenience for picking one; the form still works if it
         // fails, because the key can be typed.

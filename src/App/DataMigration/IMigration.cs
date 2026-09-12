@@ -39,7 +39,7 @@ public interface IMigration
 
     Task<Result<ImportJobView>> GetAsync(Guid jobId, CancellationToken cancellationToken);
 
-    Task<Result<IReadOnlyList<ImportJobView>>> ListAsync(int limit, CancellationToken cancellationToken);
+    Task<Result<Page<ImportJobView>>> ListAsync(int limit, int offset, CancellationToken cancellationToken);
 
     /// <summary>
     /// The staged rows and what happened to each. <paramref name="problemsOnly"/>

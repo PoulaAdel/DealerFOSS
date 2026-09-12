@@ -19,12 +19,14 @@ namespace DealerFOSS.Customers;
 public interface ICustomers
 {
     /// <summary>
-    /// Finds customers by name, email, or phone. An empty term returns the most
-    /// recently added, so the screen has something to show before typing.
+    /// Finds customers by name, email, or phone, one page at a time. An empty
+    /// term returns everyone, alphabetically by surname, so the screen has
+    /// something to show before anybody types.
     /// </summary>
-    Task<Result<IReadOnlyList<CustomerSummary>>> SearchAsync(
+    Task<Result<Page<CustomerSummary>>> SearchAsync(
         string? term,
         int limit,
+        int offset,
         CancellationToken cancellationToken);
 
     Task<Result<CustomerDetail>> GetAsync(Guid customerId, CancellationToken cancellationToken);

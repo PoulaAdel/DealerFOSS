@@ -27,20 +27,21 @@ import { useSession } from '../../app/session';
 import { CaptureLead } from './CaptureLead';
 import type {
   LeadDetail,
-  LeadPage,
   LeadStatus,
-
+  LeadSummary,
+  Page,
   StaffMember,
 } from '../../shared/contracts';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
+import { Pager, usePageCaption } from '../../shared/Pager';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 const PageSize = 50;
 
 type Load =
   | { kind: 'loading' }
-  | { kind: 'ready'; page: LeadPage }
+  | { kind: 'ready'; page: Page<LeadSummary> }
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
@@ -79,7 +80,7 @@ export function LeadsPage() {
     try {
       setLoad({
         kind: 'ready',
-        page: await api<LeadPage>(`/leads?${filters}`),
+        page: await api<Page<LeadSummary>>(`/leads?${filters}`),
       });
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 403) {
@@ -579,27 +580,21 @@ function Body({
 function LeadTable({
   page, me, onOpen, onPage,
 }: {
-  page: LeadPage;
+  page: Page<LeadSummary>;
   me: string | null;
   onOpen: (id: string) => void;
   onPage: (offset: number) => void;
 }) {
   const { t, format } = useI18n();
   const label = useEnumLabel();
+  const caption = usePageCaption();
   const leads = page.rows;
-
-  // A real count, not "there may be more". The screen used to say "the first 50,
-  // there may be more" and offer nothing; a dealership needs to know whether it
-  // is 51 or 5,100, and needs a way to reach them.
-  const first = page.total === 0 ? 0 : page.offset + 1;
-  const last = page.offset + leads.length;
-  const hasMore = last < page.total;
 
   return (
     <div className="scroll">
       <table>
         <caption className="visually-hidden">
-          {t('leads.showingRange', { first, last, total: page.total })}
+          {caption(page)}
         </caption>
         <thead>
           <tr>
@@ -644,28 +639,7 @@ function LeadTable({
       {/* The rows past this page, reachable at last. Before 2026-09-11 the
           screen said "the first 50, there may be more" and offered no way to
           see them, so a dealership past the cap simply could not. */}
-      <div className="paging">
-        <p className="note note--footer">
-          {t('leads.showingRange', { first, last, total: page.total })}
-        </p>
-
-        <div className="actions">
-          <button
-            type="button"
-            disabled={page.offset === 0}
-            onClick={() => onPage(Math.max(0, page.offset - page.limit))}
-          >
-            {t('leads.newer')}
-          </button>
-          <button
-            type="button"
-            disabled={!hasMore}
-            onClick={() => onPage(page.offset + page.limit)}
-          >
-            {t('leads.older')}
-          </button>
-        </div>
-      </div>
+      <Pager page={page} onPage={onPage} />
     </div>
   );
 }

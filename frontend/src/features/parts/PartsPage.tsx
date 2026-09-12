@@ -30,15 +30,20 @@ import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { Emphasised } from '../../shared/i18n/Emphasised';
 import type {
+  Page,
   PartDetail,
   PartSummary,
   PartsCostingSetting,
   RooftopSummary,
 } from '../../shared/contracts';
+import { Pager, usePageCaption } from '../../shared/Pager';
+
+/** How many parts a page holds. The server clamps anything larger. */
+const PageSize = 100;
 
 type Load =
   | { kind: 'loading' }
-  | { kind: 'ready'; parts: PartSummary[] }
+  | { kind: 'ready'; page: Page<PartSummary> }
   | { kind: 'denied' }
   | { kind: 'failed'; message: string };
 
@@ -67,20 +72,36 @@ export function PartsPage() {
   const { t } = useI18n();
   const describe = useApiMessage();
   const { money, quantity } = useAmounts();
+  const caption = usePageCaption();
 
   const [search, setSearch] = useState('');
+
+  // Which page. Reset on every keystroke, below: page 3 of one search term is
+  // not page 3 of another, and landing past the end of a narrower result reads
+  // as "nothing matched".
+  const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [costing, setCosting] = useState<PartsCostingSetting | null>(null);
   const [rooftops, setRooftops] = useState<RooftopSummary[]>([]);
   const [selected, setSelected] = useState<PartDetail | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const find = useCallback(async (term: string, signal?: AbortSignal) => {
+  const find = useCallback(async (term: string, from: number, signal?: AbortSignal) => {
     setLoad({ kind: 'loading' });
 
     try {
-      const query = term.trim() === '' ? '' : `?search=${encodeURIComponent(term.trim())}`;
-      setLoad({ kind: 'ready', parts: await api<PartSummary[]>(`/parts${query}`, { signal }) });
+      // The search term leads, so that a request for a term is distinguishable
+      // from the unfiltered first load by its prefix alone.
+      const filters = term.trim() === ''
+        ? []
+        : [`search=${encodeURIComponent(term.trim())}`];
+
+      filters.push(`limit=${PageSize}`, `offset=${from}`);
+
+      setLoad({
+        kind: 'ready',
+        page: await api<Page<PartSummary>>(`/parts?${filters.join('&')}`, { signal }),
+      });
     } catch (failure) {
       // Superseded by a later keystroke, not a failure. See useDebounced.
       if (failure instanceof DOMException && failure.name === 'AbortError') {
@@ -105,9 +126,9 @@ export function PartsPage() {
 
   useEffect(() => {
     const stop = new AbortController();
-    void find(settled, stop.signal);
+    void find(settled, offset, stop.signal);
     return () => stop.abort();
-  }, [find, settled]);
+  }, [find, settled, offset]);
 
   useEffect(() => {
     void (async () => {
@@ -144,7 +165,7 @@ export function PartsPage() {
       <section className="page">
         <h1>{t('parts.title')}</h1>
         <p className="error">{load.message}</p>
-        <button type="button" onClick={() => void find(search)}>
+        <button type="button" onClick={() => void find(search, offset)}>
           {t('common.retry')}
         </button>
       </section>
@@ -165,7 +186,7 @@ export function PartsPage() {
           costing={costing}
           onChanged={async (updated) => {
             setCosting(updated);
-            await find(search);
+            await find(search, offset);
           }}
         />
       )}
@@ -175,7 +196,7 @@ export function PartsPage() {
           onCancel={() => setAdding(false)}
           onAdded={async () => {
             setAdding(false);
-            await find(search);
+            await find(search, offset);
           }}
         />
       ) : null}
@@ -187,7 +208,7 @@ export function PartsPage() {
           onClose={() => setSelected(null)}
           onChanged={async (updated) => {
             setSelected(updated);
-            await find(search);
+            await find(search, offset);
           }}
         />
       )}
@@ -198,20 +219,23 @@ export function PartsPage() {
           id="part-search"
           value={search}
           placeholder={t('parts.findPlaceholder')}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setOffset(0);
+          }}
           autoComplete="off"
         />
         <p className="hint">{t('parts.findHint')}</p>
       </div>
 
-      {load.parts.length === 0 ? (
+      {load.page.total === 0 ? (
         <p className="note">
           {search.trim() === '' ? t('parts.catalogueEmpty') : t('parts.noMatches')}
         </p>
       ) : (
         <div className="scroll">
           <table className="table">
-            <caption className="visually-hidden">{t('parts.caption')}</caption>
+            <caption className="visually-hidden">{caption(load.page)}</caption>
             <thead>
               <tr>
                 <th scope="col">{t('parts.colNumber')}</th>
@@ -226,7 +250,7 @@ export function PartsPage() {
               </tr>
             </thead>
             <tbody>
-              {load.parts.map((part) => (
+              {load.page.rows.map((part) => (
                 <tr key={`${part.id}-${part.rooftopId}`}>
                   <td>
                     <button
@@ -261,6 +285,8 @@ export function PartsPage() {
               ))}
             </tbody>
           </table>
+
+          <Pager page={load.page} onPage={setOffset} />
         </div>
       )}
     </section>

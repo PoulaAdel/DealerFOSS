@@ -48,14 +48,16 @@ internal static class InventoryEndpoints
         string? status = null,
         string? stock = null,
         string? search = null,
-        int limit = 50)
+        int limit = 50,
+        int offset = 0)
     {
         var query = new InventoryQuery(
             rooftopId is null ? null : new RooftopId(rooftopId.Value),
             status,
             stock,
             search,
-            limit);
+            limit,
+            offset);
 
         var result = await inventory.ListAsync(query, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();

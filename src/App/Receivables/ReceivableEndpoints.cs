@@ -49,6 +49,7 @@ internal static class ReceivableEndpoints
         Guid? customerId,
         bool? outstandingOnly,
         int? limit,
+        int? offset,
         CancellationToken cancellationToken)
     {
         var result = await receivables.ListAsync(
@@ -56,7 +57,8 @@ internal static class ReceivableEndpoints
                 rooftopId is { } id ? new RooftopId(id) : null,
                 customerId,
                 outstandingOnly ?? true,
-                limit ?? 50),
+                limit ?? 50,
+                offset ?? 0),
             cancellationToken);
 
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();

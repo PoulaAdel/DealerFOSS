@@ -20,7 +20,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
 import { DealTerms } from './DealTerms';
 import { DealsPage } from './DealsPage';
-import { apiCalls, mockApi } from '../../test/setup';
+import { apiCalls, mockApi, page } from '../../test/setup';
 import type { DealDetail } from '../../shared/contracts';
 
 const base: DealDetail = {
@@ -163,7 +163,7 @@ describe('entering the numbers', () => {
 describe('once a deal is submitted', () => {
   it('the editor is gone, not merely disabled', async () => {
     mockApi({
-      '/deals': { ok: true, body: [{ ...base, status: 'Submitted' }] },
+      '/deals': { ok: true, body: page([{ ...base, status: 'Submitted' }]) },
       '/deals/d1': { ok: true, body: { ...base, status: 'Submitted', termsAreOpen: false } },
     });
 
@@ -183,7 +183,7 @@ describe('once a deal is submitted', () => {
 
   it('the editor is there while it is still a draft', async () => {
     mockApi({
-      '/deals': { ok: true, body: [base] },
+      '/deals': { ok: true, body: page([base]) },
       '/deals/d1': { ok: true, body: base },
     });
 
@@ -206,9 +206,9 @@ describe('starting a deal', () => {
 
   it('offers only cars that are actually available', async () => {
     mockApi({
-      '/deals': { ok: true, body: [] },
-      '/inventory': { ok: true, body: [unit] },
-      '/customers': { ok: true, body: [] },
+      '/deals': { ok: true, body: page([]) },
+      '/inventory': { ok: true, body: page([unit]) },
+      '/customers': { ok: true, body: page([]) },
     });
 
     render(
@@ -228,12 +228,12 @@ describe('starting a deal', () => {
   it('takes the lot from the chosen car rather than asking again', async () => {
     mockApi({
       '/deals': [
-        { ok: true, body: [] },
+        { ok: true, body: page([]) },
         { ok: true, body: { ...base } },
-        { ok: true, body: [base] },
+        { ok: true, body: page([base]) },
       ],
-      '/inventory': { ok: true, body: [unit] },
-      '/customers': { ok: true, body: [{ id: 'c1', displayName: 'Marisol Alvarez', kind: 'Person', primaryEmail: null, primaryPhone: null }] },
+      '/inventory': { ok: true, body: page([unit]) },
+      '/customers': { ok: true, body: page([{ id: 'c1', displayName: 'Marisol Alvarez', kind: 'Person', primaryEmail: null, primaryPhone: null }]) },
       '/deals/d1': { ok: true, body: base },
     });
 
@@ -259,9 +259,9 @@ describe('starting a deal', () => {
 
   it('cannot start without both a buyer and a car', async () => {
     mockApi({
-      '/deals': { ok: true, body: [] },
-      '/inventory': { ok: true, body: [unit] },
-      '/customers': { ok: true, body: [] },
+      '/deals': { ok: true, body: page([]) },
+      '/inventory': { ok: true, body: page([unit]) },
+      '/customers': { ok: true, body: page([]) },
     });
 
     render(
@@ -276,9 +276,9 @@ describe('starting a deal', () => {
 
   it('says so when nothing on the lot is available', async () => {
     mockApi({
-      '/deals': { ok: true, body: [] },
-      '/inventory': { ok: true, body: [] },
-      '/customers': { ok: true, body: [] },
+      '/deals': { ok: true, body: page([]) },
+      '/inventory': { ok: true, body: page([]) },
+      '/customers': { ok: true, body: page([]) },
     });
 
     render(

@@ -295,7 +295,7 @@ public sealed class DashboardTests(HostFixture fixture)
             HttpMethod.Get, $"/api/v1/accounting/journal?reference={dealId}", Manager);
 
         var entryId = (await found.Content.ReadFromJsonAsync<JsonElement>())
-            .EnumerateArray().First().GetProperty("id").GetString()!;
+            .Rows()[0].GetProperty("id").GetString()!;
 
         using var reversed = await PostAsync(
             $"/api/v1/accounting/journal/{entryId}/reverse", Manager,

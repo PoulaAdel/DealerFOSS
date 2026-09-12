@@ -89,7 +89,7 @@ public sealed class AccountingService(
             accounts.Select(a => new AccountView(a.Id, a.Code, a.Name, a.Kind.ToString())).ToList());
     }
 
-    public async Task<Result<IReadOnlyList<JournalEntrySummary>>> ListAsync(
+    public async Task<Result<Page<JournalEntrySummary>>> ListAsync(
         JournalQuery query,
         CancellationToken cancellationToken)
     {
@@ -98,15 +98,16 @@ public sealed class AccountingService(
         var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
         if (scope.GrantsNothing)
         {
-            return Result.Failure<IReadOnlyList<JournalEntrySummary>>(LedgerErrors.Forbidden);
+            return Result.Failure<Page<JournalEntrySummary>>(LedgerErrors.Forbidden);
         }
 
         if (query.RooftopId is { } requested && !scope.Covers(requested))
         {
-            return Result.Failure<IReadOnlyList<JournalEntrySummary>>(LedgerErrors.Forbidden);
+            return Result.Failure<Page<JournalEntrySummary>>(LedgerErrors.Forbidden);
         }
 
-        var take = Math.Clamp(query.Limit <= 0 ? 50 : query.Limit, 1, MaxResults);
+        var take = Paging.Limit(query.Limit);
+        var skip = Paging.Offset(query.Offset);
         var entries = _db.JournalEntries.AsNoTracking().Include(e => e.Lines).AsQueryable();
 
         if (!scope.IsOrganizationWide)
@@ -136,12 +137,17 @@ public sealed class AccountingService(
             entries = entries.Where(e => e.EntryDate <= to);
         }
 
+        // Counted over the same filters as the page, and before it is taken.
+        var total = await entries.CountAsync(cancellationToken);
+
         var rows = await entries
             .OrderByDescending(e => e.PostedAt)
+            .ThenBy(e => e.Id)
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
 
-        return Result.Success<IReadOnlyList<JournalEntrySummary>>(
+        return Result.Success(new Page<JournalEntrySummary>(
             rows.Select(e => new JournalEntrySummary(
                 e.Id,
                 e.RooftopId,
@@ -151,7 +157,10 @@ public sealed class AccountingService(
                 e.Memo,
                 e.TotalDebits.Amount,
                 e.Currency,
-                e.ReversesEntryId is not null)).ToList());
+                e.ReversesEntryId is not null)).ToList(),
+            total,
+            skip,
+            take));
     }
 
     public async Task<Result<JournalEntryDetail>> GetAsync(Guid entryId, CancellationToken cancellationToken)

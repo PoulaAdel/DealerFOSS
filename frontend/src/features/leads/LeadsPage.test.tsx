@@ -23,9 +23,9 @@ import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router';
 import { LeadsPage } from './LeadsPage';
 import { SessionProvider } from '../../app/session';
-import { apiCalls, mockApi, mockApiUnreachable } from '../../test/setup';
+import { apiCalls, mockApi, mockApiUnreachable, page } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
-import type { LeadDetail, LeadPage, LeadSummary } from '../../shared/contracts';
+import type { LeadDetail, LeadSummary } from '../../shared/contracts';
 
 const me = 'u1';
 
@@ -67,19 +67,6 @@ const detail = (over: Partial<LeadDetail> = {}): LeadDetail => ({
 });
 
 /** The session is real, because the screen asks it who "mine" is. */
-/**
- * The list endpoint returns a page rather than a bare array as of 2026-09-11.
- * A list with no total could say "the first 50, there may be more" and nothing
- * else, and offered no way to reach them.
- */
-const page = (rows: LeadSummary[], over: Partial<LeadPage> = {}): LeadPage => ({
-  rows,
-  total: rows.length,
-  offset: 0,
-  limit: 50,
-  ...over,
-});
-
 function renderLeads() {
   setCurrentTenant('northgroup');
 
@@ -459,8 +446,8 @@ describe('taking an enquiry', () => {
     mockApi({
       '/auth/me': signedIn,
       '/organization': { ok: true, body: organization },
-      '/inventory': { ok: true, body: [] },
-      '/customers': { ok: true, body: [] },
+      '/inventory': { ok: true, body: page([]) },
+      '/customers': { ok: true, body: page([]) },
       '/leads': { ok: true, body: page([]) },
     });
 
@@ -489,8 +476,8 @@ describe('taking an enquiry', () => {
           ],
         },
       },
-      '/inventory': { ok: true, body: [] },
-      '/customers': { ok: true, body: [] },
+      '/inventory': { ok: true, body: page([]) },
+      '/customers': { ok: true, body: page([]) },
       '/leads': { ok: true, body: page([]) },
     });
 
@@ -506,14 +493,14 @@ describe('taking an enquiry', () => {
       '/organization': { ok: true, body: organization },
       '/inventory': {
         ok: true,
-        body: [{
+        body: page([{
           id: 'u1', stockNumber: 'NAG-1042', rooftopId: 'r1', status: 'Available',
           vehicleId: 'v1', vin: '1HGCM82633A004352', vehicleDisplayName: '2021 Toyota RAV4 XLE',
-        }],
+        }]),
       },
       '/customers': {
         ok: true,
-        body: [{ id: 'c1', displayName: 'Priya Raman', kind: 'Person', primaryEmail: null, primaryPhone: null }],
+        body: page([{ id: 'c1', displayName: 'Priya Raman', kind: 'Person', primaryEmail: null, primaryPhone: null }]),
       },
       '/leads': [
         { ok: true, body: page([]) },
@@ -589,9 +576,9 @@ describe('reaching every enquiry', () => {
     renderLeads();
 
     await screen.findByRole('table');
-    expect(screen.getByRole('button', { name: 'Newer' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Longer waiting' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     expect(apiCalls().some((c) => c.path.includes('offset=50'))).toBe(true);
   });
@@ -604,7 +591,7 @@ describe('reaching every enquiry', () => {
     renderLeads();
 
     await screen.findByRole('table');
-    expect(screen.getByRole('button', { name: 'Longer waiting' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 });
 
@@ -621,8 +608,8 @@ describe('a walk-in nobody has met', () => {
     mockApi({
       '/auth/me': signedIn,
       '/organization': { ok: true, body: organizationOnly },
-      '/inventory': { ok: true, body: [] },
-      '/customers': { ok: true, body: [] },
+      '/inventory': { ok: true, body: page([]) },
+      '/customers': { ok: true, body: page([]) },
       '/leads': { ok: true, body: page([]) },
     });
   }
@@ -651,7 +638,7 @@ describe('a walk-in nobody has met', () => {
     mockApi({
       '/auth/me': signedIn,
       '/organization': { ok: true, body: organizationOnly },
-      '/inventory': { ok: true, body: [] },
+      '/inventory': { ok: true, body: page([]) },
       '/customers': { ok: true, body: { id: 'c9', displayName: 'Okonkwo', kind: 'Person' } },
       '/leads': { ok: true, body: page([]) },
     });

@@ -166,7 +166,7 @@ public sealed class ExportTests(HostFixture fixture)
             HttpMethod.Get, $"/api/v1/vehicles?search={vin}B", Manager, "citymotors");
 
         var matches = await found.Content.ReadFromJsonAsync<JsonElement>();
-        matches.GetArrayLength().Should().Be(1,
+        matches.Rows().Should().HaveCount(1,
             because: $"the car should have arrived. Job: created="
                 + $"{job.GetProperty("rowsCreated").GetInt32()} "
                 + $"updated={job.GetProperty("rowsUpdated").GetInt32()} "
@@ -175,7 +175,7 @@ public sealed class ExportTests(HostFixture fixture)
                 + $"Export had the VIN: {file.Contains(vin + "B", StringComparison.Ordinal)}. "
                 + $"Export bytes: {file.Length}.");
 
-        matches[0].GetProperty("trim").GetString().Should().Be(awkward);
+        matches.Rows()[0].GetProperty("trim").GetString().Should().Be(awkward);
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public sealed class ExportTests(HostFixture fixture)
         using var found = await SendAsync(
             HttpMethod.Get, $"/api/v1/customers?search={surname}", Manager, "citymotors");
 
-        (await found.Content.ReadFromJsonAsync<JsonElement>()).GetArrayLength().Should().Be(1);
+        (await found.Content.ReadFromJsonAsync<JsonElement>()).Rows().Should().HaveCount(1);
     }
 
     [Fact]
@@ -271,7 +271,7 @@ public sealed class ExportTests(HostFixture fixture)
         using var found = await SendAsync(
             HttpMethod.Get, $"/api/v1/customers?search={surname}", Manager, "citymotors");
 
-        var id = (await found.Content.ReadFromJsonAsync<JsonElement>())[0].GetProperty("id").GetGuid();
+        var id = (await found.Content.ReadFromJsonAsync<JsonElement>()).Rows()[0].GetProperty("id").GetGuid();
 
         using var detail = await SendAsync(
             HttpMethod.Get, $"/api/v1/customers/{id}", Manager, "citymotors");
