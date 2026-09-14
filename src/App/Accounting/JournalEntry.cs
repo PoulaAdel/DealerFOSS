@@ -190,4 +190,18 @@ public enum JournalSource
     /// same event and nobody could owe anything.
     /// </summary>
     Payment = 5,
+
+    /// <summary>
+    /// A credit the dealership was holding put against a bill. No cash moves:
+    /// the money arrived earlier, as somebody's overpayment, and this is the
+    /// moment it stops being owed back and starts being paid for something.
+    /// </summary>
+    CreditApplied = 6,
+
+    /// <summary>
+    /// A credit handed back to the customer. This is the one entry in the list
+    /// where money leaves the business for nothing the business sold, which is
+    /// why it needs its own permission rather than riding on Accounting.Post.
+    /// </summary>
+    CreditRefunded = 7,
 }

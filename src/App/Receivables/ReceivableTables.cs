@@ -91,3 +91,63 @@ internal sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.ConfigureAudit();
     }
 }
+
+internal sealed class CustomerCreditConfiguration : IEntityTypeConfiguration<CustomerCredit>
+{
+    public void Configure(EntityTypeBuilder<CustomerCredit> builder)
+    {
+        builder.ToTable("CustomerCredits", ReceivableSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
+        builder.Property(x => x.RooftopId)
+            .HasConversion(id => id.Value, value => new RooftopId(value))
+            .IsRequired();
+
+        builder.Property(x => x.Reference).HasMaxLength(100).IsRequired();
+        builder.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+
+        // Deliberately NOT unique on (Reference), unlike Receivables. One bill is
+        // one debt, but a customer can overpay the same bill twice — a deposit
+        // over the odds, then the balance over the odds again — and each is its
+        // own credit with its own provenance.
+        builder.HasIndex(x => new { x.CustomerId, x.RaisedAt });
+        builder.HasIndex(x => new { x.RooftopId, x.RaisedAt });
+
+        builder.HasMany(x => x.Uses)
+            .WithOne()
+            .HasForeignKey(u => u.CustomerCreditId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(x => x.Uses).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Ignore(x => x.Spent);
+        builder.Ignore(x => x.Remaining);
+        builder.Ignore(x => x.IsSpent);
+
+        builder.ConfigureAudit();
+    }
+}
+
+internal sealed class CreditUseConfiguration : IEntityTypeConfiguration<CreditUse>
+{
+    public void Configure(EntityTypeBuilder<CreditUse> builder)
+    {
+        builder.ToTable("CreditUses", ReceivableSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+        builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(20).IsRequired();
+        builder.Property(x => x.Note).HasMaxLength(200);
+
+        builder.HasIndex(x => new { x.CustomerCreditId, x.UsedAt });
+
+        // What settled a given bill from a credit rather than from money in.
+        builder.HasIndex(x => x.ReceivableId);
+
+        builder.ConfigureAudit();
+    }
+}

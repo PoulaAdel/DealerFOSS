@@ -114,6 +114,14 @@ public static class IdentitySeeder
             Permissions.AccountingPost,
             // The only role that may make a posted entry disappear.
             Permissions.AccountingReverse,
+            // Paying a customer's credit back to them. On the manager for the
+            // same reason as the reversal above and with the same reservation:
+            // it is its own permission, so a dealership that wants refunds held
+            // by fewer people than deal approvals can arrange that without a
+            // code change. It is NOT on the salesperson or the advisor, who both
+            // hold Accounting.Post and can therefore take money all day — taking
+            // it is not the risk.
+            Permissions.AccountingRefund,
             // Writing an entry by hand: an expense, an opening balance, a
             // correction. The most powerful thing anybody can do to a set of
             // books, and deliberately not implied by Accounting.Post — which a

@@ -316,6 +316,7 @@ export const es: Catalogue = {
   'enum.paymentMethod.BankTransfer': 'Transferencia',
   'enum.paymentMethod.Cheque': 'Cheque',
   'enum.paymentMethod.Finance': 'Financiera',
+  'enum.paymentMethod.CustomerCredit': 'Saldo a favor',
 
   'money.title': 'Lo que se debe',
   'money.billed': 'Facturado',
@@ -331,6 +332,18 @@ export const es: Catalogue = {
   'money.howPaid': 'Cómo ha pagado',
   'money.reference': 'Referencia (queda en el registro)',
   'money.takeIt': 'Registrar el pago',
+  'money.willOverpay':
+    'Eso es {extra} más de lo que se debe. La diferencia queda como saldo a favor del cliente.',
+  'money.creditUsable': 'Este cliente tiene saldo a su favor',
+  'money.creditUsableNote':
+    'Pagó de más en algo anterior. Puede descontarse de esta factura en lugar de devolverse.',
+  'money.useItHere': 'Aplicar {amount} a esta factura',
+  'money.creditTitle': 'Se le debe al cliente',
+  'money.creditNote':
+    'Este dinero es suyo y se guarda aquí hasta usarlo o devolverlo. No es del concesionario.',
+  'money.creditFrom': 'pagado de más el {date}',
+  'money.refundHow': 'Cómo se devuelve',
+  'money.giveItBack': 'Devolverlo',
   'stock.takeItIn': 'Dar entrada a un coche',
   'stock.confirmTakeIn': 'Dar entrada',
   'stock.takeInTitle': 'Dar entrada a un coche',

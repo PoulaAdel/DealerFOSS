@@ -17,7 +17,7 @@ import { render, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { TakePayment } from './TakePayment';
-import { apiCalls, mockApi } from '../../test/setup';
+import { apiCalls, mockApi, page } from '../../test/setup';
 import type { ReceivableDetail } from '../../shared/contracts';
 
 const receivable: ReceivableDetail = {
@@ -35,6 +35,7 @@ const receivable: ReceivableDetail = {
   daysOutstanding: 9,
   isSettled: false,
   payments: [],
+  creditsRaised: [],
 };
 
 const path = `/receivables/for/RepairOrder/${receivable.reference}`;
@@ -151,12 +152,16 @@ describe('taking a payment', () => {
     expect(screen.queryByText('$140.00')).not.toBeInTheDocument();
   });
 
-  it('will not offer to send more than is outstanding', async () => {
+  it('still refuses nothing at all, and zero', async () => {
+    // What replaced "will not offer to send more than is outstanding" on
+    // 2026-09-14. More than is outstanding is now a real thing a customer does
+    // and is taken; an empty box and a zero are still not payments.
     mockApi({ [path]: { ok: true, body: receivable } });
     renderBand();
 
-    await userEvent.type(await screen.findByLabelText('How much'), '500');
+    expect(await screen.findByRole('button', { name: 'Record the payment' })).toBeDisabled();
 
+    await userEvent.type(screen.getByLabelText('How much'), '0');
     expect(screen.getByRole('button', { name: 'Record the payment' })).toBeDisabled();
   });
 
@@ -208,5 +213,111 @@ describe('taking a payment', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Record the payment' }));
 
     expect(await screen.findByRole('alert')).toBeVisible();
+  });
+
+  it('says what will happen to the extra BEFORE the money is taken', async () => {
+    // The band used to disable the button on anything over the outstanding
+    // amount, which was the wrong answer to a real situation: a customer paying
+    // a $190 bill with $200 has not made a mistake. Saying so while they are
+    // still standing there is the point — after the fact it is just news.
+    mockApi({ [path]: { ok: true, body: receivable } });
+    renderBand();
+
+    await userEvent.type(await screen.findByLabelText('How much'), '200');
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      /\$10\.00 more than is owed/);
+
+    expect(screen.getByRole('button', { name: 'Record the payment' })).toBeEnabled();
+  });
+
+  it('shows the money still owed back, and hands it over', async () => {
+    const credit = {
+      id: '99999999-9999-9999-9999-999999999999',
+      rooftopId: receivable.rooftopId,
+      customerId: receivable.customerId,
+      customerName: receivable.customerName,
+      amount: 10,
+      spent: 0,
+      remaining: 10,
+      currency: 'USD',
+      reference: receivable.reference,
+      raisedAt: '2026-09-03T11:00:00Z',
+      isSpent: false,
+      uses: [],
+    };
+
+    const settled = {
+      ...receivable,
+      paid: 190,
+      outstanding: 0,
+      isSettled: true,
+      daysOutstanding: 0,
+      creditsRaised: [credit],
+    };
+
+    mockApi({
+      [path]: { ok: true, body: settled },
+      '/receivables/credits': { ok: true, body: page([credit]) },
+      [`/receivables/credits/${credit.id}/refund`]: {
+        ok: true,
+        body: { ...credit, spent: 10, remaining: 0, isSpent: true },
+      },
+    });
+
+    renderBand();
+
+    // A settled bill quietly holding somebody's change is exactly the state
+    // this is here to make visible, so it shows even though nothing is owed.
+    expect(await screen.findByText('Owed back to this customer')).toBeVisible();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Give it back' }));
+
+    const refund = apiCalls().find((call) => call.path.endsWith('/refund'));
+    expect(refund?.init?.method).toBe('POST');
+    expect(JSON.parse(String(refund?.init?.body))).toMatchObject({
+      amount: 10,
+      method: 'BankTransfer',
+    });
+  });
+
+  it('offers a credit the customer already has against the bill in front of you', async () => {
+    // The credit came from something else entirely — a service invoice they
+    // overpaid weeks ago. It is only useful if it turns up on the bill being
+    // settled today rather than on the one that created it.
+    const credit = {
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      rooftopId: receivable.rooftopId,
+      customerId: receivable.customerId,
+      customerName: receivable.customerName,
+      amount: 300,
+      spent: 0,
+      remaining: 300,
+      currency: 'USD',
+      reference: 'RO-1084',
+      raisedAt: '2026-08-20T11:00:00Z',
+      isSpent: false,
+      uses: [],
+    };
+
+    mockApi({
+      [path]: { ok: true, body: receivable },
+      '/receivables/credits': { ok: true, body: page([credit]) },
+      [`/receivables/credits/${credit.id}/apply`]: { ok: true, body: credit },
+    });
+
+    renderBand();
+
+    // Capped at what the bill can absorb, not at what the credit holds: $300 of
+    // credit against a $190 bill is $190, and offering to apply all of it would
+    // promise something the server would refuse.
+    const use = await screen.findByRole('button', { name: /\$190\.00/ });
+    await userEvent.click(use);
+
+    const applied = apiCalls().find((call) => call.path.endsWith('/apply'));
+    expect(JSON.parse(String(applied?.init?.body))).toMatchObject({
+      receivableId: receivable.id,
+      amount: 190,
+    });
   });
 });

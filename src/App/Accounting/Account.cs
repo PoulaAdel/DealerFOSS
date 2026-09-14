@@ -202,6 +202,28 @@ public static class AccountCodes
     /// </summary>
     public const string OwnersCapital = "3000";
 
+    /// <summary>
+    /// Money the dealership is holding that belongs to a customer — an
+    /// overpayment it has not given back yet. A LIABILITY, and treating it as
+    /// anything else is the whole point of the account.
+    /// </summary>
+    /// <remarks>
+    /// Added 2026-09-14. Before it, taking more than was owed was REFUSED,
+    /// because the alternative available at the time was worse: absorbing the
+    /// extra with nowhere to put it would have shown the customer settled and
+    /// quietly kept their money. Refusing was honest and useless — a customer
+    /// who pays a $1,340.50 invoice with $1,400 in cash has not made a mistake,
+    /// and "we cannot accept that" is not an answer a service counter can give.
+    ///
+    /// It is deliberately NOT netted against
+    /// <see cref="AccountsReceivable"/>. Doing so would let one customer's
+    /// credit hide another customer's debt and make the receivable total —
+    /// which is what the dealership chases — quietly too small. What is owed to
+    /// us and what we owe back are two facts on opposite sides of the balance
+    /// sheet, and they stay there.
+    /// </remarks>
+    public const string CustomerCredits = "2200";
+
     // The expense accounts. Before 2026-09-11 there were NONE — not one — so the
     // system could record everything a dealership earned and nothing it spent,
     // and "what did the month make" could only ever be answered as gross. The
@@ -251,6 +273,7 @@ public static class AccountCodes
         (PartsInventory, "Parts inventory", AccountKind.Asset),
         (FloorplanPayable, "Floorplan payable", AccountKind.Liability),
         (SalesTaxPayable, "Sales tax payable", AccountKind.Liability),
+        (CustomerCredits, "Customer credits", AccountKind.Liability),
         (OwnersCapital, "Owners' capital", AccountKind.Equity),
         (VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
         (FeeRevenue, "Fee income", AccountKind.Revenue),

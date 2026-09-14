@@ -564,27 +564,220 @@ public sealed class LedgerTests(HostFixture fixture)
     }
 
     [Fact]
-    public async Task Taking_more_than_is_owed_is_refused_rather_than_absorbed()
+    public async Task Paying_more_than_is_owed_settles_the_bill_and_owes_the_rest_back()
     {
-        // Quietly showing zero would lose real money: the difference belongs to
-        // the customer and somebody has to give it back. Credit balances are not
-        // built, so the honest answer is to refuse and say why.
+        // Until 2026-09-14 this was REFUSED, and the refusal was honest and
+        // useless: a customer paying a $20,000 car with $20,500 has not made a
+        // mistake, and "we cannot accept that" is not an answer a counter can
+        // give. What was missing was somewhere to put the difference.
         var sale = await DeliverAsync(price: 20000m, cost: 15000m);
         var receivable = await ReceivableForAsync(sale.DealId);
 
-        using var tooMuch = await PostAsync(
+        using var paid = await PostAsync(
             $"/api/v1/receivables/{receivable}/payments", Manager,
-            new { amount = 25000m, method = "Cash" });
+            new { amount = 20500m, method = "Cash", note = "Paid with five hundred over" });
 
-        tooMuch.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        paid.StatusCode.Should().Be(HttpStatusCode.OK, because: await paid.Content.ReadAsStringAsync());
 
-        // And nothing was taken: a refused payment must not leave half of itself
-        // behind, which is what the transaction around it is for.
-        using var unchanged = await SendAsync(
-            HttpMethod.Get, $"/api/v1/receivables/{receivable}", Manager);
+        var after = await paid.Content.ReadFromJsonAsync<JsonElement>();
 
-        (await unchanged.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("paid").GetDecimal().Should().Be(0m);
+        // The bill takes what it can hold and no more. Outstanding must never go
+        // negative, because every report that reads it assumes it cannot.
+        after.GetProperty("paid").GetDecimal().Should().Be(20000m);
+        after.GetProperty("outstanding").GetDecimal().Should().Be(0m);
+        after.GetProperty("isSettled").GetBoolean().Should().BeTrue();
+
+        var credit = after.GetProperty("creditsRaised").EnumerateArray().Single();
+        credit.GetProperty("amount").GetDecimal().Should().Be(500m);
+        credit.GetProperty("remaining").GetDecimal().Should().Be(500m);
+        credit.GetProperty("isSpent").GetBoolean().Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task An_overpayment_is_one_entry_with_the_cash_split_two_ways()
+    {
+        // ONE entry, because the customer performed one act. Somebody reading the
+        // journal sees the whole amount arrive, the bill's share clear the
+        // receivable, and the rest become a liability, on one date.
+        //
+        // 2200 is credited rather than 1100 being over-credited into a negative,
+        // and that is the point of the account: netting would let one customer's
+        // credit hide another customer's debt and make the figure the dealership
+        // chases quietly too small.
+        var sale = await DeliverAsync(price: 20000m, cost: 15000m);
+        var receivable = await ReceivableForAsync(sale.DealId);
+
+        using var paid = await PostAsync(
+            $"/api/v1/receivables/{receivable}/payments", Manager,
+            new { amount = 20500m, method = "Cash" });
+
+        paid.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var entries = await EntriesForAsync(sale.DealId);
+        var payment = entries.Single(e => e.GetProperty("source").GetString() == "Payment");
+        var detail = await EntryDetailAsync(payment.GetProperty("id").GetString()!);
+
+        SumFor(detail, "1000", "debit").Should().Be(20500m, because: "all of it went in the till");
+        SumFor(detail, "1100", "credit").Should().Be(20000m, because: "the bill's share, and no more");
+        SumFor(detail, "2200", "credit").Should().Be(500m,
+            because: "the rest is the customer's money and the dealership owes it back");
+
+        detail.GetProperty("totalDebits").GetDecimal().Should()
+            .Be(detail.GetProperty("totalCredits").GetDecimal());
+    }
+
+    [Fact]
+    public async Task A_credit_pays_another_bill_the_same_customer_owes_and_no_cash_moves()
+    {
+        var first = await DeliverAsync(price: 20000m, cost: 15000m);
+
+        using var overpaid = await PostAsync(
+            $"/api/v1/receivables/{await ReceivableForAsync(first.DealId)}/payments", Manager,
+            new { amount = 20500m, method = "Cash" });
+
+        overpaid.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var credit = (await overpaid.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("creditsRaised").EnumerateArray().Single();
+
+        var creditId = credit.GetProperty("id").GetString()!;
+        var buyer = credit.GetProperty("customerId").GetString()!;
+
+        // A second car, to the same person.
+        var second = await DeliverAsync(price: 8000m, cost: 6000m, buyer: buyer);
+        var secondBill = await ReceivableForAsync(second.DealId);
+
+        using var applied = await PostAsync(
+            $"/api/v1/receivables/credits/{creditId}/apply", Manager,
+            new { receivableId = secondBill, amount = 500m, note = "Off the second car" });
+
+        applied.StatusCode.Should().Be(HttpStatusCode.OK, because: await applied.Content.ReadAsStringAsync());
+
+        var spent = await applied.Content.ReadFromJsonAsync<JsonElement>();
+        spent.GetProperty("remaining").GetDecimal().Should().Be(0m);
+        spent.GetProperty("isSpent").GetBoolean().Should().BeTrue();
+        spent.GetProperty("uses").EnumerateArray().Single()
+            .GetProperty("kind").GetString().Should().Be("AppliedToBill");
+
+        using var bill = await SendAsync(HttpMethod.Get, $"/api/v1/receivables/{secondBill}", Manager);
+        var billed = await bill.Content.ReadFromJsonAsync<JsonElement>();
+
+        billed.GetProperty("paid").GetDecimal().Should().Be(500m);
+        billed.GetProperty("payments").EnumerateArray().Single()
+            .GetProperty("method").GetString().Should().Be("CustomerCredit");
+
+        // AND NO CASH MOVED. The money arrived when they overpaid; counting it
+        // again here would book the same five hundred dollars into the bank
+        // twice, and the bank statement would be the only thing that noticed.
+        var entry = (await EntriesForAsync(second.DealId))
+            .Single(e => e.GetProperty("source").GetString() == "CreditApplied");
+
+        var detail = await EntryDetailAsync(entry.GetProperty("id").GetString()!);
+
+        SumFor(detail, "2200", "debit").Should().Be(500m, because: "we owe them that much less");
+        SumFor(detail, "1100", "credit").Should().Be(500m, because: "and they owe us that much less");
+        SumFor(detail, "1000", "debit").Should().Be(0m, because: "no money arrived today");
+        SumFor(detail, "1000", "credit").Should().Be(0m, because: "and none left either");
+    }
+
+    [Fact]
+    public async Task One_customers_credit_cannot_pay_another_customers_bill()
+    {
+        // The check that matters most in the whole feature. Without it a credit
+        // is a way to move money between people who never agreed to it, and the
+        // ledger balances perfectly the entire time.
+        var mine = await DeliverAsync(price: 20000m, cost: 15000m);
+
+        using var overpaid = await PostAsync(
+            $"/api/v1/receivables/{await ReceivableForAsync(mine.DealId)}/payments", Manager,
+            new { amount = 20500m, method = "Cash" });
+
+        var creditId = (await overpaid.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("creditsRaised").EnumerateArray().Single()
+            .GetProperty("id").GetString()!;
+
+        // Somebody else entirely, with their own bill.
+        var theirs = await DeliverAsync(price: 9000m, cost: 7000m);
+
+        using var refused = await PostAsync(
+            $"/api/v1/receivables/credits/{creditId}/apply", Manager,
+            new { receivableId = await ReceivableForAsync(theirs.DealId), amount = 500m });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // And the credit is untouched: a refused application must not spend half
+        // of itself, which is what the transaction around it is for.
+        using var still = await SendAsync(
+            HttpMethod.Get, $"/api/v1/receivables/credits?customerId={mine.CustomerId}", Manager);
+
+        (await still.Content.ReadFromJsonAsync<JsonElement>())
+            .Rows().Single(c => c.GetProperty("id").GetString() == creditId)
+            .GetProperty("remaining").GetDecimal().Should().Be(500m);
+    }
+
+    [Fact]
+    public async Task Refunding_a_credit_takes_the_money_back_out_of_the_bank()
+    {
+        var sale = await DeliverAsync(price: 20000m, cost: 15000m);
+
+        using var overpaid = await PostAsync(
+            $"/api/v1/receivables/{await ReceivableForAsync(sale.DealId)}/payments", Manager,
+            new { amount = 20500m, method = "Cash" });
+
+        var creditId = (await overpaid.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("creditsRaised").EnumerateArray().Single()
+            .GetProperty("id").GetString()!;
+
+        using var refunded = await PostAsync(
+            $"/api/v1/receivables/credits/{creditId}/refund", Manager,
+            new { amount = 500m, method = "BankTransfer", note = "Sent back the same day" });
+
+        refunded.StatusCode.Should().Be(HttpStatusCode.OK, because: await refunded.Content.ReadAsStringAsync());
+
+        var after = await refunded.Content.ReadFromJsonAsync<JsonElement>();
+        after.GetProperty("remaining").GetDecimal().Should().Be(0m);
+        after.GetProperty("uses").EnumerateArray().Single()
+            .GetProperty("kind").GetString().Should().Be("Refunded");
+
+        var entry = (await EntriesForAsync(sale.DealId))
+            .Single(e => e.GetProperty("source").GetString() == "CreditRefunded");
+
+        var detail = await EntryDetailAsync(entry.GetProperty("id").GetString()!);
+
+        SumFor(detail, "2200", "debit").Should().Be(500m, because: "we no longer owe it");
+        SumFor(detail, "1000", "credit").Should().Be(500m, because: "and it has left the bank");
+    }
+
+    [Fact]
+    public async Task Taking_money_and_handing_it_back_are_different_rights()
+    {
+        // A salesperson holds Accounting.Post because delivering a car posts the
+        // sale, so they can take money all day — taking it is not the risk. A
+        // refund is the classic way a retail business is quietly stolen from:
+        // raise a credit, pay it to yourself, and the books balance throughout.
+        var sale = await DeliverAsync(price: 20000m, cost: 15000m);
+
+        using var overpaid = await PostAsync(
+            $"/api/v1/receivables/{await ReceivableForAsync(sale.DealId)}/payments", Manager,
+            new { amount = 20500m, method = "Cash" });
+
+        var creditId = (await overpaid.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("creditsRaised").EnumerateArray().Single()
+            .GetProperty("id").GetString()!;
+
+        using var refused = await PostAsync(
+            $"/api/v1/receivables/credits/{creditId}/refund", Sales,
+            new { amount = 500m, method = "Cash" });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            because: "Accounting.Post is not Accounting.Refund");
+
+        using var untouched = await SendAsync(
+            HttpMethod.Get, $"/api/v1/receivables/credits?customerId={sale.CustomerId}", Manager);
+
+        (await untouched.Content.ReadFromJsonAsync<JsonElement>())
+            .Rows().Single(c => c.GetProperty("id").GetString() == creditId)
+            .GetProperty("remaining").GetDecimal().Should().Be(500m);
     }
 
     [Fact]
@@ -980,7 +1173,7 @@ public sealed class LedgerTests(HostFixture fixture)
         return await response.Content.ReadFromJsonAsync<JsonElement>();
     }
 
-    private sealed record Sale(string DealId);
+    private sealed record Sale(string DealId, string CustomerId);
 
     private static JsonElement AccountIn(JsonElement balance, string code) =>
         balance.GetProperty("accounts").EnumerateArray()
@@ -1030,12 +1223,17 @@ public sealed class LedgerTests(HostFixture fixture)
         decimal discount = 0m,
         decimal tradeAllowance = 0m,
         decimal tradePayoff = 0m,
-        decimal cost = 18000m)
+        decimal cost = 18000m,
+
+        // Given, when a test needs TWO bills for the SAME person — which is what
+        // a credit from one bill paying another one requires. Left null the
+        // helper invents a fresh customer, so every other test stays isolated.
+        string? buyer = null)
     {
         var rooftopId = await RooftopIdAsync("NAG-01");
         var suffix = $"{Guid.NewGuid():N}"[..8].ToUpperInvariant();
 
-        var customerId = await CreatedIdAsync("/api/v1/customers", new
+        var customerId = buyer ?? await CreatedIdAsync("/api/v1/customers", new
         {
             kind = "Person", firstName = "Ledger", lastName = $"Case{suffix}",
         });
@@ -1089,7 +1287,7 @@ public sealed class LedgerTests(HostFixture fixture)
             moved.StatusCode.Should().Be(HttpStatusCode.OK, $"moving to {status} should succeed");
         }
 
-        return new Sale(dealId);
+        return new Sale(dealId, customerId);
     }
 
     private async Task<string> CreatedIdAsync(string path, object body)

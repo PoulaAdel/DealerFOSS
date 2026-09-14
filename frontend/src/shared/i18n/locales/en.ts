@@ -319,6 +319,7 @@ export const en = {
   'enum.paymentMethod.BankTransfer': 'Bank transfer',
   'enum.paymentMethod.Cheque': 'Cheque',
   'enum.paymentMethod.Finance': 'Finance company',
+  'enum.paymentMethod.CustomerCredit': 'From a credit',
 
   'money.title': 'What is owed',
   'money.billed': 'Billed',
@@ -334,6 +335,18 @@ export const en = {
   'money.howPaid': 'How they paid',
   'money.reference': 'Reference (goes on the record)',
   'money.takeIt': 'Record the payment',
+  'money.willOverpay':
+    'That is {extra} more than is owed. The extra becomes a credit this customer is owed back.',
+  'money.creditUsable': 'This customer has money with us',
+  'money.creditUsableNote':
+    'They overpaid something earlier. It can come off this bill instead of being handed back.',
+  'money.useItHere': 'Put {amount} against this bill',
+  'money.creditTitle': 'Owed back to this customer',
+  'money.creditNote':
+    'This is their money, held here until it is used or returned. It is not the dealership’s.',
+  'money.creditFrom': 'overpaid on {date}',
+  'money.refundHow': 'How it goes back',
+  'money.giveItBack': 'Give it back',
   'stock.takeItIn': 'Take a car into stock',
   'stock.confirmTakeIn': 'Take it in',
   'stock.takeInTitle': 'Take a car into stock',

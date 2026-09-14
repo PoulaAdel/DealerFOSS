@@ -1196,3 +1196,23 @@ to come.
   It found a third row immediately: *Documentation restructure* had `Blocker: Build` while its own state said `Done`, so a finished item had been sitting in the candidate list. Two more carried no date and were re-read against the code rather than dated on faith — neither has been started, and now they say so with a date.
 
   **The convention is written where the rows are**, in doc 11 §12, not only in the script: a row is a claim about the code, and a claim nobody has re-checked since the last commit is a guess. Re-read before picking, and write the date even when nothing changed.
+
+- **2026-09-14 — Somebody can pay more than the bill, and the difference stops being the dealership's problem to refuse.** `2200 Customer credits`.
+
+  **Refusing was honest and useless.** Taking more than was owed had been refused since the sub-ledger was built, for a good reason at the time: absorbing the extra with nowhere to put it would show the customer settled and quietly keep their money. But a customer paying a $110 invoice with $150 in cash has not made a mistake, and there is no version of "we cannot accept that" a service counter can say out loud.
+
+  **The bill takes what it can hold and the rest becomes a liability.** One journal entry, because the customer performed one act: the whole amount arrives in 1000, the bill's share clears 1100, and the remainder credits 2200. `Outstanding` still cannot go negative — the entity keeps refusing more than is owed, and the service splits the money before it gets there, so a future caller that forgets to split gets an exception rather than a receivable owing a negative amount.
+
+  **2200 is never netted against 1100.** Netting would let one customer's credit hide another customer's debt and make the figure the dealership chases quietly too small. What is owed to us and what we owe back are two facts on opposite sides of the balance sheet.
+
+  **A credit is discharged two ways, and only one of them moves money.** Put against another bill the same customer owes — 2200 down, 1100 down, no cash, because the money arrived when they overpaid — or handed back, 2200 down and 1000 down. Each overpayment is its own row drawn down by uses rather than one running balance per customer, so "where did this $40 come from" has an answer.
+
+  **One customer's credit cannot pay another customer's bill**, and that is the check that matters most here. Without it a credit is a way to move money between people who never agreed to it, and the ledger balances perfectly the entire time.
+
+  **Refunding needs its own permission.** `Accounting.Refund`, not `Accounting.Post` — which a salesperson holds because delivering a car posts the sale. Everything else in this system records money the business earned or now owes; this one takes cash out for a customer, and a refund is the classic way a retail business is quietly stolen from: raise a credit, pay it to yourself, and the books balance throughout. Seeded on the manager only, and a test proves the salesperson is refused. Applying a credit is deliberately *not* gated this way, because no money leaves.
+
+  **A settled bill still refuses a payment**, and that is not the same case. A payment against a bill with nothing left on it is almost always the same payment keyed twice, where no second money arrived — absorbing it would invent both the cash and the liability.
+
+  **Walked, and the walk found the defect the tests could not.** RO-1082, a $110 invoice paid with $150. The band warned *before* the button — "That is $40.00 more than is owed" — then settled the bill and showed $40 owed back. But it read **"overpaid on 9c9d1557-7e22-46e7-a5b8-591a19f6e6dd"**: a workshop receivable's reference is the job's *id*, not its number, and nothing had ever put that string in front of a person before. It shows the date instead now; the reference stays in the journal memo, where it is a ledger key rather than something to read. Then refunded: 2200 went 40 in, 40 out, net zero, and the trial balance agreed.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **761/761** (was 756), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **382/382** (was 379), `npm run build`.

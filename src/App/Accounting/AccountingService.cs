@@ -48,6 +48,13 @@ public sealed class AccountingService(
     private const string ReversePermission = Permissions.AccountingReverse;
 
     /// <summary>
+    /// Giving a customer their money back. Its own permission, because it is the
+    /// only posting here that takes cash out for something the business did not
+    /// sell. See Permissions.AccountingRefund.
+    /// </summary>
+    private const string RefundPermission = Permissions.AccountingRefund;
+
+    /// <summary>
     /// Writing an entry by hand. Its own right, and NOT implied by
     /// <see cref="PostPermission"/> - a salesperson holds that because delivering
     /// a car posts the sale, and choosing the accounts is a different act.
@@ -806,6 +813,12 @@ public sealed class AccountingService(
             return Result.Failure<JournalEntryDetail>(accounts.Error);
         }
 
+        if (payment.CreditRaised > 0m && !accounts.Value.ContainsKey(AccountCodes.CustomerCredits))
+        {
+            return Result.Failure<JournalEntryDetail>(
+                LedgerErrors.ChartIncomplete([AccountCodes.CustomerCredits]));
+        }
+
         JournalEntry entry;
         try
         {
@@ -837,6 +850,135 @@ public sealed class AccountingService(
             new AuditEntry(_currentUser.Id, PostPermission, AuditOutcome.Allowed,
                 "JournalEntry", entry.Id.ToString(), payment.RooftopId.Value,
                 $"Payment against {payment.Reference}", null, null),
+            cancellationToken);
+
+        return Result.Success(await DescribeAsync(entry, cancellationToken));
+    }
+
+    public Task<Result<JournalEntryDetail>> PostCreditApplicationAsync(
+        CreditApplicationPosting application,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(application);
+
+        return PostCreditMovementAsync(
+            application.RooftopId,
+            application.Reference,
+            application.Currency,
+            application.Amount,
+            application.Memo,
+            JournalSource.CreditApplied,
+            PostPermission,
+            accounts => BuildCreditApplicationLines(application, accounts),
+            cancellationToken);
+    }
+
+    public Task<Result<JournalEntryDetail>> PostCreditRefundAsync(
+        CreditRefundPosting refund,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(refund);
+
+        return PostCreditMovementAsync(
+            refund.RooftopId,
+            refund.Reference,
+            refund.Currency,
+            refund.Amount,
+            refund.Memo,
+            JournalSource.CreditRefunded,
+            RefundPermission,
+            accounts => BuildCreditRefundLines(refund, accounts),
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// The half of a credit movement that is the same whichever direction it
+    /// goes: the permission, the open period, the account 2200 has to exist, and
+    /// an entry that is added but NOT saved because the sub-ledger's transaction
+    /// owns the save.
+    /// </summary>
+    /// <remarks>
+    /// Written once rather than twice because applying and refunding differ in
+    /// exactly three things — the permission, the journal source, and the second
+    /// line — and two copies of the rest would be two places for the period
+    /// check to be forgotten.
+    /// </remarks>
+    private async Task<Result<JournalEntryDetail>> PostCreditMovementAsync(
+        RooftopId rooftopId,
+        string reference,
+        string currency,
+        decimal amount,
+        string memo,
+        JournalSource source,
+        string permission,
+        Func<IReadOnlyDictionary<string, Account>, List<(string, Guid, decimal, decimal, string?)>> lines,
+        CancellationToken cancellationToken)
+    {
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, permission, rooftopId, cancellationToken))
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
+        }
+
+        if (amount <= 0m)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.credit_invalid", "A credit movement is for an amount above zero."));
+        }
+
+        var rooftop = await _organization.GetRooftopAsync(rooftopId, cancellationToken);
+        if (rooftop.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(rooftop.Error);
+        }
+
+        var refusal = await PeriodRefusalAsync(
+            DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime), cancellationToken);
+
+        if (refusal is not null)
+        {
+            return Result.Failure<JournalEntryDetail>(refusal);
+        }
+
+        var accounts = await AccountMapAsync(cancellationToken);
+        if (accounts.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(accounts.Error);
+        }
+
+        if (!accounts.Value.ContainsKey(AccountCodes.CustomerCredits))
+        {
+            return Result.Failure<JournalEntryDetail>(
+                LedgerErrors.ChartIncomplete([AccountCodes.CustomerCredits]));
+        }
+
+        JournalEntry entry;
+        try
+        {
+            entry = JournalEntry.Post(
+                Guid.NewGuid(),
+                rooftop.Value.LegalEntityId,
+                rooftopId,
+                DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime),
+                source,
+                reference,
+                memo,
+                currency,
+                lines(accounts.Value),
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.will_not_balance", ex.Message));
+        }
+
+        _db.JournalEntries.Add(entry);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, permission, AuditOutcome.Allowed,
+                "JournalEntry", entry.Id.ToString(), rooftopId.Value,
+                memo, null, null),
             cancellationToken);
 
         return Result.Success(await DescribeAsync(entry, cancellationToken));
@@ -1316,10 +1458,60 @@ public sealed class AccountingService(
         var cash = accounts[AccountCodes.Cash];
         var owed = accounts[AccountCodes.AccountsReceivable];
 
+        // The ordinary case, and the one worth keeping to two lines.
+        if (p.CreditRaised <= 0m)
+        {
+            return
+            [
+                (cash.Code, cash.Id, p.Amount, 0m, "Money in"),
+                (owed.Code, owed.Id, 0m, p.Amount, "Off what they owed"),
+            ];
+        }
+
+        // Somebody handed over more than the bill. ONE entry, because they
+        // performed one act: the whole amount arrives as cash, the bill's share
+        // clears the receivable, and the rest becomes money we owe them back.
+        var credits = accounts[AccountCodes.CustomerCredits];
+
         return
         [
-            (cash.Code, cash.Id, p.Amount, 0m, "Money in"),
+            (cash.Code, cash.Id, p.Amount + p.CreditRaised, 0m, "Money in"),
             (owed.Code, owed.Id, 0m, p.Amount, "Off what they owed"),
+            (credits.Code, credits.Id, 0m, p.CreditRaised, "Overpaid, and owed back"),
+        ];
+    }
+
+    /// <summary>
+    /// A credit put against a bill. Two lines and no cash: the money arrived
+    /// when the overpayment was taken, and this is where it stops being owed
+    /// back and starts having paid for something.
+    /// </summary>
+    private static List<(string, Guid, decimal, decimal, string?)> BuildCreditApplicationLines(
+        CreditApplicationPosting a,
+        IReadOnlyDictionary<string, Account> accounts)
+    {
+        var credits = accounts[AccountCodes.CustomerCredits];
+        var owed = accounts[AccountCodes.AccountsReceivable];
+
+        return
+        [
+            (credits.Code, credits.Id, a.Amount, 0m, "Credit used"),
+            (owed.Code, owed.Id, 0m, a.Amount, "Off what they owed"),
+        ];
+    }
+
+    /// <summary>The credit handed back: the liability goes and so does the cash.</summary>
+    private static List<(string, Guid, decimal, decimal, string?)> BuildCreditRefundLines(
+        CreditRefundPosting r,
+        IReadOnlyDictionary<string, Account> accounts)
+    {
+        var credits = accounts[AccountCodes.CustomerCredits];
+        var cash = accounts[AccountCodes.Cash];
+
+        return
+        [
+            (credits.Code, credits.Id, r.Amount, 0m, "Credit refunded"),
+            (cash.Code, cash.Id, 0m, r.Amount, "Money out"),
         ];
     }
 
@@ -1478,6 +1670,13 @@ public sealed class AccountingService(
             AccountCodes.WarrantyReceivable, AccountCodes.InternalServiceCharge,
             AccountCodes.SalesTaxPayable,
         ];
+
+        // 2200 is deliberately NOT in that list. It arrived on 2026-09-14, after
+        // dealerships already existed, and this list is checked before EVERY
+        // posting — so requiring it here would stop a dealership delivering cars
+        // because of an account only an overpayment needs. The three places that
+        // do need it ask for it themselves, and get a chart-incomplete error
+        // naming exactly what is missing.
 
         var missing = required.Where(code => !accounts.ContainsKey(code)).ToList();
         if (missing.Count > 0)

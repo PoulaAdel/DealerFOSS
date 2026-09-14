@@ -118,6 +118,29 @@ public interface IAccounting
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Puts a credit the dealership is holding against a bill: 2200 down,
+    /// 1100 down. Called inside the sub-ledger's transaction; does not save.
+    /// </summary>
+    Task<Result<JournalEntryDetail>> PostCreditApplicationAsync(
+        CreditApplicationPosting application,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gives a credit back: 2200 down, 1000 down. Called inside the sub-ledger's
+    /// transaction; does not save.
+    /// </summary>
+    /// <remarks>
+    /// Guarded by <see cref="Permissions.AccountingRefund"/> rather than
+    /// <see cref="Permissions.AccountingPost"/>. Everything else in this
+    /// interface records money the business earned or owes; this one takes money
+    /// out of the till for a customer, which is the classic way a retail
+    /// business is quietly stolen from.
+    /// </remarks>
+    Task<Result<JournalEntryDetail>> PostCreditRefundAsync(
+        CreditRefundPosting refund,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// What the business made over a period: revenue and cost of sales by
     /// department, then what it costs to run the place, then the difference.
     /// </summary>
@@ -291,6 +314,49 @@ public sealed record PaymentPosting(
     RooftopId RooftopId,
 
     /// <summary>The bill this settles, so the debit and its payments read together.</summary>
+    string Reference,
+    string Currency,
+    decimal Amount,
+    string Memo,
+
+    /// <summary>
+    /// The part of the money handed over that was MORE than the bill, and is now
+    /// owed back to the customer. Credits 2200 rather than 1100.
+    /// </summary>
+    /// <remarks>
+    /// <b><see cref="Amount"/> keeps its original meaning</b> — what came off
+    /// what they owed — and the cash debit is the two added together. It is
+    /// written this way round on purpose: every existing caller means "this much
+    /// came off the bill", and quietly redefining that to "this much was handed
+    /// over" would have changed what four callers post without changing a line
+    /// of their code.
+    ///
+    /// One entry, not two, because the customer performed one act. A person
+    /// reading the journal sees $1,400 arrive, $1,340.50 clear the invoice and
+    /// $59.50 become a liability, in one balanced entry with one date.
+    /// </remarks>
+    decimal CreditRaised = 0m);
+
+/// <summary>
+/// A credit the dealership holds, put against a bill the same customer owes.
+/// </summary>
+/// <remarks>
+/// No cash line, and that is the whole character of it: the money arrived when
+/// the overpayment was taken. This entry only moves it from "we owe this back"
+/// to "this paid for something".
+/// </remarks>
+public sealed record CreditApplicationPosting(
+    RooftopId RooftopId,
+
+    /// <summary>The bill being settled, so this reads beside its other payments.</summary>
+    string Reference,
+    string Currency,
+    decimal Amount,
+    string Memo);
+
+/// <summary>A credit handed back to the customer: the liability goes, the cash goes.</summary>
+public sealed record CreditRefundPosting(
+    RooftopId RooftopId,
     string Reference,
     string Currency,
     decimal Amount,

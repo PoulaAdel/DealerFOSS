@@ -311,6 +311,7 @@ export const de: Catalogue = {
   'enum.paymentMethod.BankTransfer': 'Überweisung',
   'enum.paymentMethod.Cheque': 'Scheck',
   'enum.paymentMethod.Finance': 'Finanzierungsgesellschaft',
+  'enum.paymentMethod.CustomerCredit': 'Kundenguthaben',
 
   'money.title': 'Was noch offen ist',
   'money.billed': 'Berechnet',
@@ -326,6 +327,18 @@ export const de: Catalogue = {
   'money.howPaid': 'Zahlungsart',
   'money.reference': 'Beleg (bleibt im Vorgang)',
   'money.takeIt': 'Zahlung erfassen',
+  'money.willOverpay':
+    'Das sind {extra} mehr als geschuldet. Der Überschuss wird zu einem Guthaben des Kunden.',
+  'money.creditUsable': 'Dieser Kunde hat Geld bei uns',
+  'money.creditUsableNote':
+    'Er hat früher zu viel gezahlt. Das kann mit dieser Rechnung verrechnet statt ausgezahlt werden.',
+  'money.useItHere': '{amount} mit dieser Rechnung verrechnen',
+  'money.creditTitle': 'Dem Kunden geschuldet',
+  'money.creditNote':
+    'Dieses Geld gehört ihm und liegt hier, bis es verwendet oder zurückgezahlt wird. Es gehört nicht dem Autohaus.',
+  'money.creditFrom': 'zu viel gezahlt am {date}',
+  'money.refundHow': 'Wie es zurückgeht',
+  'money.giveItBack': 'Zurückzahlen',
   'stock.takeItIn': 'Fahrzeug in den Bestand nehmen',
   'stock.confirmTakeIn': 'Aufnehmen',
   'stock.takeInTitle': 'Fahrzeug in den Bestand nehmen',

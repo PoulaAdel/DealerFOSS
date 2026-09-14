@@ -115,6 +115,10 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, I
 
     public DbSet<Payment> Payments => Set<Payment>();
 
+    public DbSet<CustomerCredit> CustomerCredits => Set<CustomerCredit>();
+
+    public DbSet<CreditUse> CreditUses => Set<CreditUse>();
+
     public DbSet<Account> Accounts => Set<Account>();
 
     public DbSet<AccountingPeriod> AccountingPeriods => Set<AccountingPeriod>();

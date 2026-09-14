@@ -10,6 +10,9 @@
 //   GET  /api/v1/receivables/{id}                     one account and its payments
 //   GET  /api/v1/receivables/for/{source}/{reference} the debt against one bill
 //   POST /api/v1/receivables/{id}/payments            record money arriving
+//   GET  /api/v1/receivables/credits                  what we owe customers back
+//   POST /api/v1/receivables/credits/{id}/apply       put a credit against a bill
+//   POST /api/v1/receivables/credits/{id}/refund      hand a credit back
 //
 // Coding Instructions:
 //   Keep it thin — delegate, then map a Result to a status code. The rooftop
@@ -36,9 +39,12 @@ internal static class ReceivableEndpoints
 
         group.MapGet("", ListAsync);
 
-        // Before the {id} route, so "for" is not offered to the guid constraint
-        // as a candidate id.
+        // Before the {id} route, so "for" and "credits" are not offered to the
+        // guid constraint as candidate ids.
         group.MapGet("/for/{source}/{reference}", FindAsync);
+        group.MapGet("/credits", ListCreditsAsync);
+        group.MapPost("/credits/{creditId:guid}/apply", ApplyCreditAsync);
+        group.MapPost("/credits/{creditId:guid}/refund", RefundCreditAsync);
         group.MapGet("/{receivableId:guid}", GetAsync);
         group.MapPost("/{receivableId:guid}/payments", PayAsync);
     }
@@ -96,6 +102,49 @@ internal static class ReceivableEndpoints
         // A bill nobody owes anything against is a legitimate answer, not a
         // missing page: a deal still being worked has no receivable yet.
         return result.Value is null ? Results.NoContent() : Results.Ok(result.Value);
+    }
+
+    private static async Task<IResult> ListCreditsAsync(
+        IReceivables receivables,
+        Guid? rooftopId,
+        Guid? customerId,
+        bool? openOnly,
+        int? limit,
+        int? offset,
+        CancellationToken cancellationToken)
+    {
+        var result = await receivables.ListCreditsAsync(
+            new CreditQuery(
+                rooftopId is { } id ? new RooftopId(id) : null,
+                customerId,
+                openOnly ?? true,
+                limit ?? 50,
+                offset ?? 0),
+            cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ApplyCreditAsync(
+        IReceivables receivables,
+        Guid creditId,
+        ApplyCredit application,
+        CancellationToken cancellationToken)
+    {
+        var result = await receivables.ApplyCreditAsync(creditId, application, cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> RefundCreditAsync(
+        IReceivables receivables,
+        Guid creditId,
+        RefundCredit refund,
+        CancellationToken cancellationToken)
+    {
+        var result = await receivables.RefundCreditAsync(creditId, refund, cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<IResult> PayAsync(

@@ -310,6 +310,7 @@ export const fr: Catalogue = {
   'enum.paymentMethod.BankTransfer': 'Virement',
   'enum.paymentMethod.Cheque': 'Chèque',
   'enum.paymentMethod.Finance': 'Organisme de financement',
+  'enum.paymentMethod.CustomerCredit': 'Avoir client',
 
   'money.title': 'Ce qui reste dû',
   'money.billed': 'Facturé',
@@ -325,6 +326,18 @@ export const fr: Catalogue = {
   'money.howPaid': 'Mode de paiement',
   'money.reference': 'Référence (reste au dossier)',
   'money.takeIt': 'Enregistrer le paiement',
+  'money.willOverpay':
+    'C’est {extra} de plus que le montant dû. Le surplus devient un avoir dû au client.',
+  'money.creditUsable': 'Ce client a de l’argent chez nous',
+  'money.creditUsableNote':
+    'Il a trop payé quelque chose auparavant. Cela peut venir en déduction de cette facture.',
+  'money.useItHere': 'Affecter {amount} à cette facture',
+  'money.creditTitle': 'Dû au client',
+  'money.creditNote':
+    'Cet argent est le sien, conservé ici jusqu’à utilisation ou remboursement. Il n’est pas à la concession.',
+  'money.creditFrom': 'trop-perçu le {date}',
+  'money.refundHow': 'Mode de remboursement',
+  'money.giveItBack': 'Le rembourser',
   'stock.takeItIn': 'Entrer une voiture en stock',
   'stock.confirmTakeIn': 'Entrer en stock',
   'stock.takeInTitle': 'Entrer une voiture en stock',

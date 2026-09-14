@@ -314,6 +314,7 @@ export const ru: Catalogue = {
   'enum.paymentMethod.BankTransfer': 'Банковский перевод',
   'enum.paymentMethod.Cheque': 'Чек',
   'enum.paymentMethod.Finance': 'Финансовая компания',
+  'enum.paymentMethod.CustomerCredit': 'Из средств клиента',
 
   'money.title': 'Сколько должны',
   'money.billed': 'Выставлено',
@@ -331,6 +332,18 @@ export const ru: Catalogue = {
   'money.howPaid': 'Способ оплаты',
   'money.reference': 'Отметка (останется в записи)',
   'money.takeIt': 'Записать оплату',
+  'money.willOverpay':
+    'Это на {extra} больше долга. Излишек станет средствами, которые клиенту должны вернуть.',
+  'money.creditUsable': 'У этого клиента есть средства у нас',
+  'money.creditUsableNote':
+    'Он переплатил раньше. Это можно зачесть в счёт этого счёта, а не возвращать.',
+  'money.useItHere': 'Зачесть {amount} в этот счёт',
+  'money.creditTitle': 'Должны вернуть клиенту',
+  'money.creditNote':
+    'Это его деньги, они хранятся здесь до зачёта или возврата. Они не принадлежат дилеру.',
+  'money.creditFrom': 'переплата от {date}',
+  'money.refundHow': 'Как вернуть',
+  'money.giveItBack': 'Вернуть деньги',
   'stock.takeItIn': 'Принять машину на склад',
   'stock.confirmTakeIn': 'Принять',
   'stock.takeInTitle': 'Принять машину на склад',

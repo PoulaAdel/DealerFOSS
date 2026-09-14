@@ -963,7 +963,55 @@ export interface ReceivableSummary {
 
 export interface ReceivableDetail extends ReceivableSummary {
   payments: PaymentView[];
+
+  /**
+   * Credits this bill produced, because somebody paid more than it asked for.
+   * Almost always empty.
+   *
+   * Carried on the bill rather than fetched separately so the counter can say
+   * "that is settled, and $59.50 is on their account" in the same breath as
+   * taking the money. A credit found ten minutes later on another screen is a
+   * credit the customer has already left without.
+   */
+  creditsRaised: CreditSummary[];
 }
+
+/** Money the dealership is holding that belongs to a customer. */
+export interface CreditSummary {
+  id: string;
+  rooftopId: string;
+  customerId: string;
+  customerName: string;
+
+  /** What was overpaid. Never changes. */
+  amount: number;
+
+  /** What has since been applied to a bill or handed back. */
+  spent: number;
+
+  /** What the dealership still owes out of this credit. */
+  remaining: number;
+  currency: string;
+
+  /** The bill that was overpaid. */
+  reference: string;
+  raisedAt: string;
+  isSpent: boolean;
+  uses: CreditUseView[];
+}
+
+export interface CreditUseView {
+  id: string;
+  amount: number;
+  currency: string;
+  kind: CreditUseKind;
+  receivableId: string | null;
+  usedAt: string;
+  note: string | null;
+}
+
+/** The two things that can happen to a credit. There is no third. */
+export type CreditUseKind = 'AppliedToBill' | 'Refunded';
 
 export interface PaymentView {
   id: string;
@@ -984,8 +1032,23 @@ export type ReceivableSource = 'Deal' | 'RepairOrder';
  * rather than a different kind of debt, because what the dealership is owed does
  * not change with who hands the money over.
  */
-export type PaymentMethod = 'Cash' | 'Card' | 'BankTransfer' | 'Cheque' | 'Finance';
+export type PaymentMethod =
+  | 'Cash'
+  | 'Card'
+  | 'BankTransfer'
+  | 'Cheque'
+  | 'Finance'
+  | 'CustomerCredit';
 
+/**
+ * The methods somebody may CHOOSE at the counter.
+ *
+ * `CustomerCredit` is deliberately absent. It is a real method and it appears on
+ * payments that were settled from a credit, but it is not something a person
+ * types in: a credit is put against a bill by its own action, which posts no
+ * cash. Offering it here would be offering a way to mark a bill paid with money
+ * that never arrived.
+ */
 export const paymentMethods: PaymentMethod[] = [
   'Cash',
   'Card',
@@ -993,6 +1056,9 @@ export const paymentMethods: PaymentMethod[] = [
   'Cheque',
   'Finance',
 ];
+
+/** How a credit may be handed back. Not from a credit — that is not giving it back. */
+export const refundMethods: PaymentMethod[] = ['Cash', 'Card', 'BankTransfer', 'Cheque'];
 
 /**
  * A profit and loss. Departmental gross first, because that is how a dealership

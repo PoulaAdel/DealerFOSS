@@ -42,7 +42,7 @@ the day it was written.
 ## What has been fixed since the walk
 
 **Seven of the thirty are closed, and one was never true.** Findings 1, 12 and 13
-— the whole of Job B — went in one change on the same day and are described
+â the whole of Job B â went in one change on the same day and are described
 below. Findings 3, 14, 15 and 23 were closed later and are marked *Done* where
 they are written, so a reader working down the list is never told to fix
 something that is already fixed. Finding 22 is half done and half **retracted**:
@@ -58,14 +58,14 @@ thing was driven in a browser**, not when a commit claims it.
 - **A car can be moved between stock states from its own record.** Only the moves
   the domain allows are offered, and Sold is never one of them: a car is sold by
   delivering a deal, which is what posts the sale.
-- **Taking a car into stock posts to the ledger** — 1300 debited, 1000 credited —
+- **Taking a car into stock posts to the ledger** â 1300 debited, 1000 credited â
   and the seeded dealership's existing two hundred cars were back-filled rather
   than requiring the database to be dropped.
 
 Walked again to confirm rather than assumed: WALK01, a 2022 Mazda CX-5 at
-$19,750, taken in, moved Incoming → Reconditioning ("Valet and two front tyres")
-→ Available ("Ready for the forecourt"), with a journal entry reading
-`1300 D19750 / 1000 C19750, Stock WALK01 — 2022 Mazda CX-5`.
+$19,750, taken in, moved Incoming â Reconditioning ("Valet and two front tyres")
+â Available ("Ready for the forecourt"), with a journal entry reading
+`1300 D19750 / 1000 C19750, Stock WALK01 â 2022 Mazda CX-5`.
 
 Account 1300 went from **minus $993,190 to plus $2,697,960**.
 
@@ -73,15 +73,15 @@ Account 1300 went from **minus $993,190 to plus $2,697,960**.
 
 Cash is now **minus $2,510,729**.
 
-That is not a regression, and it is not a defect in the posting — it is the
+That is not a regression, and it is not a defect in the posting â it is the
 correct double-entry consequence of a chart of accounts that has no way for a
 dealership to have any money. There is no opening balance, no capital, and no
 floorplan: the lender that really pays for a dealer's stock does not exist here,
 so $3.7M of cars was bought out of a cash account that started at nothing.
 
 Before, inventory lied. Now inventory is right and cash is wrong, for a reason
-that is written down and has a name. Both new register rows — floorplan, and
-opening balances when a dealership is set up — come straight from this, and
+that is written down and has a name. Both new register rows â floorplan, and
+opening balances when a dealership is set up â come straight from this, and
 neither was visible while the first lie was covering for the second.
 
 ### Job C, on 2026-09-11
@@ -96,10 +96,13 @@ Finding 2 is done. A bill is now something that can be **owed** and then
   arriving is a separate entry that moves 1100 to 1000 when it actually turns up.
 - **Part-payments are ordinary**, so a deposit is a real thing. What is
   outstanding is derived from the payments and never stored, so it cannot drift
-  from the rows underneath it. Overpayment is refused rather than absorbed: the
-  difference belongs to the customer and somebody has to give it back.
+  from the rows underneath it. Overpayment was refused rather than absorbed at the
+  time, because the difference belongs to the customer and there was nowhere to
+  put it. **Absorbed since 2026-09-14** into a customer credit on 2200 — the
+  bill takes what it can hold and the rest is a liability the dealership owes
+  back, applicable to another bill or refundable.
 - **A lender settling a financed car is a payment method**, not a different kind
-  of debt — what the dealership is owed does not change with who hands it over.
+  of debt â what the dealership is owed does not change with who hands it over.
 - **A payment band on the job sheet and the deal desk**, one component for both,
   because the question is the same whether the thing sold was a car or a clutch.
 
@@ -107,27 +110,29 @@ Walked again to confirm: RO-1083, a full service at $240, invoiced, then a $100
 deposit by card and a $140 balance in cash. The ledger read
 `1100 D240 / 4200 C240`, then `1000 D100 / 1100 C100`, then `1000 D140 / 1100 C140`.
 Account 1100 came back to zero on that job, and across the dealership the trial
-balance's 1100 ($110.00) equals the sub-ledger's total outstanding ($110.00) —
+balance's 1100 ($110.00) equals the sub-ledger's total outstanding ($110.00) â
 which is the invariant the whole design exists to keep.
 
 **One defect only the walk could find.** The band looked its receivable up once,
-when the job was opened, and never again — so invoicing in the same session
+when the job was opened, and never again â so invoicing in the same session
 showed nothing at all. It rendered perfectly on a fresh page load, which is the
 one place nobody was looking. The unit tests all passed because they mount the
 band against a bill that already exists. Fixed, and there is now a test that
 fails without the fix.
 
-**What is deliberately not built:** credit balances (hence refusing overpayment),
-receivable ageing as a report, statements, and credit limits. The historical
+**What is deliberately not built:** ~~credit balances (hence refusing
+overpayment)~~ — **built 2026-09-14**, on account 2200, with applying and
+refunding both real — receivable ageing as a report, statements, and credit
+limits. The historical
 deliveries and invoices in the seeded dealership are *not* back-filled into the
-sub-ledger — they were genuinely posted as cash at the time, and rewriting a
+sub-ledger â they were genuinely posted as cash at the time, and rewriting a
 posted ledger to look tidier is the one thing an accounting system must not do.
 
 ### Job D, on 2026-09-11
 
 Findings 5 and 6 are done, and so is the cash problem the stock work exposed.
 
-- **Expense accounts exist.** There were none — not one — so a dealership could
+- **Expense accounts exist.** There were none â not one â so a dealership could
   record everything it earned and nothing it spent. Wages, rent, advertising,
   floorplan interest and a catch-all now sit in the chart.
 - **A journal entry can be written by hand**, behind its own permission
@@ -147,14 +152,14 @@ $2,717,710 of stock funding from the bank to the floorplan lender. The result:
 
 |  | before | after |
 |---|---|---|
-| Cash | −$2,530,239 | **+$182,971** |
+| Cash | â$2,530,239 | **+$182,971** |
 | Net profit | did not exist | **$223,378** |
 | Balance sheet | did not exist | assets $3,019,333 = liabilities $2,795,423 + equity $0 + earned $223,910 |
 
 **And the numbers caught a hole nothing else would have.** Adding the two reports
 up by hand, they disagreed by $663.60. The cause: the first version of the P&L
-named its five overhead accounts explicitly, so 5400 Internal service charge —
-an expense, and not a department's cost of sales — appeared on no part of the
+named its five overhead accounts explicitly, so 5400 Internal service charge â
+an expense, and not a department's cost of sales â appeared on no part of the
 report at all. The seeded dealership had $1,196 in it and the page did not
 mention it. Money spent into an account that showed on no report.
 
@@ -176,7 +181,7 @@ found. The five marked **(stopper)** would stop a real installation.
 ### Money and the ledger
 
 1. **(stopper) Nothing books stock IN, so the balance sheet is nonsense.**
-   Account 1300 Vehicle inventory stands at **minus $993,190** — debits $310.00
+   Account 1300 Vehicle inventory stands at **minus $993,190** â debits $310.00
    against credits $993,500.00. `AccountingService.cs:900` credits inventory when
    a car is delivered; `AccountingService.cs:941` debits it only for capitalised
    reconditioning, which is the entire $310. Nothing debits it when a car is
@@ -189,15 +194,15 @@ found. The five marked **(stopper)** would stop a real installation.
    `AccountingService.cs:936` debits Cash for the whole repair-order invoice
    ("Taken from the customer"); delivery does the same for a car. The chart has
    exactly one receivable, 1200 Warranty claims receivable. There is no trade or
-   customer receivable. A fleet customer cannot be invoiced on account — and the
+   customer receivable. A fleet customer cannot be invoiced on account â and the
    demo dealership has four of them. A car sold on finance shows as cash from the
    customer rather than settlement from a lender. Deposits and part-payments do
    not exist. Almost no car is ever paid for the way this ledger assumes.
 
 3. **The parts capability is built and tested, and the workshop screen does not
    use it.** This one is worth stating precisely, because the first way I wrote it
-   was wrong. `src/App/Parts` is a complete capability — catalogue, stock
-   receipts, average costing, stock levels — and `verify-e2e.ps1` exercises it end
+   was wrong. `src/App/Parts` is a complete capability â catalogue, stock
+   receipts, average costing, stock levels â and `verify-e2e.ps1` exercises it end
    to end every run: *"booked in 20, average cost 7.00 / sold 2, cost recorded
    14.00 / stock left on the shelf 18"*. The repair-order line contract accepts an
    optional `PartId` (`IRepairOrders.cs:256`).
@@ -216,19 +221,19 @@ found. The five marked **(stopper)** would stop a real installation.
    **Done 2026-09-11.** A picker on the repair-order line, offering what is on
    the shelf with the quantity beside it, filling the description from the
    catalogue and leaving it editable. Free text is still there and is named as a
-   choice — "Not from stock (type it below)" — because a one-off item bought for
+   choice â "Not from stock (type it below)" â because a one-off item bought for
    one job never enters the catalogue and still has to be billable. A catalogue
    that will not load falls back to free text rather than stopping the workshop.
 
    Walked: RO-1084 billed two brake pad sets at $24 off a shelf holding 20 at $7.
    The line froze `cost=14`, the entry read `1100 D24 / 5300 D14 / 1400 C14 /
    4300 C24`, and the shelf went to 18. Service cost on the dashboard went from
-   $0 to $14 — the first parts cost ever recorded through a browser. It still
+   $0 to $14 â the first parts cost ever recorded through a browser. It still
    *rounds* to a 100% margin, because every historical part in the seeded
    dealership was billed as free text and those lines are not rewritten.
 
 4. **The dashboard states a 100% margin on service as fact.** "Service $17,286
-   revenue, $0 cost, 100% margin" — finding 3 arriving on the screen a dealer
+   revenue, $0 cost, 100% margin" â finding 3 arriving on the screen a dealer
    principal reads most often, with nothing to hint the cost side was never
    captured. Note that this is a *screen* reporting honestly on data a *screen*
    failed to collect: the ledger would have carried the cost had the part been
@@ -237,8 +242,8 @@ found. The five marked **(stopper)** would stop a real installation.
 5. **There is no profit and loss and no balance sheet.** Accounting offers a trial
    balance and a screen for opening and closing months. A trial balance is a
    bookkeeping instrument, not a management report. There is no expense entry of
-   any kind — no wages, rent, advertising or floorplan interest anywhere in the
-   chart — so net profit does not exist in the system.
+   any kind â no wages, rent, advertising or floorplan interest anywhere in the
+   chart â so net profit does not exist in the system.
 
 6. **Stock is counted but never valued.** The ageing panel says 161 unsold cars
    and nothing says what they are worth. "What is my stock worth" is the biggest
@@ -252,7 +257,7 @@ found. The five marked **(stopper)** would stop a real installation.
    the total and nowhere in the column. `tbody` renders charges, products and
    trade-in; there is no tax row. `tfoot` prints `deal.amountDue`, which includes
    tax. The trade-in row three lines above carries this comment: *"leaving equity
-   positive made the column stop adding up — read down it and you got a different
+   positive made the column stop adding up â read down it and you got a different
    total from the one printed at the bottom."* Tax has reintroduced the defect
    that comment was written about. This is the number a customer signs for.
 
@@ -273,7 +278,7 @@ found. The five marked **(stopper)** would stop a real installation.
    basis is not even defaulted from the deal.
 
 10. **The deal has no registration address.** `Deal` carries `TaxedAt`, a
-    four-field `TaxAddress` — correct for rate lookup and deliberately so. ADR-024
+    four-field `TaxAddress` â correct for rate lookup and deliberately so. ADR-024
     also wanted a registration address frozen with the sale, and there is nowhere
     to put one, on the deal or on the customer. A retail contract cannot be
     printed without it.
@@ -281,7 +286,7 @@ found. The five marked **(stopper)** would stop a real installation.
 11. **The enquiry-to-deal hand-off drops the car without saying so.** "Build the
     deal" carries `leadId` and `customerId` in the URL, not the car. The picker
     opens on "Choose a car...". The enquiry named a 2021 Toyota RAV4 XLE; the
-    salesperson gets an empty picker and no message — not "that car has been
+    salesperson gets an empty picker and no message â not "that car has been
     sold", not "pick another RAV4".
 
 ### Stock
@@ -289,7 +294,7 @@ found. The five marked **(stopper)** would stop a real installation.
 12. **(stopper) Job B cannot start: there is no way to put a car into stock.**
     205 buttons on `/inventory`, every one of them a stock number. No "add a car",
     no "book one in". `InventoryEndpoints.cs:40` maps `POST ""` to `ReceiveAsync`
-    — the capability exists and is on no screen. Every car in the system arrived
+    â the capability exists and is on no screen. Every car in the system arrived
     from a seeder.
 
 13. **A car cannot be moved between stock states either.** Opening a car offers
@@ -302,7 +307,7 @@ found. The five marked **(stopper)** would stop a real installation.
 
 14. **(stopper) The "Nobody is chasing these" list hides the most neglected
     enquiries.** `LeadService.cs:123` orders by `CapturedAt` **descending** and
-    takes 50 — the 50 newest — and the screen then displays them longest-waiting
+    takes 50 â the 50 newest â and the screen then displays them longest-waiting
     first. Measured against the running application with 52 open enquiries:
 
     | | days waiting |
@@ -317,13 +322,13 @@ found. The five marked **(stopper)** would stop a real installation.
 
     **Done 2026-09-11.** The order is part of the query, not applied to a page
     that already holds the wrong rows. Walked: the 96-day customers lead the
-    chase list, and rows 51–100 of 108 are reachable.
+    chase list, and rows 51â100 of 108 are reachable.
 
 15. **A walk-in who is not already a customer cannot be recorded.** Searching a
     name that does not exist empties the picker and says "Search above to find
     them." There is no "add this person" control in the enquiry flow. The
     salesperson must abandon the enquiry, create the customer elsewhere, navigate
-    back and start again — and "Walk-in" is one of the five sources the form
+    back and start again â and "Walk-in" is one of the five sources the form
     itself offers.
 
     **Done 2026-09-11.** The person is recorded and selected in place, without
@@ -338,7 +343,7 @@ found. The five marked **(stopper)** would stop a real installation.
 
 17. **The workshop list shows two different jobs under one number.** Over the API:
     162 repair orders, 82 distinct numbers, 80 numbers used twice. The data is
-    correct — `RepairOrderService.cs:690-702` numbers per rooftop by design and
+    correct â `RepairOrderService.cs:690-702` numbers per rooftop by design and
     `RepairOrderTables.cs:65` enforces it with a unique index on
     `(RooftopId, Number)`. The screen is not: it is headed "The work at the
     locations you cover", lists both rooftops together, and shows the number
@@ -348,23 +353,23 @@ found. The five marked **(stopper)** would stop a real installation.
 18. **Booking a car in: 100 customers, no search, and cars you cannot tell apart.**
     The customer picker is a raw `<select>` of 101 options with no search of any
     kind, against ~500 customers. The vehicle picker holds 101 options and does
-    **not** filter when a customer is chosen — verified, it stayed at 101. Options
+    **not** filter when a customer is chosen â verified, it stayed at 101. Options
     carry no VIN, no plate, no stock number, and 32 of the labels are exact
     duplicates.
 
-    **Still open, re-read 2026-09-14 — and paging did not touch it.**
+    **Still open, re-read 2026-09-14 â and paging did not touch it.**
     `DiaryPanel.tsx` asks for `/customers?limit=200` and `/vehicles?limit=200`
     and drops the rows into two bare `<select>` elements. The cap moved from 100
     to 200 when the shared cap arrived, which halves the problem and solves none
     of it: 200 of ~500 is still most of the dealership missing, and a dropdown
     has no page two. The label is `vehicle.displayName`, and **`VehicleSummary`
-    already carries `vin`** — the picker is throwing away the one field that
+    already carries `vin`** â the picker is throwing away the one field that
     would tell two identical cars apart.
 
 19. **Job numbering breaks if a repair order is ever deleted.** The next number is
     `FirstNumber + COUNT(orders at this rooftop) + 1`. A deletion makes the next
     number collide; two concurrent opens compute the same count. The unique index
-    turns both into a failed insert rather than corruption — it fails loudly, but
+    turns both into a failed insert rather than corruption â it fails loudly, but
     it fails, and the advisor sees an error they cannot act on.
 
 20. **"Coming in" shows last month's appointments as expected today.** The diary
@@ -388,21 +393,21 @@ found. The five marked **(stopper)** would stop a real installation.
     **Half done, half wrong.** The enquiry screen's customer search got a button
     on 2026-09-11, which is the half that was real. **The `/customers` half is
     retracted:** that screen has searched as you type since `59bcc54` on
-    2026-08-09 — a debounced term with the in-flight request aborted on each
+    2026-08-09 â a debounced term with the in-flight request aborted on each
     keystroke, so a slow answer for "f" cannot land on top of the right answer
     for "focus". `/parts` does the same. The walk recorded the opposite of the
     code, a month after the code was written. See the retractions below.
 
 23. **Every list truncates, and none can be paged.** `/leads` says "Showing the
-    first 50. There may be more — narrow it with the filters until paging exists."
+    first 50. There may be more â narrow it with the filters until paging exists."
     `/customers` says "The first 100 customers. There may be more." The
     disclosure is honest; there is still no way to reach the rest.
 
-    **Done 2026-09-12.** Every list endpoint returns one `Page<T>` — rows, total,
-    offset, limit — counted over the same filters as the page it accompanies, and
+    **Done 2026-09-12.** Every list endpoint returns one `Page<T>` â rows, total,
+    offset, limit â counted over the same filters as the page it accompanies, and
     every list screen carries the same `<Pager>`. Walked: stock reads
-    "Showing 1–50 of 215" and page two is different cars. Two latent defects came
-    out with it — three lists had **no total order**, so skipping an unordered set
+    "Showing 1â50 of 215" and page two is different cars. Two latent defects came
+    out with it â three lists had **no total order**, so skipping an unordered set
     could return row 51 twice and row 52 never; and receivables filtered "still
     owed" **in memory after the take**, which cannot be paged at all. Both are in
     ADR-025.
@@ -410,8 +415,8 @@ found. The five marked **(stopper)** would stop a real installation.
 24. **Buttons are offered to roles that cannot use them.** On `/staff` a
     salesperson can open "Add somebody", type a name and email, and only then be
     refused: "This needs organization-wide permission." Security is correct; the
-    surfacing is not. The deal desk does this better — it shows Approve with a
-    note saying a manager is needed — though that note names the internal string
+    surfacing is not. The deal desk does this better â it shows Approve with a
+    note saying a manager is needed â though that note names the internal string
     `Deals.Approve` at a salesperson.
 
 25. **A customer has no address.** Add-a-customer collects first name, last name,
@@ -420,7 +425,7 @@ found. The five marked **(stopper)** would stop a real installation.
 
 26. **Adding a customer gives no confirmation.** The panel closes, the list does
     not move, and the new person is alphabetically elsewhere. The record did
-    save — verified by searching for it — but the person has no way to know.
+    save â verified by searching for it â but the person has no way to know.
 
 27. **Percentages against a near-empty month are noise.** "up 42861% on last
     month". True and useless; the F&I tile already gets this right with "up from
@@ -431,7 +436,7 @@ found. The five marked **(stopper)** would stop a real installation.
     autofill do not engage. Sign-in *is* a real form, so this is inconsistency
     rather than house style.
 
-29. **Demo pollution.** `TX516909 — Tax Preview516909`, a throwaway record from
+29. **Demo pollution.** `TX516909 â Tax Preview516909`, a throwaway record from
     the tax work, sits in the manager's approval queue looking like a customer.
 
 30. **Enquiries never name a car.** All 50 unassigned enquiries read "no
@@ -458,7 +463,7 @@ are not disturbed.
   put in front of them."
 - **The repair order flow is complete** from booking to invoice: write-up, the
   agreed/not-agreed distinction, start work, finish, invoice.
-- **The dashboard is the strongest screen in the application** — month and rooftop
+- **The dashboard is the strongest screen in the application** â month and rooftop
   pickers, an open-books warning, gross by department with margin, cars delivered,
   jobs invoiced, gross per car, stock ageing in four bands, and the cars standing
   longest.
@@ -488,7 +493,7 @@ Recorded because the method matters more than the findings.
 
 - **"Search works only if you guess to press Enter, on `/leads` or
   `/customers`."** Not on `/customers`. That screen has searched as you type
-  since `59bcc54` on **2026-08-09**, a month before the walk — `useDebounced`
+  since `59bcc54` on **2026-08-09**, a month before the walk â `useDebounced`
   plus an `AbortController` so the answer for a half-typed term cannot overwrite
   the answer for the whole one. `/parts` too. Finding 22 is retracted for
   `/customers` and stands for the enquiry screen, which really did answer only
@@ -496,21 +501,21 @@ Recorded because the method matters more than the findings.
 
   This one is worse than the `innerText` three, because those were wrong for
   fifteen minutes and this was wrong for four days *in a document other things
-  read from*. The register row in doc 11 §12 was written from it, the progress
+  read from*. The register row in doc 11 Â§12 was written from it, the progress
   page derived a candidate task from that row, and the task was "add a search
   button to a screen that has had search-as-you-type for a month". A wrong
   finding does not sit still; it becomes a wrong backlog. **A finding about a
   screen must name the file and the commit that made it true**, the way the
-  code-level findings here do — the ones citing `LeadService.cs:123` and
+  code-level findings here do â the ones citing `LeadService.cs:123` and
   `CaptureLead.tsx:74-77` were all correct.
 
 ## What this changes
 
-The register in [`docs/11`](../11-Franchise-and-External-Scope.md) §12 has been
+The register in [`docs/11`](../11-Franchise-and-External-Scope.md) Â§12 has been
 rewritten from this walk. Before it, the register held four Build rows, all small,
 none of which would have moved any of the four jobs. The rows added here are the
 ordinary work of running a dealership, in the order a dealership feels it.
 
-The progress page now counts jobs that can be completed end to end — one of four —
+The progress page now counts jobs that can be completed end to end â one of four â
 rather than commits and checkboxes, which is what allowed 50 commits to read as
 progress while a car could not be put into stock.

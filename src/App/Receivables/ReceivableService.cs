@@ -50,6 +50,13 @@ public sealed class ReceivableService(
     /// </summary>
     private const string PostPermission = Permissions.AccountingPost;
 
+    /// <summary>
+    /// Handing a credit back. Deliberately NOT PostPermission: taking money and
+    /// giving it back are different acts, and only one of them is a way to get
+    /// cash out of the business. See Permissions.AccountingRefund.
+    /// </summary>
+    private const string RefundPermission = Permissions.AccountingRefund;
+
     private const int MaxResults = 200;
 
     private readonly TenantDb _db = db;
@@ -106,8 +113,10 @@ public sealed class ReceivableService(
         // the wrong place and a total counted over the unfiltered set would have
         // promised rows that do not exist.
         //
-        // Overpayment is refused when a payment is taken, so outstanding is
-        // never negative and "not settled" is exactly "paid less than billed".
+        // A payment is capped at what is owed and the excess becomes a credit, so
+        // outstanding is never negative and "not settled" is exactly "paid less
+        // than billed" — which is what lets this be a comparison the database can
+        // do rather than a subtraction it cannot.
         if (query.OutstandingOnly)
         {
             rows = rows.Where(r => r.Payments.Sum(p => p.Amount) < r.Amount);
@@ -253,25 +262,60 @@ public sealed class ReceivableService(
             return Result.Failure<ReceivableDetail>(ReceivableErrors.UnknownMethod);
         }
 
-        // Said plainly before the entity says it, because "that is more than is
-        // owed" is the message somebody actually needs, and a settled row hit by
-        // a second payment is the common way to arrive here.
+        // A SETTLED BILL IS STILL REFUSED, and this is not the same case as an
+        // overpayment. A payment against a bill with nothing left on it is almost
+        // always the same payment keyed twice, where no second money arrived at
+        // all — absorbing it would invent both the cash and the liability, and
+        // the books would balance perfectly around a transaction that never
+        // happened. Overpaying a bill that IS still owed is different: the money
+        // is real, it is on the counter, and the only question is where to put
+        // the difference.
         if (row.IsSettled)
         {
             return Result.Failure<ReceivableDetail>(ReceivableErrors.AlreadySettled);
         }
 
+        // A credit cannot be conjured by typing it into the payment box; it is
+        // raised only by real money arriving. Applying one is its own operation
+        // with its own entry, which posts no cash.
+        if (method == PaymentMethod.CustomerCredit)
+        {
+            return Result.Failure<ReceivableDetail>(ReceivableErrors.CreditIsNotAPaymentMethod);
+        }
+
+        // THE SPLIT. What the bill can absorb settles it; the rest is the
+        // customer's money and becomes something we owe back. Both halves come
+        // out of one act at the counter, so both are written inside one
+        // transaction and posted as one journal entry.
+        var applied = Math.Min(payment.Amount, row.Outstanding);
+        var excess = payment.Amount - applied;
+
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         Payment taken;
+        CustomerCredit? credit = null;
         try
         {
             taken = row.Take(
                 Guid.NewGuid(),
-                new Money(payment.Amount, row.Currency),
+                new Money(applied, row.Currency),
                 method,
                 _clock.UtcNow,
                 payment.Note);
+
+            if (excess > 0m)
+            {
+                credit = CustomerCredit.Raise(
+                    Guid.NewGuid(),
+                    row.RooftopId,
+                    row.CustomerId,
+                    new Money(excess, row.Currency),
+                    row.Reference,
+                    row.Id,
+                    _clock.UtcNow);
+
+                _db.CustomerCredits.Add(credit);
+            }
         }
         catch (Exception ex) when (ex is ArgumentException or ArgumentOutOfRangeException)
         {
@@ -292,7 +336,10 @@ public sealed class ReceivableService(
                 row.Reference,
                 row.Currency,
                 taken.Amount,
-                $"Payment against {row.Reference}"),
+                excess > 0m
+                    ? $"Payment against {row.Reference}, {excess} overpaid"
+                    : $"Payment against {row.Reference}",
+                excess),
             cancellationToken);
 
         if (posted.IsFailure)
@@ -307,10 +354,273 @@ public sealed class ReceivableService(
         await _audit.RecordAsync(
             new AuditEntry(_currentUser.Id, PostPermission, AuditOutcome.Allowed,
                 "Receivable", row.Id.ToString(), row.RooftopId.Value,
-                $"Payment {taken.Amount} against {row.Reference}", null, null),
+                credit is null
+                    ? $"Payment {taken.Amount} against {row.Reference}"
+                    : $"Payment {taken.Amount} against {row.Reference}, credit {credit.Amount} raised",
+                null, null),
             cancellationToken);
 
         return Result.Success(await DescribeAsync(row, cancellationToken));
+    }
+
+    // --- credits the dealership is holding ----------------------------------
+
+    public async Task<Result<Page<CreditSummary>>> ListCreditsAsync(
+        CreditQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<Page<CreditSummary>>(ReceivableErrors.Forbidden);
+        }
+
+        if (query.RooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<Page<CreditSummary>>(ReceivableErrors.Forbidden);
+        }
+
+        var take = Paging.Limit(query.Limit);
+        var skip = Paging.Offset(query.Offset);
+        var rows = _db.CustomerCredits.AsNoTracking().Include(c => c.Uses).AsQueryable();
+
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            rows = rows.Where(c => allowed.Contains(c.RooftopId));
+        }
+
+        if (query.RooftopId is { } only)
+        {
+            rows = rows.Where(c => c.RooftopId == only);
+        }
+
+        if (query.CustomerId is { } customer)
+        {
+            rows = rows.Where(c => c.CustomerId == customer);
+        }
+
+        // The same shape as the outstanding filter above, and for the same
+        // reason: expressed as a correlated sum so the database applies it before
+        // the page is taken, rather than in memory afterwards where it cannot be
+        // paged. A use can never exceed the credit, so "not spent" is exactly
+        // "used less than raised".
+        if (query.OpenOnly)
+        {
+            rows = rows.Where(c => c.Uses.Sum(u => u.Amount) < c.Amount);
+        }
+
+        var total = await rows.CountAsync(cancellationToken);
+
+        var loaded = await rows
+            .OrderByDescending(c => c.RaisedAt)
+            .ThenBy(c => c.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+        var names = await NamesAsync(loaded.Select(c => c.CustomerId), cancellationToken);
+
+        return Result.Success(new Page<CreditSummary>(
+            loaded.Select(c => Summarize(c, names)).ToList(),
+            total,
+            skip,
+            take));
+    }
+
+    public async Task<Result<CreditSummary>> ApplyCreditAsync(
+        Guid creditId,
+        ApplyCredit application,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(application);
+
+        var credit = await _db.CustomerCredits
+            .Include(c => c.Uses)
+            .SingleOrDefaultAsync(c => c.Id == creditId, cancellationToken);
+
+        if (credit is null)
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, PostPermission, credit.RooftopId, cancellationToken))
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.Forbidden);
+        }
+
+        var bill = await _db.Receivables
+            .Include(r => r.Payments)
+            .SingleOrDefaultAsync(r => r.Id == application.ReceivableId, cancellationToken);
+
+        if (bill is null)
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.Forbidden);
+        }
+
+        // The bill is at a rooftop of its own, and the caller must be allowed to
+        // post there too. Checking only the credit's rooftop would let somebody
+        // who covers one lot settle a bill at another.
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, PostPermission, bill.RooftopId, cancellationToken))
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.Forbidden);
+        }
+
+        // ONE CUSTOMER'S MONEY DOES NOT PAY ANOTHER CUSTOMER'S BILL. This is the
+        // check that matters most in this method: without it a credit becomes a
+        // way to move money between accounts that never agreed to it, and the
+        // ledger would balance the whole time.
+        if (bill.CustomerId != credit.CustomerId)
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.CreditBelongsToSomebodyElse);
+        }
+
+        if (bill.IsSettled)
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.AlreadySettled);
+        }
+
+        if (application.Amount > bill.Outstanding)
+        {
+            return Result.Failure<CreditSummary>(
+                ReceivableErrors.MoreThanIsOwed(bill.Outstanding, bill.Currency));
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            credit.Spend(
+                Guid.NewGuid(),
+                new Money(application.Amount, credit.Currency),
+                CreditUseKind.AppliedToBill,
+                bill.Id,
+                _clock.UtcNow,
+                application.Note);
+
+            // The bill sees an ordinary payment, because from the bill's side it
+            // was settled. What keeps it out of cash is the entry below.
+            bill.Take(
+                Guid.NewGuid(),
+                new Money(application.Amount, bill.Currency),
+                PaymentMethod.CustomerCredit,
+                _clock.UtcNow,
+                application.Note);
+        }
+        catch (Exception ex) when (ex is ArgumentException or ArgumentOutOfRangeException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<CreditSummary>(Error.Validation("receivables.credit_invalid", ex.Message));
+        }
+
+        var posted = await _accounting.PostCreditApplicationAsync(
+            new CreditApplicationPosting(
+                bill.RooftopId,
+                bill.Reference,
+                bill.Currency,
+                application.Amount,
+                $"Credit from {credit.Reference} applied to {bill.Reference}"),
+            cancellationToken);
+
+        if (posted.IsFailure)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<CreditSummary>(posted.Error);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, PostPermission, AuditOutcome.Allowed,
+                "CustomerCredit", credit.Id.ToString(), credit.RooftopId.Value,
+                $"Credit {application.Amount} applied to {bill.Reference}", null, null),
+            cancellationToken);
+
+        return Result.Success(await DescribeAsync(credit, cancellationToken));
+    }
+
+    public async Task<Result<CreditSummary>> RefundCreditAsync(
+        Guid creditId,
+        RefundCredit refund,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(refund);
+
+        var credit = await _db.CustomerCredits
+            .Include(c => c.Uses)
+            .SingleOrDefaultAsync(c => c.Id == creditId, cancellationToken);
+
+        if (credit is null)
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.Forbidden);
+        }
+
+        // NOT PostPermission. Whoever takes money at a counter holds that; handing
+        // money back is a different act and a different right. See
+        // Permissions.AccountingRefund.
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, RefundPermission, credit.RooftopId, cancellationToken))
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.Forbidden);
+        }
+
+        if (!Enum.TryParse<PaymentMethod>(refund.Method, ignoreCase: true, out var method))
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.UnknownMethod);
+        }
+
+        // Refunding a credit "by credit" is not a way of giving money back, it is
+        // a way of writing a row that says nothing happened.
+        if (method == PaymentMethod.CustomerCredit)
+        {
+            return Result.Failure<CreditSummary>(ReceivableErrors.CreditIsNotARefundMethod);
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            credit.Spend(
+                Guid.NewGuid(),
+                new Money(refund.Amount, credit.Currency),
+                CreditUseKind.Refunded,
+                null,
+                _clock.UtcNow,
+                string.IsNullOrWhiteSpace(refund.Note) ? method.ToString() : refund.Note);
+        }
+        catch (Exception ex) when (ex is ArgumentException or ArgumentOutOfRangeException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<CreditSummary>(Error.Validation("receivables.credit_invalid", ex.Message));
+        }
+
+        var posted = await _accounting.PostCreditRefundAsync(
+            new CreditRefundPosting(
+                credit.RooftopId,
+                credit.Reference,
+                credit.Currency,
+                refund.Amount,
+                $"Credit from {credit.Reference} refunded by {method}"),
+            cancellationToken);
+
+        if (posted.IsFailure)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<CreditSummary>(posted.Error);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, RefundPermission, AuditOutcome.Allowed,
+                "CustomerCredit", credit.Id.ToString(), credit.RooftopId.Value,
+                $"Credit {refund.Amount} refunded by {method}", null, null),
+            cancellationToken);
+
+        return Result.Success(await DescribeAsync(credit, cancellationToken));
     }
 
     // --- helpers -----------------------------------------------------------
@@ -338,6 +648,13 @@ public sealed class ReceivableService(
     {
         var names = await NamesAsync([row.CustomerId], cancellationToken);
 
+        var credits = await _db.CustomerCredits
+            .AsNoTracking()
+            .Include(c => c.Uses)
+            .Where(c => c.SourceReceivableId == row.Id)
+            .OrderBy(c => c.RaisedAt)
+            .ToListAsync(cancellationToken);
+
         return new ReceivableDetail(
             row.Id,
             row.RooftopId,
@@ -356,8 +673,37 @@ public sealed class ReceivableService(
                 .OrderBy(p => p.ReceivedAt)
                 .Select(p => new PaymentView(
                     p.Id, p.Amount, p.Currency, p.Method.ToString(), p.ReceivedAt, p.Note))
-                .ToList());
+                .ToList(),
+            credits.Select(c => Summarize(c, names)).ToList());
     }
+
+    private async Task<CreditSummary> DescribeAsync(CustomerCredit credit, CancellationToken cancellationToken)
+    {
+        var names = await NamesAsync([credit.CustomerId], cancellationToken);
+
+        return Summarize(credit, names);
+    }
+
+    private static CreditSummary Summarize(
+        CustomerCredit credit,
+        IReadOnlyDictionary<Guid, string> names) =>
+        new(
+            credit.Id,
+            credit.RooftopId,
+            credit.CustomerId,
+            names.GetValueOrDefault(credit.CustomerId, string.Empty),
+            credit.Amount,
+            credit.Spent,
+            credit.Remaining,
+            credit.Currency,
+            credit.Reference,
+            credit.RaisedAt,
+            credit.IsSpent,
+            credit.Uses
+                .OrderBy(u => u.UsedAt)
+                .Select(u => new CreditUseView(
+                    u.Id, u.Amount, u.Currency, u.Kind.ToString(), u.ReceivableId, u.UsedAt, u.Note))
+                .ToList());
 
     private ReceivableSummary Summarize(Receivable row, IReadOnlyDictionary<Guid, string> names) =>
         new(
@@ -397,4 +743,24 @@ internal static class ReceivableErrors
 
     public static Error AlreadyBilled(string reference) =>
         Error.Conflict("receivables.already_billed", $"{reference} has already been billed.");
+
+    /// <summary>
+    /// The check that keeps a credit from becoming a way to move money between
+    /// customers who never agreed to it.
+    /// </summary>
+    public static Error CreditBelongsToSomebodyElse { get; } =
+        Error.Validation("receivables.credit_wrong_customer",
+            "That credit belongs to a different customer.");
+
+    public static Error CreditIsNotAPaymentMethod { get; } =
+        Error.Validation("receivables.credit_not_a_payment",
+            "A credit is put against a bill from the customer's credit, not typed in as a payment.");
+
+    public static Error CreditIsNotARefundMethod { get; } =
+        Error.Validation("receivables.credit_not_a_refund",
+            "Say how the money was handed back — cash, card, transfer or cheque.");
+
+    public static Error MoreThanIsOwed(decimal outstanding, string currency) =>
+        Error.Validation("receivables.more_than_owed",
+            $"Only {currency} {outstanding} is still owed on that bill.");
 }

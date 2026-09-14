@@ -92,6 +92,24 @@ public static class Permissions
     public const string AccountingReverse = "Accounting.Reverse";
 
     /// <summary>
+    /// Handing a customer their money back — paying out a credit the dealership
+    /// is holding after an overpayment.
+    ///
+    /// Deliberately NOT <see cref="AccountingPost"/>, which a salesperson holds
+    /// because delivering a car posts the sale. Every other posting in this
+    /// system records money the business earned or now owes; this one takes cash
+    /// out for a customer, and a refund is the classic way a retail business is
+    /// quietly stolen from — raise a credit, pay it to yourself, and the books
+    /// balance perfectly the whole time. Whoever is accountable for the money
+    /// holds this; the people who take payments at a counter do not.
+    ///
+    /// APPLYING a credit to another bill the same customer owes is not this. No
+    /// money leaves, so that rides on <see cref="AccountingPost"/> with the rest
+    /// of taking payment.
+    /// </summary>
+    public const string AccountingRefund = "Accounting.Refund";
+
+    /// <summary>
     /// Writing a journal entry by hand — an expense, an opening balance, a
     /// correction.
     ///
@@ -226,6 +244,7 @@ public static class Permissions
         AccountingRead,
         AccountingPost,
         AccountingReverse,
+        AccountingRefund,
         AccountingManualEntry,
         StaffRead,
         StaffManage,

@@ -23,10 +23,20 @@
 //   and the payments are the evidence — a customer disputing a bill is asking
 //   about those rows, not about a total.
 //
-//   OVERPAYMENT IS REFUSED, NOT ABSORBED. Taking more than is owed and quietly
-//   showing zero loses real money: the difference belongs to the customer and
-//   somebody has to give it back. Credit balances are a real thing and are not
-//   built here, so the honest answer for now is to refuse and say why.
+//   THIS ENTITY STILL REFUSES MORE THAN IS OWED, and that is now a floor rather
+//   than the whole answer. Until 2026-09-14 the refusal WAS the answer: taking
+//   more than is owed and quietly showing zero loses real money, so the honest
+//   thing available at the time was to say no. It was honest and useless — a
+//   customer paying a $1,340.50 invoice with $1,400 in cash has not made a
+//   mistake, and "we cannot accept that" is not something a service counter can
+//   say.
+//
+//   The service now splits the money before it gets here: the bill's share comes
+//   to Take, and the rest becomes a CustomerCredit. Take keeps refusing, because
+//   it is the invariant that makes Outstanding meaningful — never negative,
+//   always Amount minus what was actually put against THIS bill. A future caller
+//   that forgets to split gets an exception rather than a receivable that owes a
+//   negative amount.
 
 using DealerFOSS.Core;
 
@@ -65,7 +75,11 @@ public sealed class Receivable : AuditableEntity
     /// <summary>What has come in. Summed from the payments, never stored.</summary>
     public decimal Paid => _payments.Sum(p => p.Amount);
 
-    /// <summary>What is still owed. Never negative, because overpayment is refused.</summary>
+    /// <summary>
+    /// What is still owed. Never negative: <see cref="Take"/> refuses more than
+    /// this, and money handed over above it becomes a
+    /// <see cref="CustomerCredit"/> instead of a negative balance here.
+    /// </summary>
     public decimal Outstanding => Amount - Paid;
 
     public bool IsSettled => Outstanding == 0m;
@@ -212,4 +226,18 @@ public enum PaymentMethod
     /// — which is why this is a method rather than a separate kind of receivable.
     /// </summary>
     Finance = 4,
+
+    /// <summary>
+    /// A credit the dealership was already holding for this customer, put against
+    /// this bill.
+    /// </summary>
+    /// <remarks>
+    /// The one member here that is NOT money arriving — the money arrived earlier,
+    /// when they overpaid something else. It is a payment method all the same,
+    /// because from the bill's point of view it was settled, and leaving it out
+    /// would mean a bill that reads as paid with no payment against it. What
+    /// stops it being counted as cash twice is the ledger: applying a credit
+    /// posts 2200 down and 1100 down, and never touches 1000.
+    /// </remarks>
+    CustomerCredit = 5,
 }

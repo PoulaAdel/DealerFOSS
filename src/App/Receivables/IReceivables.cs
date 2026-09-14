@@ -51,9 +51,45 @@ public interface IReceivables
     /// Records money arriving and posts it: cash up, receivable down. Owns its
     /// own transaction.
     /// </summary>
+    /// <remarks>
+    /// More than is owed is <b>absorbed, not refused</b>, since 2026-09-14. The
+    /// bill's share settles it and the rest becomes a
+    /// <see cref="CustomerCredit"/> the dealership owes back. A customer paying
+    /// a $1,340.50 invoice with $1,400 in cash has not made a mistake.
+    /// </remarks>
     Task<Result<ReceivableDetail>> RecordPaymentAsync(
         Guid receivableId,
         NewPayment payment,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Credits the dealership is holding, newest first, scoped to the caller's
+    /// rooftops. Open ones only unless asked otherwise.
+    /// </summary>
+    Task<Result<Page<CreditSummary>>> ListCreditsAsync(
+        CreditQuery query,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Puts a credit against another bill the same customer owes. Owns its own
+    /// transaction; posts 2200 down, 1100 down, and no cash moves.
+    /// </summary>
+    Task<Result<CreditSummary>> ApplyCreditAsync(
+        Guid creditId,
+        ApplyCredit application,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Hands a credit back to the customer. Owns its own transaction; posts 2200
+    /// down and 1000 down.
+    /// </summary>
+    /// <remarks>
+    /// Needs <c>Accounting.Refund</c>, which taking a payment does not — see
+    /// the permission's own documentation for why they are separate.
+    /// </remarks>
+    Task<Result<CreditSummary>> RefundCreditAsync(
+        Guid creditId,
+        RefundCredit refund,
         CancellationToken cancellationToken);
 }
 
@@ -117,7 +153,19 @@ public sealed record ReceivableDetail(
     DateTimeOffset BilledAt,
     int DaysOutstanding,
     bool IsSettled,
-    IReadOnlyList<PaymentView> Payments);
+    IReadOnlyList<PaymentView> Payments,
+
+    /// <summary>
+    /// Credits this bill produced, because somebody paid more than it asked for.
+    /// Almost always empty.
+    /// </summary>
+    /// <remarks>
+    /// Carried on the bill rather than looked up separately so the counter can
+    /// say "that is settled, and $59.50 is on their account" in the same breath
+    /// as taking the money. A credit found ten minutes later on another screen
+    /// is a credit the customer has already left without.
+    /// </remarks>
+    IReadOnlyList<CreditSummary> CreditsRaised);
 
 public sealed record PaymentView(
     Guid Id,
@@ -125,4 +173,54 @@ public sealed record PaymentView(
     string Currency,
     string Method,
     DateTimeOffset ReceivedAt,
+    string? Note);
+
+/// <summary>How a caller narrows the list of credits the dealership is holding.</summary>
+public sealed record CreditQuery(
+    RooftopId? RooftopId = null,
+    Guid? CustomerId = null,
+
+    /// <summary>
+    /// Default true. "What do we still owe people" is the question; a credit
+    /// fully spent is history and is asked for deliberately.
+    /// </summary>
+    bool OpenOnly = true,
+    int Limit = 50,
+    int Offset = 0);
+
+/// <summary>What a caller supplies to put a credit against a bill.</summary>
+public sealed record ApplyCredit(Guid ReceivableId, decimal Amount, string? Note = null);
+
+/// <summary>What a caller supplies to hand a credit back.</summary>
+public sealed record RefundCredit(decimal Amount, string Method, string? Note = null);
+
+public sealed record CreditSummary(
+    Guid Id,
+    RooftopId RooftopId,
+    Guid CustomerId,
+    string CustomerName,
+
+    /// <summary>What was overpaid.</summary>
+    decimal Amount,
+
+    /// <summary>What has since been applied or handed back.</summary>
+    decimal Spent,
+
+    /// <summary>What the dealership still owes out of this credit.</summary>
+    decimal Remaining,
+    string Currency,
+
+    /// <summary>The bill that was overpaid.</summary>
+    string Reference,
+    DateTimeOffset RaisedAt,
+    bool IsSpent,
+    IReadOnlyList<CreditUseView> Uses);
+
+public sealed record CreditUseView(
+    Guid Id,
+    decimal Amount,
+    string Currency,
+    string Kind,
+    Guid? ReceivableId,
+    DateTimeOffset UsedAt,
     string? Note);
