@@ -3,14 +3,16 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the project is ready for a second person**. Every source
-file carries the four-part header with its copyright line; the documentation set
-no longer contradicts itself and says plainly which parts are specification
-rather than description; and there is a curated list of scoped first tasks, each
-checked against the code.
-Last verified: 2026-09-04 · `dotnet build` 0 warnings/0 errors, `dotnet test` 664/664,
+Current milestone: **the ordinary day no longer stops, and the lists it runs on
+can be read past the first page**. All four jobs in
+[`DEALER-DAY.md`](DEALER-DAY.md) complete end to end; every list endpoint returns
+a real total and a reachable page two; the application wears the supplied brand,
+traced rather than redrawn. Seven of the walk's thirty findings are closed and
+one was retracted. What is next is on the register in
+[`docs/11`](../11-Franchise-and-External-Scope.md) §12.
+Last verified: 2026-09-12 · `dotnet build` 0 warnings/0 errors, `dotnet test` 755/755,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 303/303, and `npm run build` all pass
+`npm run typecheck`, `npm test` 379/379, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1131,6 +1133,44 @@ to come.
 
   **The mark is still a placeholder** — a geometric stand-in now wearing the brand teal so it stops fighting the wordmark. It is artwork and cannot be reproduced from a picture of itself; hand-tracing it was attempted twice and rejected twice. BRAND.md says where to save the SVG.
 
+  > **Superseded 2026-09-12.** Both claims in that paragraph are now wrong, and the gold values in the one above it are too. The mark was traced off the supplied artwork rather than drawn, and the palette was re-measured from the artwork's own pixels. See the two entries below.
+
   **The printed paperwork is deliberately left unbranded.** The order, the invoice and the job sheet carry the dealership's name, not ours: a DMS prints the dealership's documents, and putting the vendor's colours on a customer's invoice would be branding somebody else's paperwork.
 
   Evidence: `dotnet test` 740/740, `verify-e2e.ps1` PASS, frontend `npm test` 353/353, `npm run build`. The accessible name of the lockup is still exactly "DealerFOSS" — checked, because the accname algorithm inserting a space between adjacent spans has broken it once before.
+
+- **2026-09-12 — The mark is the designer's, traced rather than drawn, and the palette is measured rather than guessed.** Two commits, `11f3456` and `6f37b70`.
+
+  **Two hand-drawn attempts were rejected and both deserved to be.** Working by eye off a small picture produced a wing of three separate feathers and an F whose crossbar pointed right; the real mark has one swept wing with a split through it and a crossbar pointing left. Neither is recoverable from memory of a thumbnail. The third attempt stopped drawing and read the pixels: the sheet at its own resolution, each pixel turned into a **coverage figure** rather than a verdict — how much ink, from saturation, split between the two colours by hue — and the half-coverage contour taken with marching squares, which interpolates along cell edges and therefore lands between pixels. Thresholding first was tried and is the mistake to avoid on a retrace: it rounds every edge to a whole pixel and discards the anti-aliasing, which is precisely the information that says where the edge is.
+
+  **The colours were set by eye in the first pass and both were too light.** They are now sampled from the **core** of each shape, eroded two pixels so bevels, glows and anti-aliased edges cannot drag the answer toward the background. Teal came back `#054b60`, not `#14556b`; gold `#b38524`, not `#be9231`. The dark pair keeps the hue and gives up saturation — `#3fa5c4` is 194° exactly, the artwork's own hue, eased from 0.95 saturated to 0.68 as it lifts, because lifting without easing gave an electric cyan that read as a different brand. The gold is lifted to *match* rather than to what it needs, since two halves of one word lifted by different amounts look like two logos.
+
+  **The geometry has one home** — `frontend/src/app/markPaths.ts` — and the five drawings of it are kept in step by a test rather than by memory. `Mark.test.tsx` fails by name on any file that has fallen behind, and it reads the palette out of `app.css` instead of carrying its own copy, because a test holding a copy of the thing it checks cannot fail when that thing is wrong.
+
+  **The rasters are drawn from the same path data, not screenshotted**, so a PNG cannot disagree with the vector it is an export of. Mark, lockup, wordmark, badge and banner as SVG; mark, badge, lockup, banner and a 1200×630 social card as PNG and JPEG, under `docs/assets`.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **740/740**, `verify-e2e.ps1` PASS, `npm audit` clean, `npm run typecheck`, `npm test` **378/378**, `npm run build` with every icon shipped to `dist`. Checked in a real browser, light and dark.
+
+  **Still needs a person:** the social preview is a *setting*, not a file. `docs/assets/dealerfoss-social-1200x630.png` is committed; somebody has to upload it under Settings → General → Social preview once.
+
+- **2026-09-12 — Every list can be paged, and says how many there really are.** `9756133`.
+
+  **Ten lists took a limit, clamped it, and returned the first N rows with no offset at all.** The screens said "showing the first 50, there may be more" — honest, and a dead end: a dealership with 215 cars in stock could not reach car 51 by any route the application offered. Stock now reads **"Showing 1–50 of 215"** and page two is a click away.
+
+  **One `Page<T>` in Core, not eleven records.** Rows, total, offset and limit, behind every list endpoint and in front of every list screen as one `Pager`. Eleven capabilities each carried their own copy of the clamp and two of the copies disagreed about the cap; `Paging.Limit` and `Paging.Offset` are the only clamp now, and they are unit-tested once instead of never. The rules are ADR-025.
+
+  **Two latent defects came out with it, and both are worse than the missing feature.** Three lists had **no total order** — skipping an unordered set is undefined, so the database may hand back row 51 twice and row 52 never; receivables, repair orders, journal entries, customers and vehicles now carry an id tiebreaker, because several invoices raised in the same second is ordinary. And **receivables filtered "still owed" in memory after the take**, which cannot be paged at all: page two started in the wrong place. Outstanding is still derived from the payments rather than stored — nobody may write a balance — but it is a correlated sum the database applies, so the filter, the count and the skip finally agree.
+
+  **Parts is the one list whose page unit is not the row.** A part held at three rooftops becomes three summaries, so a page of 100 parts can return more than 100 rows and `total` counts parts. Splitting a part across pages because one of its rooftops fell over the boundary would be worse than a page that runs long. Commented where it happens.
+
+  **Left unpaged deliberately:** finance products, rooftops, staff, accounts and the service diary. They are bounded by what a dealership *is* — a diary is a date range, not a list that grows — and a pager there is a control that never does anything.
+
+  **`verify-e2e.ps1` caught one itself.** The practice-import check counted the response object rather than its rows and reported a car the dry run had not created — exactly the false pass that check exists to prevent.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **755/755** (was 740), `verify-e2e.ps1` PASS, `npm audit` clean, `npm run typecheck`, `npm test` **379/379**, `npm run build`. Driven in a real browser: stock 1–50 of 215, then 51–100 with different cars; customers 1–100 of 486.
+
+- **2026-09-14 — The walk record is four days behind the code, and one of its findings was never true.** No code changed; the documents that the progress page reads from did.
+
+  Three of the seven closed findings had never been written down as closed, so `DEALER-DAY.md` still told a reader to fix things that were fixed. Worse, **finding 22 was wrong on the day it was written**: it said `/customers` had no search button and no as-you-type search, and that screen has searched as you type since `59bcc54` on **2026-08-09** — debounced, with the in-flight request aborted on each keystroke so a slow answer for "f" cannot land on top of the right answer for "focus". `/parts` too.
+
+  **A wrong finding does not sit still.** The register row in doc 11 §12 was written from it, the progress page derived a candidate task from that row, and the task was "add a search button to a screen that has had search-as-you-type for a month". The finding is retracted for `/customers`, stands for the enquiry screen, and the rule taken from it is written into the walk record: a finding about a screen must name the file and the commit that made it true, the way the code-level findings do — every finding here citing a file and line was correct.

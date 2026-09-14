@@ -29,14 +29,28 @@ All four jobs can be completed. That is the number the progress page reports,
 and it moves only when somebody walks the job again.
 
 Finishing them is not the same as finishing the product. The walk found thirty
-things and four of them are fixed; the rest are register rows, and the four jobs
-are the *ordinary* day rather than the whole job of running a dealership. What
-has changed is that the ordinary day no longer stops.
+things; **seven are fixed and one was never true** (checked 2026-09-14, item by
+item, against the code rather than against this file). The rest are register
+rows, and the four jobs are the *ordinary* day rather than the whole job of
+running a dealership. What has changed is that the ordinary day no longer stops.
+
+**Twenty-two stand, and this file is now four days behind the code.** That is
+the argument for walking again rather than reading this: three of the seven
+fixes were never recorded here until today, and one finding had been wrong since
+the day it was written.
 
 ## What has been fixed since the walk
 
-Findings 1, 12 and 13 are done — the whole of Job B — in one change on the same
-day. The rest stand.
+**Seven of the thirty are closed, and one was never true.** Findings 1, 12 and 13
+— the whole of Job B — went in one change on the same day and are described
+below. Findings 3, 14, 15 and 23 were closed later and are marked *Done* where
+they are written, so a reader working down the list is never told to fix
+something that is already fixed. Finding 22 is half done and half **retracted**:
+`/customers` had searched as you type since 2026-08-09, a month before the walk,
+and the walk said it did not. The rest stand.
+
+This section is the running record. **A finding is only closed here when the
+thing was driven in a browser**, not when a commit claims it.
 
 - **A car can be taken into stock from a screen**, with what it cost, creating
   the vehicle record and the unit together so a car nobody has seen before does
@@ -301,12 +315,19 @@ found. The five marked **(stopper)** would stop a real installation.
     it let them back. At 200 open enquiries the 150 longest-waiting are invisible
     under a heading that says "Nobody is chasing these 50".
 
+    **Done 2026-09-11.** The order is part of the query, not applied to a page
+    that already holds the wrong rows. Walked: the 96-day customers lead the
+    chase list, and rows 51–100 of 108 are reachable.
+
 15. **A walk-in who is not already a customer cannot be recorded.** Searching a
     name that does not exist empties the picker and says "Search above to find
     them." There is no "add this person" control in the enquiry flow. The
     salesperson must abandon the enquiry, create the customer elsewhere, navigate
     back and start again — and "Walk-in" is one of the five sources the form
     itself offers.
+
+    **Done 2026-09-11.** The person is recorded and selected in place, without
+    leaving the enquiry.
 
 16. **The enquiry form offers cars that are already sold.** `CaptureLead.tsx:74-77`
     carries the comment "Cars already sold are no use here"; the next line queries
@@ -330,6 +351,15 @@ found. The five marked **(stopper)** would stop a real installation.
     **not** filter when a customer is chosen — verified, it stayed at 101. Options
     carry no VIN, no plate, no stock number, and 32 of the labels are exact
     duplicates.
+
+    **Still open, re-read 2026-09-14 — and paging did not touch it.**
+    `DiaryPanel.tsx` asks for `/customers?limit=200` and `/vehicles?limit=200`
+    and drops the rows into two bare `<select>` elements. The cap moved from 100
+    to 200 when the shared cap arrived, which halves the problem and solves none
+    of it: 200 of ~500 is still most of the dealership missing, and a dropdown
+    has no page two. The label is `vehicle.displayName`, and **`VehicleSummary`
+    already carries `vin`** — the picker is throwing away the one field that
+    would tell two identical cars apart.
 
 19. **Job numbering breaks if a repair order is ever deleted.** The next number is
     `FirstNumber + COUNT(orders at this rooftop) + 1`. A deletion makes the next
@@ -355,10 +385,27 @@ found. The five marked **(stopper)** would stop a real installation.
     onward leaves the previous results showing, so the person concludes the record
     does not exist.
 
+    **Half done, half wrong.** The enquiry screen's customer search got a button
+    on 2026-09-11, which is the half that was real. **The `/customers` half is
+    retracted:** that screen has searched as you type since `59bcc54` on
+    2026-08-09 — a debounced term with the in-flight request aborted on each
+    keystroke, so a slow answer for "f" cannot land on top of the right answer
+    for "focus". `/parts` does the same. The walk recorded the opposite of the
+    code, a month after the code was written. See the retractions below.
+
 23. **Every list truncates, and none can be paged.** `/leads` says "Showing the
     first 50. There may be more — narrow it with the filters until paging exists."
     `/customers` says "The first 100 customers. There may be more." The
     disclosure is honest; there is still no way to reach the rest.
+
+    **Done 2026-09-12.** Every list endpoint returns one `Page<T>` — rows, total,
+    offset, limit — counted over the same filters as the page it accompanies, and
+    every list screen carries the same `<Pager>`. Walked: stock reads
+    "Showing 1–50 of 215" and page two is different cars. Two latent defects came
+    out with it — three lists had **no total order**, so skipping an unordered set
+    could return row 51 twice and row 52 never; and receivables filtered "still
+    owed" **in memory after the take**, which cannot be paged at all. Both are in
+    ADR-025.
 
 24. **Buttons are offered to roles that cannot use them.** On `/staff` a
     salesperson can open "Add somebody", type a name and email, and only then be
@@ -436,6 +483,26 @@ Recorded because the method matters more than the findings.
   the colleague list. The defect is the action buttons, not the screens.
 
 `innerText` caught me three times on one walk. Read the DOM, not the text.
+
+**Added 2026-09-14, four days after the walk, and the worst of the five.**
+
+- **"Search works only if you guess to press Enter, on `/leads` or
+  `/customers`."** Not on `/customers`. That screen has searched as you type
+  since `59bcc54` on **2026-08-09**, a month before the walk — `useDebounced`
+  plus an `AbortController` so the answer for a half-typed term cannot overwrite
+  the answer for the whole one. `/parts` too. Finding 22 is retracted for
+  `/customers` and stands for the enquiry screen, which really did answer only
+  to Enter until 2026-09-11.
+
+  This one is worse than the `innerText` three, because those were wrong for
+  fifteen minutes and this was wrong for four days *in a document other things
+  read from*. The register row in doc 11 §12 was written from it, the progress
+  page derived a candidate task from that row, and the task was "add a search
+  button to a screen that has had search-as-you-type for a month". A wrong
+  finding does not sit still; it becomes a wrong backlog. **A finding about a
+  screen must name the file and the commit that made it true**, the way the
+  code-level findings here do — the ones citing `LeadService.cs:123` and
+  `CaptureLead.tsx:74-77` were all correct.
 
 ## What this changes
 
