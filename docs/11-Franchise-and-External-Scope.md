@@ -399,6 +399,20 @@ here disagrees with the section above it, the section is right.
 **Market** (decision D1 — D2 is settled), **Decision** (one of ours, D5 is the
 one still open), **Build** (only engineering time), or **Done**.
 
+**Every `State` carries the date it was last checked against the code, and a row
+without one cannot be trusted.** This is not decoration. In September two rows
+went stale silently and in different ways: *Paging on every list* was finished
+and the row was not updated, so the dashboard kept offering finished work as the
+next thing to build; *Four-part file headers* read "decided, waiting to be
+scheduled" with no date at all and described work applied ten days earlier. Both
+were found by reading the code, which is the expensive way.
+
+The dashboard now reads the most recent date out of each row's own prose,
+counts the commits landed since, and marks the row amber — an undated row loudest
+of all. A row is a **claim about the code**, and a claim nobody has re-checked
+since the last commit is a guess. Re-read the row before picking it, and write
+the date you re-read it, even when nothing changed.
+
 | Item | Area | Blocker | State |
 |---|---|---|---|
 | DMS certification per manufacturer | Business | OEM | Not started |
@@ -429,7 +443,7 @@ one still open), **Build** (only engineering time), or **Done**.
 | Opening balances when a dealership is set up | Accounting | Done | **Built 2026-09-11**, as a hand-written journal entry rather than a separate mechanism — an opening balance is an entry like any other, and giving it its own screen would be a second way to do the same thing |
 | Year-end close, and comparatives against last year | Reporting | Build | **Not started — named 2026-09-11.** Earnings are shown as their own line on the balance sheet because no year has ever been closed; there is also no last-year column on the P&L and no cash flow |
 | Customer receivables: sell to anyone but cash | Accounting | Done | **Built 2026-09-11, with a screen.** Account 1100 and a customer sub-ledger; delivering and invoicing raise a debt, a payment settles it in part or in full, and a lender is a payment method. Job C now completes end to end — walked again to confirm |
-| Receivable ageing, statements and credit limits | Accounting | Build | **Not started — the next layer on the row above.** The sub-ledger records days outstanding and nothing reports on it; there is no statement to send and no limit to stop a customer owing more |
+| Receivable ageing, statements and credit limits | Accounting | Build | **Not started — re-read 2026-09-14.** The sub-ledger records days outstanding and nothing reports on it; there is no statement to send and no limit to stop a customer owing more |
 | Credit balances when somebody overpays | Accounting | Build | **Not started — named 2026-09-11.** Overpayment is refused rather than absorbed, because the difference belongs to the customer. Refusing is honest; giving it back is the missing half |
 | Tax as a line on the deal summary | Deals | Build | **Not started — walked 2026-09-10.** The column reads $33,000 and the total reads $36,331.25. Same defect the trade-in row's own comment warns about |
 | A documentation fee a person can add | Deals | Build | **Not started — walked 2026-09-10.** ChargeKind.DocumentationFee exists in the domain and in the ledger; contracts.ts and all six locales never learned it |
@@ -445,9 +459,9 @@ one still open), **Build** (only engineering time), or **Done**.
 | Rate x basis worked out on the tax band | Deals | Build | **Not started — walked 2026-09-10.** A person types basis, rate AND the resulting tax, and nothing checks the three agree. Deal.TaxableBasis(rules) exists and the screen does not call it |
 | Job number that says which rooftop | Service | Build | **Not started — walked 2026-09-10.** 162 repair orders, 82 distinct numbers, 80 used twice; the list mixes rooftops and shows the number without the location |
 | Hide actions a role cannot take | Platform | Build | **Not started — walked 2026-09-10.** A salesperson can fill in "Add somebody" and is refused only on submit |
-| Workflow triggers on data we already hold | Platform | Build | Not started |
+| Workflow triggers on data we already hold | Platform | Build | **Not started — re-read 2026-09-14.** Nothing in `src/App` names a workflow or a trigger; there is no rule engine and nothing watches a record for a condition |
 | Contributor on-ramp: issues and first tasks | Business | Done | Built |
-| Documentation restructure: reorganise all 18 docs | Product | Build | Done |
+| Documentation restructure: reorganise all 18 docs | Product | Done | **Done.** The blocker column said Build while the state said Done, so the page counted finished work as a candidate — found 2026-09-14 by the check that flags rows carrying no date |
 | Four-part file headers with a copyright line (doc 08 §5) | Product | Done | **Applied 2026-09-04, enforced 2026-09-14** — and this row was stale for ten days because nothing could answer "is it still done?" without opening every file. A test now walks the tree on every `dotnet test` and names any file and any missing part. Checking it found 378 of 379 correct and one that had slipped through, `deploy/otel-collector.yaml` |
 | Public safety recall lookup | Vehicle | Done | Built, with a screen |
 | Spanish as a sixth language | Product | Done | Built |

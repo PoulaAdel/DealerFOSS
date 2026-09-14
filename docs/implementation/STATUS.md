@@ -1186,3 +1186,13 @@ to come.
   Rehearsed rather than assumed: a headerless `.ts` file dropped into `frontend/src/shared` failed the test by name, and removing it passed. It also caught two things on its first run that were not defects — the frontend build copied into `src/App/wwwroot`, and a *second checkout of this repository* sitting in `.claude/worktrees` where a background agent is working. Both are pruned as directories rather than excused as exclusions, and doc 08 §5 says which is which.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **756/756** (was 755), `verify-e2e.ps1` PASS. No frontend change.
+
+- **2026-09-14 — A backlog row now says when it was last checked, and the dashboard says when that stopped being recent.** The third correction in a row, and the one that should stop there being a fourth.
+
+  Two register rows went stale in September and **both went stale silently, in different ways**. *Paging on every list* was finished on the 12th and the row was not updated, so the dashboard kept offering finished work as the next thing to build. *Four-part file headers* read "decided, waiting to be scheduled", carried no date at all, and described work applied ten days earlier. Each cost a session to find, and both were found by reading the code — the expensive way.
+
+  **Neither needed new data to catch.** The rows already carried the date they were last checked, written into their own prose; nothing was reading it. The dashboard now extracts the most recent date from each candidate's state, counts the commits landed since, and marks the row amber — an undated row loudest of all, because that is the one that sat longest. It says at the top how many of the candidates cannot currently be trusted: **6 of 11** on the day it was written.
+
+  It found a third row immediately: *Documentation restructure* had `Blocker: Build` while its own state said `Done`, so a finished item had been sitting in the candidate list. Two more carried no date and were re-read against the code rather than dated on faith — neither has been started, and now they say so with a date.
+
+  **The convention is written where the rows are**, in doc 11 §12, not only in the script: a row is a claim about the code, and a claim nobody has re-checked since the last commit is a guess. Re-read before picking, and write the date even when nothing changed.
