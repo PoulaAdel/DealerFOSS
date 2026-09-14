@@ -1,5 +1,34 @@
-# Minimal OpenTelemetry collector for local development.
-# Receives OTLP from the Host and logs it to the collector's own console.
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Overview: Purpose, File Design, and Engineering
+#   The OpenTelemetry collector a developer runs beside the Host, so the traces
+#   and metrics the application already emits have somewhere to arrive.
+#
+#   It exports to the console and nowhere else, deliberately. A collector that
+#   forwarded to a hosted backend by default would send a developer's local
+#   traces — which carry tenant names, user ids and request paths — off this
+#   machine the first time somebody started it without reading the file.
+#
+#   Nothing requires it. The Host registers its OTLP exporter only when one is
+#   configured, so with no collector running the application starts normally
+#   and emits nothing.
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.yml --profile otel up -d
+#   then run the Host with OpenTelemetry:OtlpEndpoint set to http://localhost:4317
+#   (Program.cs registers the exporter only when that key has a value)
+#
+# Coding Instructions:
+#   DO NOT ADD A REAL EXPORTER HERE. The endpoint and credentials for a hosted
+#   backend belong in the operator's own configuration, not in a file every
+#   contributor gets a copy of — and this one is committed, so anything written
+#   here is published.
+#
+#   Both receiver protocols stay on. Which one a client picks depends on its
+#   SDK, and a developer whose traces silently vanish because the file offers
+#   4317 and their exporter speaks 4318 has no way to tell that from "tracing
+#   is not wired up".
 receivers:
   otlp:
     protocols:

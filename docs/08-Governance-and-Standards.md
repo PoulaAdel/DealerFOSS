@@ -39,7 +39,20 @@ Experimental community connectors are welcome but cannot be labeled certified wi
 ## 5. Coding standards
 
 **Every hand-written source file opens with a four-part header.** Applied to all
-347 of them on 2026-09-04; `.cs`, `.ts`, `.tsx`, `.css`, `.ps1` and `.yml` alike.
+347 of them on 2026-09-04; `.cs`, `.ts`, `.tsx`, `.css`, `.ps1` and `.yml` alike
+(`.yaml` counts as `.yml` — same format, and the one file that used the longer
+spelling was the one that slipped through).
+
+**A test enforces this, and did not until 2026-09-14.**
+`tests/Architecture/SourceHeaderTests.cs` walks the working tree on every
+`dotnet test` and names each file and each missing part. Until then the rule was
+kept by memory, and the only way to answer "is it still done?" was to open 379
+files — which is why the scope register carried it as open work for ten days
+after it was finished. One file had genuinely slipped through in that time.
+
+It checks the working tree rather than the index, so a file that has not been
+committed yet is still checked: the header is meant to be written when the file
+is.
 
 ```csharp
 // Copyright (c) 2026 The DealerFOSS contributors.
@@ -66,11 +79,18 @@ XML `<summary>` on the type, which serves IntelliSense, rather than repeating it
 `#` replaces `//` in PowerShell and YAML; `/* … */` in CSS. The four section
 names do not change.
 
-**Two exclusions, both load-bearing:**
+**Three exclusions, all load-bearing:**
 
 - **Anything under `Migrations/`** — generated, forbidden to hand-edit, and EF
   overwrites it. 50 files.
 - **`.json`** — `package.json` cannot carry comments at all.
+- **`.html`** — the document must open with `<!doctype html>` or the browser
+  drops into quirks mode, so a comment above it would change how the page
+  renders. One file: `frontend/index.html`.
+
+Build output and git-ignored working areas are not exclusions, because they are
+not source: `bin`, `obj`, `node_modules`, `dist`, `src/App/wwwroot` (where
+`npm run build` copies the frontend for the Host to serve), and `local`.
 
 **Licensing follows from this.** SPDX is declared per file in the header AND once
 at assembly level in `Directory.Build.props` (`AGPL-3.0-or-later`). The per-file

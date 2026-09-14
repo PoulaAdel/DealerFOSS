@@ -448,7 +448,7 @@ one still open), **Build** (only engineering time), or **Done**.
 | Workflow triggers on data we already hold | Platform | Build | Not started |
 | Contributor on-ramp: issues and first tasks | Business | Done | Built |
 | Documentation restructure: reorganise all 18 docs | Product | Build | Done |
-| Four-part file headers with a copyright line (doc 08 §5) | Product | Build | Decided, waiting to be scheduled |
+| Four-part file headers with a copyright line (doc 08 §5) | Product | Done | **Applied 2026-09-04, enforced 2026-09-14** — and this row was stale for ten days because nothing could answer "is it still done?" without opening every file. A test now walks the tree on every `dotnet test` and names any file and any missing part. Checking it found 378 of 379 correct and one that had slipped through, `deploy/otel-collector.yaml` |
 | Public safety recall lookup | Vehicle | Done | Built, with a screen |
 | Spanish as a sixth language | Product | Done | Built |
 
