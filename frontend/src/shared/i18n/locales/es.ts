@@ -332,6 +332,12 @@ export const es: Catalogue = {
   'money.howPaid': 'Cómo ha pagado',
   'money.reference': 'Referencia (queda en el registro)',
   'money.takeIt': 'Registrar el pago',
+  'picker.change': 'Cambiar',
+  'picker.typeToSearch': 'Escriba para buscar',
+  'picker.searching': 'Buscando…',
+  'picker.searchFailed': 'No se pudo realizar la búsqueda. Inténtelo de nuevo.',
+  'picker.noMatches': 'No hay coincidencias.',
+  'picker.startTyping': 'Escriba unas letras para encontrarlo.',
   'money.willOverpay':
     'Eso es {extra} más de lo que se debe. La diferencia queda como saldo a favor del cliente.',
   'money.creditUsable': 'Este cliente tiene saldo a su favor',
@@ -1228,6 +1234,7 @@ export const es: Catalogue = {
   'diary.taking': 'Citando…',
   'diary.pickCustomer': 'Elija un cliente',
   'diary.pickVehicle': 'Elija un vehículo',
+  'diary.pickCustomerFirst': 'Elija primero el cliente; después se ofrecen sus coches.',
 
   // --- The control-plane console --------------------------------------------
   // A separate vocabulary from the dealership's, deliberately: whoever reads

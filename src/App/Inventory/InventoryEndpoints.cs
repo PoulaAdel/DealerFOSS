@@ -48,6 +48,7 @@ internal static class InventoryEndpoints
         string? status = null,
         string? stock = null,
         string? search = null,
+        bool stillGettable = false,
         int limit = 50,
         int offset = 0)
     {
@@ -56,6 +57,7 @@ internal static class InventoryEndpoints
             status,
             stock,
             search,
+            stillGettable,
             limit,
             offset);
 

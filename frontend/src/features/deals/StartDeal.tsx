@@ -19,12 +19,13 @@
 //   on exactly one lot, and asking somebody to name it again is an invitation
 //   to pick the wrong one.
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, post } from '../../shared/api';
 import type { CustomerSummary, DealDetail, InventoryUnitSummary, Page } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { Emphasised } from '../../shared/i18n/Emphasised';
+import { RecordPicker, type PickerOption } from '../../shared/RecordPicker';
 
 export function StartDeal({
   onStarted, onCancel, leadId = null, customerId: fromLead = null,
@@ -44,7 +45,18 @@ export function StartDeal({
 
   const [customerId, setCustomerId] = useState(fromLead ?? '');
   const [buyer, setBuyer] = useState<CustomerSummary | null>(null);
-  const [unitId, setUnitId] = useState('');
+  const [car, setCar] = useState<PickerOption | null>(null);
+
+  /**
+   * Every unit this screen has been shown, by id.
+   *
+   * The picker hands back an id and a label; starting a deal needs the unit's
+   * ROOFTOP as well, because a deal belongs to a lot. Rather than a second
+   * round trip after every choice, both the shortlist and each search record
+   * what they returned here -- the picker can only ever hand back something one
+   * of them produced.
+   */
+  const seen = useRef(new Map<string, InventoryUnitSummary>());
   const [search, setSearch] = useState('');
 
   const [busy, setBusy] = useState(false);
@@ -55,7 +67,11 @@ export function StartDeal({
   useEffect(() => {
     void (async () => {
       try {
-        setUnits((await api<Page<InventoryUnitSummary>>('/inventory?status=Available&limit=200')).rows);
+        const available = (await api<Page<InventoryUnitSummary>>(
+          '/inventory?status=Available&limit=25')).rows;
+
+        available.forEach((unit) => seen.current.set(unit.id, unit));
+        setUnits(available);
       } catch (failure) {
         setError(describe(failure));
       }
@@ -84,6 +100,37 @@ export function StartDeal({
     void findCustomers('');
   }, [fromLead]);
 
+  /**
+   * A car on the lot, as something to pick.
+   *
+   * THE ID IS THE UNIT'S, not the vehicle's — the opposite of the enquiry
+   * screen, and deliberately. A deal is struck on one physical car on one lot;
+   * an enquiry is interest in a car and survives that unit being sold to
+   * somebody else.
+   */
+  const asUnitOption = useCallback(
+    (unit: InventoryUnitSummary): PickerOption => ({
+      id: unit.id,
+      label: unit.vehicleDisplayName,
+      hint: unit.stockNumber,
+    }),
+    [],
+  );
+
+  const findCars = useCallback(
+    async (term: string, signal: AbortSignal) => {
+      const rows = (await api<Page<InventoryUnitSummary>>(
+        `/inventory?search=${encodeURIComponent(term)}&status=Available&limit=15`,
+        { signal },
+      )).rows;
+
+      rows.forEach((unit) => seen.current.set(unit.id, unit));
+
+      return rows.map(asUnitOption);
+    },
+    [asUnitOption],
+  );
+
   async function findCustomers(term: string) {
     setError(null);
 
@@ -102,7 +149,7 @@ export function StartDeal({
     setError(null);
     setBusy(true);
 
-    const unit = units.find((u) => u.id === unitId);
+    const unit = car === null ? undefined : seen.current.get(car.id);
     if (unit === undefined) {
       setError(t('startDeal.chooseCarFirst'));
       setBusy(false);
@@ -114,7 +161,7 @@ export function StartDeal({
         await post<DealDetail>('/deals', {
           rooftopId: unit.rooftopId,
           customerId,
-          inventoryUnitId: unitId,
+          inventoryUnitId: unit.id,
           leadId,
           // One currency until a dealership needs two. When that lands it comes
           // from the rooftop's legal entity, not from a box somebody types into.
@@ -175,15 +222,14 @@ export function StartDeal({
         </p>
       )}
 
-      <label htmlFor="car">{t('startDeal.whichCar')}</label>
-      <select id="car" value={unitId} onChange={(e) => setUnitId(e.target.value)}>
-        <option value="">{t('startDeal.chooseCar')}</option>
-        {units.map((unit) => (
-          <option key={unit.id} value={unit.id}>
-            {unit.stockNumber} · {unit.vehicleDisplayName}
-          </option>
-        ))}
-      </select>
+      <RecordPicker
+        id="car"
+        label={t('startDeal.whichCar')}
+        chosen={car}
+        onChoose={setCar}
+        search={findCars}
+        shortlist={units.map(asUnitOption)}
+      />
 
       {units.length === 0 ? <p className="note">{t('startDeal.nothingAvailable')}</p> : null}
 
@@ -195,7 +241,7 @@ export function StartDeal({
         <button
           type="button"
           className="primary"
-          disabled={busy || customerId === '' || unitId === ''}
+          disabled={busy || customerId === '' || car === null}
           onClick={() => void start()}
         >
           {busy ? t('startDeal.starting') : t('startDeal.submit')}

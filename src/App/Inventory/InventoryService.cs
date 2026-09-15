@@ -98,6 +98,22 @@ public sealed class InventoryService(
             units = units.Where(u => u.Status == wanted);
         }
 
+        // "Anything somebody could still be interested in" is a real question a
+        // single status cannot express. An enquiry screen wants the car being
+        // reconditioned and the one on hold for somebody else — an enquiry is not
+        // a claim on the car, and a second person's interest is worth recording —
+        // but never one that has already gone.
+        //
+        // Added 2026-09-15: the enquiry form asked for everything and offered
+        // SOLD cars, under a comment saying it did not. Filtering to Available
+        // would have been the easy fix and the wrong one, because it drops the
+        // two states the comment was protecting.
+        if (query.StillGettable)
+        {
+            units = units.Where(u =>
+                u.Status != InventoryStatus.Sold && u.Status != InventoryStatus.Removed);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.StockNumber))
         {
             var stock = InventoryUnit.NormalizeStockNumber(query.StockNumber);

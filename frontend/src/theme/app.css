@@ -1864,3 +1864,82 @@ tbody tr[aria-selected='true'] {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* --- RecordPicker ---------------------------------------------------------
+ *
+ * Choosing one record out of however many a real dealership has. It replaced
+ * bare `<select>` elements filled from `?limit=200`, so the shape it has to
+ * hold is a search box, a list of what came back, and — once something is
+ * chosen — the choice itself.
+ *
+ * THE RESULT LIST IS SCROLLABLE AND BOUNDED. A picker that grows to fifteen
+ * rows pushes the rest of the form off a laptop screen, and the field somebody
+ * needs next is the one they can no longer see.
+ */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Matches a <label> for the case where the choice is made and no input remains
+ * to label. Same weight and size, so nothing shifts when it is swapped in. */
+.picker-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.picker-chosen {
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.picker-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 15rem;
+  overflow-y: auto;
+}
+
+.picker-results:not(:empty) {
+  border: 1px solid var(--line);
+}
+
+.picker-results li + li {
+  border-top: 1px solid var(--line);
+}
+
+/* Full width so the whole row is the target, and left-aligned so the labels
+ * form a column somebody can read down rather than a row of centred chips. */
+.picker-results button {
+  display: block;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.picker-results button:hover,
+.picker-results button:focus-visible {
+  background: var(--ground);
+}
+
+/* A band inside a panel — the credit held for a customer, on the payment band.
+ * Distinct from the panel around it without being a second panel, because it is
+ * part of the same answer rather than a new one. */
+.panel-inset {
+  margin: 0.6rem 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--ground);
+}
+
+.panel-inset h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}

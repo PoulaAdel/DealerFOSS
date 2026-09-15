@@ -345,6 +345,12 @@ export const ar: Catalogue = {
   'money.howPaid': 'طريقة الدفع',
   'money.reference': 'مرجع (يبقى في السجل)',
   'money.takeIt': 'تسجيل الدفعة',
+  'picker.change': 'تغيير',
+  'picker.typeToSearch': 'اكتب للبحث',
+  'picker.searching': 'جارٍ البحث…',
+  'picker.searchFailed': 'تعذّر تنفيذ البحث. حاول مرة أخرى.',
+  'picker.noMatches': 'لا توجد نتائج مطابقة.',
+  'picker.startTyping': 'اكتب بضعة أحرف للعثور على واحد.',
   'money.willOverpay': 'هذا أكثر من المستحق بمقدار {extra}. الزيادة تصبح رصيدًا للعميل يُعاد إليه.',
   'money.creditUsable': 'لدى هذا العميل رصيد لدينا',
   'money.creditUsableNote': 'دفع زيادة في فاتورة سابقة. يمكن خصمه من هذه الفاتورة بدل إعادته.',
@@ -1298,6 +1304,7 @@ export const ar: Catalogue = {
   'diary.taking': 'جارٍ الحجز…',
   'diary.pickCustomer': 'اختر عميلًا',
   'diary.pickVehicle': 'اختر سيارة',
+  'diary.pickCustomerFirst': 'اختر العميل أولاً، ثم تُعرض سياراته.',
 
   // --- وحدة تحكّم إدارة التثبيت -------------------------------------------------
   // مفردات مختلفة عن مفردات الوكالة عن قصد: من يقرأ هذه الشاشات يُشغّل التثبيت

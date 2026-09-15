@@ -15,6 +15,7 @@
 //   a screen that can show a day and its capacity disagreeing.
 
 using DealerFOSS.Core;
+using DealerFOSS.Vehicles;
 
 namespace DealerFOSS.RepairOrders;
 
@@ -48,6 +49,33 @@ public interface IAppointments
     Task<Result<AppointmentView>> CloseAsync(
         Guid appointmentId,
         CloseAppointmentRequest request,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The cars this customer has already been here with — every vehicle on one
+    /// of their repair orders or bookings, most recent first.
+    /// </summary>
+    /// <remarks>
+    /// <b>A vehicle has no owner in this system, and that is not an oversight to
+    /// route around here.</b> Cars change hands; ownership is a history with
+    /// dates, not a column, and inventing a single <c>CustomerId</c> on
+    /// <see cref="DealerFOSS.Vehicles.Vehicle"/> would be wrong the first time
+    /// somebody sold their car privately. So this answers the narrower question
+    /// the booking screen actually asks — "which cars have we seen this person
+    /// with?" — from the workshop's own records, and nothing is stored.
+    ///
+    /// It is therefore INCOMPLETE ON PURPOSE. A car they bought from us and have
+    /// never had serviced does not appear, because deals are another capability
+    /// and this one may not read their rows (ADR-017). That is why this is a
+    /// shortlist offered ALONGSIDE a search of every vehicle, never instead of
+    /// one: a picker that can only offer known cars cannot book a new customer's
+    /// car at all.
+    ///
+    /// Bounded by what a person owns rather than by paging. A customer with
+    /// forty cars is a fleet, and the cap is the honest end of the list.
+    /// </remarks>
+    Task<Result<IReadOnlyList<VehicleSummary>>> VehiclesSeenForAsync(
+        Guid customerId,
         CancellationToken cancellationToken);
 }
 

@@ -35,6 +35,7 @@ import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { InlineEdit } from '../../shared/InlineEdit';
+import { RecordPicker, type PickerOption } from '../../shared/RecordPicker';
 import type {
   AppointmentView,
   ArrivalResult,
@@ -319,6 +320,23 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
 }
 
 /**
+ * A car, labelled so two identical ones can be told apart.
+ *
+ * THE VIN IS THE POINT. Before this the option read "2021 Toyota RAV4 XLE" and
+ * nothing else, and 32 of the 101 cars offered had a label identical to another
+ * one — so the wrong car could be booked in and no screen would ever say so.
+ * The last six characters are what staff read off a windscreen; the whole
+ * seventeen is noise in a list.
+ */
+function asCarOption(car: VehicleSummary): PickerOption {
+  return {
+    id: car.id,
+    label: car.displayName,
+    hint: car.vin.length > 6 ? car.vin.slice(-6) : car.vin,
+  };
+}
+
+/**
  * Taking a booking.
  *
  * The customer and the car are chosen from what the dealership already has, not
@@ -336,12 +354,14 @@ function BookCar({
   const { t } = useI18n();
   const describe = useApiMessage();
 
-  const [customers, setCustomers] = useState<CustomerSummary[]>([]);
-  const [vehicles, setVehicles] = useState<VehicleSummary[]>([]);
   const [rooftopId, setRooftopId] = useState<string | null>(null);
 
-  const [customerId, setCustomerId] = useState('');
-  const [vehicleId, setVehicleId] = useState('');
+  const [customer, setCustomer] = useState<PickerOption | null>(null);
+  const [vehicle, setVehicle] = useState<PickerOption | null>(null);
+
+  /** The cars this customer has been here with. Empty until one is chosen. */
+  const [theirCars, setTheirCars] = useState<PickerOption[]>([]);
+
   const [when, setWhen] = useState('');
   const [hours, setHours] = useState('');
   const [reason, setReason] = useState('');
@@ -351,9 +371,6 @@ function BookCar({
   useEffect(() => {
     void (async () => {
       try {
-        setCustomers((await api<Page<CustomerSummary>>('/customers?limit=200')).rows);
-        setVehicles((await api<Page<VehicleSummary>>('/vehicles?limit=200')).rows);
-
         // The workshop this person covers. Taken from a job they can already
         // see rather than asked for, because somebody at one location has
         // exactly one answer and being made to pick it is noise.
@@ -365,6 +382,65 @@ function BookCar({
     })();
   }, [describe]);
 
+  // Whoever is chosen decides which cars are offered first. Changing the
+  // customer clears the car, because a car chosen for the previous person is
+  // almost certainly wrong for this one and silently keeping it is how a job
+  // lands on somebody else's vehicle.
+  useEffect(() => {
+    if (customer === null) {
+      setTheirCars([]);
+      return;
+    }
+
+    setVehicle(null);
+
+    const stop = new AbortController();
+
+    void (async () => {
+      try {
+        const seen = await api<VehicleSummary[]>(
+          `/appointments/vehicles-seen?customerId=${customer.id}`,
+          { signal: stop.signal },
+        );
+
+        setTheirCars(seen.map(asCarOption));
+      } catch {
+        // A shortlist that will not load is a convenience missing, not a
+        // booking blocked: the search box below it finds every car there is.
+        if (!stop.signal.aborted) {
+          setTheirCars([]);
+        }
+      }
+    })();
+
+    return () => stop.abort();
+  }, [customer]);
+
+  const findCustomers = useCallback(
+    async (term: string, signal: AbortSignal) =>
+      (await api<Page<CustomerSummary>>(
+        `/customers?search=${encodeURIComponent(term)}&limit=15`,
+        { signal },
+      )).rows.map((c) => ({
+        id: c.id,
+        label: c.displayName,
+        // Two people called Marisol Alvarez is ordinary in a book of 500, and
+        // the name alone cannot separate them. Email first because it is what
+        // staff recognise; the phone when there is no email on file.
+        hint: c.primaryEmail ?? c.primaryPhone ?? undefined,
+      })),
+    [],
+  );
+
+  const findCars = useCallback(
+    async (term: string, signal: AbortSignal) =>
+      (await api<Page<VehicleSummary>>(
+        `/vehicles?search=${encodeURIComponent(term)}&limit=15`,
+        { signal },
+      )).rows.map(asCarOption),
+    [],
+  );
+
   async function submit() {
     setBusy(true);
     setError(null);
@@ -372,8 +448,8 @@ function BookCar({
     try {
       await post('/appointments', {
         rooftopId,
-        customerId,
-        vehicleId,
+        customerId: customer?.id,
+        vehicleId: vehicle?.id,
         // datetime-local has no zone. The browser's own offset is the honest
         // reading of what somebody typed at a counter in that workshop.
         scheduledFor: new Date(when).toISOString(),
@@ -391,8 +467,8 @@ function BookCar({
 
   const ready =
     rooftopId !== null &&
-    customerId !== '' &&
-    vehicleId !== '' &&
+    customer !== null &&
+    vehicle !== null &&
     when !== '' &&
     reason.trim() !== '';
 
@@ -402,35 +478,31 @@ function BookCar({
 
       <div className="row">
         <div className="field field--grow">
-          <label htmlFor="diary-customer">{t('diary.customer')}</label>
-          <select
+          <RecordPicker
             id="diary-customer"
-            value={customerId}
-            onChange={(event) => setCustomerId(event.target.value)}
-          >
-            <option value="">{t('diary.pickCustomer')}</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.displayName}
-              </option>
-            ))}
-          </select>
+            label={t('diary.customer')}
+            chosen={customer}
+            onChoose={setCustomer}
+            search={findCustomers}
+          />
         </div>
 
         <div className="field field--grow">
-          <label htmlFor="diary-vehicle">{t('diary.vehicle')}</label>
-          <select
-            id="diary-vehicle"
-            value={vehicleId}
-            onChange={(event) => setVehicleId(event.target.value)}
-          >
-            <option value="">{t('diary.pickVehicle')}</option>
-            {vehicles.map((vehicle) => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.displayName}
-              </option>
-            ))}
-          </select>
+          {/* The car list waits for the customer, and not to be tidy: the
+              shortlist IS the cars that customer has been here with, so
+              offering it first would offer nothing. */}
+          {customer === null ? (
+            <p className="note">{t('diary.pickCustomerFirst')}</p>
+          ) : (
+            <RecordPicker
+              id="diary-vehicle"
+              label={t('diary.vehicle')}
+              chosen={vehicle}
+              onChoose={setVehicle}
+              search={findCars}
+              shortlist={theirCars}
+            />
+          )}
         </div>
       </div>
 

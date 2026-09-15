@@ -1216,3 +1216,21 @@ to come.
   **Walked, and the walk found the defect the tests could not.** RO-1082, a $110 invoice paid with $150. The band warned *before* the button — "That is $40.00 more than is owed" — then settled the bill and showed $40 owed back. But it read **"overpaid on 9c9d1557-7e22-46e7-a5b8-591a19f6e6dd"**: a workshop receivable's reference is the job's *id*, not its number, and nothing had ever put that string in front of a person before. It shows the date instead now; the reference stays in the journal memo, where it is a ledger key rather than something to read. Then refunded: 2200 went 40 in, 40 out, net zero, and the trial balance agreed.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **761/761** (was 756), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **382/382** (was 379), `npm run build`.
+
+- **2026-09-15 — The wrong car can no longer be booked in, because the right one can now be found.** Findings 16 and 18.
+
+  **The defect was the labels, not the length of the list.** Every picker in the application was a bare `<select>` filled from `?limit=200`. Against ~500 customers that is not a long dropdown — it is a screen where three customers in five cannot be chosen at all and nothing says so. Against cars it was worse: options read "2021 Toyota RAV4 XLE" with no VIN and no stock number, and **32 of the 101 offered had a label identical to another one**, so the wrong car could be booked and no screen anywhere would show it had been. Paging did not fix this and could not: a dropdown has no page two.
+
+  **One `RecordPicker`**, on the booking screen, the enquiry form and the deal desk. A search box that queries the server, the results, and — once chosen — the choice with a way to change it. Deliberately plain HTML with real buttons rather than an invented combobox, which is a keyboard trap waiting to be written. Every option carries a **hint**: a VIN tail, a stock number, an email. That is the whole reason the component exists, and a caller passing only a label has rebuilt the defect.
+
+  **The car list narrows to the customer, and how it does is the interesting part.** A vehicle has **no owner** in this system, and that is not an oversight to route around: cars change hands, ownership is a history with dates rather than a column, and inventing a `CustomerId` on `Vehicle` would be wrong the first time somebody sold their car privately. So "their cars" is answered from the workshop's own records — every vehicle on one of their repair orders or bookings, most recent first, nothing stored. It is incomplete on purpose (a car bought and never serviced is not there, because deals are another capability), which is exactly why the shortlist sits *beside* a search of every car rather than replacing one. Rehearsed: removing the customer filter fails all three of its tests.
+
+  **The enquiry form had been offering sold cars since it was written**, under a comment saying it did not. `stillGettable` on the inventory query — everything except Sold and Removed — and deliberately not `status=Available`, which would have been the easy fix and would have dropped the two states the comment was protecting: a car in reconditioning, and one on hold for somebody else. Measured: 215 units, 162 still gettable.
+
+  **The option id differs by screen, on purpose.** An enquiry records interest in a *vehicle* and must survive that unit being sold to somebody else; a deal is struck on one *unit* on one lot. Both are commented where they happen.
+
+  **Parts is deliberately untouched.** That picker was built on 2026-09-11 with its own shape — quantity in stock beside each part, free text named as a choice for a one-off item — and converting it would trade a working design for consistency.
+
+  Walked: "Alvarez" returns eleven customers including **two called Janusz Alvarez**, separated by their email; "RAV4" returns **two 2023 Toyota RAV4 XLEs**, separated by their VIN tails; choosing Amara Alvarez narrowed the cars to the single BMW she has been here with; and the booking landed against the right car.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **764/764** (was 761), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **390/390** (was 382), `npm run build`.

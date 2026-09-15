@@ -304,6 +304,82 @@ public sealed class AppointmentTests(HostFixture fixture)
 
     private static string Iso(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
+    [Fact]
+    public async Task The_booking_screen_is_offered_the_cars_this_customer_has_been_here_with()
+    {
+        // A vehicle has NO OWNER in this system, deliberately — cars change
+        // hands, and ownership is a history rather than a column. So "their
+        // cars" is answered from the workshop's own memory instead, and this is
+        // the test that says what that memory actually contains.
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var customer = await AddCustomerAsync();
+        var theirs = await AddVehicleAsync();
+
+        // Somebody else's car, booked the same day, so a query that forgot the
+        // customer filter would return it and fail here.
+        var strangers = await AddVehicleAsync();
+
+        await BookForAsync(Manager, rooftop, customer, theirs);
+        await BookForAsync(Manager, rooftop, await AddCustomerAsync(), strangers);
+
+        var seen = await ListAsync($"{Diary}/vehicles-seen?customerId={customer}", Manager);
+        var ids = seen.EnumerateArray().Select(v => v.GetProperty("id").GetString()).ToList();
+
+        ids.Should().ContainSingle().Which.Should().Be(theirs);
+    }
+
+    [Fact]
+    public async Task A_customer_nobody_has_seen_gets_an_empty_shortlist_rather_than_everybody_elses_cars()
+    {
+        // The failure mode worth guarding: a filter that silently does nothing
+        // returns the whole vehicle table, which reads on screen as "here are
+        // their cars" and is how the wrong car gets booked in.
+        var brandNew = await AddCustomerAsync();
+
+        var seen = await ListAsync($"{Diary}/vehicles-seen?customerId={brandNew}", Manager);
+
+        seen.EnumerateArray().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task The_shortlist_stops_at_the_rooftops_the_caller_covers()
+    {
+        // A diary is a list of customers' names and their cars. This one is
+        // reached by customer id rather than by rooftop, so the scope has to be
+        // applied in the query or it is a way to read another lot's records.
+        var customer = await AddCustomerAsync();
+        var car = await AddVehicleAsync();
+
+        await BookForAsync(Manager, await RooftopIdAsync("NAG-02"), customer, car);
+
+        var seen = await ListAsync($"{Diary}/vehicles-seen?customerId={customer}", Advisor);
+
+        seen.EnumerateArray().Should().BeEmpty(
+            because: "the advisor covers NAG-01 and that booking is at NAG-02");
+    }
+
+    private async Task<string> BookForAsync(
+        string email,
+        string rooftopId,
+        string customerId,
+        string vehicleId)
+    {
+        using var response = await PostAsync(Diary, email, new
+        {
+            rooftopId,
+            customerId,
+            vehicleId,
+            scheduledFor = DateTime.UtcNow.AddDays(2),
+            reason = "Service and brake check",
+            estimatedHours = 2.5m,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created,
+            because: await response.Content.ReadAsStringAsync());
+
+        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+    }
+
     private async Task<string> BookAsync(
         string email,
         string rooftopId,

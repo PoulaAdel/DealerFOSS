@@ -332,6 +332,12 @@ export const ru: Catalogue = {
   'money.howPaid': 'Способ оплаты',
   'money.reference': 'Отметка (останется в записи)',
   'money.takeIt': 'Записать оплату',
+  'picker.change': 'Изменить',
+  'picker.typeToSearch': 'Введите для поиска',
+  'picker.searching': 'Идёт поиск…',
+  'picker.searchFailed': 'Поиск не выполнен. Попробуйте ещё раз.',
+  'picker.noMatches': 'Ничего не найдено.',
+  'picker.startTyping': 'Введите несколько букв, чтобы найти.',
   'money.willOverpay':
     'Это на {extra} больше долга. Излишек станет средствами, которые клиенту должны вернуть.',
   'money.creditUsable': 'У этого клиента есть средства у нас',
@@ -1268,6 +1274,7 @@ export const ru: Catalogue = {
   'diary.taking': 'Записываем…',
   'diary.pickCustomer': 'Выберите клиента',
   'diary.pickVehicle': 'Выберите машину',
+  'diary.pickCustomerFirst': 'Сначала выберите клиента — затем предлагаются его автомобили.',
 
   // --- Консоль управления установкой ------------------------------------------
   // Словарь намеренно отличается от дилерского: тот, кто читает эти экраны,

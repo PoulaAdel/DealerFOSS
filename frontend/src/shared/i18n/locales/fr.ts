@@ -326,6 +326,12 @@ export const fr: Catalogue = {
   'money.howPaid': 'Mode de paiement',
   'money.reference': 'Référence (reste au dossier)',
   'money.takeIt': 'Enregistrer le paiement',
+  'picker.change': 'Modifier',
+  'picker.typeToSearch': 'Saisir pour rechercher',
+  'picker.searching': 'Recherche…',
+  'picker.searchFailed': 'La recherche n’a pas pu aboutir. Réessayez.',
+  'picker.noMatches': 'Aucun résultat.',
+  'picker.startTyping': 'Saisissez quelques lettres pour en trouver un.',
   'money.willOverpay':
     'C’est {extra} de plus que le montant dû. Le surplus devient un avoir dû au client.',
   'money.creditUsable': 'Ce client a de l’argent chez nous',
@@ -1222,6 +1228,7 @@ export const fr: Catalogue = {
   'diary.taking': 'Réservation…',
   'diary.pickCustomer': 'Choisissez un client',
   'diary.pickVehicle': 'Choisissez une voiture',
+  'diary.pickCustomerFirst': 'Choisissez d’abord le client — ses véhicules sont ensuite proposés.',
 
   // --- La console d’administration --------------------------------------------
   // Vocabulaire volontairement distinct de celui de la concession : qui lit ces

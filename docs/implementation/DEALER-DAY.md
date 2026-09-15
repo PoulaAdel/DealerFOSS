@@ -29,21 +29,21 @@ All four jobs can be completed. That is the number the progress page reports,
 and it moves only when somebody walks the job again.
 
 Finishing them is not the same as finishing the product. The walk found thirty
-things; **seven are fixed and one was never true** (checked 2026-09-14, item by
+things; **nine are fixed and one was never true** (checked 2026-09-14, item by
 item, against the code rather than against this file). The rest are register
 rows, and the four jobs are the *ordinary* day rather than the whole job of
 running a dealership. What has changed is that the ordinary day no longer stops.
 
-**Twenty-two stand, and this file is now four days behind the code.** That is
-the argument for walking again rather than reading this: three of the seven
-fixes were never recorded here until today, and one finding had been wrong since
-the day it was written.
+**Twenty stand, and this file is five days behind the day it describes.** That is
+the argument for walking again rather than reading this: three of the fixes were
+never recorded here until somebody went looking, and one finding had been wrong
+since the day it was written.
 
 ## What has been fixed since the walk
 
-**Seven of the thirty are closed, and one was never true.** Findings 1, 12 and 13
+**Nine of the thirty are closed, and one was never true.** Findings 1, 12 and 13
 â the whole of Job B â went in one change on the same day and are described
-below. Findings 3, 14, 15 and 23 were closed later and are marked *Done* where
+below. Findings 3, 14, 15, 16, 18 and 23 were closed later and are marked *Done* where
 they are written, so a reader working down the list is never told to fix
 something that is already fixed. Finding 22 is half done and half **retracted**:
 `/customers` had searched as you type since 2026-08-09, a month before the walk,
@@ -339,6 +339,12 @@ found. The five marked **(stopper)** would stop a real installation.
     `/inventory?limit=200` with no status filter. The picker offered A1001, which
     the API reports as Sold.
 
+    **Done 2026-09-15.** `stillGettable` on the inventory query — everything
+    except Sold and Removed. Deliberately not `status=Available`, which would
+    have been the easy fix and would have dropped the two states the comment was
+    protecting: a car being reconditioned, and one on hold for somebody else.
+    Measured on the seeded dealership: 215 units, 162 still gettable.
+
 ### The workshop
 
 17. **The workshop list shows two different jobs under one number.** Over the API:
@@ -365,6 +371,23 @@ found. The five marked **(stopper)** would stop a real installation.
     has no page two. The label is `vehicle.displayName`, and **`VehicleSummary`
     already carries `vin`** â the picker is throwing away the one field that
     would tell two identical cars apart.
+
+    **Done 2026-09-15.** A shared `RecordPicker` that searches the server, with
+    every option carrying what separates it from an identical-looking one.
+    Walked: "Alvarez" returns eleven customers including **two called Janusz
+    Alvarez**, told apart by their email; searching "RAV4" returns **two 2023
+    Toyota RAV4 XLEs**, told apart by their VIN tails.
+
+    **The car list narrows to the customer, and how it does is the part worth
+    reading.** A vehicle has NO OWNER in this system. Cars change hands, so
+    ownership is a history rather than a column, and inventing a `CustomerId` on
+    `Vehicle` would be wrong the first time somebody sold their car privately.
+    So "their cars" is answered from the workshop's own records instead: every
+    vehicle on one of their repair orders or bookings, most recent first. It is
+    incomplete on purpose, since a car they bought and never serviced is not
+    there — deals are another capability and this one may not read their rows —
+    which is exactly why the shortlist sits BESIDE a search of every car rather
+    than replacing one.
 
 19. **Job numbering breaks if a repair order is ever deleted.** The next number is
     `FirstNumber + COUNT(orders at this rooftop) + 1`. A deletion makes the next

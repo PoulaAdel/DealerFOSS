@@ -17,12 +17,13 @@
 //   full picker at a group implies you may file an enquiry anywhere, which
 //   the server will refuse.
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api, post } from '../../shared/api';
 import { leadSources } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { RecordPicker, type PickerOption } from '../../shared/RecordPicker';
 import type {
   CustomerDetail,
   CustomerSummary,
@@ -51,7 +52,7 @@ export function CaptureLead({
   const [rooftopId, setRooftopId] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [source, setSource] = useState<LeadSource>('WalkIn');
-  const [vehicleId, setVehicleId] = useState('');
+  const [car, setCar] = useState<PickerOption | null>(null);
   const [enquiry, setEnquiry] = useState('');
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
@@ -77,7 +78,13 @@ export function CaptureLead({
         // What they came in asking about. Cars already sold are no use here, but
         // one on hold for somebody else still is — an enquiry is not a claim on
         // the car, and the second person's interest is worth recording.
-        setUnits((await api<Page<InventoryUnitSummary>>('/inventory?limit=200')).rows);
+        //
+        // THE COMMENT ABOVE WAS TRUE OF THE INTENT AND FALSE OF THE CODE until
+        // 2026-09-15: the next line asked for `/inventory?limit=200` with no
+        // status filter at all, so the picker offered SOLD cars. Walked
+        // 2026-09-10 and it offered A1001, which the API reported as Sold.
+        setUnits((await api<Page<InventoryUnitSummary>>(
+          '/inventory?stillGettable=true&limit=25')).rows);
       } catch {
         // A stock list that will not load must not stop an enquiry being taken.
         // The car of interest is optional; the enquiry is the thing.
@@ -87,6 +94,33 @@ export function CaptureLead({
 
     void findCustomers('');
   }, []);
+
+  /**
+   * A car on the lot, as something to pick.
+   *
+   * THE ID IS THE VEHICLE'S, NOT THE UNIT'S, because the lead records interest
+   * in a car rather than in a row of stock — the enquiry has to survive that
+   * particular unit being sold to somebody else. The stock number is the hint,
+   * since that is what a salesperson has written on the windscreen and it is
+   * what separates two identical cars on the same lot.
+   */
+  const asStockOption = useCallback(
+    (unit: InventoryUnitSummary): PickerOption => ({
+      id: unit.vehicleId,
+      label: unit.vehicleDisplayName,
+      hint: unit.stockNumber,
+    }),
+    [],
+  );
+
+  const findCars = useCallback(
+    async (term: string, signal: AbortSignal) =>
+      (await api<Page<InventoryUnitSummary>>(
+        `/inventory?search=${encodeURIComponent(term)}&stillGettable=true&limit=15`,
+        { signal },
+      )).rows.map(asStockOption),
+    [asStockOption],
+  );
 
   async function findCustomers(term: string) {
     setError(null);
@@ -114,8 +148,9 @@ export function CaptureLead({
           source,
           // The lead points at the vehicle, not at the unit on the lot: the
           // enquiry survives that particular car being sold to somebody else.
-          vehicleOfInterestId:
-            vehicleId === '' ? null : units.find((u) => u.id === vehicleId)?.vehicleId ?? null,
+          // Which is why the picker's option id IS the vehicle id — see
+          // asStockOption.
+          vehicleOfInterestId: car?.id ?? null,
           enquiry: enquiry.trim() === '' ? null : enquiry.trim(),
         }),
       );
@@ -216,15 +251,20 @@ export function CaptureLead({
         ))}
       </select>
 
-      <label htmlFor="lead-vehicle">{t('leads.carAskedAbout')}</label>
-      <select id="lead-vehicle" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-        <option value="">{t('leads.nothingSpecific')}</option>
-        {units.map((unit) => (
-          <option key={unit.id} value={unit.id}>
-            {unit.stockNumber} · {unit.vehicleDisplayName}
-          </option>
-        ))}
-      </select>
+      {/* The car is OPTIONAL here — "nothing specific" is the commonest walk-in
+          — so this keeps a way to choose nothing, which a search box alone
+          cannot express. The shortlist is whatever is on the lot right now; the
+          search reaches the rest of it. */}
+      <RecordPicker
+        id="lead-vehicle"
+        label={t('leads.carAskedAbout')}
+        chosen={car}
+        onChoose={setCar}
+        search={findCars}
+        shortlist={units.map(asStockOption)}
+      />
+
+      {car === null ? <p className="note">{t('leads.nothingSpecific')}</p> : null}
 
       <label htmlFor="lead-enquiry">{t('leads.whatTheySaid')}</label>
       <textarea

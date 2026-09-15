@@ -57,6 +57,13 @@ public sealed class AppointmentService(
 
     private const int MaxResults = 400;
 
+    /// <summary>
+    /// How many previously-seen cars the booking screen is offered. A person has
+    /// one or two; a small fleet has a dozen. Past that it is not a shortlist any
+    /// more and the search box is the right tool.
+    /// </summary>
+    private const int MaxSeenVehicles = 20;
+
     private readonly TenantDb _db = db;
     private readonly IAccessDirectory _access = access;
     private readonly ICustomers _customers = customers;
@@ -394,6 +401,69 @@ public sealed class AppointmentService(
             cancellationToken);
 
         return await DescribeAsync(booking, cancellationToken);
+    }
+
+    public async Task<Result<IReadOnlyList<VehicleSummary>>> VehiclesSeenForAsync(
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<IReadOnlyList<VehicleSummary>>(AppointmentErrors.Forbidden);
+        }
+
+        var allowed = scope.IsOrganizationWide ? null : scope.Rooftops.ToList();
+
+        // Both halves of the workshop's memory. A car booked in last week and a
+        // car that came in off the street three years ago are equally "one we
+        // have seen them with", and leaving bookings out would miss exactly the
+        // customer who is standing at the counter rebooking.
+        var fromJobs = _db.RepairOrders
+            .AsNoTracking()
+            .Where(r => r.CustomerId == customerId)
+            .Where(r => allowed == null || allowed.Contains(r.RooftopId))
+            .Select(r => new { r.VehicleId, When = r.CreatedAt });
+
+        var fromBookings = _db.Appointments
+            .AsNoTracking()
+            .Where(a => a.CustomerId == customerId)
+            .Where(a => allowed == null || allowed.Contains(a.RooftopId))
+            .Select(a => new { a.VehicleId, When = a.ScheduledFor });
+
+        // Most recently seen first, because the car somebody is bringing back is
+        // far more often the one they were here with last than the one they were
+        // here with in 2019.
+        var seen = await fromJobs
+            .Concat(fromBookings)
+            .GroupBy(x => x.VehicleId)
+            .Select(g => new { VehicleId = g.Key, Last = g.Max(x => x.When) })
+            .OrderByDescending(x => x.Last)
+            .ThenBy(x => x.VehicleId)
+            .Take(MaxSeenVehicles)
+            .ToListAsync(cancellationToken);
+
+        if (seen.Count == 0)
+        {
+            return Result.Success<IReadOnlyList<VehicleSummary>>([]);
+        }
+
+        var found = await _vehicles.GetManyAsync(seen.Select(x => x.VehicleId).ToList(), cancellationToken);
+        if (found.IsFailure)
+        {
+            return Result.Failure<IReadOnlyList<VehicleSummary>>(found.Error);
+        }
+
+        // GetManyAsync answers in its own order, so the ranking above is applied
+        // again here. Without this the shortlist would come back sorted by model
+        // year and the "last one they were in with" would not be at the top,
+        // which is the only reason the shortlist exists.
+        var byId = found.Value.ToDictionary(v => v.Id);
+
+        return Result.Success<IReadOnlyList<VehicleSummary>>(
+            seen.Where(x => byId.ContainsKey(x.VehicleId))
+                .Select(x => byId[x.VehicleId])
+                .ToList());
     }
 
     /// <summary>

@@ -335,6 +335,12 @@ export const en = {
   'money.howPaid': 'How they paid',
   'money.reference': 'Reference (goes on the record)',
   'money.takeIt': 'Record the payment',
+  'picker.change': 'Change',
+  'picker.typeToSearch': 'Type to search',
+  'picker.searching': 'Searching…',
+  'picker.searchFailed': 'That search could not run. Try again.',
+  'picker.noMatches': 'Nothing matches that.',
+  'picker.startTyping': 'Type a few letters to find one.',
   'money.willOverpay':
     'That is {extra} more than is owed. The extra becomes a credit this customer is owed back.',
   'money.creditUsable': 'This customer has money with us',
@@ -1264,6 +1270,7 @@ export const en = {
   'diary.taking': 'Booking…',
   'diary.pickCustomer': 'Choose a customer',
   'diary.pickVehicle': 'Choose a car',
+  'diary.pickCustomerFirst': 'Choose the customer first — then their cars are offered.',
 
   // --- The control-plane console --------------------------------------------
   // A separate vocabulary from the dealership's, deliberately. Whoever reads

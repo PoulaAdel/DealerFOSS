@@ -420,7 +420,7 @@ describe('one deal', () => {
     renderDeals('/deals?leadId=l1&customerId=c1');
     await screen.findByText(/From the enquiry for/);
 
-    await userEvent.selectOptions(screen.getByLabelText('Which car'), 'u1');
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Start the deal' }));
 
     // Without this the two halves of one sale sit in the system unaware of each

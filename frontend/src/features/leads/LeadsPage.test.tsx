@@ -514,7 +514,11 @@ describe('taking an enquiry', () => {
 
     await userEvent.selectOptions(await screen.findByLabelText('Who is asking'), 'c1');
     await userEvent.selectOptions(screen.getByLabelText('How they reached us'), 'Phone');
-    await userEvent.selectOptions(screen.getByLabelText(/Car they asked about/), 'u1');
+
+    // Off the picker's shortlist, by stock number. The old dropdown offered the
+    // first 200 cars with no status filter at all — including sold ones.
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+
     await userEvent.click(screen.getByRole('button', { name: 'Save the enquiry' }));
 
     await waitFor(() => {

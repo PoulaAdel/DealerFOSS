@@ -327,6 +327,12 @@ export const de: Catalogue = {
   'money.howPaid': 'Zahlungsart',
   'money.reference': 'Beleg (bleibt im Vorgang)',
   'money.takeIt': 'Zahlung erfassen',
+  'picker.change': 'Ändern',
+  'picker.typeToSearch': 'Zum Suchen tippen',
+  'picker.searching': 'Suche läuft…',
+  'picker.searchFailed': 'Die Suche konnte nicht ausgeführt werden. Erneut versuchen.',
+  'picker.noMatches': 'Keine Treffer.',
+  'picker.startTyping': 'Ein paar Buchstaben eingeben, um etwas zu finden.',
   'money.willOverpay':
     'Das sind {extra} mehr als geschuldet. Der Überschuss wird zu einem Guthaben des Kunden.',
   'money.creditUsable': 'Dieser Kunde hat Geld bei uns',
@@ -1223,6 +1229,7 @@ export const de: Catalogue = {
   'diary.taking': 'Wird gebucht…',
   'diary.pickCustomer': 'Kunde wählen',
   'diary.pickVehicle': 'Fahrzeug wählen',
+  'diary.pickCustomerFirst': 'Zuerst den Kunden wählen — danach werden seine Fahrzeuge angeboten.',
 
   // --- Die Verwaltungskonsole -------------------------------------------------
   // Bewusst ein anderes Vokabular als das des Autohauses: Wer diese Bildschirme

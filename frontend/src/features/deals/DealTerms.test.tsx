@@ -245,7 +245,12 @@ describe('starting a deal', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Start a deal' }));
 
     await userEvent.selectOptions(await screen.findByLabelText('Who is buying'), 'c1');
-    await userEvent.selectOptions(screen.getByLabelText('Which car'), 'u1');
+
+    // The car comes off the picker's shortlist — what is available right now —
+    // and is identified by its stock number, because "2021 Toyota RAV4" alone
+    // is what two cars on the same lot both say.
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+
     await userEvent.click(screen.getByRole('button', { name: 'Start the deal' }));
 
     await waitFor(() => {

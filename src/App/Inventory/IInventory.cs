@@ -156,6 +156,19 @@ public sealed record InventoryQuery(
     string? Status = null,
     string? StockNumber = null,
     string? Search = null,
+
+    /// <summary>
+    /// Only cars somebody could still end up with — everything except Sold and
+    /// Removed.
+    /// </summary>
+    /// <remarks>
+    /// Not the same as <c>Status = "Available"</c>, and the difference is the
+    /// point. A car being reconditioned or on hold for another customer is worth
+    /// offering to somebody enquiring; a car that has gone is not. One status
+    /// cannot say that, which is why this is its own flag rather than a fourth
+    /// value of <see cref="Status"/>.
+    /// </remarks>
+    bool StillGettable = false,
     int Limit = 50,
     int Offset = 0);
 

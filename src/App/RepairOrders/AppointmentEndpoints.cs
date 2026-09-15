@@ -33,6 +33,10 @@ internal static class AppointmentEndpoints
         var group = app.MapGroup("/api/v1/appointments").WithTags("Service");
 
         group.MapGet("", ListAsync);
+
+        // Before the {id} route, so "vehicles-seen" is not offered to the guid
+        // constraint as a candidate id.
+        group.MapGet("/vehicles-seen", VehiclesSeenAsync);
         group.MapGet("/{appointmentId:guid}", GetAsync);
         group.MapPost("", BookAsync);
         group.MapPost("/{appointmentId:guid}/reschedule", RescheduleAsync);
@@ -63,6 +67,20 @@ internal static class AppointmentEndpoints
             limit);
 
         var result = await appointments.ListAsync(query, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <summary>
+    /// The cars this customer has been here with before. A shortlist for the
+    /// booking screen, not a search: it is offered beside one.
+    /// </summary>
+    private static async Task<IResult> VehiclesSeenAsync(
+        IAppointments appointments,
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        var result = await appointments.VehiclesSeenForAsync(customerId, cancellationToken);
+
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
