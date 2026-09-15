@@ -30,6 +30,7 @@ import type {
 const summary = (over: Partial<RepairOrderSummary> = {}): RepairOrderSummary => ({
   id: 'ro1',
   rooftopId: 'r1',
+  rooftopCode: 'NAG-01',
   number: 'RO-1001',
   status: 'InProgress',
   customerId: 'c1',
@@ -64,6 +65,7 @@ const line = (over: Partial<ServiceLineView> = {}): ServiceLineView => ({
 const detail = (over: Partial<RepairOrderDetail> = {}): RepairOrderDetail => ({
   id: 'ro1',
   rooftopId: 'r1',
+  rooftopCode: 'NAG-01',
   number: 'RO-1001',
   status: 'InProgress',
   customerId: 'c1',
@@ -130,6 +132,52 @@ describe('the workshop list', () => {
     expect(await screen.findByRole('button', { name: 'RO-1001' })).toBeVisible();
     expect(screen.getByText('2019 Honda Civic EX')).toBeVisible();
     expect(screen.getByText('$180.00')).toBeVisible();
+  });
+
+  it('says which lot a job is at, but only when the list mixes them', async () => {
+    // Job numbers restart per rooftop BY DESIGN — 162 jobs at this dealership
+    // share 82 numbers, 80 of them used twice — so a list spanning two lots
+    // shows two different jobs under one number. Asking the running screen for
+    // RO-1082 on 2026-09-15 returned two rows and the only way to tell them
+    // apart was to read the DOM.
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders': {
+        ok: true,
+        body: page([
+          summary({ id: 'a', number: 'RO-1082', rooftopId: 'r1', rooftopCode: 'NAG-01' }),
+          summary({ id: 'b', number: 'RO-1082', rooftopId: 'r2', rooftopCode: 'NAG-02' }),
+        ]),
+      },
+      '/staff': noStaff,
+    });
+
+    renderWorkshop();
+
+    expect(await screen.findByText('NAG-01')).toBeVisible();
+    expect(screen.getByText('NAG-02')).toBeVisible();
+  });
+
+  it('keeps the lot out of the way at a dealership with one', async () => {
+    // Every row would carry the same code and it would say nothing. The
+    // question is "is what I am looking at ambiguous", not "how many lots does
+    // this person cover".
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders': {
+        ok: true,
+        body: page([
+          summary({ id: 'a', number: 'RO-1001', rooftopId: 'r1', rooftopCode: 'NAG-01' }),
+          summary({ id: 'b', number: 'RO-1002', rooftopId: 'r1', rooftopCode: 'NAG-01' }),
+        ]),
+      },
+      '/staff': noStaff,
+    });
+
+    renderWorkshop();
+
+    expect(await screen.findByRole('button', { name: 'RO-1001' })).toBeVisible();
+    expect(screen.queryByText('NAG-01')).not.toBeInTheDocument();
   });
 
   it('leads with the calls somebody owes, because each one blocks an invoice', async () => {

@@ -1234,3 +1234,17 @@ to come.
   Walked: "Alvarez" returns eleven customers including **two called Janusz Alvarez**, separated by their email; "RAV4" returns **two 2023 Toyota RAV4 XLEs**, separated by their VIN tails; choosing Amara Alvarez narrowed the cars to the single BMW she has been here with; and the booking landed against the right car.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **764/764** (was 761), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **390/390** (was 382), `npm run build`.
+
+- **2026-09-15 — A job number says which lot it belongs to, and half the finding that asked for it was wrong.** Finding 17.
+
+  **The data was always right.** `RepairOrderService` numbers per rooftop by design and a unique index on `(RooftopId, Number)` enforces it, so this dealership's 162 jobs share 82 numbers with 80 of them used twice. That is correct behaviour. The screen was not: it is headed "the work at the locations you cover", lists both lots together, and printed the bare number. Asking it for RO-1082 while walking the credit work returned **two buttons both labelled RO-1082** — different customers, different cars, both invoiced — and the only way to tell them apart was to read the DOM.
+
+  **The printed job card was never ambiguous, and the finding said it was.** `DocumentHtml.Header` has put the dealership and "North Auto Downtown (NAG-01)" at the top right of every document since documents existed. Found by reading `DocumentService.WhereAsync` rather than by re-reading the walk record — the second finding in two days that was wrong about something nobody had re-checked.
+
+  **The lot shows beside the number when the list actually mixes lots, and always on an open job.** Adaptive rather than always-on, because the question is *"is what I am looking at ambiguous"* rather than *"how many lots does this person cover"*: at a one-site dealership every row would carry the same code and say nothing, and a manager filtered to a single lot is not looking at anything ambiguous either. An open job is different — it carries no context to infer the lot from, and it is the heading somebody reads back down a phone.
+
+  **A failed rooftop lookup does not fail the job list.** Every role that can read a job holds `Organization.Read` today, but that is a fact about the seeded roles rather than a rule. A list that went blank because somebody's role was narrowed would be far worse than a number without its lot — which is exactly what the screen showed before today.
+
+  **The stored numbers are untouched.** Putting a rooftop prefix into the number itself would rewrite what is printed on job cards customers are already holding. That is a decision about somebody else's paperwork, not a detail to settle in passing.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **765/765** (was 764), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **392/392** (was 390), `npm run build`.

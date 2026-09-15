@@ -109,6 +109,17 @@ public sealed record RepairOrderSummary(
     Guid? TechnicianUserId,
 
     /// <summary>
+    /// Which lot this job belongs to -- "NAG-01".
+    /// </summary>
+    /// <remarks>
+    /// Numbers restart per rooftop by design, so 80 of this dealership's 82
+    /// numbers are used twice. The id was always here and a code is what a person
+    /// reads. Empty when the rooftop could not be resolved, which the screen
+    /// treats as "do not show it" rather than as an error.
+    /// </remarks>
+    string RooftopCode,
+
+    /// <summary>
     /// How many pieces of work are waiting on the customer. The one number an
     /// advisor needs to see without opening anything — it is the list of phone
     /// calls they owe, and every one of them blocks an invoice.
@@ -119,6 +130,12 @@ public sealed record RepairOrderSummary(
 public sealed record RepairOrderDetail(
     Guid Id,
     RooftopId RooftopId,
+
+    /// <summary>
+    /// Which lot this job belongs to. Always worth showing here, unlike in a
+    /// list: one job read on its own carries no context to infer it from.
+    /// </summary>
+    string RooftopCode,
     string Number,
     string Status,
     Guid CustomerId,

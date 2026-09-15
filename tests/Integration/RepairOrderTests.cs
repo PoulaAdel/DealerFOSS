@@ -42,6 +42,28 @@ public sealed class RepairOrderTests(HostFixture fixture)
     private readonly HostFixture _fixture = fixture;
 
     [Fact]
+    public async Task A_job_says_which_lot_it_belongs_to()
+    {
+        // Numbers restart per rooftop BY DESIGN, and a unique index on
+        // (RooftopId, Number) enforces it — so this dealership's 162 jobs share
+        // 82 numbers, 80 of them used twice. The id was always on the row; a
+        // CODE is what a person can read, and without it two rows of a list
+        // spanning both lots are indistinguishable.
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-02"));
+
+        var job = await GetJobAsync(jobId, Manager);
+        job.GetProperty("rooftopCode").GetString().Should().Be("NAG-02");
+
+        // And on the list, which is where the ambiguity actually bites.
+        using var listed = await SendAsync(HttpMethod.Get, $"{Jobs}?limit=200", Manager);
+        listed.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        (await listed.Content.ReadFromJsonAsync<JsonElement>())
+            .Rows().Single(r => r.GetProperty("id").GetString() == jobId)
+            .GetProperty("rooftopCode").GetString().Should().Be("NAG-02");
+    }
+
+    [Fact]
     public async Task A_car_can_be_booked_in_worked_on_and_invoiced()
     {
         var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));

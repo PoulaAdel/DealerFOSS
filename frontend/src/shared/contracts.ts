@@ -475,6 +475,16 @@ export interface RepairOrderSummary {
   currency: string;
   advisorUserId: string | null;
   technicianUserId: string | null;
+
+  /**
+   * Which lot this job belongs to -- "NAG-01".
+   *
+   * Job numbers restart per rooftop by design, so a list mixing lots shows two
+   * different jobs under one number. Empty when the rooftop could not be
+   * resolved, which the screen treats as "do not show it".
+   */
+  rooftopCode: string;
+
   /** Phone calls the advisor owes. Every one of them blocks an invoice. */
   linesAwaitingAnswer: number;
   openedAt: string;
@@ -556,6 +566,12 @@ export interface RepairOrderHistoryEntry {
 export interface RepairOrderDetail {
   id: string;
   rooftopId: string;
+
+  /**
+   * Which lot this job belongs to. Always worth showing here, unlike in a list:
+   * one job read on its own carries no context to infer it from.
+   */
+  rooftopCode: string;
   number: string;
   status: RepairOrderStatus;
   customerId: string;

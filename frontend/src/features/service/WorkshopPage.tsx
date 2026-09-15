@@ -205,6 +205,22 @@ export function WorkshopPage() {
   // it costs no extra request.
   const waiting = load.page.rows.filter((job) => job.linesAwaitingAnswer > 0);
 
+  /**
+   * Whether this page of jobs spans more than one lot.
+   *
+   * Job numbers restart per rooftop by design — 162 jobs here share 82 numbers,
+   * 80 of them used twice — so a list that mixes lots shows two different jobs
+   * under one number and nothing separates them. Asking for RO-1082 on
+   * 2026-09-15 returned two rows and the only way to tell them apart was to
+   * read the DOM.
+   *
+   * Computed from the rows rather than from the user's rooftops on purpose: it
+   * answers "is what I am looking at ambiguous", which is the actual question.
+   * A manager who covers three lots but is filtered to one is not looking at
+   * anything ambiguous, and a code on every row would just be noise.
+   */
+  const mixed = new Set(load.page.rows.map((job) => job.rooftopId)).size > 1;
+
   return (
     <section className="page">
       <header className="page__head">
@@ -249,7 +265,9 @@ export function WorkshopPage() {
             {waiting.map((job) => (
               <li key={job.id}>
                 <button type="button" className="link" onClick={() => void open(job.id)}>
-                  {job.number} — {job.customerName}
+                  {job.number}
+                  {mixed && job.rooftopCode !== '' ? ` ${job.rooftopCode}` : ''} —{' '}
+                  {job.customerName}
                 </button>{' '}
                 <span className="muted">
                   {job.vehicle} ·{' '}
@@ -300,6 +318,16 @@ export function WorkshopPage() {
                     <button type="button" className="link" onClick={() => void open(job.id)}>
                       {job.number}
                     </button>
+                    {/* Only when the list actually mixes lots. At a one-site
+                        dealership every row would carry the same code and it
+                        would be noise; at a group it is the difference between
+                        two rows that otherwise read identically. */}
+                    {mixed && job.rooftopCode !== '' ? (
+                      <>
+                        {' '}
+                        <span className="muted">{job.rooftopCode}</span>
+                      </>
+                    ) : null}
                   </td>
                   <td>{job.customerName}</td>
                   <td>{job.vehicle}</td>
@@ -367,8 +395,18 @@ function Job({
   return (
     <section className="panel panel--deal">
       <header className="page__head">
+        {/* Always here, unlike in the list. One job open on its own carries no
+            context to infer the lot from — and this is the heading somebody
+            reads back down a phone to a customer holding a job card. */}
         <h2>
-          {job.number} <span className="muted">·</span> {job.customerName}
+          {job.number}
+          {job.rooftopCode === '' ? null : (
+            <>
+              {' '}
+              <span className="muted">{job.rooftopCode}</span>
+            </>
+          )}{' '}
+          <span className="muted">·</span> {job.customerName}
         </h2>
         <button type="button" onClick={onClose}>
           {t('common.close')}

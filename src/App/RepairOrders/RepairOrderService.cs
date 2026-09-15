@@ -31,6 +31,7 @@ using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.Identity;
 using DealerFOSS.Inventory;
+using DealerFOSS.Organization;
 using DealerFOSS.Data;
 using DealerFOSS.Parts;
 using DealerFOSS.Receivables;
@@ -47,6 +48,7 @@ public sealed class RepairOrderService(
     IReceivables receivables,
     IParts parts,
     IInventory inventory,
+    IOrganization organization,
     ICurrentUser currentUser,
     IAuditSink audit,
     IClock clock)
@@ -69,6 +71,7 @@ public sealed class RepairOrderService(
     private readonly IReceivables _receivables = receivables;
     private readonly IParts _parts = parts;
     private readonly IInventory _inventory = inventory;
+    private readonly IOrganization _organization = organization;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
@@ -174,6 +177,7 @@ public sealed class RepairOrderService(
                 o.Currency,
                 o.AdvisorUserId,
                 o.TechnicianUserId,
+                context.Value.Lot(o.RooftopId),
                 o.AwaitingAnswer.Count,
                 o.CreatedAt)).ToList(),
             total,
@@ -767,7 +771,7 @@ public sealed class RepairOrderService(
     {
         if (orders.Count == 0)
         {
-            return Result.Success(new ServiceLookup([], []));
+            return Result.Success(new ServiceLookup([], [], new Dictionary<RooftopId, string>()));
         }
 
         var names = await _customers.GetManyAsync(
@@ -786,13 +790,58 @@ public sealed class RepairOrderService(
             return Result.Failure<ServiceLookup>(cars.Error);
         }
 
-        return Result.Success(new ServiceLookup(names.Value, cars.Value));
+        return Result.Success(new ServiceLookup(
+            names.Value,
+            cars.Value,
+            await LotsAsync(orders.Select(o => o.RooftopId).Distinct().ToList(), cancellationToken)));
+    }
+
+    /// <summary>
+    /// Which lot each job belongs to, by id.
+    /// </summary>
+    /// <remarks>
+    /// A handful of calls, not one per row: a dealership has one to five
+    /// rooftops and a page of fifty jobs comes from at most that many.
+    ///
+    /// <b>A failure here does NOT fail the list.</b> Every role that can read a
+    /// job holds <c>Organization.Read</c> today, but that is a fact about the
+    /// seeded roles rather than a rule, and a job list that goes blank because
+    /// somebody's role was narrowed would be a far worse outcome than a job
+    /// number without its lot beside it — which is exactly what the screen
+    /// showed before 2026-09-15 anyway. Degrading to that is safe; refusing is
+    /// not.
+    /// </remarks>
+    private async Task<Dictionary<RooftopId, string>> LotsAsync(
+        List<RooftopId> rooftopIds,
+        CancellationToken cancellationToken)
+    {
+        var lots = new Dictionary<RooftopId, string>();
+
+        foreach (var id in rooftopIds)
+        {
+            var found = await _organization.GetRooftopAsync(id, cancellationToken);
+            if (found.IsSuccess)
+            {
+                lots[id] = found.Value.Code;
+            }
+        }
+
+        return lots;
     }
 
     private sealed record ServiceLookup(
         IReadOnlyList<CustomerSummary> Customers,
-        IReadOnlyList<VehicleSummary> Vehicles)
+        IReadOnlyList<VehicleSummary> Vehicles,
+        IReadOnlyDictionary<RooftopId, string> Lots)
     {
+        /// <summary>
+        /// The lot's code — "NAG-01" — or empty when it could not be read.
+        /// Empty rather than a placeholder: the screen decides whether to show
+        /// it at all, and "(unknown)" beside a job number is worse than nothing.
+        /// </summary>
+        public string Lot(RooftopId id) => Lots.TryGetValue(id, out var code) ? code : string.Empty;
+
+
         public string CustomerName(Guid id)
         {
             var match = Customers.FirstOrDefault(c => c.Id == id);
@@ -833,6 +882,7 @@ public sealed class RepairOrderService(
         return Result.Success(new RepairOrderDetail(
             order.Id,
             order.RooftopId,
+            context.Value.Lot(order.RooftopId),
             order.Number,
             order.Status.ToString(),
             order.CustomerId,

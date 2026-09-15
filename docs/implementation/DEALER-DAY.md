@@ -29,21 +29,21 @@ All four jobs can be completed. That is the number the progress page reports,
 and it moves only when somebody walks the job again.
 
 Finishing them is not the same as finishing the product. The walk found thirty
-things; **nine are fixed and one was never true** (checked 2026-09-14, item by
+things; **ten are fixed and two were not true as written** (checked 2026-09-14, item by
 item, against the code rather than against this file). The rest are register
 rows, and the four jobs are the *ordinary* day rather than the whole job of
 running a dealership. What has changed is that the ordinary day no longer stops.
 
-**Twenty stand, and this file is five days behind the day it describes.** That is
+**Nineteen stand, and this file is five days behind the day it describes.** That is
 the argument for walking again rather than reading this: three of the fixes were
 never recorded here until somebody went looking, and one finding had been wrong
 since the day it was written.
 
 ## What has been fixed since the walk
 
-**Nine of the thirty are closed, and one was never true.** Findings 1, 12 and 13
+**Ten of the thirty are closed, and two were not true as written.** Findings 1, 12 and 13
 â the whole of Job B â went in one change on the same day and are described
-below. Findings 3, 14, 15, 16, 18 and 23 were closed later and are marked *Done* where
+below. Findings 3, 14, 15, 16, 17, 18 and 23 were closed later and are marked *Done* where
 they are written, so a reader working down the list is never told to fix
 something that is already fixed. Finding 22 is half done and half **retracted**:
 `/customers` had searched as you type since 2026-08-09, a month before the walk,
@@ -355,6 +355,24 @@ found. The five marked **(stopper)** would stop a real installation.
     locations you cover", lists both rooftops together, and shows the number
     without the location. A manager covering two lots cannot tell which RO-1078 is
     which, and neither can the customer holding the printed job card.
+
+    **Done 2026-09-15, and the last clause of it was wrong.** The printed job
+    card was never ambiguous: `DocumentHtml.Header` puts the dealership and
+    "North Auto Downtown (NAG-01)" at the top right of every document, and has
+    since documents existed. Only the screen was short of it. Checked by reading
+    `DocumentService.WhereAsync` rather than by re-reading this file.
+
+    The lot now appears beside the number **when the list actually mixes lots**,
+    and always on an open job. Adaptive rather than always-on because the
+    question is "is what I am looking at ambiguous", not "how many lots does
+    this person cover": at a one-site dealership every row would carry the same
+    code and say nothing, and a manager filtered to one lot is not looking at
+    anything ambiguous either.
+
+    **The numbers themselves are untouched.** Changing the stored number to
+    carry a rooftop prefix would rewrite what is printed on job cards customers
+    are already holding, which is a decision about somebody else's paperwork
+    rather than a detail.
 
 18. **Booking a car in: 100 customers, no search, and cars you cannot tell apart.**
     The customer picker is a raw `<select>` of 101 options with no search of any
