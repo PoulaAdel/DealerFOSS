@@ -225,6 +225,7 @@ public static class DevelopmentSeeder
         await SeedCustomersAsync(tenantDb);
         await SeedStockAsync(tenantDb, clock);
         await SeedChartOfAccountsAsync(tenantDb);
+        await SeedServiceCatalogueAsync(tenantDb);
         await OpenTheBooksAsync(tenantDb, clock);
         await SeedLeadsAsync(tenantDb, clock);
         await SeedDealsAsync(tenantDb, clock);
@@ -563,6 +564,64 @@ public static class DevelopmentSeeder
             db.AccountingPeriods.Add(AccountingPeriod.Open(
                 Guid.NewGuid(), month.Year, month.Month, clock.UtcNow, null,
                 "Opened when the dealership was set up."));
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// The jobs a workshop sells and what an hour costs, so the demo dealership
+    /// has a catalogue to pick from rather than an empty one.
+    /// </summary>
+    /// <remarks>
+    /// Rates are seeded per rooftop and deliberately differ between them — the
+    /// whole reason a rate is local rather than group-wide is that two lots do
+    /// not charge the same, and a seed where they matched would hide the one
+    /// thing worth checking.
+    ///
+    /// Warranty is below retail and internal is below both, which is the shape
+    /// every real workshop has: the manufacturer sets what it reimburses, and
+    /// work the dealership does for itself is carried near cost.
+    /// </remarks>
+    private static async Task SeedServiceCatalogueAsync(TenantDb db)
+    {
+        if (!await db.OpCodes.AnyAsync())
+        {
+            db.OpCodes.AddRange(
+                new OpCode(Guid.NewGuid(), "SVC-FULL", "Full service", 1.5m, ServicePayType.CustomerPay),
+                new OpCode(Guid.NewGuid(), "SVC-INT", "Interim service", 0.8m, ServicePayType.CustomerPay),
+                new OpCode(Guid.NewGuid(), "BRK-FRT", "Front brake pads and discs", 1.4m, ServicePayType.CustomerPay),
+                new OpCode(Guid.NewGuid(), "BRK-REAR", "Rear brake pads", 1.0m, ServicePayType.CustomerPay),
+                new OpCode(Guid.NewGuid(), "DIAG-1H", "Diagnostic investigation, first hour", 1.0m, ServicePayType.CustomerPay),
+                new OpCode(Guid.NewGuid(), "MOT-PREP", "MOT preparation", 0.5m, ServicePayType.CustomerPay),
+                new OpCode(Guid.NewGuid(), "AC-REGAS", "Air conditioning regas", 1.2m, ServicePayType.CustomerPay),
+                new OpCode(Guid.NewGuid(), "RECALL", "Manufacturer recall work", 0.5m, ServicePayType.Warranty),
+                new OpCode(Guid.NewGuid(), "WTY-DIAG", "Warranty diagnosis", 0.7m, ServicePayType.Warranty),
+                new OpCode(Guid.NewGuid(), "RECON-VALET", "Valet and prepare for sale", 2.0m, ServicePayType.Internal));
+
+            await db.SaveChangesAsync();
+        }
+
+        if (await db.LabourRates.AnyAsync())
+        {
+            return;
+        }
+
+        var rooftops = await db.Rooftops.OrderBy(r => r.Code).ToListAsync();
+
+        decimal retail = 120m;
+        foreach (var rooftop in rooftops)
+        {
+            db.LabourRates.AddRange(
+                new LabourRate(Guid.NewGuid(), rooftop.Id, "Retail",
+                    new Money(retail, "USD"), ServicePayType.CustomerPay),
+                new LabourRate(Guid.NewGuid(), rooftop.Id, "Warranty",
+                    new Money(retail - 25m, "USD"), ServicePayType.Warranty),
+                new LabourRate(Guid.NewGuid(), rooftop.Id, "Internal",
+                    new Money(retail - 50m, "USD"), ServicePayType.Internal));
+
+            // The second lot is dearer. See this method's remarks.
+            retail += 15m;
         }
 
         await db.SaveChangesAsync();

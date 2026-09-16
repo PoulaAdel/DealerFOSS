@@ -72,6 +72,21 @@ public static class Permissions
     /// </summary>
     public const string ServiceAuthorize = "Service.Authorize";
 
+    /// <summary>
+    /// Setting what the workshop sells and what an hour costs: the op-code
+    /// catalogue and the labour rates.
+    ///
+    /// Held ORGANIZATION-WIDE, and deliberately not <see cref="ServiceWrite"/>,
+    /// which a technician holds because writing up found work is their job.
+    /// This is the price of every hour the workshop will sell from now on, and
+    /// the standard time every efficiency figure is measured against. Changing
+    /// it is a management decision, not counter work.
+    ///
+    /// The same shape as <see cref="PartsManage"/>: a part number and an op code
+    /// both mean the same thing at every lot, so both are set for the group.
+    /// </summary>
+    public const string ServiceConfigure = "Service.Configure";
+
     /// <summary>Reading the ledger.</summary>
     public const string AccountingRead = "Accounting.Read";
 
@@ -241,6 +256,7 @@ public static class Permissions
         ServiceRead,
         ServiceWrite,
         ServiceAuthorize,
+        ServiceConfigure,
         AccountingRead,
         AccountingPost,
         AccountingReverse,

@@ -59,6 +59,20 @@ public sealed class ServiceLine
     public string? AuthorizationNote { get; private set; }
 
     /// <summary>
+    /// The catalogued job this line sells, when it is one. Null is a legitimate
+    /// choice for the same reason a part line may carry no PartId: a one-off job
+    /// nobody will ever do again still has to be billable.
+    /// </summary>
+    /// <remarks>
+    /// Kept as a REFERENCE rather than by copying the code onto the line,
+    /// because the description, hours and rate are already copied — those are
+    /// what the customer was quoted, and they must not move when somebody
+    /// revises the catalogue. The id is provenance only: which entry this came
+    /// from.
+    /// </remarks>
+    public Guid? OpCodeId { get; private set; }
+
+    /// <summary>
     /// The catalogue part this line sells, when it is one. Null means a part
     /// typed in by hand — still billable, still on the record, but nothing comes
     /// off a shelf for it and it contributes no cost. Both are legitimate: a
@@ -107,11 +121,21 @@ public sealed class ServiceLine
         Guid? authorizedByUserId,
         Guid? partId = null,
         decimal? partQuantity = null,
-        ServicePayType payType = ServicePayType.CustomerPay)
+        ServicePayType payType = ServicePayType.CustomerPay,
+        Guid? opCodeId = null)
     {
         if (string.IsNullOrWhiteSpace(description))
         {
             throw new ArgumentException("A line needs a description.", nameof(description));
+        }
+
+        if (opCodeId is not null && kind != ServiceLineKind.Labour)
+        {
+            // An op code IS a job -- a standard time at a standard price. Citing one
+            // on a part or a sublet line would mean nothing, and would let the
+            // op-code reports count work that was never done.
+            throw new ArgumentException(
+                "Only a Labour line can cite an op code.", nameof(opCodeId));
         }
 
         if (partId is not null && kind != ServiceLineKind.Part)
@@ -160,6 +184,7 @@ public sealed class ServiceLine
         AuthorizedByUserId = authorizedByUserId;
         PartId = partId;
         PartQuantity = partId is null ? null : partQuantity;
+        OpCodeId = opCodeId;
     }
 
     /// <summary>

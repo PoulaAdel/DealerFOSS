@@ -49,6 +49,7 @@ public sealed class RepairOrderService(
     IParts parts,
     IInventory inventory,
     IOrganization organization,
+    IServiceCatalogue catalogue,
     ICurrentUser currentUser,
     IAuditSink audit,
     IClock clock)
@@ -72,6 +73,7 @@ public sealed class RepairOrderService(
     private readonly IParts _parts = parts;
     private readonly IInventory _inventory = inventory;
     private readonly IOrganization _organization = organization;
+    private readonly IServiceCatalogue _catalogue = catalogue;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
@@ -407,11 +409,25 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.UnknownPayType);
         }
 
+        // THE CATALOGUE FILLS THE BLANKS AND NEVER OVERRULES THE PERSON. What the
+        // caller sent wins every time; the op code only supplies what was left
+        // out. An advisor who types 2.5 hours against a 1.4-hour job has found a
+        // seized bolt, and a system that quietly wrote 1.4 back over them would
+        // be lying about the work and short-paying the technician for it.
+        var chosen = await ResolveOpCodeAsync(line, kind, payType, order.RooftopId, cancellationToken);
+        if (chosen.IsFailure)
+        {
+            return Result.Failure<RepairOrderDetail>(chosen.Error);
+        }
+
+        var filled = chosen.Value;
+
         try
         {
             order.AddLine(
-                kind, line.Description, line.Hours, line.Rate, line.UnitAmount,
-                _clock.UtcNow, _currentUser.Id, line.PartId, line.PartQuantity, payType);
+                kind, filled.Description, filled.Hours, filled.Rate, line.UnitAmount,
+                _clock.UtcNow, _currentUser.Id, line.PartId, line.PartQuantity, payType,
+                filled.OpCodeId);
         }
         catch (ArgumentException ex)
         {
@@ -765,6 +781,80 @@ public sealed class RepairOrderService(
     /// The customer names and car descriptions for a page of jobs, in two queries
     /// rather than two per row, and always through the published contracts.
     /// </summary>
+    /// <summary>
+    /// What a line should actually say, once the catalogue has filled in
+    /// whatever the caller left out.
+    /// </summary>
+    /// <remarks>
+    /// Three sources, in this order, and the order is the whole design:
+    ///
+    ///   1. What the caller sent. Always wins.
+    ///   2. The op code, when the line cites one — its description and its
+    ///      standard hours.
+    ///   3. The rooftop's labour rate for whoever is paying.
+    ///
+    /// A LINE WITH NO OP CODE IS UNCHANGED BY ANY OF THIS except for the rate,
+    /// which is worth having on free-text labour too: the commonest reason a
+    /// rate is wrong is that somebody typed it, and a lot that has set its
+    /// retail rate has already answered the question.
+    /// </remarks>
+    private async Task<Result<FilledLine>> ResolveOpCodeAsync(
+        NewServiceLine line,
+        ServiceLineKind kind,
+        ServicePayType payType,
+        RooftopId rooftopId,
+        CancellationToken cancellationToken)
+    {
+        var description = line.Description;
+        var hours = line.Hours;
+        var rate = line.Rate;
+        Guid? opCodeId = null;
+
+        if (line.OpCodeId is { } wanted)
+        {
+            var code = await _db.OpCodes
+                .AsNoTracking()
+                .SingleOrDefaultAsync(c => c.Id == wanted, cancellationToken);
+
+            if (code is null)
+            {
+                return Result.Failure<FilledLine>(ServiceErrors.UnknownOpCode);
+            }
+
+            // A withdrawn code is refused on a NEW line and left alone on every
+            // line that already cites it. That is the whole point of withdrawing
+            // rather than deleting.
+            if (!code.IsActive)
+            {
+                return Result.Failure<FilledLine>(ServiceErrors.OpCodeWithdrawn(code.Code));
+            }
+
+            opCodeId = code.Id;
+            description = string.IsNullOrWhiteSpace(description) ? code.Description : description;
+            hours ??= code.StandardHours;
+        }
+
+        // Only labour has a rate. Asking for one on a part line would return the
+        // workshop's hourly figure and quietly multiply it by nothing.
+        if (kind == ServiceLineKind.Labour && rate is null)
+        {
+            var found = await _catalogue.RateForAsync(rooftopId, payType, cancellationToken);
+
+            // A lot that has not set its rates is not an error — it is a lot that
+            // has not been set up yet, and the person can still type a rate. The
+            // line's own validation is what refuses labour with no rate at all.
+            if (found.IsSuccess && found.Value is { } applicable)
+            {
+                rate = applicable.AmountPerHour;
+            }
+        }
+
+        return Result.Success(new FilledLine(description, hours, rate, opCodeId));
+    }
+
+    /// <summary>What the line will actually carry, after the catalogue is consulted.</summary>
+    private sealed record FilledLine(string Description, decimal? Hours, decimal? Rate, Guid? OpCodeId);
+
     private async Task<Result<ServiceLookup>> LookupAsync(
         List<RepairOrder> orders,
         CancellationToken cancellationToken)
@@ -920,6 +1010,7 @@ public sealed class RepairOrderService(
                     l.AuthorizedAt,
                     l.AuthorizedByUserId,
                     l.AuthorizationNote,
+                    l.OpCodeId,
                     l.PartId,
                     l.PartQuantity,
                     l.CostAmount))
@@ -956,6 +1047,19 @@ internal static class ServiceErrors
     public static Error BackwardsPeriod { get; } = Error.Validation(
         "service.backwards_period",
         "The end of the period cannot be before its start.");
+
+    public static Error UnknownOpCode { get; } = Error.Validation(
+        "service.unknown_op_code",
+        "That job is not in the catalogue.");
+
+    public static Error OpCodeWithdrawn(string code) => Error.Validation(
+        "service.op_code_withdrawn",
+        $"{code} has been withdrawn and cannot go on a new job. " +
+        "Jobs that already cite it are unaffected.");
+
+    public static Error OpCodeAlreadyExists(string code) => Error.Conflict(
+        "service.op_code_exists",
+        $"{code} is already a job in the catalogue. Revise that one rather than adding a second.");
 
     public static Error UnknownPayType { get; } = Error.Validation(
         "service.unknown_pay_type",

@@ -44,6 +44,7 @@ import { DealsPage } from '../features/deals/DealsPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { WorkshopPage } from '../features/service/WorkshopPage';
 import { LabourPage } from '../features/service/LabourPage';
+import { ServiceSetupPage } from '../features/service/ServiceSetupPage';
 import { PasskeysPage } from '../features/auth/PasskeysPage';
 import { PartsPage } from '../features/parts/PartsPage';
 import { PeriodsPage } from '../features/accounting/PeriodsPage';
@@ -147,6 +148,7 @@ function AppRoutes() {
         {/* An area, not a record: a different question over a different period.
             ADR-020 keeps routes for areas and bands for records. */}
         <Route path="/workshop/labour" element={<LabourPage />} />
+        <Route path="/workshop/setup" element={<ServiceSetupPage />} />
         <Route path="/parts" element={<PartsPage />} />
         <Route path="/staff" element={<StaffPage />} />
         <Route path="/security/second-factor" element={<SecondFactorSetup />} />

@@ -201,7 +201,8 @@ public sealed class RepairOrder : AuditableEntity
         Guid? addedByUserId,
         Guid? partId = null,
         decimal? partQuantity = null,
-        ServicePayType payType = ServicePayType.CustomerPay)
+        ServicePayType payType = ServicePayType.CustomerPay,
+        Guid? opCodeId = null)
     {
         EnsureLinesAreOpen();
 
@@ -226,7 +227,8 @@ public sealed class RepairOrder : AuditableEntity
             authorizedOnArrival ? addedByUserId : null,
             partId,
             partQuantity,
-            payType);
+            payType,
+            opCodeId);
 
         _lines.Add(line);
         return line;

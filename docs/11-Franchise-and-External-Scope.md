@@ -432,6 +432,8 @@ the date you re-read it, even when nothing changed.
 | How jurisdiction rules are carried at all | Compliance | Done | Decided 2026-09-05: baseline / pack / posture (ADR-024) |
 | Pay type on service work | Service | Done | Built, with a screen |
 | Reconditioning capitalised onto the car | Accounting | Done | Built |
+| Op codes and labour rates | Service | Done | **Built 2026-09-16**, from the Dominion VUE discovery read. A catalogued job with standard hours and a default pay type, organization-wide like a part number; a labour rate per rooftop per pay type, because what an hour sells for is local and warranty is reimbursed at the manufacturer's figure. The catalogue fills blanks and never overrules what a person typed. `Service.Configure` is organization-wide and is not `Service.Write` |
+| Technician clock: flagged against clocked hours | Service | Build | **Not started — named 2026-09-16.** The other half of the labour report. Now possible for the first time, because flagged hours come from the standard time on an op code and until today there was no standard time |
 | Technician load balancing | Service | Decision | Not started |
 | Equity mining and next-vehicle prediction | Sales | Decision | Not started |
 | Labour reports: hours sold, effective rate | Reporting | Done | Built, with a screen |

@@ -49,6 +49,7 @@ import { DiaryPanel } from './DiaryPanel';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { Pager, usePageCaption } from '../../shared/Pager';
+import { RecordPicker, type PickerOption } from '../../shared/RecordPicker';
 import { TakePayment } from '../receivables/TakePayment';
 import {
   servicePayTypes,
@@ -57,6 +58,7 @@ import {
   type RepairOrderSummary,
   type ServiceLineKind,
   type ServiceLineView,
+  type OpCodeView,
   type PartSummary,
   type ServicePayType,
   type StaffMember,
@@ -240,7 +242,8 @@ export function WorkshopPage() {
         {/* A route rather than a band: the report is a different QUESTION over a
             different period, not a detail of anything in this list. ADR-020
             keeps routes for areas, and "how did the workshop do" is one. */}
-        <Link to="/workshop/labour">{t('workshop.labourReport')}</Link>
+        <Link to="/workshop/labour">{t('workshop.labourReport')}</Link>{' '}
+        <Link to="/workshop/setup">{t('workshop.setupLink')}</Link>
       </header>
 
       {/* What is coming, above what is here. A service manager's day is both
@@ -687,6 +690,13 @@ function AddLine({
   const [partId, setPartId] = useState('');
   const [quantity, setQuantity] = useState('1');
 
+  /**
+   * The catalogued job this line sells. Empty means free text, which is as
+   * legitimate here as it is for parts — a one-off job nobody will do again
+   * still has to be billable.
+   */
+  const [jobCode, setJobCode] = useState<PickerOption | null>(null);
+
   const isLabour = kind === 'Labour';
   const isPart = kind === 'Part';
 
@@ -724,6 +734,10 @@ function AddLine({
         // posted and the dashboard showed a 100% margin on service.
         partId: isPart && partId !== '' ? partId : null,
         partQuantity: isPart && partId !== '' ? Number(quantity || 1) : null,
+        // Sending this is what lets the server fill in the standard time and
+        // this lot's rate for whoever is paying. Anything typed above still
+        // wins — the catalogue fills blanks, it does not overrule a person.
+        opCodeId: isLabour && jobCode !== null ? jobCode.id : null,
       });
 
       setDescription('');
@@ -732,9 +746,26 @@ function AddLine({
       setAmount('');
       setPartId('');
       setQuantity('1');
+      setJobCode(null);
       return created;
     });
   }
+
+  const findJobs = useCallback(
+    async (term: string, signal: AbortSignal) =>
+      (await api<Page<OpCodeView>>(
+        `/service/op-codes?search=${encodeURIComponent(term)}&limit=15`,
+        { signal },
+      )).rows.map((code) => ({
+        id: code.id,
+        label: code.description,
+        // The code and the standard time, because those are what make two
+        // similar-sounding jobs different: "Interim service 0.8h" is not
+        // "Full service 1.5h".
+        hint: `${code.code} · ${code.standardHours}h`,
+      })),
+    [],
+  );
 
   /** Fills the description and the price from the catalogue, both still editable. */
   function choosePart(id: string) {
@@ -794,6 +825,21 @@ function AddLine({
             ))}
           </select>
         </div>
+
+        {/* Only on labour: an op code IS a job, and citing one on a part or a
+            sublet line would mean nothing. The server refuses it too. */}
+        {isLabour ? (
+          <div className="field field--grow">
+            <RecordPicker
+              id="line-op-code"
+              label={t('workshop.lineJob')}
+              chosen={jobCode}
+              onChoose={setJobCode}
+              search={findJobs}
+            />
+            <p className="note">{t('workshop.lineJobNote')}</p>
+          </div>
+        ) : null}
 
         <div className="field field--grow">
           <label htmlFor="line-description">{t('workshop.lineDescription')}</label>
@@ -882,9 +928,14 @@ function AddLine({
       )}
 
       <div className="actions">
+        {/* A line needs SOMETHING to call itself, and a catalogued job is that
+            something — its description is what the server writes on the line.
+            Requiring the description box as well would mean typing out the name
+            of the job you just picked, which is the retyping the catalogue
+            exists to end. Caught by a test, not by reading this. */}
         <button
           type="button"
-          disabled={busy || description.trim() === ''}
+          disabled={busy || (description.trim() === '' && jobCode === null)}
           onClick={add}
         >
           {t('workshop.addLine')}

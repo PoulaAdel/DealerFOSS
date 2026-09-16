@@ -137,6 +137,7 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IParts, PartsService>();
     builder.Services.AddScoped<IRepairOrders, RepairOrderService>();
     builder.Services.AddScoped<IAppointments, AppointmentService>();
+    builder.Services.AddScoped<IServiceCatalogue, ServiceCatalogueService>();
     builder.Services.AddScoped<IAccounting, AccountingService>();
     builder.Services.AddScoped<IReceivables, ReceivableService>();
     builder.Services.AddScoped<IReporting, ReportingService>();
@@ -432,6 +433,7 @@ if (tenancyEnabled)
     app.MapParts();
     app.MapRepairOrders();
     app.MapAppointments();
+    app.MapServiceCatalogue();
     app.MapStaff();
     app.MapFinance();
     app.MapDocuments();

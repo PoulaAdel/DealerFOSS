@@ -1248,3 +1248,25 @@ to come.
   **The stored numbers are untouched.** Putting a rooftop prefix into the number itself would rewrite what is printed on job cards customers are already holding. That is a decision about somebody else's paperwork, not a detail to settle in passing.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **765/765** (was 764), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **392/392** (was 390), `npm run build`.
+
+- **2026-09-16 — A job line can be a catalogued job at a known rate, instead of free text at a typed price.** Op codes and labour rates, the first thing built from the Dominion VUE discovery read.
+
+  **Two advisors writing up the same job produced two different descriptions at two different prices**, and nothing could answer "what do we charge for front brakes" or "how long should that take". `EffectiveLabourRate` in the labour report was, and still is, an *output* — what an hour actually realised. It was never a setting, and there was nothing for it to be measured against.
+
+  **The split mirrors parts, deliberately.** An op code is **organization-wide**, for the same reason a part number is: "front brakes, 1.4 hours" means the same job at every lot, and one store inventing its own version is how a catalogue stops being comparable. A labour **rate is per rooftop**, because what an hour sells for is a local decision — the seeded group charges $120 at NAG-01 and $135 at NAG-02, and the seed differs on purpose so a bug that ignored the rooftop would be visible.
+
+  **A rate is the default for a pay type, not a free-floating number.** Warranty is reimbursed at what the manufacturer allows, internal work is carried near cost, retail is retail. Three prices for one hour, and which applies is decided by who is paying — which the line already knew.
+
+  **The catalogue fills blanks and never overrules a person.** Anything typed wins. An advisor billing 2.5 hours against a 1.4-hour job has found a seized bolt, and a system that wrote the standard time back over them would be lying about the work and short-paying whoever did it.
+
+  **Nothing is deleted, only withdrawn.** A withdrawn code is refused on a new line and left alone on every line that already cites it — a job written in March must not change because somebody tidied the catalogue in September. The line stores the op code as *provenance*; the description, hours and rate were copied when it was written and do not move.
+
+  **`Service.Configure`, held organization-wide, and deliberately not `Service.Write`.** A technician writes work up all day. Setting the price of every future hour, and the standard time the whole group is then measured against, is a management act. A test proves the advisor is refused both, and can still *read* the catalogue — a picker they cannot load is worse than no picker.
+
+  **A setup screen, so the catalogue is not seed-only.** `/workshop/setup`: rates as a grid of lots against pay types, and the jobs with withdraw and put-back. A lot that has not set a rate reads "Not set" rather than $0.00 — those are different facts and an advisor would believe the second.
+
+  **A test caught a real bug in the screen.** The write-up button stayed disabled unless a description was typed, which defeated the whole point: the catalogue supplies the description. It now accepts either.
+
+  Walked: the rates grid shows both lots and all three payers; searching "brake" offers *Front brake pads and discs · BRK-FRT · 1.4h* and *Rear brake pads · BRK-REAR · 1h*; choosing the first and pressing Write it up with nothing typed produced **"Front brake pads and discs (1.4 h at $120.00) — $168.00"**; switching to Warranty and choosing the recall produced **"(0.5 h at $95.00) — $47.50"**, the manufacturer's rate rather than retail.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **771/771** (was 765), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **394/394** (was 392), `npm run build`.

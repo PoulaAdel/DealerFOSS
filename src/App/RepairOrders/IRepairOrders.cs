@@ -270,6 +270,9 @@ public sealed record ServiceLineView(
     Guid? AuthorizedByUserId,
     string? AuthorizationNote,
 
+    /// <summary>The catalogued job sold, when this line is one. Labour only.</summary>
+    Guid? OpCodeId,
+
     /// <summary>The catalogue part sold, when this line draws from stock.</summary>
     Guid? PartId,
     decimal? PartQuantity,
@@ -313,6 +316,13 @@ public sealed record NewServiceLine(
     /// </summary>
     Guid? PartId = null,
     decimal? PartQuantity = null,
+
+    /// <summary>
+    /// The catalogued job this line sells. When given, its description and
+    /// standard hours fill in whatever the caller left blank -- never the other
+    /// way round. Labour lines only.
+    /// </summary>
+    Guid? OpCodeId = null,
 
     /// <summary>
     /// Who pays: "CustomerPay", "Warranty" or "Internal". Defaults to the

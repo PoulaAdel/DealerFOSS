@@ -461,6 +461,33 @@ export const servicePayTypes: readonly ServicePayType[] = [
 /** Whether the customer has agreed to pay. Pending is what blocks an invoice. */
 export type LineAuthorization = 'Pending' | 'Authorized' | 'Declined';
 
+/**
+ * A catalogued job: what the workshop sells, what it is called everywhere, and
+ * how long it ought to take.
+ *
+ * Organization-wide, like a part number. What an HOUR costs is per rooftop and
+ * lives in LabourRateView -- two lots do not charge the same.
+ */
+export interface OpCodeView {
+  id: string;
+  code: string;
+  description: string;
+  standardHours: number;
+  defaultPayType: ServicePayType;
+  isActive: boolean;
+}
+
+/** What an hour sells for at one lot, for one kind of payer. */
+export interface LabourRateView {
+  id: string;
+  rooftopId: string;
+  name: string;
+  amountPerHour: number;
+  currency: string;
+  appliesTo: ServicePayType;
+  isActive: boolean;
+}
+
 export interface RepairOrderSummary {
   id: string;
   rooftopId: string;
@@ -552,6 +579,15 @@ export interface ServiceLineView {
   authorizedByUserId: string | null;
   /** How the answer was obtained — the part that matters if it is questioned. */
   authorizationNote: string | null;
+
+  /**
+   * The catalogued job this line sells, when it is one. Null is legitimate: a
+   * one-off job nobody will do again still has to be billable.
+   *
+   * Provenance only — the description, hours and rate were copied onto the line
+   * when it was written and do not move when the catalogue is revised.
+   */
+  opCodeId: string | null;
 }
 
 export interface RepairOrderHistoryEntry {

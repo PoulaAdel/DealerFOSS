@@ -200,6 +200,7 @@ describe('the catalogues', () => {
       ['tax.fromPack', 'a pack id and a version number, with no words in it to translate'],
       ['signIn.code', 'the same word in French'],
       ['setPassword.code', 'the same word in French'],
+      ['serviceSetup.code', 'the same word in French and German'],
       ['appearance.auto', 'the same abbreviation in French and German'],
       ['enum.financeProductKind.Gap', 'an acronym, unchanged in the trade'],
       ['enum.financeProductKind.Protection', 'the same word in French'],

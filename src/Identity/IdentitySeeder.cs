@@ -110,6 +110,12 @@ public static class IdentitySeeder
             Permissions.ServiceRead,
             Permissions.ServiceWrite,
             Permissions.ServiceAuthorize,
+            // Setting the op-code catalogue and the labour rates. On the manager
+            // organization-wide, like the parts catalogue and for the same
+            // reason: an op code means the same job at every lot. It is NOT on
+            // the advisor, who writes jobs up all day - writing a line and
+            // deciding what an hour sells for are different acts.
+            Permissions.ServiceConfigure,
             Permissions.AccountingRead,
             Permissions.AccountingPost,
             // The only role that may make a posted entry disappear.

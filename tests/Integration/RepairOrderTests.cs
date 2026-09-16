@@ -42,6 +42,184 @@ public sealed class RepairOrderTests(HostFixture fixture)
     private readonly HostFixture _fixture = fixture;
 
     [Fact]
+    public async Task A_catalogued_job_fills_in_its_own_description_hours_and_rate()
+    {
+        // The point of the catalogue. An advisor picks "front brakes" and the
+        // line already knows what it is called, how long it should take, and
+        // what this lot charges for an hour — none of which they should be
+        // retyping, and two of which they were getting wrong.
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var jobId = await OpenJobAsync(Manager, rooftop);
+
+        var brakes = await OpCodeAsync("BRK-FRT");
+
+        using var added = await PostAsync($"{Jobs}/{jobId}/lines", Manager, new
+        {
+            kind = "Labour",
+            description = "",
+            opCodeId = brakes.GetProperty("id").GetString(),
+        });
+
+        added.StatusCode.Should().Be(HttpStatusCode.OK, because: await added.Content.ReadAsStringAsync());
+
+        var line = (await added.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("lines").EnumerateArray()
+            .Single(l => l.GetProperty("opCodeId").GetString() == brakes.GetProperty("id").GetString());
+
+        line.GetProperty("description").GetString().Should().Be("Front brake pads and discs");
+        line.GetProperty("hours").GetDecimal().Should().Be(1.4m, because: "that is the standard time");
+        line.GetProperty("rate").GetDecimal().Should().Be(120m, because: "that is what NAG-01 charges");
+    }
+
+    [Fact]
+    public async Task What_the_advisor_typed_beats_what_the_catalogue_says()
+    {
+        // A seized bolt is real. An advisor who bills 2.5 hours against a
+        // 1.4-hour job has found one, and a system that quietly wrote the
+        // standard time back over them would be lying about the work AND
+        // short-paying whoever did it.
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        var brakes = await OpCodeAsync("BRK-FRT");
+
+        using var added = await PostAsync($"{Jobs}/{jobId}/lines", Manager, new
+        {
+            kind = "Labour",
+            description = "Front brakes, nearside caliper seized",
+            hours = 2.5m,
+            rate = 95m,
+            opCodeId = brakes.GetProperty("id").GetString(),
+        });
+
+        added.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var line = (await added.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("lines").EnumerateArray().Last();
+
+        line.GetProperty("hours").GetDecimal().Should().Be(2.5m);
+        line.GetProperty("rate").GetDecimal().Should().Be(95m);
+        line.GetProperty("description").GetString().Should().Be("Front brakes, nearside caliper seized");
+    }
+
+    [Fact]
+    public async Task Who_is_paying_decides_which_rate_applies()
+    {
+        // Three prices for the same hour. The manufacturer sets what it
+        // reimburses and the dealership carries its own work near cost, so a
+        // single rate per lot would be wrong for two thirds of the work.
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        using var warranty = await PostAsync($"{Jobs}/{jobId}/lines", Manager, new
+        {
+            kind = "Labour", description = "Recall work", hours = 0.5m, payType = "Warranty",
+        });
+
+        warranty.StatusCode.Should().Be(HttpStatusCode.OK, because: await warranty.Content.ReadAsStringAsync());
+
+        (await warranty.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("lines").EnumerateArray().Last()
+            .GetProperty("rate").GetDecimal().Should().Be(95m,
+                because: "warranty is reimbursed below retail");
+    }
+
+    [Fact]
+    public async Task Setting_what_an_hour_costs_is_not_the_same_right_as_writing_up_a_job()
+    {
+        // The advisor writes lines all day and holds Service.Write. Deciding
+        // what every future hour sells for is a management act, and the standard
+        // time is what the whole group is then measured against.
+        using var refused = await PostAsync("/api/v1/service/labour-rates", Advisor, new
+        {
+            rooftopId = await RooftopIdAsync("NAG-01"),
+            name = "Retail",
+            amountPerHour = 500m,
+            currency = "USD",
+            appliesTo = "CustomerPay",
+        });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        using var alsoRefused = await PostAsync("/api/v1/service/op-codes", Advisor, new
+        {
+            code = "SNEAK", description = "Added by somebody who may not", standardHours = 1m,
+        });
+
+        alsoRefused.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        // But they can READ it, because a picker they cannot load is worse than
+        // no picker at all.
+        using var readable = await SendAsync(HttpMethod.Get, "/api/v1/service/op-codes", Advisor);
+        readable.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task A_withdrawn_job_cannot_go_on_a_new_order_and_leaves_old_ones_alone()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        using var created = await PostAsync("/api/v1/service/op-codes", Manager, new
+        {
+            code = $"TMP{Guid.NewGuid():N}"[..10],
+            description = "Temporary job",
+            standardHours = 1m,
+        });
+
+        created.StatusCode.Should().Be(HttpStatusCode.Created, because: await created.Content.ReadAsStringAsync());
+        var opCodeId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+
+        using var onTheJob = await PostAsync($"{Jobs}/{jobId}/lines", Manager, new
+        {
+            kind = "Labour", description = "", opCodeId,
+        });
+        onTheJob.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var withdrawn = await PostAsync(
+            $"/api/v1/service/op-codes/{opCodeId}/active", Manager, new { active = false });
+        withdrawn.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Refused on a NEW line...
+        using var refused = await PostAsync($"{Jobs}/{jobId}/lines", Manager, new
+        {
+            kind = "Labour", description = "", opCodeId,
+        });
+        refused.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // ...and the line written before it was withdrawn still reads correctly.
+        // This is the entire reason withdrawing exists instead of deleting.
+        (await GetJobAsync(jobId, Manager))
+            .GetProperty("lines").EnumerateArray()
+            .Should().Contain(l => l.GetProperty("description").GetString() == "Temporary job");
+    }
+
+    [Fact]
+    public async Task An_op_code_is_the_groups_vocabulary_and_cannot_be_claimed_twice()
+    {
+        // Two rows reading BRK-FRT would let one lot quietly mean something else
+        // by it, and every comparison between lots built on op codes would then
+        // be counting different work as the same.
+        // Lower case and a stray space, which normalization takes out. A hyphen
+        // is NOT taken out — it is a character somebody chose — so "BRKFRT"
+        // would be a different code, and deliberately.
+        using var again = await PostAsync("/api/v1/service/op-codes", Manager, new
+        {
+            code = " brk-frt ", description = "Front brakes, but mine", standardHours = 9m,
+        });
+
+        again.StatusCode.Should().Be(HttpStatusCode.Conflict,
+            because: "case and spacing are not what makes two codes different");
+    }
+
+    private async Task<JsonElement> OpCodeAsync(string code)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Get, $"/api/v1/service/op-codes?search={code}", Manager);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return (await response.Content.ReadFromJsonAsync<JsonElement>())
+            .Rows().Single(c => c.GetProperty("code").GetString() == code);
+    }
+
+    [Fact]
     public async Task A_job_says_which_lot_it_belongs_to()
     {
         // Numbers restart per rooftop BY DESIGN, and a unique index on

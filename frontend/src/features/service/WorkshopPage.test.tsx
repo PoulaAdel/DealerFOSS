@@ -50,6 +50,7 @@ const summary = (over: Partial<RepairOrderSummary> = {}): RepairOrderSummary => 
 const line = (over: Partial<ServiceLineView> = {}): ServiceLineView => ({
   id: 'l1',
   kind: 'Labour',
+  opCodeId: null,
   description: 'Investigate front-end noise',
   hours: 1.5,
   rate: 120,
@@ -580,6 +581,66 @@ describe('who pays for the work', () => {
     // Mid-refetch: the job is still there and the page has not blanked.
     expect(screen.getByRole('heading', { name: /RO-1001/ })).toBeVisible();
     expect(screen.queryByText('Loading the workshop…')).toBeNull();
+  });
+
+  it('sends the catalogued job, so the server can fill in time and rate', async () => {
+    // The screen deliberately does NOT copy the standard hours or the rate into
+    // the form itself. Those depend on who is paying and which lot the job is
+    // at, and a browser working them out would be a second copy of a rule that
+    // decides what a customer is charged.
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders/ro1/lines': { ok: true, body: detail() },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/service/op-codes': {
+        ok: true,
+        body: page([{
+          id: 'op1',
+          code: 'BRK-FRT',
+          description: 'Front brake pads and discs',
+          standardHours: 1.4,
+          defaultPayType: 'CustomerPay',
+          isActive: true,
+        }]),
+      },
+      '/staff': noStaff,
+    });
+
+    renderWorkshop();
+    await openJob();
+
+    await userEvent.type(await screen.findByLabelText('Job from the catalogue'), 'brake');
+
+    // The hint carries the code and the standard time, because "Front brake
+    // pads and discs" alone does not separate a 1.4-hour job from a 0.8-hour
+    // one with a similar name.
+    await userEvent.click(await screen.findByRole('button', { name: /BRK-FRT · 1.4h/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
+
+    const sent = apiCalls().find(
+      (c) => c.path === '/repair-orders/ro1/lines' && c.init?.method === 'POST');
+
+    expect(JSON.parse(String(sent?.init?.body))).toMatchObject({ opCodeId: 'op1' });
+  });
+
+  it('offers no catalogued job on a part line, because an op code is a job', async () => {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/parts': { ok: true, body: page([]) },
+      '/staff': noStaff,
+    });
+
+    renderWorkshop();
+    await openJob();
+
+    expect(await screen.findByLabelText('Job from the catalogue')).toBeVisible();
+
+    await userEvent.selectOptions(screen.getByLabelText('What'), 'Part');
+
+    expect(screen.queryByLabelText('Job from the catalogue')).not.toBeInTheDocument();
   });
 
   it('sends who pays when work is written up', async () => {

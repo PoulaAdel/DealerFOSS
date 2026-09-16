@@ -99,6 +99,10 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, I
 
     public DbSet<Appointment> Appointments => Set<Appointment>();
 
+    public DbSet<OpCode> OpCodes => Set<OpCode>();
+
+    public DbSet<LabourRate> LabourRates => Set<LabourRate>();
+
     public DbSet<Part> Parts => Set<Part>();
 
     public DbSet<StockReceipt> StockReceipts => Set<StockReceipt>();
