@@ -1048,6 +1048,18 @@ export const ar: Catalogue = {
   'workshop.lineJobNote':
     'اختياري. اختيار عمل يملأ الزمن القياسي وسعر ساعة هذا الفرع، وما تكتبه له الأولوية.',
   'workshop.setupLink': 'إعداد الورشة',
+  'workshop.clockTitle': 'الوقت على هذا الأمر',
+  'workshop.clockedSoFar': 'سُجِّلت {hours} ساعة حتى الآن. الفني الذي ما زال على الأمر لا يُحتسب حتى يسجّل الخروج.',
+  'workshop.clockWho': 'تسجيل دخول أحدهم…',
+  'workshop.clockOn': 'تسجيل الدخول',
+  'workshop.clockOff': 'تسجيل الخروج',
+  'workshop.onSince': 'منذ {since}',
+  'workshop.someone': 'أحد العاملين',
+  'labour.hoursClocked': 'الساعات المسجّلة',
+  'labour.productivity': 'الإنتاجية',
+  'labour.colClocked': 'مسجّلة',
+  'labour.colProductivity': 'الإنتاجية',
+  'labour.notClocked': 'غير مسجّل',
 
   'serviceSetup.title': 'إعداد الصيانة',
   'serviceSetup.loading': 'جارٍ تحميل الإعدادات…',

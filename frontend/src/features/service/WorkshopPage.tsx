@@ -1081,6 +1081,115 @@ function Technician({
       {job.technicianUserId !== null && current === undefined ? (
         <p className="hint">{t('workshop.assignedElsewhere')}</p>
       ) : null}
+
+      <Clock job={job} busy={busy} colleagues={options} onAct={onAct} />
+    </div>
+  );
+}
+
+/**
+ * Time on this job.
+ *
+ * ASSIGNED AND CLOCKED ON ARE DIFFERENT THINGS, and the screen keeps them
+ * apart. One technician is named on the job; several can be on the clock
+ * against it at once, and a gearbox out is exactly that. Clocking on here also
+ * takes somebody off whatever they were on elsewhere — the server does the
+ * switch and records why, because a shop that had to clock off first would stop
+ * clocking at all.
+ */
+function Clock({
+  job,
+  busy,
+  colleagues,
+  onAct,
+}: {
+  job: RepairOrderDetail;
+  busy: boolean;
+  colleagues: StaffMember[];
+  onAct: (work: () => Promise<RepairOrderDetail>) => Promise<void>;
+}) {
+  const { t, format } = useI18n();
+
+  const [who, setWho] = useState('');
+  const open = job.clockings.filter((c) => c.isOpen);
+
+  function nameOf(id: string) {
+    return colleagues.find((p) => p.id === id)?.displayName ?? t('workshop.someone');
+  }
+
+  return (
+    <div className="panel-inset">
+      <h4>{t('workshop.clockTitle')}</h4>
+
+      {/* Zero until somebody clocks off. See TechnicianClocking.Hours: a figure
+          that changed every time you looked at it could not be reconciled
+          against the hours sold. */}
+      <p className="note">
+        {t('workshop.clockedSoFar', {
+          hours: format.number(job.clockedHours, { maximumFractionDigits: 2 }),
+        })}
+      </p>
+
+      {open.length === 0 ? null : (
+        <ul className="history">
+          {open.map((entry) => (
+            <li key={entry.id}>
+              <span className="strong">{nameOf(entry.technicianUserId)}</span>{' '}
+              <span className="muted">
+                {t('workshop.onSince', { since: format.dateTime(entry.startedAt) })}
+              </span>{' '}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  void onAct(() =>
+                    post<RepairOrderDetail>(`/repair-orders/${job.id}/clock-off`, {
+                      technicianUserId: entry.technicianUserId,
+                    }),
+                  )
+                }
+              >
+                {t('workshop.clockOff')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {job.linesAreOpen ? (
+        <div className="actions">
+          <label htmlFor="clock-who" className="visually-hidden">
+            {t('workshop.clockWho')}
+          </label>
+          <select
+            id="clock-who"
+            value={who}
+            disabled={busy}
+            onChange={(event) => setWho(event.target.value)}
+          >
+            <option value="">{t('workshop.clockWho')}</option>
+            {colleagues.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.displayName}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            disabled={busy || who === ''}
+            onClick={() =>
+              void onAct(() =>
+                post<RepairOrderDetail>(`/repair-orders/${job.id}/clock-on`, {
+                  technicianUserId: who,
+                }),
+              ).then(() => setWho(''))
+            }
+          >
+            {t('workshop.clockOn')}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

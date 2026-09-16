@@ -1029,6 +1029,18 @@ export const ru: Catalogue = {
   'workshop.lineJobNote':
     'Необязательно. Выбор подставит нормативное время и ставку этой площадки; введённое вами имеет приоритет.',
   'workshop.setupLink': 'Настроить цех',
+  'workshop.clockTitle': 'Время по этому заказу',
+  'workshop.clockedSoFar': 'Отмечено {hours} часов. Механик, который ещё на заказе, не засчитывается, пока не отметит уход.',
+  'workshop.clockWho': 'Отметить приход…',
+  'workshop.clockOn': 'Отметить приход',
+  'workshop.clockOff': 'Отметить уход',
+  'workshop.onSince': 'с {since}',
+  'workshop.someone': 'Кто-то из наших',
+  'labour.hoursClocked': 'Отмеченные часы',
+  'labour.productivity': 'Производительность',
+  'labour.colClocked': 'Отмечено',
+  'labour.colProductivity': 'Производительность',
+  'labour.notClocked': 'Не отмечено',
 
   'serviceSetup.title': 'Настройка сервиса',
   'serviceSetup.loading': 'Загрузка настроек…',

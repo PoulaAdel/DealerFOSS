@@ -72,6 +72,30 @@ public interface IRepairOrders
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Puts a technician on the clock against this job.
+    /// </summary>
+    /// <remarks>
+    /// <b>If they were already clocked on somewhere else, that one is stopped
+    /// and this one starts.</b> A technician cannot be on two jobs at once, and
+    /// a system that refused the second clock-on is a system people stop using:
+    /// they move between jobs all morning, and friction there means nobody
+    /// clocks anything. The stopped entry records why.
+    ///
+    /// Several technicians on ONE job is ordinary — a gearbox out is two people
+    /// — and nothing here limits that.
+    /// </remarks>
+    Task<Result<RepairOrderDetail>> ClockOnAsync(
+        Guid repairOrderId,
+        ClockOnRequest request,
+        CancellationToken cancellationToken);
+
+    /// <summary>Takes a technician off the clock on this job.</summary>
+    Task<Result<RepairOrderDetail>> ClockOffAsync(
+        Guid repairOrderId,
+        ClockOffRequest request,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Moves the job on. Invoicing posts it to the ledger in the same transaction,
     /// so the bill and the books cannot disagree about whether it happened.
     /// </summary>
@@ -180,7 +204,18 @@ public sealed record RepairOrderDetail(
     /// </summary>
     IReadOnlyList<string> AvailableMoves,
     IReadOnlyList<ServiceLineView> Lines,
-    IReadOnlyList<RepairOrderHistoryEntry> History);
+    IReadOnlyList<RepairOrderHistoryEntry> History,
+
+    /// <summary>
+    /// Who has been on this job and for how long, newest first.
+    /// </summary>
+    IReadOnlyList<ClockingView> Clockings,
+
+    /// <summary>
+    /// Hours actually spent, summed from the CLOSED clockings. What the job
+    /// cost in time, as against LabourTotal which is what it was worth.
+    /// </summary>
+    decimal ClockedHours);
 
 /// <summary>A period, and optionally one workshop within it.</summary>
 public sealed record LabourQuery(DateOnly From, DateOnly To, RooftopId? RooftopId = null);
@@ -224,6 +259,27 @@ public sealed record LabourPerformance(
     /// </summary>
     decimal EffectiveLabourRate,
 
+    /// <summary>
+    /// Hours actually spent on the work invoiced in this period, from the
+    /// technician clock.
+    /// </summary>
+    /// <remarks>
+    /// <b>Counted over the same JOBS as the hours sold, not over the same
+    /// dates.</b> A job clocked in March and invoiced in April belongs to April
+    /// here, with all of its time — which is the only way the two figures can be
+    /// divided by each other and mean anything. Counting clockings by the date
+    /// they stopped would mix two windows and produce a ratio that looks precise
+    /// and is not.
+    /// </remarks>
+    decimal HoursClocked,
+
+    /// <summary>
+    /// Hours billed ÷ hours clocked. Null when nothing was clocked, which is a
+    /// missing measurement rather than a productivity of zero — a workshop that
+    /// has not started using the clock has not produced nothing.
+    /// </summary>
+    decimal? Productivity,
+
     IReadOnlyList<TechnicianLabour> ByTechnician,
     IReadOnlyList<LabourByPayer> ByPayer,
 
@@ -239,7 +295,13 @@ public sealed record TechnicianLabour(
     Guid? TechnicianUserId,
     decimal HoursSold,
     decimal Revenue,
-    decimal EffectiveLabourRate);
+    decimal EffectiveLabourRate,
+
+    /// <summary>Hours this technician clocked on the work invoiced here.</summary>
+    decimal HoursClocked,
+
+    /// <summary>Hours billed over hours clocked. Null when nothing was clocked.</summary>
+    decimal? Productivity);
 
 public sealed record LabourByPayer(string PayType, decimal HoursSold, decimal Revenue);
 
@@ -253,7 +315,11 @@ public static class UnmeasurableLabourFigure
     /// <summary>Hours produced ÷ hours available. Needs a shift or roster.</summary>
     public const string Efficiency = "Efficiency";
 
-    /// <summary>Hours billed ÷ hours clocked. Needs a time clock.</summary>
+    /// <summary>
+    /// Hours billed ÷ hours clocked. MEASURED SINCE 2026-09-16, when the
+    /// technician clock arrived; kept here so the name still resolves and so
+    /// the reason it used to be unmeasurable stays on the record.
+    /// </summary>
     public const string Productivity = "Productivity";
 }
 
@@ -339,5 +405,25 @@ public sealed record NewServiceLine(
 public sealed record LineAnswerRequest(bool Approved, string? Note = null);
 
 public sealed record AssignTechnicianRequest(Guid? TechnicianUserId);
+
+/// <summary>
+/// Who is going on the clock. Named rather than taken from the caller, because
+/// a foreman clocking their team on is ordinary — the audit records who did it.
+/// </summary>
+public sealed record ClockOnRequest(Guid TechnicianUserId);
+
+public sealed record ClockOffRequest(Guid TechnicianUserId);
+
+/// <summary>One stretch of time on this job, as a screen reads it.</summary>
+public sealed record ClockingView(
+    Guid Id,
+    Guid TechnicianUserId,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? StoppedAt,
+
+    /// <summary>Zero while it is still running. See TechnicianClocking.Hours.</summary>
+    decimal Hours,
+    bool IsOpen,
+    string? StoppedBecause);
 
 public sealed record RepairOrderStatusChangeRequest(string Status, string? Note = null);

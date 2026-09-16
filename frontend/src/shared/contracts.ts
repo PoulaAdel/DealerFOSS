@@ -590,6 +590,22 @@ export interface ServiceLineView {
   opCodeId: string | null;
 }
 
+/** One stretch of time one technician spent on one job. */
+export interface ClockingView {
+  id: string;
+  technicianUserId: string;
+  startedAt: string;
+  stoppedAt: string | null;
+
+  /** Zero while it is still running -- a figure that changed every time you
+   * looked at it could not be reconciled against anything. */
+  hours: number;
+  isOpen: boolean;
+
+  /** Why it stopped, when it was not a person pressing stop. */
+  stoppedBecause: string | null;
+}
+
 export interface RepairOrderHistoryEntry {
   fromStatus: RepairOrderStatus | null;
   toStatus: RepairOrderStatus;
@@ -638,6 +654,15 @@ export interface RepairOrderDetail {
   availableMoves: RepairOrderStatus[];
   lines: ServiceLineView[];
   history: RepairOrderHistoryEntry[];
+
+  /** Who has been on this job and for how long, newest first. */
+  clockings: ClockingView[];
+
+  /**
+   * Hours actually spent, summed from the CLOSED clockings. What the job cost
+   * in time, as against labourTotal which is what it was worth.
+   */
+  clockedHours: number;
 }
 
 /**
@@ -654,9 +679,24 @@ export interface LabourPerformance {
   labourRevenue: number;
   /** Revenue ÷ hours sold: what an hour realised, as against the posted rate. */
   effectiveLabourRate: number;
+
+  /**
+   * Hours actually spent on the work invoiced in this period, from the clock.
+   *
+   * Counted over the same JOBS as the hours sold, not the same dates — a job
+   * clocked in March and invoiced in April belongs to April with all of its
+   * time, which is the only way the two can be divided by each other.
+   */
+  hoursClocked: number;
+
+  /**
+   * Hours billed ÷ hours clocked. Null when nothing was clocked, which is a
+   * missing measurement and not a productivity of zero.
+   */
+  productivity: number | null;
   byTechnician: TechnicianLabour[];
   byPayer: LabourByPayer[];
-  /** 'Efficiency', 'Productivity' — see UnmeasurableLabourFigure on the server. */
+  /** 'Efficiency' — see UnmeasurableLabourFigure on the server. */
   notMeasured: string[];
 }
 
@@ -666,6 +706,12 @@ export interface TechnicianLabour {
   hoursSold: number;
   revenue: number;
   effectiveLabourRate: number;
+
+  /** Hours this technician clocked on the work invoiced here. */
+  hoursClocked: number;
+
+  /** Hours billed over hours clocked. Null when nothing was clocked. */
+  productivity: number | null;
 }
 
 export interface LabourByPayer {

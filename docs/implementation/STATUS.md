@@ -1270,3 +1270,23 @@ to come.
   Walked: the rates grid shows both lots and all three payers; searching "brake" offers *Front brake pads and discs · BRK-FRT · 1.4h* and *Rear brake pads · BRK-REAR · 1h*; choosing the first and pressing Write it up with nothing typed produced **"Front brake pads and discs (1.4 h at $120.00) — $168.00"**; switching to Warranty and choosing the recall produced **"(0.5 h at $95.00) — $47.50"**, the manufacturer's rate rather than retail.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **771/771** (was 765), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **394/394** (was 392), `npm run build`.
+
+- **2026-09-16 — A technician goes on the clock, and productivity stops being a figure this system cannot produce.** The second half of the labour report, and the second thing built from the Dominion VUE read.
+
+  **It could not have been built yesterday.** Productivity is hours billed over hours clocked, and until op codes landed this morning there was nothing to bill *against* — every labour line carried whatever hours somebody typed. Clocking without a standard would have measured a technician against a number the advisor invented, which is worse than not measuring them.
+
+  **`notMeasured` is down to one.** The labour report has named the figures it cannot produce since it was written: *Efficiency — needs a roster* and *Productivity — needs a time clock*. There is a clock now, so Productivity came off the list and onto the screen. **Efficiency stays**, because it is hours produced over hours *available* and nothing here knows who was rostered on — that is attendance, which is payroll, and payroll is a module this system does not have.
+
+  **Clocked hours are counted over the same JOBS as the hours sold, not the same dates.** A job clocked in March and invoiced in April belongs to April with all of its time. Counting clockings by the date they stopped would mix two windows and produce a ratio that looks precise and is not.
+
+  **Clocking on elsewhere closes the open one, rather than being refused.** A technician cannot be on two jobs at once, but a shop where the system refuses the second clock-on is a shop where people stop clocking: they move between jobs all morning. The closed entry records *why* — "Switched to RO-1077 from RO-1078". A partial unique index on `(TechnicianUserId) WHERE StoppedAt IS NULL` makes the invariant true in the database rather than only in the service.
+
+  **Several technicians on one job is ordinary** — a gearbox out is two people — so the one-open rule is per technician, never per job. Their hours are credited to whoever *clocked* them, not to whoever is named on the order, or one of two people on the same gearbox would look twice as slow as they are.
+
+  **An open clocking contributes zero until it stops.** A figure that changed every time somebody looked at it could not be reconciled against anything. And where nothing was clocked the report says **"Not clocked"** rather than 0% — a workshop that has not started using the clock has not been unproductive, and a zero would be a damning number against a technician for a reason that has nothing to do with them.
+
+  **`IAppendOnly` was tried on the entity and removed.** That marker forbids the context from ever updating a row, and *closing* a clocking is an update — the one operation the type exists to perform. Every clock-on failed with "TechnicianClocking is append-only" until it came off. The property actually wanted is narrower: a closed entry is never reopened, which `Stop()` enforces by refusing a second stop.
+
+  Walked: clocked the technician onto RO-1078, then onto RO-1077. RO-1078's entry closed itself at **0.01 hours** with the reason *"Switched to RO-1077 from RO-1078"*, and exactly one clocking was left open.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **775/775** (was 771), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **397/397** (was 394), `npm run build`.

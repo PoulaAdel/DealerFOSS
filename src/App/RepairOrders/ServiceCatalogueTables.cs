@@ -79,3 +79,44 @@ internal sealed class LabourRateConfiguration : IEntityTypeConfiguration<LabourR
         builder.ConfigureAudit();
     }
 }
+
+/// <summary>
+/// Time on a job. Kept in the service schema beside the work it measures.
+/// </summary>
+/// <remarks>
+/// THE PARTIAL UNIQUE INDEX IS THE INVARIANT. One technician may have at most
+/// one clocking open at a time, and saying so in the database means it stays
+/// true even if a future caller forgets — two open clockings would double-count
+/// every hour that technician worked and make efficiency look half what it is.
+///
+/// Filtered on StoppedAt IS NULL, because the same technician has thousands of
+/// CLOSED entries and those must not collide with anything.
+/// </remarks>
+internal sealed class TechnicianClockingConfiguration : IEntityTypeConfiguration<TechnicianClocking>
+{
+    public void Configure(EntityTypeBuilder<TechnicianClocking> builder)
+    {
+        builder.ToTable("TechnicianClockings", ServiceSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+
+        builder.Property(x => x.RooftopId)
+            .HasConversion(id => id.Value, value => new RooftopId(value))
+            .IsRequired();
+
+        builder.Property(x => x.StoppedBecause).HasMaxLength(200);
+
+        builder.HasIndex(x => x.TechnicianUserId)
+            .IsUnique()
+            .HasFilter("[StoppedAt] IS NULL");
+
+        // What the labour report reads: everything closed in a period.
+        builder.HasIndex(x => new { x.RooftopId, x.StoppedAt });
+        builder.HasIndex(x => x.RepairOrderId);
+
+        builder.Ignore(x => x.IsOpen);
+        builder.Ignore(x => x.Hours);
+
+        builder.ConfigureAudit();
+    }
+}

@@ -90,6 +90,8 @@ const detail = (over: Partial<RepairOrderDetail> = {}): RepairOrderDetail => ({
   linesAreOpen: true,
   availableMoves: ['Completed', 'Cancelled'],
   lines: [line()],
+  clockings: [],
+  clockedHours: 0,
   history: [
     {
       fromStatus: null,
@@ -705,7 +707,43 @@ describe('who is doing the work', () => {
     renderWorkshop();
     await openJob();
 
-    expect(await screen.findByRole('option', { name: 'Workshop Technician' })).toBeInTheDocument();
+    // Scoped to the assignment picker. There are TWO pickers on an open job
+    // since the clock arrived — who is assigned, and who to put on the clock —
+    // and they offer the same people for different reasons. An unscoped query
+    // now finds both, which is correct behaviour and an ambiguous assertion.
+    const assign = await screen.findByLabelText('Who is on it');
+
+    expect(within(assign).getByRole('option', { name: 'Workshop Technician' })).toBeInTheDocument();
+  });
+
+  it('keeps assignment and the clock apart', async () => {
+    // One technician is NAMED on a job; several can be ON THE CLOCK against it
+    // at once, because a gearbox out is two people. Conflating them would make
+    // the second person's hours invisible.
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': {
+        ok: true,
+        body: detail({
+          clockedHours: 3.25,
+          clockings: [
+            {
+              id: 'k1', technicianUserId: 'u9', startedAt: '2026-09-16T08:00:00Z',
+              stoppedAt: null, hours: 0, isOpen: true, stoppedBecause: null,
+            },
+          ],
+        }),
+      },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/staff': { ok: true, body: [technician] },
+    });
+
+    renderWorkshop();
+    await openJob();
+
+    expect(await screen.findByText('Time on this job')).toBeVisible();
+    expect(screen.getByText(/3.25 hours clocked so far/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Clock off' })).toBeVisible();
   });
 
   it('draws no picker when the caller may not read the staff list', async () => {

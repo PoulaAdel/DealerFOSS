@@ -30,15 +30,23 @@ const labour = (over: Partial<LabourPerformance> = {}): LabourPerformance => ({
   hoursSold: 126.5,
   labourRevenue: 11894,
   effectiveLabourRate: 94,
+  hoursClocked: 110,
+  productivity: 1.15,
   byTechnician: [
-    { technicianUserId: 'u5', hoursSold: 80, revenue: 7840, effectiveLabourRate: 98 },
-    { technicianUserId: null, hoursSold: 46.5, revenue: 4054, effectiveLabourRate: 87.18 },
+    {
+      technicianUserId: 'u5', hoursSold: 80, revenue: 7840, effectiveLabourRate: 98,
+      hoursClocked: 70, productivity: 1.143,
+    },
+    {
+      technicianUserId: null, hoursSold: 46.5, revenue: 4054, effectiveLabourRate: 87.18,
+      hoursClocked: 40, productivity: 1.163,
+    },
   ],
   byPayer: [
     { payType: 'CustomerPay', hoursSold: 92, revenue: 9016 },
     { payType: 'Warranty', hoursSold: 34.5, revenue: 2878 },
   ],
-  notMeasured: ['Efficiency', 'Productivity'],
+  notMeasured: ['Efficiency'],
   ...over,
 });
 
@@ -171,8 +179,51 @@ describe('the labour report', () => {
     ).toBeVisible();
     expect(screen.getByText(/Efficiency — hours produced/)).toBeVisible();
     expect(screen.getByText(/no roster/)).toBeVisible();
-    expect(screen.getByText(/Productivity — hours billed/)).toBeVisible();
-    expect(screen.getByText(/no time clock/)).toBeVisible();
+
+    // Productivity came off this band on 2026-09-16 when the technician clock
+    // arrived. It is a measured figure now and appears in the headline instead —
+    // see the test below. Efficiency stays: hours produced over hours AVAILABLE
+    // still needs a roster, and nothing here has one.
+    expect(screen.queryByText(/Productivity — hours billed/)).not.toBeInTheDocument();
+  });
+
+  it('shows productivity now that there is a clock to divide by', async () => {
+    mockApi({
+      '/repair-orders/labour': { ok: true, body: labour() },
+      '/staff': { ok: true, body: [technician] },
+    });
+    renderLabour();
+
+    expect(await screen.findByText('Hours clocked')).toBeVisible();
+    expect(screen.getByText('110')).toBeVisible();
+
+    // 115%: the workshop billed more hours than it spent, which is what beating
+    // the standard time looks like and is the whole point of the figure.
+    expect(screen.getByText('115%')).toBeVisible();
+  });
+
+  it('says a figure is unmeasured rather than showing nobody as zero', async () => {
+    // A workshop that has not started clocking has not been unproductive. Zero
+    // would put a damning number against a technician for a reason that has
+    // nothing to do with them.
+    mockApi({
+      '/repair-orders/labour': {
+        ok: true,
+        body: labour({
+          hoursClocked: 0,
+          productivity: null,
+          byTechnician: [{
+            technicianUserId: 'u5', hoursSold: 80, revenue: 7840,
+            effectiveLabourRate: 98, hoursClocked: 0, productivity: null,
+          }],
+        }),
+      },
+      '/staff': { ok: true, body: [technician] },
+    });
+    renderLabour();
+
+    expect(await screen.findAllByText('Not clocked')).toHaveLength(2);
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
   });
 
   it('says the figures come from invoiced work only', async () => {

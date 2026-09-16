@@ -9,13 +9,17 @@
 //
 // Coding Instructions:
 //   THE "WHAT THIS DOES NOT MEASURE" BAND IS NOT DECORATION AND MUST NOT BE
-//   QUIETLY DROPPED. Efficiency and productivity are the two figures a
-//   service manager is trained to look for on a report like this, and this
-//   system cannot produce either — there is no roster and no time clock, so
-//   neither denominator exists. A report that shows three numbers and stays
-//   silent about the missing two invites somebody to assume they were fine,
-//   and both are used to judge individual people. The server names them in
-//   `notMeasured` precisely so this screen can say so.
+//   QUIETLY DROPPED. Efficiency and productivity are the two figures a service
+//   manager is trained to look for on a report like this, and this system could
+//   produce NEITHER until 2026-09-16, because there was no roster and no time
+//   clock so neither denominator existed.
+//
+//   PRODUCTIVITY IS MEASURED NOW — the technician clock landed, so hours billed
+//   over hours clocked has a divisor. EFFICIENCY STILL IS NOT: that is hours
+//   produced over hours AVAILABLE, and nothing here knows who was rostered on.
+//   The band stays for exactly that one, because a report that shows the
+//   figures it can and stays silent about the one it cannot invites somebody to
+//   assume it was fine — and it is used to judge individual people.
 //
 //   The other honesty here is the effective labour rate: revenue ÷ hours
 //   sold, which is what an hour ACTUALLY realised as against the posted
@@ -65,9 +69,10 @@ function notMeasuredKey(figure: string): MessageKey | null {
   switch (figure) {
     case 'Efficiency':
       return 'labour.noEfficiency';
-    case 'Productivity':
-      return 'labour.noProductivity';
     default:
+      // Productivity was here until 2026-09-16 and is measured now. Anything
+      // unrecognised is skipped rather than rendered as a bare name: a figure
+      // this screen cannot explain is worse than one it does not mention.
       return null;
   }
 }
@@ -249,6 +254,21 @@ function Headline({ labour }: { labour: LabourPerformance }) {
           <th scope="row">{t('labour.effectiveRate')}</th>
           <td className="num">{money(labour.effectiveLabourRate)}</td>
         </tr>
+        <tr>
+          <th scope="row">{t('labour.hoursClocked')}</th>
+          <td className="num">{format.number(labour.hoursClocked, { maximumFractionDigits: 2 })}</td>
+        </tr>
+        <tr className="strong">
+          <th scope="row">{t('labour.productivity')}</th>
+          {/* Null means nothing was clocked, which is a MISSING MEASUREMENT and
+              not a productivity of zero. A workshop that has not started using
+              the clock has not been unproductive. */}
+          <td className="num">
+            {labour.productivity === null
+              ? <span className="muted">{t('labour.notClocked')}</span>
+              : format.number(labour.productivity, { style: 'percent', maximumFractionDigits: 0 })}
+          </td>
+        </tr>
       </tbody>
     </table>
   );
@@ -286,6 +306,12 @@ function ByTechnician({
               <th scope="col" className="num">
                 {t('labour.colRate')}
               </th>
+              <th scope="col" className="num">
+                {t('labour.colClocked')}
+              </th>
+              <th scope="col" className="num">
+                {t('labour.colProductivity')}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -306,6 +332,14 @@ function ByTechnician({
                 <td className="num">{format.number(row.hoursSold, { maximumFractionDigits: 2 })}</td>
                 <td className="num">{money(row.revenue)}</td>
                 <td className="num">{money(row.effectiveLabourRate)}</td>
+                <td className="num">
+                  {format.number(row.hoursClocked, { maximumFractionDigits: 2 })}
+                </td>
+                <td className="num">
+                  {row.productivity === null
+                    ? <span className="muted">{t('labour.notClocked')}</span>
+                    : format.number(row.productivity, { style: 'percent', maximumFractionDigits: 0 })}
+                </td>
               </tr>
             ))}
           </tbody>

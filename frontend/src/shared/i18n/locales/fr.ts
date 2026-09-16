@@ -992,6 +992,18 @@ export const fr: Catalogue = {
   'workshop.lineJobNote':
     'Facultatif. En choisir un remplit le temps standard et le tarif de ce site ; ce que vous saisissez prime.',
   'workshop.setupLink': 'Configurer l’atelier',
+  'workshop.clockTitle': 'Temps passé sur ce travail',
+  'workshop.clockedSoFar': '{hours} heures pointées à ce jour. Un technicien encore sur le travail ne compte pour rien tant qu’il n’a pas pointé la sortie.',
+  'workshop.clockWho': 'Pointer l’entrée de quelqu’un…',
+  'workshop.clockOn': 'Pointer l’entrée',
+  'workshop.clockOff': 'Pointer la sortie',
+  'workshop.onSince': 'depuis {since}',
+  'workshop.someone': 'Quelqu’un ici',
+  'labour.hoursClocked': 'Heures pointées',
+  'labour.productivity': 'Productivité',
+  'labour.colClocked': 'Pointées',
+  'labour.colProductivity': 'Productivité',
+  'labour.notClocked': 'Non pointé',
 
   'serviceSetup.title': 'Configuration atelier',
   'serviceSetup.loading': 'Chargement de la configuration…',

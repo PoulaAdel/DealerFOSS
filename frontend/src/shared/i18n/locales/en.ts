@@ -1021,6 +1021,18 @@ export const en = {
   'workshop.lineJobNote':
     'Optional. Picking one fills in the standard time and the rate at this lot; anything you type wins.',
   'workshop.setupLink': 'Set up the workshop',
+  'workshop.clockTitle': 'Time on this job',
+  'workshop.clockedSoFar': '{hours} hours clocked so far. A technician still on the job counts nothing until they clock off.',
+  'workshop.clockWho': 'Clock somebody on…',
+  'workshop.clockOn': 'Clock on',
+  'workshop.clockOff': 'Clock off',
+  'workshop.onSince': 'on since {since}',
+  'workshop.someone': 'Somebody here',
+  'labour.hoursClocked': 'Hours clocked',
+  'labour.productivity': 'Productivity',
+  'labour.colClocked': 'Clocked',
+  'labour.colProductivity': 'Productivity',
+  'labour.notClocked': 'Not clocked',
 
   'serviceSetup.title': 'Service setup',
   'serviceSetup.loading': 'Loading service setup…',

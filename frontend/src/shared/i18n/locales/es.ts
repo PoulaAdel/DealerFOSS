@@ -1004,6 +1004,18 @@ export const es: Catalogue = {
   'workshop.lineJobNote':
     'Opcional. Al elegir uno se rellenan el tiempo estándar y la tarifa de esta sede; lo que usted escriba prevalece.',
   'workshop.setupLink': 'Configurar el taller',
+  'workshop.clockTitle': 'Tiempo en este trabajo',
+  'workshop.clockedSoFar': '{hours} horas fichadas hasta ahora. Un técnico que sigue en el trabajo no cuenta nada hasta que fiche la salida.',
+  'workshop.clockWho': 'Fichar la entrada de alguien…',
+  'workshop.clockOn': 'Fichar entrada',
+  'workshop.clockOff': 'Fichar salida',
+  'workshop.onSince': 'desde {since}',
+  'workshop.someone': 'Alguien de aquí',
+  'labour.hoursClocked': 'Horas fichadas',
+  'labour.productivity': 'Productividad',
+  'labour.colClocked': 'Fichadas',
+  'labour.colProductivity': 'Productividad',
+  'labour.notClocked': 'Sin fichar',
 
   'serviceSetup.title': 'Configuración de taller',
   'serviceSetup.loading': 'Cargando la configuración…',

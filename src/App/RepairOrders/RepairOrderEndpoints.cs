@@ -46,6 +46,8 @@ internal static class RepairOrderEndpoints
         group.MapDelete("/{repairOrderId:guid}/lines/{lineId:guid}", RemoveLineAsync);
         group.MapPost("/{repairOrderId:guid}/lines/{lineId:guid}/answer", AnswerLineAsync);
         group.MapPost("/{repairOrderId:guid}/technician", AssignTechnicianAsync);
+        group.MapPost("/{repairOrderId:guid}/clock-on", ClockOnAsync);
+        group.MapPost("/{repairOrderId:guid}/clock-off", ClockOffAsync);
         group.MapPost("/{repairOrderId:guid}/status", ChangeStatusAsync);
     }
 
@@ -157,6 +159,31 @@ internal static class RepairOrderEndpoints
         CancellationToken cancellationToken)
     {
         var result = await repairOrders.AssignTechnicianAsync(repairOrderId, request, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <summary>
+    /// Puts a technician on the clock. Clocking on here stops whatever they were
+    /// on elsewhere — see IRepairOrders.ClockOnAsync for why switching rather
+    /// than refusing is the behaviour a workshop actually uses.
+    /// </summary>
+    private static async Task<IResult> ClockOnAsync(
+        Guid repairOrderId,
+        ClockOnRequest request,
+        IRepairOrders repairOrders,
+        CancellationToken cancellationToken)
+    {
+        var result = await repairOrders.ClockOnAsync(repairOrderId, request, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ClockOffAsync(
+        Guid repairOrderId,
+        ClockOffRequest request,
+        IRepairOrders repairOrders,
+        CancellationToken cancellationToken)
+    {
+        var result = await repairOrders.ClockOffAsync(repairOrderId, request, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 

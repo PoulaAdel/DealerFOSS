@@ -252,19 +252,49 @@ public sealed class RepairOrderService(
         var hours = labour.Sum(l => l.Hours);
         var revenue = labour.Sum(l => l.Amount);
 
+        // Time on the SAME JOBS, not in the same date window. A job clocked in
+        // March and invoiced in April belongs to April here, with all of its
+        // time — see LabourPerformance.HoursClocked for why mixing the two
+        // windows would produce a ratio that looks precise and is not.
+        var jobIds = rows.Select(o => o.Id).ToList();
+
+        var clocked = await _db.TechnicianClockings
+            .AsNoTracking()
+            .Where(c => jobIds.Contains(c.RepairOrderId) && c.StoppedAt != null)
+            .ToListAsync(cancellationToken);
+
+        var clockedHours = clocked.Sum(c => c.Hours);
+
+        // Attributed to the technician who CLOCKED it, not to the one assigned to
+        // the job. Two people on one gearbox is ordinary, and crediting both
+        // their hours to whoever happens to be named on the order would make
+        // one of them look twice as slow as they are.
+        var clockedBy = clocked
+            .GroupBy(c => c.TechnicianUserId)
+            .ToDictionary(g => g.Key, g => g.Sum(c => c.Hours));
+
         return Result.Success(new LabourPerformance(
             query.From,
             query.To,
             HoursSold: hours,
             LabourRevenue: revenue,
             EffectiveLabourRate: Realised(revenue, hours),
+            HoursClocked: clockedHours,
+            Productivity: Ratio(hours, clockedHours),
             ByTechnician: labour
                 .GroupBy(l => l.TechnicianUserId)
-                .Select(g => new TechnicianLabour(
-                    g.Key,
-                    g.Sum(l => l.Hours),
-                    g.Sum(l => l.Amount),
-                    Realised(g.Sum(l => l.Amount), g.Sum(l => l.Hours))))
+                .Select(g =>
+                {
+                    var theirClocked = g.Key is { } who && clockedBy.TryGetValue(who, out var h) ? h : 0m;
+
+                    return new TechnicianLabour(
+                        g.Key,
+                        g.Sum(l => l.Hours),
+                        g.Sum(l => l.Amount),
+                        Realised(g.Sum(l => l.Amount), g.Sum(l => l.Hours)),
+                        theirClocked,
+                        Ratio(g.Sum(l => l.Hours), theirClocked));
+                })
                 .OrderByDescending(t => t.Revenue)
                 .ToList(),
             ByPayer: labour
@@ -273,12 +303,23 @@ public sealed class RepairOrderService(
                     g.Key.ToString(), g.Sum(l => l.Hours), g.Sum(l => l.Amount)))
                 .OrderBy(p => p.PayType, StringComparer.Ordinal)
                 .ToList(),
-            NotMeasured:
-            [
-                UnmeasurableLabourFigure.Efficiency,
-                UnmeasurableLabourFigure.Productivity,
-            ]));
+            // Productivity came off this list on 2026-09-16 when the clock
+            // arrived. Efficiency stays: it is hours produced over hours
+            // AVAILABLE, and nothing here knows who was rostered on.
+            NotMeasured: [UnmeasurableLabourFigure.Efficiency]));
     }
+
+    /// <summary>
+    /// One figure over another, or null when the divisor is zero.
+    /// </summary>
+    /// <remarks>
+    /// Null rather than zero, and the difference matters: a workshop that has not
+    /// started clocking has not been unproductive, it has been unmeasured. Zero
+    /// would put a damning number against a technician for a reason that has
+    /// nothing to do with them.
+    /// </remarks>
+    private static decimal? Ratio(decimal top, decimal bottom) =>
+        bottom == 0m ? null : Math.Round(top / bottom, 3, MidpointRounding.AwayFromZero);
 
     /// <summary>
     /// What an hour actually realised. Zero hours gives zero rather than a
@@ -554,6 +595,131 @@ public sealed class RepairOrderService(
         }
 
         await _db.SaveChangesAsync(cancellationToken);
+        return await DescribeAsync(order, cancellationToken);
+    }
+
+    public async Task<Result<RepairOrderDetail>> ClockOnAsync(
+        Guid repairOrderId,
+        ClockOnRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var order = await LoadAsync(repairOrderId, tracked: true, cancellationToken);
+        if (order is null)
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
+        }
+
+        // A job that is finished or cancelled is not somewhere time can be
+        // spent. Allowed on Booked as well as InProgress: a technician starting
+        // work IS how a job becomes in progress, and refusing here would make
+        // them move the status first to record something already true.
+        if (order.Status is RepairOrderStatus.Invoiced or RepairOrderStatus.Cancelled)
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.JobIsClosedToTime);
+        }
+
+        var now = _clock.UtcNow;
+
+        // Already on THIS job? Nothing to do, and saying so beats silently
+        // opening a second entry that would double-count every hour.
+        var here = await _db.TechnicianClockings.SingleOrDefaultAsync(
+            c => c.TechnicianUserId == request.TechnicianUserId
+                && c.RepairOrderId == order.Id
+                && c.StoppedAt == null,
+            cancellationToken);
+
+        if (here is not null)
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.AlreadyClockedOnHere);
+        }
+
+        // SWITCHING, not refusing. See IRepairOrders.ClockOnAsync: a technician
+        // moves between jobs all morning, and a system that made them clock off
+        // first is a system they stop using.
+        var elsewhere = await _db.TechnicianClockings
+            .SingleOrDefaultAsync(
+                c => c.TechnicianUserId == request.TechnicianUserId && c.StoppedAt == null,
+                cancellationToken);
+
+        if (elsewhere is not null)
+        {
+            var movedTo = await _db.RepairOrders
+                .AsNoTracking()
+                .Where(o => o.Id == elsewhere.RepairOrderId)
+                .Select(o => o.Number)
+                .SingleOrDefaultAsync(cancellationToken);
+
+            elsewhere.Stop(now, $"Switched to {order.Number} from {movedTo ?? "another job"}");
+        }
+
+        _db.TechnicianClockings.Add(TechnicianClocking.Start(
+            Guid.NewGuid(), order.Id, order.RooftopId, request.TechnicianUserId, now));
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, WritePermission, AuditOutcome.Allowed,
+                "RepairOrder", order.Id.ToString(), order.RooftopId.Value,
+                $"Clocked {request.TechnicianUserId} on to {order.Number}", null, null),
+            cancellationToken);
+
+        return await DescribeAsync(order, cancellationToken);
+    }
+
+    public async Task<Result<RepairOrderDetail>> ClockOffAsync(
+        Guid repairOrderId,
+        ClockOffRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var order = await LoadAsync(repairOrderId, tracked: true, cancellationToken);
+        if (order is null)
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
+        }
+
+        var open = await _db.TechnicianClockings.SingleOrDefaultAsync(
+            c => c.TechnicianUserId == request.TechnicianUserId
+                && c.RepairOrderId == order.Id
+                && c.StoppedAt == null,
+            cancellationToken);
+
+        if (open is null)
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.NotClockedOn);
+        }
+
+        try
+        {
+            open.Stop(_clock.UtcNow);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentOutOfRangeException)
+        {
+            return Result.Failure<RepairOrderDetail>(
+                Error.Validation("service.clocking_invalid", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, WritePermission, AuditOutcome.Allowed,
+                "RepairOrder", order.Id.ToString(), order.RooftopId.Value,
+                $"Clocked {request.TechnicianUserId} off {order.Number} after {open.Hours}h", null, null),
+            cancellationToken);
+
         return await DescribeAsync(order, cancellationToken);
     }
 
@@ -962,6 +1128,11 @@ public sealed class RepairOrderService(
             .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
+        var clockings = await _db.TechnicianClockings
+            .AsNoTracking()
+            .Where(c => c.RepairOrderId == order.Id)
+            .ToListAsync(cancellationToken);
+
         // A job that has only just been opened has its first history row in memory
         // rather than in a separate query's results.
         if (history.Count == 0)
@@ -1021,7 +1192,18 @@ public sealed class RepairOrderService(
                 .Select(h => new RepairOrderHistoryEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt,
                     h.ChangedByUserId, h.Note, h.AmountAtChange))
-                .ToList()));
+                .ToList(),
+            clockings
+                .OrderByDescending(c => c.StartedAt)
+                .ThenBy(c => c.Id)
+                .Select(c => new ClockingView(
+                    c.Id, c.TechnicianUserId, c.StartedAt, c.StoppedAt,
+                    c.Hours, c.IsOpen, c.StoppedBecause))
+                .ToList(),
+            // Closed entries only. An open one contributes zero until it stops —
+            // see TechnicianClocking.Hours for why a figure that changes every
+            // time somebody looks at it is worse than no figure.
+            clockings.Sum(c => c.Hours)));
     }
 }
 
@@ -1047,6 +1229,18 @@ internal static class ServiceErrors
     public static Error BackwardsPeriod { get; } = Error.Validation(
         "service.backwards_period",
         "The end of the period cannot be before its start.");
+
+    public static Error JobIsClosedToTime { get; } = Error.Conflict(
+        "service.job_closed_to_time",
+        "That job is finished. Time cannot be booked to it.");
+
+    public static Error AlreadyClockedOnHere { get; } = Error.Conflict(
+        "service.already_clocked_on",
+        "That technician is already on the clock for this job.");
+
+    public static Error NotClockedOn { get; } = Error.Conflict(
+        "service.not_clocked_on",
+        "That technician is not on the clock for this job.");
 
     public static Error UnknownOpCode { get; } = Error.Validation(
         "service.unknown_op_code",

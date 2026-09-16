@@ -995,6 +995,18 @@ export const de: Catalogue = {
   'workshop.lineJobNote':
     'Optional. Bei Auswahl werden Vorgabezeit und der Satz dieses Standorts eingesetzt; Ihre Eingabe hat Vorrang.',
   'workshop.setupLink': 'Werkstatt einrichten',
+  'workshop.clockTitle': 'Zeit auf diesem Auftrag',
+  'workshop.clockedSoFar': 'Bisher {hours} Stunden gestempelt. Ein Techniker, der noch am Auftrag ist, zählt erst beim Ausstempeln.',
+  'workshop.clockWho': 'Jemanden einstempeln…',
+  'workshop.clockOn': 'Einstempeln',
+  'workshop.clockOff': 'Ausstempeln',
+  'workshop.onSince': 'dabei seit {since}',
+  'workshop.someone': 'Jemand hier',
+  'labour.hoursClocked': 'Gestempelte Stunden',
+  'labour.productivity': 'Produktivität',
+  'labour.colClocked': 'Gestempelt',
+  'labour.colProductivity': 'Produktivität',
+  'labour.notClocked': 'Nicht gestempelt',
 
   'serviceSetup.title': 'Werkstatt-Einrichtung',
   'serviceSetup.loading': 'Einrichtung wird geladen…',

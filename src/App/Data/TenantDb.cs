@@ -103,6 +103,8 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, I
 
     public DbSet<LabourRate> LabourRates => Set<LabourRate>();
 
+    public DbSet<TechnicianClocking> TechnicianClockings => Set<TechnicianClocking>();
+
     public DbSet<Part> Parts => Set<Part>();
 
     public DbSet<StockReceipt> StockReceipts => Set<StockReceipt>();

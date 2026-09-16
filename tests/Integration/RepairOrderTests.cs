@@ -42,6 +42,104 @@ public sealed class RepairOrderTests(HostFixture fixture)
     private readonly HostFixture _fixture = fixture;
 
     [Fact]
+    public async Task Time_on_a_job_is_recorded_and_totalled()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        var tech = DevelopmentSeeder.DevUsers.Technician;
+
+        using var on = await PostAsync($"{Jobs}/{jobId}/clock-on", Manager, new { technicianUserId = tech });
+        on.StatusCode.Should().Be(HttpStatusCode.OK, because: await on.Content.ReadAsStringAsync());
+
+        var running = await on.Content.ReadFromJsonAsync<JsonElement>();
+        var open = running.GetProperty("clockings").EnumerateArray().Single();
+
+        open.GetProperty("isOpen").GetBoolean().Should().BeTrue();
+        open.GetProperty("hours").GetDecimal().Should().Be(0m,
+            because: "an open clocking contributes nothing until it stops");
+
+        running.GetProperty("clockedHours").GetDecimal().Should().Be(0m);
+
+        using var off = await PostAsync($"{Jobs}/{jobId}/clock-off", Manager, new { technicianUserId = tech });
+        off.StatusCode.Should().Be(HttpStatusCode.OK, because: await off.Content.ReadAsStringAsync());
+
+        var stopped = await off.Content.ReadFromJsonAsync<JsonElement>();
+        stopped.GetProperty("clockings").EnumerateArray().Single()
+            .GetProperty("isOpen").GetBoolean().Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Clocking_on_elsewhere_takes_the_technician_off_the_first_job()
+    {
+        // A technician cannot be on two jobs at once, and refusing the second
+        // clock-on is how a shop stops clocking altogether: they move between
+        // jobs all morning. Switching is what a real workshop does.
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var first = await OpenJobAsync(Manager, rooftop);
+        var second = await OpenJobAsync(Manager, rooftop);
+        var tech = DevelopmentSeeder.DevUsers.Technician;
+
+        using var onFirst = await PostAsync($"{Jobs}/{first}/clock-on", Manager, new { technicianUserId = tech });
+        onFirst.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var onSecond = await PostAsync($"{Jobs}/{second}/clock-on", Manager, new { technicianUserId = tech });
+        onSecond.StatusCode.Should().Be(HttpStatusCode.OK, because: await onSecond.Content.ReadAsStringAsync());
+
+        // The first job's clocking closed itself, and says why rather than just
+        // ending.
+        var firstNow = await GetJobAsync(first, Manager);
+        var closed = firstNow.GetProperty("clockings").EnumerateArray().Single();
+
+        closed.GetProperty("isOpen").GetBoolean().Should().BeFalse();
+        closed.GetProperty("stoppedBecause").GetString().Should().Contain("Switched to");
+
+        // And exactly one is open, on the second job.
+        (await GetJobAsync(second, Manager)).GetProperty("clockings").EnumerateArray()
+            .Count(c => c.GetProperty("isOpen").GetBoolean()).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Two_technicians_can_be_on_one_job_at_the_same_time()
+    {
+        // A gearbox out is two people. The one-open-clocking rule is per
+        // TECHNICIAN, not per job, and a rule that stopped this would be wrong
+        // about how a workshop works.
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        using var one = await PostAsync($"{Jobs}/{jobId}/clock-on", Manager,
+            new { technicianUserId = DevelopmentSeeder.DevUsers.Technician });
+        one.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var two = await PostAsync($"{Jobs}/{jobId}/clock-on", Manager,
+            new { technicianUserId = DevelopmentSeeder.DevUsers.FirstRooftopOnly });
+        two.StatusCode.Should().Be(HttpStatusCode.OK, because: await two.Content.ReadAsStringAsync());
+
+        (await two.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("clockings").EnumerateArray()
+            .Count(c => c.GetProperty("isOpen").GetBoolean()).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Time_cannot_be_booked_to_a_job_that_is_finished()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        // Booked in at the counter, so it needs no answer from the customer and
+        // the job can reach Invoiced without one.
+        await AddLineAsync(jobId, Manager,
+            new { kind = "Labour", description = "Full service", hours = 1.5m, rate = 120m });
+
+        foreach (var status in new[] { "InProgress", "Completed", "Invoiced" })
+        {
+            (await MoveAsync(jobId, Manager, status)).Should().Be(HttpStatusCode.OK);
+        }
+
+        using var refused = await PostAsync($"{Jobs}/{jobId}/clock-on", Manager,
+            new { technicianUserId = DevelopmentSeeder.DevUsers.Technician });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
     public async Task A_catalogued_job_fills_in_its_own_description_hours_and_rate()
     {
         // The point of the catalogue. An advisor picks "front brakes" and the
@@ -509,8 +607,11 @@ public sealed class RepairOrderTests(HostFixture fixture)
         var absent = report.GetProperty("notMeasured").EnumerateArray()
             .Select(v => v.GetString()).ToList();
 
+        // Efficiency is hours produced over hours AVAILABLE, and nothing here
+        // knows who was rostered on. Productivity came off this list on
+        // 2026-09-16 when the technician clock arrived — see the test below.
         absent.Should().Contain("Efficiency");
-        absent.Should().Contain("Productivity");
+        absent.Should().NotContain("Productivity");
     }
 
     [Fact]
