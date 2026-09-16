@@ -74,12 +74,29 @@ vehicle description, note and part number. And a handful of detailed error
 messages from the server are still English; those are named in the engineering
 notes and closing it is a change to the server rather than to the screens.
 
-**About 72% of the first release. Four of the eight stages are finished and three
+**About 77% of the first release. Four of the eight stages are finished and three
 more are under way.**
 
-It moved from 69% because the service lane went from half-built to three-quarters
-— the booking diary was one of the two things stage 5 was missing. Only finance
-applications to lenders remain, and those need a lender to test against.
+It moved from 76%, and one point is the honest return on five milestones in a
+week. Every one of them landed in stage 5, which had a tenth of itself left: a
+job number that says which lot it belongs to, a searchable picker so the wrong
+record stops being booked, credit balances when somebody overpays, catalogued
+op codes billed at the rate the rooftop actually posts, and a technician clock
+that turns productivity from a figure the report refused to invent into one it
+measures. Real work — in the stage with the least room left and the hardest
+ceiling. What remains of stage 5 is finance applications, which need a lender to
+test against, and warranty claim submission, which needs a manufacturer
+agreement. Neither can be built from a keyboard.
+
+**Where the remaining points actually are.** Each built stage is worth an equal
+share of the number above. Stage 7 holds half of itself and stage 2 holds a
+quarter, and neither waits on anybody outside the project — together that is
+about 9 points, against roughly 1 still available in stage 5. So **about 86% is
+reachable by building alone**; everything past it needs a lender, a
+manufacturer, an identity provider, or two pilot dealerships. Stage 2 is the
+better of the two to take first, because its remainder is also four of the five
+unmet exit criteria, so finishing it moves the judged number and the counted one
+together.
 
 The languages did not move that number, and it would be dishonest if they had.
 It measures how much of the *plan* exists, and speaking six languages was never
@@ -97,12 +114,12 @@ months of focused work.
 |---|---|---|---|
 | 0 | Find pilot dealers, get provider access | Agreements, real data samples, access to the systems we must connect to. People work, not code. | **Yours to do** |
 | 1 | Foundation | Keeping dealership groups apart, locations, staff and permissions, signing in, backups. | **Done** — only signing in with an existing company login is missing, and that needs a provider to test against |
-| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Half** — in and out both work, with a screen. Keeping in step with another live system now has its machinery built and tested, but no connection to a real system yet |
+| 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Three quarters** — in and out both work, with a screen, and keeping in step with another live system has its machinery built and tested. Four things are named and missing: deletes are not modelled, a quarantined record cannot be replayed, export carries no relationships and no documents, and no screen shows a connector's certification status. None of them waits on anybody outside the project |
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Done** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, warranties, paperwork. | **Done** |
-| 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Three quarters** — the workshop, parts stock and the booking diary are built. Finance applications to lenders are not, and need a lender to test against |
+| 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Nine tenths** — the workshop, parts stock, the booking diary, payment, catalogued op codes at posted labour rates, and a technician clock that makes productivity measurable. Finance applications need a lender to test against, and warranty claim submission needs a manufacturer agreement |
 | 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | **Done** — balances, month-end, staff admin, an operator console, setting up a new dealership, and a dashboard for the month |
-| 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | **Half** — backups are rehearsed and there are two installable packages. Security testing, performance work and training are not |
+| 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | **Half** — backups are rehearsed, there are two installable packages, and the product now wears a real brand. Security testing, performance work and training are not done, and there is still no guide for whoever installs it. This is the largest piece of unbuilt ground nobody outside the project is blocking |
 | 8 | Live pilot | Two dealerships running on it for 60 days. | Not started |
 
 ---

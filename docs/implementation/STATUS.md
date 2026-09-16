@@ -3,16 +3,20 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the ordinary day no longer stops, and the lists it runs on
-can be read past the first page**. All four jobs in
-[`DEALER-DAY.md`](DEALER-DAY.md) complete end to end; every list endpoint returns
-a real total and a reachable page two; the application wears the supplied brand,
-traced rather than redrawn. Seven of the walk's thirty findings are closed and
-one was retracted. What is next is on the register in
-[`docs/11`](../11-Franchise-and-External-Scope.md) §12.
-Last verified: 2026-09-12 · `dotnet build` 0 warnings/0 errors, `dotnet test` 755/755,
-`verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean,
-`npm run typecheck`, `npm test` 379/379, and `npm run build` all pass
+Current milestone: **the workshop can be measured**. A job line can be a
+catalogued op code billed at the rate its own rooftop posts, a technician goes on
+the clock, and productivity stops being a figure the labour report refuses to
+invent. Overpayment leaves a credit instead of a wrong balance, a job number says
+which lot it belongs to, and the right record can be found before the wrong one
+is booked. What is next is on the register in
+[`docs/11`](../11-Franchise-and-External-Scope.md) §12 — but see the re-review of
+2026-09-16 below before choosing from it: five milestones in a week moved the
+planning indicator by one point, because all five landed in the stage with the
+least room left and the hardest ceiling.
+Last verified: 2026-09-16 · `dotnet build` 0 warnings/0 errors, `dotnet test` 775/775,
+`verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean at high (two
+moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
+`npm run typecheck`, `npm test` 397/397, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1290,3 +1294,15 @@ to come.
   Walked: clocked the technician onto RO-1078, then onto RO-1077. RO-1078's entry closed itself at **0.01 hours** with the reason *"Switched to RO-1077 from RO-1078"*, and exactly one clocking was left open.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **775/775** (was 771), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **397/397** (was 394), `npm run build`.
+
+- **2026-09-16 — The planning indicator says where the remaining points are, and the answer is not where the work has been going.** No feature landed in this entry. The maintainer asked why the headline had not moved after two milestones, and the honest answer took a re-review of all seven path-bearing stages at once — the first time all of them had been checked on the same day.
+
+  **Five milestones in a week were worth one point.** A job number that names its lot, a searchable record picker, credit balances on overpayment, catalogued op codes at posted labour rates, and a technician clock: every one of them landed in stage 5, which had 0.15 of itself left. The stage moved 0.85 → 0.9 and the headline 76% → 77%. Six of the seven shares did not move at all, because the work, good as it was, did not touch any of their named remainders.
+
+  **The arithmetic nobody had written down.** Each built stage is worth an equal share of the headline — 12.5 points. So the headroom, not the activity, decides what the number does. Stage 7 holds 0.5 (6.2 points) and stage 2 holds 0.25 (3.1 points), and **neither waits on anybody outside the project**. Stage 5 holds 0.1 (1.2 points) and *cannot be finished from this machine*: what is left of it is finance applications, which need a lender, and warranty claim submission, which needs a manufacturer agreement. Stage 8 is a whole stage and needs two real dealerships. **About 86% is the ceiling reachable by building alone.**
+
+  **Stage 2 is the one to take first**, because its remainder is also four of the five unmet exit criteria — deletes are not modelled at all, a quarantined record cannot be replayed (`QuarantinedRecord.cs` says so in its own comment), export carries no relationship manifest and no documents, and `CertificationStatus` reaches no reader because there is no connectors screen. Finishing it moves the judged indicator *and* the counted one, 36 of 41 to 40 of 41. The recommendation on the progress page was changed from "A URL for every record" to this on the same grounds: the URL work is real and still wanted, but it sits in no stage's remainder and would have moved neither number.
+
+  **The page could not answer the question, so the page was changed.** It showed how much of each stage exists and never how much is left, or who the rest waits on — which is how a month of work went into the stage with the least room and the hardest ceiling without anything saying so. A headroom table now sits above the stage list: points remaining per stage, and who each one waits on. The staleness mechanism worked exactly as designed and was still not enough on its own; it said "seven stages need re-reading" for days without saying which of them was worth re-reading *first*.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **775/775**, `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **397/397**, `npm run build`. No source file changed; the change is to `docs/PROGRESS.md`, this file, and the generator behind `local/progress.html`.
