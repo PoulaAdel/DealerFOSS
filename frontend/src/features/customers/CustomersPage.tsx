@@ -37,7 +37,7 @@ import type { CustomerDetail, CustomerSummary, NewCustomer, Page } from '../../s
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
-import { Pager, usePageCaption } from '../../shared/Pager';
+import { ListScreen, type ListLoad } from '../../shared/ListScreen';
 
 /**
  * What the server will return at most, however many are asked for. The screen
@@ -46,11 +46,7 @@ import { Pager, usePageCaption } from '../../shared/Pager';
  */
 const PageSize = 100;
 
-type Load =
-  | { kind: 'loading' }
-  | { kind: 'ready'; page: Page<CustomerSummary> }
-  | { kind: 'denied' }
-  | { kind: 'failed'; message: string };
+type Load = ListLoad<CustomerSummary>;
 
 /** The add form's state machine. `checking` is the duplicate look-up. */
 type Adding =
@@ -65,6 +61,7 @@ const empty: NewCustomer = { kind: 'Person', firstName: '', lastName: '', email:
 export function CustomersPage() {
   const { t } = useI18n();
   const describe = useApiMessage();
+  const label = useEnumLabel();
 
   const [search, setSearch] = useState('');
 
@@ -236,12 +233,43 @@ export function CustomersPage() {
         />
       )}
 
-      <Results
+      <ListScreen
         load={load}
         onRetry={() => void find(search, offset)}
-        selectedId={record.openId}
-        onOpen={record.open}
         onPage={setOffset}
+        loadingMessage={t('customers.looking')}
+        deniedMessage={t('customers.denied')}
+        emptyMessage={t('customers.noMatches')}
+        columns={
+          <>
+            <th scope="col">{t('customers.colName')}</th>
+            <th scope="col">{t('customers.colKind')}</th>
+            <th scope="col">{t('customers.colEmail')}</th>
+            <th scope="col">{t('customers.colPhone')}</th>
+          </>
+        }
+        row={(customer) => (
+          <tr key={customer.id} aria-selected={customer.id === record.openId}>
+            <td>
+              {/* A button and not a clickable row: a <tr> with an onClick is
+                  unreachable by keyboard and announces nothing. */}
+              <button type="button" className="cell-open" onClick={() => record.open(customer.id)}>
+                {customer.displayName}
+              </button>
+            </td>
+            <td>
+              <span className={`chip chip--${customer.kind.toLowerCase()}`}>
+                {label('customerKind', customer.kind)}
+              </span>
+            </td>
+            {/* An email address and a phone number are both read left to
+                right, whichever way the page runs. */}
+            <td dir="ltr">{customer.primaryEmail ?? <span className="muted">—</span>}</td>
+            <td className="mono" dir="ltr">
+              {customer.primaryPhone ?? <span className="muted">—</span>}
+            </td>
+          </tr>
+        )}
       />
 
       <RecordBandStatus route={record} />
@@ -508,103 +536,3 @@ function AddPanel({
   );
 }
 
-function Results({
-  load, onRetry, selectedId, onOpen, onPage,
-}: {
-  load: Load;
-  onRetry: () => void;
-  selectedId: string | null;
-  onOpen: (customerId: string) => void;
-  onPage: (offset: number) => void;
-}) {
-  const { t } = useI18n();
-
-  switch (load.kind) {
-    case 'loading':
-      return (
-        <p className="state" aria-live="polite">
-          {t('customers.looking')}
-        </p>
-      );
-
-    case 'denied':
-      return (
-        <p className="state" role="alert">
-          {t('customers.denied')}
-        </p>
-      );
-
-    case 'failed':
-      return (
-        <div className="state" role="alert">
-          <p>{load.message}</p>
-          <button type="button" onClick={onRetry}>
-            {t('common.retry')}
-          </button>
-        </div>
-      );
-
-    case 'ready':
-      return load.page.total === 0 ? (
-        <p className="state">{t('customers.noMatches')}</p>
-      ) : (
-        <CustomerTable page={load.page} selectedId={selectedId} onOpen={onOpen} onPage={onPage} />
-      );
-  }
-}
-
-function CustomerTable({
-  page, selectedId, onOpen, onPage,
-}: {
-  page: Page<CustomerSummary>;
-  selectedId: string | null;
-  onOpen: (customerId: string) => void;
-  onPage: (offset: number) => void;
-}) {
-  const { t } = useI18n();
-  const label = useEnumLabel();
-  const caption = usePageCaption();
-  const customers = page.rows;
-
-  return (
-    <div className="scroll">
-      <table>
-        <caption className="visually-hidden">{caption(page)}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{t('customers.colName')}</th>
-            <th scope="col">{t('customers.colKind')}</th>
-            <th scope="col">{t('customers.colEmail')}</th>
-            <th scope="col">{t('customers.colPhone')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {customers.map((customer) => (
-            <tr key={customer.id} aria-selected={customer.id === selectedId}>
-              <td>
-                {/* A button and not a clickable row: a <tr> with an onClick is
-                    unreachable by keyboard and announces nothing. */}
-                <button type="button" className="cell-open" onClick={() => onOpen(customer.id)}>
-                  {customer.displayName}
-                </button>
-              </td>
-              <td>
-                <span className={`chip chip--${customer.kind.toLowerCase()}`}>
-                  {label('customerKind', customer.kind)}
-                </span>
-              </td>
-              {/* An email address and a phone number are both read left to
-                  right, whichever way the page runs. */}
-              <td dir="ltr">{customer.primaryEmail ?? <span className="muted">—</span>}</td>
-              <td className="mono" dir="ltr">
-                {customer.primaryPhone ?? <span className="muted">—</span>}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <Pager page={page} onPage={onPage} />
-    </div>
-  );
-}

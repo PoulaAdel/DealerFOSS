@@ -59,7 +59,7 @@ import { useRecordRoute } from '../../shared/useRecordRoute';
 import { DiaryPanel } from './DiaryPanel';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
-import { Pager, usePageCaption } from '../../shared/Pager';
+import { ListScreen, type ListLoad } from '../../shared/ListScreen';
 import { RecordPicker, type PickerOption } from '../../shared/RecordPicker';
 import { TakePayment } from '../receivables/TakePayment';
 import {
@@ -78,11 +78,7 @@ import {
 
 const PageSize = 50;
 
-type Load =
-  | { kind: 'loading' }
-  | { kind: 'ready'; page: Page<RepairOrderSummary> }
-  | { kind: 'denied' }
-  | { kind: 'failed'; message: string };
+type Load = ListLoad<RepairOrderSummary>;
 
 /**
  * Money in the reader's language. Was a module-level `Intl.NumberFormat` with
@@ -138,7 +134,6 @@ export function WorkshopPage() {
   const { t } = useI18n();
   const money = useMoney();
   const describe = useApiMessage();
-  const caption = usePageCaption();
 
   const [openOnly, setOpenOnly] = useState(true);
 
@@ -189,34 +184,12 @@ export function WorkshopPage() {
     void find(openOnly, offset);
   }, [find, openOnly, offset]);
 
-  if (load.kind === 'loading') {
-    return <p>{t('workshop.loading')}</p>;
-  }
-
-  if (load.kind === 'denied') {
-    return (
-      <section className="page">
-        <h1>{t('workshop.title')}</h1>
-        <p className="note">{t('workshop.denied')}</p>
-      </section>
-    );
-  }
-
-  if (load.kind === 'failed') {
-    return (
-      <section className="page">
-        <h1>{t('workshop.title')}</h1>
-        <p className="error">{load.message}</p>
-        <button type="button" onClick={() => void find(openOnly, offset)}>
-          {t('common.retry')}
-        </button>
-      </section>
-    );
-  }
-
   // The advisor's real worklist: the calls they owe. Drawn from the summary, so
-  // it costs no extra request.
-  const waiting = load.page.rows.filter((job) => job.linesAwaitingAnswer > 0);
+  // it costs no extra request. Nothing to draw it from until the list is ready
+  // — see ListScreen below for loading/denied/failed, which used to hide the
+  // whole page including the diary and header; they no longer depend on this.
+  const waiting =
+    load.kind === 'ready' ? load.page.rows.filter((job) => job.linesAwaitingAnswer > 0) : [];
 
   /**
    * Whether this page of jobs spans more than one lot.
@@ -232,7 +205,8 @@ export function WorkshopPage() {
    * A manager who covers three lots but is filtered to one is not looking at
    * anything ambiguous, and a code on every row would just be noise.
    */
-  const mixed = new Set(load.page.rows.map((job) => job.rooftopId)).size > 1;
+  const mixed =
+    load.kind === 'ready' && new Set(load.page.rows.map((job) => job.rooftopId)).size > 1;
 
   return (
     <section className="page">
@@ -308,71 +282,65 @@ export function WorkshopPage() {
         />
       )}
 
-      {load.page.total === 0 ? (
-        <p className="note">
-          {openOnly ? t('workshop.nothingOpen') : t('workshop.empty')}
-        </p>
-      ) : (
-        <div className="scroll">
-          <table className="table">
-            <caption className="visually-hidden">{caption(load.page)}</caption>
-            <thead>
-              <tr>
-                <th scope="col">{t('workshop.colJob')}</th>
-                <th scope="col">{t('workshop.colCustomer')}</th>
-                <th scope="col">{t('workshop.colVehicle')}</th>
-                <th scope="col">{t('workshop.colCameInFor')}</th>
-                <th scope="col">{t('workshop.colWaiting')}</th>
-                <th scope="col" className="num">
-                  {t('workshop.colDue')}
-                </th>
-                <th scope="col">{t('workshop.colStage')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {load.page.rows.map((job) => (
-                <tr key={job.id}>
-                  <td>
-                    <button type="button" className="link" onClick={() => record.open(job.id)}>
-                      {job.number}
-                    </button>
-                    {/* Only when the list actually mixes lots. At a one-site
-                        dealership every row would carry the same code and it
-                        would be noise; at a group it is the difference between
-                        two rows that otherwise read identically. */}
-                    {mixed && job.rooftopCode !== '' ? (
-                      <>
-                        {' '}
-                        <span className="muted">{job.rooftopCode}</span>
-                      </>
-                    ) : null}
-                  </td>
-                  <td>{job.customerName}</td>
-                  <td>{job.vehicle}</td>
-                  <td>{job.complaint}</td>
-                  <td>
-                    {job.linesAwaitingAnswer === 0 ? (
-                      ''
-                    ) : (
-                      <span className="chip chip--warn">
-                        {t('workshop.toAsk', { count: job.linesAwaitingAnswer })}
-                      </span>
-                    )}
-                  </td>
-                  <td className="num">{money(job.amountDue, job.currency)}</td>
-                  <td>
-                    <span className={`chip chip--${job.status.toLowerCase()}`}>
-                      {t(statusKey(job.status))}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <Pager page={load.page} onPage={setOffset} />
+      <ListScreen
+        load={load}
+        onRetry={() => void find(openOnly, offset)}
+        onPage={setOffset}
+        loadingMessage={t('workshop.loading')}
+        deniedMessage={t('workshop.denied')}
+        emptyMessage={openOnly ? t('workshop.nothingOpen') : t('workshop.empty')}
+        tableClassName="table"
+        columns={
+          <>
+            <th scope="col">{t('workshop.colJob')}</th>
+            <th scope="col">{t('workshop.colCustomer')}</th>
+            <th scope="col">{t('workshop.colVehicle')}</th>
+            <th scope="col">{t('workshop.colCameInFor')}</th>
+            <th scope="col">{t('workshop.colWaiting')}</th>
+            <th scope="col" className="num">
+              {t('workshop.colDue')}
+            </th>
+            <th scope="col">{t('workshop.colStage')}</th>
+          </>
+        }
+        row={(job) => (
+          <tr key={job.id}>
+            <td>
+              <button type="button" className="link" onClick={() => record.open(job.id)}>
+                {job.number}
+              </button>
+              {/* Only when the list actually mixes lots. At a one-site
+                  dealership every row would carry the same code and it
+                  would be noise; at a group it is the difference between
+                  two rows that otherwise read identically. */}
+              {mixed && job.rooftopCode !== '' ? (
+                <>
+                  {' '}
+                  <span className="muted">{job.rooftopCode}</span>
+                </>
+              ) : null}
+            </td>
+            <td>{job.customerName}</td>
+            <td>{job.vehicle}</td>
+            <td>{job.complaint}</td>
+            <td>
+              {job.linesAwaitingAnswer === 0 ? (
+                ''
+              ) : (
+                <span className="chip chip--warn">
+                  {t('workshop.toAsk', { count: job.linesAwaitingAnswer })}
+                </span>
+              )}
+            </td>
+            <td className="num">{money(job.amountDue, job.currency)}</td>
+            <td>
+              <span className={`chip chip--${job.status.toLowerCase()}`}>
+                {t(statusKey(job.status))}
+              </span>
+            </td>
+          </tr>
+        )}
+      />
     </section>
   );
 }
