@@ -271,10 +271,17 @@ body {
    to the browser default, unreadable in dark. */
 a {
   color: var(--link);
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+  transition: color var(--beat) ease;
 }
 
 a:visited {
   color: var(--link-visited);
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
 }
 
 h1 {
@@ -289,18 +296,27 @@ h1 {
    of 24px, not this. */
 button {
   font: inherit;
+  font-weight: 500;
   min-block-size: var(--control-h);
   padding-inline: var(--s-4);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
   cursor: pointer;
-  transition: background var(--beat) ease, border-color var(--beat) ease;
+  box-shadow: var(--lift);
+  transition: background var(--beat) ease, border-color var(--beat) ease,
+    box-shadow var(--beat) ease, transform var(--beat) ease;
 }
 
 button:hover:not(:disabled) {
   border-color: var(--ink-3);
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 button[type='submit'] {
@@ -330,15 +346,25 @@ button.danger:disabled {
 button:disabled {
   opacity: 0.6;
   cursor: progress;
+  box-shadow: none;
 }
 
+/* Text, not a card — no shadow and no lift on hover, or a row of these next to
+   real buttons reads as broken rather than as a deliberately lighter action. */
 button.link {
   min-block-size: auto;
   border: 0;
   background: none;
+  box-shadow: none;
   color: var(--ink-2);
   text-decoration: underline;
+  text-underline-offset: 0.15em;
   padding: var(--s-2) 0;
+}
+
+button.link:hover:not(:disabled) {
+  transform: none;
+  color: var(--ink);
 }
 
 label {
@@ -357,10 +383,17 @@ textarea {
   margin-top: var(--s-1);
   min-block-size: var(--control-h);
   padding: var(--s-2) var(--s-3);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
+  transition: border-color var(--beat) ease, box-shadow var(--beat) ease;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--accent);
 }
 
 textarea {
@@ -502,9 +535,13 @@ textarea {
   /* A 2px accent line along the very top of the viewport, with the grey rule
      still doing its own job at the bottom. It says whose application this is
      using the colour the product already speaks in, rather than introducing a
-     second one that would have to mean nothing. */
+     second one that would have to mean nothing. The --lift on top gives the
+     bar the same depth as a card, so it reads as a fixed layer above the
+     page rather than a stripe printed on it. */
   border-bottom: 1px solid var(--line);
-  box-shadow: inset 0 2px 0 var(--accent);
+  box-shadow: inset 0 2px 0 var(--accent), var(--lift);
+  position: relative;
+  z-index: 5;
 }
 
 /* One column below the point where the brand and the utilities stop sharing a
@@ -610,20 +647,28 @@ textarea {
 
 .shell__bar nav a {
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   color: var(--ink-2);
+  font-weight: 500;
   text-decoration: none;
-  transition: background var(--beat) ease, color var(--beat) ease;
+  transition: background var(--beat) ease, color var(--beat) ease,
+    transform var(--beat) ease;
 }
 
 .shell__bar nav a:hover {
   background: var(--idle-soft);
+  color: var(--ink);
+  transform: translateY(-1px);
 }
 
 .shell__bar nav a.active {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 600;
+}
+
+.shell__bar nav a.active:hover {
+  transform: none;
 }
 
 .shell__right {
@@ -1215,6 +1260,10 @@ table button.link {
   padding: 0;
   text-align: start;
   color: var(--ink);
+}
+
+table button.link:hover:not(:disabled) {
+  color: var(--link);
 }
 
 /* --- entering the numbers on a deal --- */
@@ -1829,6 +1878,18 @@ td a,
 .check {
   min-block-size: 24px;
   min-inline-size: 24px;
+}
+
+/* A row of these lifting on hover reads as the table jittering, not as
+   polish — the shadow/press treatment above is for standalone actions. */
+td button,
+.chip button {
+  box-shadow: none;
+}
+
+td button:hover:not(:disabled),
+.chip button:hover:not(:disabled) {
+  transform: none;
 }
 
 /* Centres the label text inside the floor, so a 24px-tall target does not read
