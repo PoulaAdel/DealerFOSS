@@ -69,6 +69,8 @@ export interface CustomerDetail {
   contactPoints: ContactPointView[];
   /** Their id in the system this record came from. Null when typed in by a person. */
   externalReference: string | null;
+  /** The most this customer may owe across every open bill. Null is no cap. */
+  creditLimit: number | null;
 }
 
 export type ContactKind = 'Email' | 'Phone' | 'Mobile';
@@ -1157,6 +1159,52 @@ export const paymentMethods: PaymentMethod[] = [
 
 /** How a credit may be handed back. Not from a credit — that is not giving it back. */
 export const refundMethods: PaymentMethod[] = ['Cash', 'Card', 'BankTransfer', 'Cheque'];
+
+/**
+ * Who owes what, split by how long it has been owed. `currency` applies to
+ * every figure in the report — the server refuses to build one across more
+ * than one currency rather than total a number that means nothing.
+ */
+export interface AgeingReport {
+  currency: string;
+  customers: CustomerAgeing[];
+  totals: AgeingBucket;
+}
+
+export interface CustomerAgeing {
+  customerId: string;
+  customerName: string;
+  bucket: AgeingBucket;
+}
+
+/** What is owed, split by how long it has been owed. */
+export interface AgeingBucket {
+  current: number;
+  days31To60: number;
+  days61To90: number;
+  over90: number;
+  total: number;
+}
+
+/** One customer's bills and payments over a period, with a running balance. */
+export interface CustomerStatement {
+  customerId: string;
+  customerName: string;
+  currency: string;
+  from: string;
+  to: string;
+  openingBalance: number;
+  closingBalance: number;
+  lines: StatementLine[];
+}
+
+export interface StatementLine {
+  date: string;
+  kind: 'Invoice' | 'Payment';
+  reference: string;
+  amount: number;
+  balance: number;
+}
 
 /**
  * A profit and loss. Departmental gross first, because that is how a dealership

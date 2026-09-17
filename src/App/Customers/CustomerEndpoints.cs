@@ -9,6 +9,7 @@
 //   GET  /api/v1/customers?search=smith&limit=25
 //   GET  /api/v1/customers/{id}
 //   POST /api/v1/customers
+//   PUT  /api/v1/customers/{id}/credit-limit
 //
 // Coding Instructions:
 //   Keep it thin — delegate, then map a Result to a status code.
@@ -30,6 +31,7 @@ internal static class CustomerEndpoints
         group.MapGet("", SearchAsync);
         group.MapGet("/{customerId:guid}", GetAsync);
         group.MapPost("", AddAsync);
+        group.MapPut("/{customerId:guid}/credit-limit", SetCreditLimitAsync);
     }
 
     private static async Task<IResult> SearchAsync(
@@ -63,4 +65,17 @@ internal static class CustomerEndpoints
             ? Results.Created($"/api/v1/customers/{result.Value.Id}", result.Value)
             : result.Error.ToProblem();
     }
+
+    private static async Task<IResult> SetCreditLimitAsync(
+        Guid customerId,
+        SetCreditLimitRequest request,
+        ICustomers customers,
+        CancellationToken cancellationToken)
+    {
+        var result = await customers.SetCreditLimitAsync(customerId, request.Limit, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
 }
+
+/// <summary>What a caller supplies to set or clear a customer's credit limit.</summary>
+public sealed record SetCreditLimitRequest(decimal? Limit);

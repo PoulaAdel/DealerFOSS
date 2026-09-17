@@ -31,6 +31,7 @@ public sealed class CustomerService(
 {
     private const string ReadPermission = "Customers.Read";
     private const string CreatePermission = "Customers.Create";
+    private const string ManagePermission = "Customers.Manage";
 
     /// <summary>Caps how many rows a single search can return, however it is called.</summary>
     private const int MaxResults = 100;
@@ -244,6 +245,56 @@ public sealed class CustomerService(
             customers.Select(Describe).ToList());
     }
 
+    public async Task<Result<CustomerDetail>> SetCreditLimitAsync(
+        Guid customerId,
+        decimal? limit,
+        CancellationToken cancellationToken)
+    {
+        if (!await IsAllowedAsync(ManagePermission, cancellationToken))
+        {
+            return Result.Failure<CustomerDetail>(CustomerErrors.Forbidden);
+        }
+
+        var customer = await _db.Customers
+            .SingleOrDefaultAsync(c => c.Id == customerId, cancellationToken);
+
+        if (customer is null)
+        {
+            return Result.Failure<CustomerDetail>(CustomerErrors.NotFound);
+        }
+
+        try
+        {
+            customer.SetCreditLimit(limit);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            return Result.Failure<CustomerDetail>(Error.Validation("customer.invalid", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, ManagePermission, AuditOutcome.Allowed,
+                "Customer", customer.Id.ToString(), customer.HomeRooftopId?.Value,
+                limit is null ? "Credit limit cleared" : $"Credit limit set to {limit}", null, null),
+            cancellationToken);
+
+        return Result.Success(Describe(customer));
+    }
+
+    /// <summary>No permission check — see the remarks on ICustomers.GetCreditLimitAsync.</summary>
+    public async Task<Result<decimal?>> GetCreditLimitAsync(Guid customerId, CancellationToken cancellationToken)
+    {
+        var customer = await _db.Customers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(c => c.Id == customerId, cancellationToken);
+
+        return customer is null
+            ? Result.Failure<decimal?>(CustomerErrors.NotFound)
+            : Result.Success(customer.CreditLimit);
+    }
+
     /// <summary>
     /// A customer is organization-wide, so holding the permission anywhere is
     /// enough. Denials are audited by the access directory.
@@ -278,7 +329,8 @@ public sealed class CustomerService(
                 .ThenBy(p => p.Kind)
                 .Select(p => new ContactPointView(p.Id, p.Kind.ToString(), p.Value, p.IsPrimary))
                 .ToList(),
-            c.ExternalReference);
+            c.ExternalReference,
+            c.CreditLimit);
 
     private static string? Primary(Customer c, ContactKind kind) =>
         c.ContactPoints.FirstOrDefault(p => p.Kind == kind && p.IsPrimary)?.Value;

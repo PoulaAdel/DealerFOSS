@@ -26,6 +26,15 @@ public static class Permissions
     public const string CustomersRead = "Customers.Read";
     public const string CustomersCreate = "Customers.Create";
 
+    /// <summary>
+    /// Setting a customer's credit limit — the most they may owe across every
+    /// open bill. Deliberately not <see cref="CustomersCreate"/>: typing a new
+    /// customer in and deciding how much credit the dealership extends them are
+    /// different acts, and the second is a management decision even for a
+    /// salesperson who adds customers all day.
+    /// </summary>
+    public const string CustomersManage = "Customers.Manage";
+
     /// <summary>Reading vehicles. Organization-wide, like the vehicles themselves.</summary>
     public const string VehiclesRead = "Vehicles.Read";
 
@@ -245,6 +254,7 @@ public static class Permissions
         OrganizationManage,
         CustomersRead,
         CustomersCreate,
+        CustomersManage,
         VehiclesRead,
         InventoryRead,
         InventoryManage,

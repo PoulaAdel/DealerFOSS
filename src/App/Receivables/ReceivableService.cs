@@ -194,6 +194,211 @@ public sealed class ReceivableService(
         return Result.Success<ReceivableDetail?>(await DescribeAsync(row, cancellationToken));
     }
 
+    public async Task<Result<AgeingReport>> GetAgeingAsync(AgeingQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<AgeingReport>(ReceivableErrors.Forbidden);
+        }
+
+        if (query.RooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<AgeingReport>(ReceivableErrors.Forbidden);
+        }
+
+        var rows = _db.Receivables.AsNoTracking().Include(r => r.Payments).AsQueryable();
+
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            rows = rows.Where(r => allowed.Contains(r.RooftopId));
+        }
+
+        if (query.RooftopId is { } only)
+        {
+            rows = rows.Where(r => r.RooftopId == only);
+        }
+
+        // Same shape as ListAsync's OutstandingOnly filter — a correlated sum so
+        // the database drops settled bills before anything is loaded, rather
+        // than after.
+        rows = rows.Where(r => r.Payments.Sum(p => p.Amount) < r.Amount);
+
+        // Mixing currencies in one column would produce a number that means
+        // nothing — see AccountingService's own refusal for the same reason.
+        // Ageing is a whole-book question a dealership asks rarely enough that
+        // narrowing to one rooftop, which is usually one currency, is a
+        // reasonable answer to be asked to give.
+        var currencies = await rows.Select(r => r.Currency).Distinct().ToListAsync(cancellationToken);
+        if (currencies.Count > 1)
+        {
+            return Result.Failure<AgeingReport>(ReceivableErrors.MixedCurrencies(currencies));
+        }
+
+        // The whole outstanding book, not a page of it — an ageing report is a
+        // total across everybody, and there is no honest way to page a sum. A
+        // real dealership's open receivables are hundreds of rows, not millions.
+        var loaded = await rows.ToListAsync(cancellationToken);
+
+        var names = await NamesAsync(loaded.Select(r => r.CustomerId), cancellationToken);
+        var now = _clock.UtcNow;
+
+        var customers = loaded
+            .GroupBy(r => r.CustomerId)
+            .Select(group =>
+            {
+                var bucket = Bucket(group, now);
+                return new CustomerAgeing(
+                    group.Key,
+                    names.GetValueOrDefault(group.Key, string.Empty),
+                    bucket);
+            })
+            // Oldest debt first: the row a manager needs to see is the one with
+            // money in Over90, not the one with the biggest total.
+            .OrderByDescending(c => c.Bucket.Over90)
+            .ThenByDescending(c => c.Bucket.Total)
+            .ToList();
+
+        var totals = new AgeingBucket(
+            customers.Sum(c => c.Bucket.Current),
+            customers.Sum(c => c.Bucket.Days31To60),
+            customers.Sum(c => c.Bucket.Days61To90),
+            customers.Sum(c => c.Bucket.Over90),
+            customers.Sum(c => c.Bucket.Total));
+
+        return Result.Success(new AgeingReport(
+            currencies.Count == 1 ? currencies[0] : "USD",
+            customers,
+            totals));
+    }
+
+    public async Task<Result<CustomerStatement>> GetStatementAsync(
+        StatementQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        if (query.To < query.From)
+        {
+            return Result.Failure<CustomerStatement>(ReceivableErrors.StatementRangeBackwards);
+        }
+
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<CustomerStatement>(ReceivableErrors.Forbidden);
+        }
+
+        if (query.RooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<CustomerStatement>(ReceivableErrors.Forbidden);
+        }
+
+        var rows = _db.Receivables
+            .AsNoTracking()
+            .Include(r => r.Payments)
+            .Where(r => r.CustomerId == query.CustomerId)
+            .AsQueryable();
+
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            rows = rows.Where(r => allowed.Contains(r.RooftopId));
+        }
+
+        if (query.RooftopId is { } only)
+        {
+            rows = rows.Where(r => r.RooftopId == only);
+        }
+
+        // The customer's WHOLE history, not just the period: the opening
+        // balance is what came before it, and the running balance underneath
+        // the period lines needs every bill and payment either side to be
+        // right.
+        var bills = await rows.OrderBy(r => r.BilledAt).ToListAsync(cancellationToken);
+
+        var currencies = bills.Select(r => r.Currency).Distinct().ToList();
+        if (currencies.Count > 1)
+        {
+            return Result.Failure<CustomerStatement>(ReceivableErrors.MixedCurrencies(currencies));
+        }
+
+        var names = await NamesAsync([query.CustomerId], cancellationToken);
+        var currency = currencies.Count == 1 ? currencies[0] : "USD";
+
+        var opening = bills
+            .Where(r => r.BilledAt < query.From)
+            .Sum(r => r.Amount - r.Payments.Where(p => p.ReceivedAt < query.From).Sum(p => p.Amount));
+
+        var lines = new List<StatementLine>();
+
+        foreach (var bill in bills.Where(r => r.BilledAt >= query.From && r.BilledAt <= query.To))
+        {
+            lines.Add(new StatementLine(bill.BilledAt, "Invoice", bill.Reference, bill.Amount, 0m));
+        }
+
+        foreach (var bill in bills)
+        {
+            foreach (var payment in bill.Payments.Where(p => p.ReceivedAt >= query.From && p.ReceivedAt <= query.To))
+            {
+                lines.Add(new StatementLine(payment.ReceivedAt, "Payment", bill.Reference, payment.Amount, 0m));
+            }
+        }
+
+        lines = lines.OrderBy(l => l.Date).ToList();
+
+        var running = opening;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            running += lines[i].Kind == "Invoice" ? lines[i].Amount : -lines[i].Amount;
+            lines[i] = lines[i] with { Balance = running };
+        }
+
+        return Result.Success(new CustomerStatement(
+            query.CustomerId,
+            names.GetValueOrDefault(query.CustomerId, string.Empty),
+            currency,
+            query.From,
+            query.To,
+            opening,
+            running,
+            lines));
+    }
+
+    /// <summary>Buckets one customer's outstanding bills by how long each has been owed.</summary>
+    private static AgeingBucket Bucket(IEnumerable<Receivable> bills, DateTimeOffset now)
+    {
+        decimal current = 0m, days31To60 = 0m, days61To90 = 0m, over90 = 0m;
+
+        foreach (var bill in bills)
+        {
+            var outstanding = bill.Amount - bill.Payments.Sum(p => p.Amount);
+            var days = Math.Max(0, (int)(now - bill.BilledAt).TotalDays);
+
+            if (days <= 30)
+            {
+                current += outstanding;
+            }
+            else if (days <= 60)
+            {
+                days31To60 += outstanding;
+            }
+            else if (days <= 90)
+            {
+                days61To90 += outstanding;
+            }
+            else
+            {
+                over90 += outstanding;
+            }
+        }
+
+        return new AgeingBucket(current, days31To60, days61To90, over90, current + days31To60 + days61To90 + over90);
+    }
+
     public async Task<Result<Receivable>> OpenAsync(
         NewReceivable receivable,
         CancellationToken cancellationToken)
@@ -212,6 +417,38 @@ public sealed class ReceivableService(
         if (existing)
         {
             return Result.Failure<Receivable>(ReceivableErrors.AlreadyBilled(receivable.Reference));
+        }
+
+        // THE CAP, WHEN THE CUSTOMER HAS ONE. Read with no permission check —
+        // see the remarks on ICustomers.GetCreditLimitAsync — and skipped
+        // rather than refused if the lookup itself fails, because a receivable
+        // is not the place to discover a customer record has gone missing; the
+        // caller already validated CustomerId when it built the deal or the
+        // job.
+        var limit = await _customers.GetCreditLimitAsync(receivable.CustomerId, cancellationToken);
+        if (limit.IsSuccess && limit.Value is { } cap)
+        {
+            // Same-currency only, like every other total in this application —
+            // see AccountingService's mixed-currency refusal. A customer who
+            // owes in two currencies is rare enough that summing only the one
+            // this new bill is in, rather than inventing an exchange rate, is
+            // the honest answer.
+            var billed = await _db.Receivables
+                .Where(r => r.CustomerId == receivable.CustomerId && r.Currency == receivable.Currency)
+                .SumAsync(r => r.Amount, cancellationToken);
+
+            var paid = await _db.Receivables
+                .Where(r => r.CustomerId == receivable.CustomerId && r.Currency == receivable.Currency)
+                .SelectMany(r => r.Payments)
+                .SumAsync(p => p.Amount, cancellationToken);
+
+            var currentlyOwed = billed - paid;
+
+            if (currentlyOwed + receivable.Amount > cap)
+            {
+                return Result.Failure<Receivable>(
+                    ReceivableErrors.CreditLimitExceeded(currentlyOwed, cap, receivable.Currency));
+            }
         }
 
         Receivable opened;
@@ -763,4 +1000,18 @@ internal static class ReceivableErrors
     public static Error MoreThanIsOwed(decimal outstanding, string currency) =>
         Error.Validation("receivables.more_than_owed",
             $"Only {currency} {outstanding} is still owed on that bill.");
+
+    public static Error CreditLimitExceeded(decimal currentlyOwed, decimal limit, string currency) =>
+        Error.Validation("receivables.credit_limit_exceeded",
+            $"This would put them at more than their {currency} {limit} credit limit "
+            + $"— they already owe {currency} {currentlyOwed}.");
+
+    public static Error StatementRangeBackwards { get; } = Error.Validation(
+        "receivables.statement_range_backwards",
+        "The statement's end date is before its start date.");
+
+    public static Error MixedCurrencies(IEnumerable<string> currencies) => Error.Validation(
+        "receivables.mixed_currencies",
+        $"These bills are in more than one currency ({string.Join(", ", currencies)}). "
+        + "Totalling them would produce a number that means nothing — narrow the rooftop.");
 }

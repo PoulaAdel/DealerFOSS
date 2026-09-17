@@ -214,4 +214,44 @@ public sealed class CustomerTests
         address.AdministrativeArea.Should().Be("IL");
         address.County.Should().BeNull();
     }
+
+    [Fact]
+    public void A_new_customer_has_no_credit_limit()
+    {
+        Customer.Person(Guid.NewGuid(), "Marisol", "Alvarez").CreditLimit.Should().BeNull();
+    }
+
+    [Fact]
+    public void A_credit_limit_can_be_set_and_cleared()
+    {
+        var customer = Customer.Person(Guid.NewGuid(), "Marisol", "Alvarez");
+
+        customer.SetCreditLimit(5000m);
+        customer.CreditLimit.Should().Be(5000m);
+
+        customer.SetCreditLimit(null);
+        customer.CreditLimit.Should().BeNull(because: "null is no cap, not a cap of zero");
+    }
+
+    [Fact]
+    public void A_credit_limit_cannot_be_negative()
+    {
+        var customer = Customer.Person(Guid.NewGuid(), "Marisol", "Alvarez");
+
+        var setting = () => customer.SetCreditLimit(-1m);
+
+        setting.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void A_credit_limit_of_zero_is_allowed()
+    {
+        // Zero is a real, if unusual, decision — a customer who must pay in
+        // full every time — and different from null, which is no cap at all.
+        var customer = Customer.Person(Guid.NewGuid(), "Marisol", "Alvarez");
+
+        customer.SetCreditLimit(0m);
+
+        customer.CreditLimit.Should().Be(0m);
+    }
 }

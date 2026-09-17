@@ -130,6 +130,11 @@ export function post<T>(path: string, body: unknown): Promise<T> {
   return api<T>(path, { method: 'POST', body: JSON.stringify(body) });
 }
 
+/** PUT. For replacing a value in place, like a credit limit — not for creating anything. */
+export function put<T>(path: string, body: unknown): Promise<T> {
+  return api<T>(path, { method: 'PUT', body: JSON.stringify(body) });
+}
+
 /**
  * DELETE. Carries the anti-forgery token like any other write — a request that
  * takes something away is exactly the kind another site would like to make on

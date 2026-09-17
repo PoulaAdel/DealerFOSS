@@ -42,6 +42,21 @@ public interface IReceivables
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Who owes what, split by how long it has been owed — current, then three
+    /// overdue bands. Scoped to the caller's rooftops, like <see cref="ListAsync"/>.
+    /// </summary>
+    Task<Result<AgeingReport>> GetAgeingAsync(AgeingQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// One customer's bills and payments over a period, with the balance
+    /// running through them — what a dealership hands somebody who asks
+    /// "what do I owe you".
+    /// </summary>
+    Task<Result<CustomerStatement>> GetStatementAsync(
+        StatementQuery query,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Opens a debt. Called by Deals on delivery and RepairOrders on invoicing,
     /// inside their transaction; does not save.
     /// </summary>
@@ -224,3 +239,67 @@ public sealed record CreditUseView(
     Guid? ReceivableId,
     DateTimeOffset UsedAt,
     string? Note);
+
+/// <summary>How a caller narrows the ageing report.</summary>
+public sealed record AgeingQuery(RooftopId? RooftopId = null);
+
+/// <summary>
+/// What every customer with an outstanding bill owes, split by age, oldest
+/// debt first.
+/// </summary>
+public sealed record AgeingReport(
+    string Currency,
+    IReadOnlyList<CustomerAgeing> Customers,
+    AgeingBucket Totals);
+
+public sealed record CustomerAgeing(
+    Guid CustomerId,
+    string CustomerName,
+    AgeingBucket Bucket);
+
+/// <summary>
+/// What is owed, split by how long it has been owed. The bands match what a
+/// dealership actually chases differently: current is not yet a concern,
+/// 31-60 gets a call, 61-90 gets a harder one, and over 90 is what a manager
+/// asks about by name.
+/// </summary>
+public sealed record AgeingBucket(
+    decimal Current,
+    decimal Days31To60,
+    decimal Days61To90,
+    decimal Over90,
+    decimal Total);
+
+/// <summary>What a caller supplies to ask for one customer's statement.</summary>
+public sealed record StatementQuery(
+    Guid CustomerId,
+    DateTimeOffset From,
+    DateTimeOffset To,
+    RooftopId? RooftopId = null);
+
+/// <summary>
+/// One customer's account over a period: what they owed coming in, every bill
+/// and payment across it, and what they owe going out.
+/// </summary>
+public sealed record CustomerStatement(
+    Guid CustomerId,
+    string CustomerName,
+    string Currency,
+    DateTimeOffset From,
+    DateTimeOffset To,
+    decimal OpeningBalance,
+    decimal ClosingBalance,
+    IReadOnlyList<StatementLine> Lines);
+
+/// <summary>
+/// One bill or one payment, in date order, with the balance after it. Amount is
+/// signed by <see cref="Kind"/> rather than carrying separate debit/credit
+/// columns — a statement has one number moving, not two.
+/// </summary>
+/// <param name="Kind">"Invoice" (raises the balance) or "Payment" (lowers it).</param>
+public sealed record StatementLine(
+    DateTimeOffset Date,
+    string Kind,
+    string Reference,
+    decimal Amount,
+    decimal Balance);

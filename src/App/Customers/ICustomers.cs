@@ -69,6 +69,29 @@ public interface ICustomers
         Guid? after,
         int take,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets the most this customer may owe across every open bill, or clears the
+    /// cap with null.
+    /// </summary>
+    Task<Result<CustomerDetail>> SetCreditLimitAsync(
+        Guid customerId,
+        decimal? limit,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The credit limit alone, or null if there is no cap.
+    /// </summary>
+    /// <remarks>
+    /// NO PERMISSION CHECK, the same contract <c>IReceivables.OpenAsync</c> uses
+    /// for the same reason: this is called while opening a debt, inside the
+    /// caller's own transaction, by a request that has already been authorized
+    /// to deliver the car or invoice the job. Coupling it to
+    /// <c>Customers.Read</c> would make credit-limit enforcement depend on a
+    /// permission a role built around Deals or RepairOrders may never have
+    /// been given, for a value that is not personal data.
+    /// </remarks>
+    Task<Result<decimal?>> GetCreditLimitAsync(Guid customerId, CancellationToken cancellationToken);
 }
 
 /// <summary>Enough to identify a customer in a list.</summary>
@@ -89,7 +112,10 @@ public sealed record CustomerDetail(
     RooftopId? HomeRooftopId,
     AddressView? Address,
     IReadOnlyList<ContactPointView> ContactPoints,
-    string? ExternalReference = null);
+    string? ExternalReference = null,
+
+    /// <summary>The most this customer may owe across every open bill, or null for no cap.</summary>
+    decimal? CreditLimit = null);
 
 public sealed record ContactPointView(Guid Id, string Kind, string Value, bool IsPrimary);
 

@@ -40,6 +40,13 @@ public sealed class Customer : AuditableEntity
     public bool IsArchived { get; private set; }
 
     /// <summary>
+    /// The most this customer may owe across every open bill, or null for no
+    /// cap. Read by Receivables before opening a new debt — see
+    /// <see cref="ICustomers.GetCreditLimitAsync"/>.
+    /// </summary>
+    public decimal? CreditLimit { get; private set; }
+
+    /// <summary>
     /// This customer's identifier in the system they came from, when they were
     /// imported rather than typed in. It is what makes re-running an import
     /// update the same person instead of creating a second one, and it is why a
@@ -97,6 +104,21 @@ public sealed class Customer : AuditableEntity
     }
 
     public void SetAddress(Address? address) => Address = address;
+
+    /// <summary>
+    /// Sets the cap on what this customer may owe, or clears it. Null means no
+    /// cap, not zero — zero would refuse this customer every bill, which is a
+    /// decision a dealership makes on purpose and rarely.
+    /// </summary>
+    public void SetCreditLimit(decimal? limit)
+    {
+        if (limit is { } value && value < 0m)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limit), "A credit limit cannot be negative.");
+        }
+
+        CreditLimit = limit;
+    }
 
     /// <summary>
     /// Records where this customer came from. Set once at import; changing it

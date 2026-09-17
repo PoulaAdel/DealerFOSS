@@ -234,6 +234,9 @@ describe('the catalogues', () => {
       ['nav.passkeys', 'the term German itself uses'],
       ['passkey.title', 'the term German itself uses'],
       ['passkey.colLabel', 'the same word in German'],
+      ['ageing.colTotal', 'the same word in French'],
+      ['ageing.totals', 'the same word in French'],
+      ['statement.colDate', 'the same word in French'],
     ]);
 
     for (const [name, catalogue] of Object.entries(catalogues)) {

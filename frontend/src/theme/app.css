@@ -768,6 +768,19 @@ tbody tr:last-child td {
   color: var(--done);
 }
 
+/* A statement line is a bill or money in — never a problem and never quite a
+   success, so quiet is deliberate: this chip's job is telling the two kinds
+   of line apart in a column that already carries the amount and its sign. */
+.chip--invoice {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--payment {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
 /* Tabular figures so a column of money lines up on the decimal instead of
    drifting with the glyph widths, and `width: 1%` so a numeric column takes
    only what it needs. Without the second half the browser shares the width

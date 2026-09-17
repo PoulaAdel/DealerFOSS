@@ -49,6 +49,8 @@ import { PasskeysPage } from '../features/auth/PasskeysPage';
 import { PartsPage } from '../features/parts/PartsPage';
 import { PeriodsPage } from '../features/accounting/PeriodsPage';
 import { ReportsPage } from '../features/accounting/ReportsPage';
+import { AgeingPage } from '../features/receivables/AgeingPage';
+import { StatementPage } from '../features/receivables/StatementPage';
 import { SetFirstPassword } from '../features/auth/SetFirstPassword';
 import { RecoverPassword } from '../features/auth/RecoverPassword';
 import { AdminApp } from './AdminApp';
@@ -167,6 +169,8 @@ function AppRoutes() {
         <Route path="/accounting" element={<TrialBalancePage />} />
         <Route path="/accounting/periods" element={<PeriodsPage />} />
         <Route path="/accounting/reports" element={<ReportsPage />} />
+        <Route path="/receivables/ageing" element={<AgeingPage />} />
+        <Route path="/receivables/statements" element={<StatementPage />} />
         <Route path="/records" element={<RecordsPage />} />
 
         {/* Areas, not records: a different question over a different period.
@@ -252,6 +256,8 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
             </NavLink>
             <NavLink to="/accounting/periods">{t('nav.books')}</NavLink>
             <NavLink to="/accounting/reports">{t('nav.reports')}</NavLink>
+            <NavLink to="/receivables/ageing">{t('nav.ageing')}</NavLink>
+            <NavLink to="/receivables/statements">{t('nav.statements')}</NavLink>
             <NavLink to="/records">{t('nav.records')}</NavLink>
             <NavLink to="/staff">{t('nav.staff')}</NavLink>
             <NavLink to="/security/second-factor">{t('nav.secondFactor')}</NavLink>

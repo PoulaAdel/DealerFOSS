@@ -13,6 +13,8 @@
 //   GET  /api/v1/receivables/credits                  what we owe customers back
 //   POST /api/v1/receivables/credits/{id}/apply       put a credit against a bill
 //   POST /api/v1/receivables/credits/{id}/refund      hand a credit back
+//   GET  /api/v1/receivables/ageing                   who owes what, by how overdue
+//   GET  /api/v1/receivables/statement/{customerId}   one customer's account over a period
 //
 // Coding Instructions:
 //   Keep it thin — delegate, then map a Result to a status code. The rooftop
@@ -39,12 +41,14 @@ internal static class ReceivableEndpoints
 
         group.MapGet("", ListAsync);
 
-        // Before the {id} route, so "for" and "credits" are not offered to the
-        // guid constraint as candidate ids.
+        // Before the {id} route, so "for", "credits", "ageing" and "statement"
+        // are not offered to the guid constraint as candidate ids.
         group.MapGet("/for/{source}/{reference}", FindAsync);
         group.MapGet("/credits", ListCreditsAsync);
         group.MapPost("/credits/{creditId:guid}/apply", ApplyCreditAsync);
         group.MapPost("/credits/{creditId:guid}/refund", RefundCreditAsync);
+        group.MapGet("/ageing", GetAgeingAsync);
+        group.MapGet("/statement/{customerId:guid}", GetStatementAsync);
         group.MapGet("/{receivableId:guid}", GetAsync);
         group.MapPost("/{receivableId:guid}/payments", PayAsync);
     }
@@ -143,6 +147,33 @@ internal static class ReceivableEndpoints
         CancellationToken cancellationToken)
     {
         var result = await receivables.RefundCreditAsync(creditId, refund, cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetAgeingAsync(
+        IReceivables receivables,
+        Guid? rooftopId,
+        CancellationToken cancellationToken)
+    {
+        var result = await receivables.GetAgeingAsync(
+            new AgeingQuery(rooftopId is { } id ? new RooftopId(id) : null),
+            cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetStatementAsync(
+        IReceivables receivables,
+        Guid customerId,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        Guid? rooftopId,
+        CancellationToken cancellationToken)
+    {
+        var result = await receivables.GetStatementAsync(
+            new StatementQuery(customerId, from, to, rooftopId is { } id ? new RooftopId(id) : null),
+            cancellationToken);
 
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }

@@ -41,6 +41,7 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(x => x.HomeRooftopId)
             .HasConversion(id => id!.Value.Value, value => new RooftopId(value));
         builder.Property(x => x.ExternalReference).HasMaxLength(200);
+        builder.Property(x => x.CreditLimit).HasPrecision(18, 2);
 
         builder.Ignore(x => x.DisplayName);
 

@@ -99,6 +99,11 @@ public static class IdentitySeeder
             Permissions.OrganizationManage,
             Permissions.CustomersRead,
             Permissions.CustomersCreate,
+            // Deciding how much credit the dealership extends somebody. A
+            // management decision, seeded on the manager for the same reason
+            // as the F&I catalogue and the labour rates: it applies to every
+            // rooftop a customer might buy or service at.
+            Permissions.CustomersManage,
             Permissions.VehiclesRead,
             Permissions.InventoryRead,
             Permissions.InventoryManage,

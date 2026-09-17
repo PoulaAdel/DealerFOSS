@@ -28,8 +28,9 @@
 //   goes in the address is what somebody would want to send to a colleague.
 
 import { useCallback, useEffect, useState } from 'react';
-import { ApiError, api, post } from '../../shared/api';
+import { ApiError, api, post, put } from '../../shared/api';
 import { RecordBandStatus } from '../../shared/RecordBand';
+import { InlineEdit } from '../../shared/InlineEdit';
 import { useRecordRoute } from '../../shared/useRecordRoute';
 import { useDebounced } from '../../shared/useDebounced';
 import type { CustomerDetail, CustomerSummary, NewCustomer, Page } from '../../shared/contracts';
@@ -246,7 +247,11 @@ export function CustomersPage() {
       <RecordBandStatus route={record} />
 
       {record.state.kind !== 'open' ? null : (
-        <CustomerPanel customer={record.state.record} onClose={record.close} />
+        <CustomerPanel
+          customer={record.state.record}
+          onClose={record.close}
+          onCreditLimitChanged={record.refresh}
+        />
       )}
     </>
   );
@@ -267,15 +272,31 @@ export function CustomersPage() {
  * you the link" instead of "search for Okonkwo, no, the other one".
  */
 function CustomerPanel({
-  customer, onClose,
+  customer, onClose, onCreditLimitChanged,
 }: {
   customer: CustomerDetail;
   onClose: () => void;
+
+  /** The record changed in place after a credit-limit save — see useRecordRoute.refresh. */
+  onCreditLimitChanged: (customer: CustomerDetail) => void;
 }) {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
   const label = useEnumLabel();
 
   const address = customer.address;
+
+  async function saveCreditLimit(next: string) {
+    const trimmed = next.trim();
+    const limit = trimmed === '' ? null : Number(trimmed);
+
+    if (limit !== null && (Number.isNaN(limit) || limit < 0)) {
+      throw new Error('A credit limit is a number of zero or more, or left blank for no limit.');
+    }
+
+    onCreditLimitChanged(
+      await put<CustomerDetail>(`/customers/${customer.id}/credit-limit`, { limit }),
+    );
+  }
 
   return (
     <section className="panel panel--detail" aria-label={customer.displayName}>
@@ -297,6 +318,21 @@ function CustomerPanel({
             <dd className="mono" dir="ltr">{customer.externalReference}</dd>
           </>
         )}
+
+        <dt>{t('customers.creditLimit')}</dt>
+        <dd>
+          <InlineEdit
+            label={t('customers.creditLimit')}
+            value={customer.creditLimit === null ? '' : String(customer.creditLimit)}
+            display={
+              customer.creditLimit === null
+                ? t('customers.creditLimitNone')
+                : format.number(customer.creditLimit)
+            }
+            inputMode="decimal"
+            onSave={saveCreditLimit}
+          />
+        </dd>
       </dl>
 
       <h3>{t('customers.waysToReach')}</h3>
