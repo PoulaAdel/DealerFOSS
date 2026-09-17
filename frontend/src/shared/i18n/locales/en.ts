@@ -43,6 +43,13 @@ export const en = {
   'common.notPermitted': 'You do not have permission to see this.',
   'common.unreachable': 'Could not reach the server. Is it running?',
 
+  // --- The confirm dialog, replacing window.confirm (UX audit C2) -----------
+  // The typed-confirmation hint. Only the sites the audit called dangerous
+  // enough for it — suspending a dealership, closing an accounting period —
+  // pass a `typeToConfirm` value; forgetting a passkey uses the same dialog
+  // without one.
+  'confirm.typeToConfirm': 'Type {text} to confirm.',
+
   // --- A record opened by its own address -----------------------------------
   // One sentence for every reason a record will not open: see RecordBand.tsx.
   'record.opening': 'Opening the record…',
@@ -534,8 +541,8 @@ export const en = {
   'periods.reopen': 'Reopen',
 
   'periods.closeIt': 'Close it',
-  'periods.confirmClose':
-    'Close {month}? Nothing more can be posted into it until it is reopened.',
+  'periods.closeTitle': 'Close {month}?',
+  'periods.confirmClose': 'Nothing more can be posted into it until it is reopened.',
 
   'periods.caption': 'Every month of the books, newest first.',
   'periods.colMonth': 'Month',
@@ -1215,8 +1222,9 @@ export const en = {
   'passkey.colLastUsed': 'Last used',
   'passkey.neverUsed': 'Never used',
   'passkey.forget': 'Forget it',
+  'passkey.forgetTitle': 'Forget {label}?',
   'passkey.forgetConfirm':
-    'Forget {label}? That device stops being able to sign you in, and this cannot be undone.',
+    'That device stops being able to sign you in, and this cannot be undone.',
   'passkey.forgot': '{label} is gone.',
 
   // --- Getting back into an account -----------------------------------------
@@ -1344,7 +1352,7 @@ export const en = {
   'admin.dealerships': 'Dealerships',
   'admin.setUpDealership': 'Set up a dealership',
   'admin.suspendConfirm':
-    'Suspend {name}? Everyone there is signed out of the system immediately and cannot work until it is resumed.',
+    'Everyone there is signed out of the system immediately and cannot work until it is resumed.',
   'admin.dealershipReady': '{name} is ready',
   'admin.firstManager':
     'Their first manager is {email}. Read this code out to them — they set their own password with it at the sign-in screen.',
@@ -1365,6 +1373,7 @@ export const en = {
   'admin.colInService': 'In service',
   'admin.resume': 'Resume',
   'admin.suspend': 'Suspend',
+  'admin.suspendTitle': 'Suspend {name}?',
 
   'admin.setUpNote':
     'This creates their database, opens their books for this month, and creates one manager who then adds everybody else. You will never see or choose their password.',

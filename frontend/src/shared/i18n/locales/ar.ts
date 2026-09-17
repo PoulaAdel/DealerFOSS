@@ -43,6 +43,7 @@ export const ar: Catalogue = {
   'common.saving': 'جارٍ الحفظ…',
   'common.cancel': 'إلغاء',
   'common.close': 'إغلاق',
+  'confirm.typeToConfirm': 'اكتب {text} للتأكيد.',
   'common.retry': 'أعد المحاولة',
   'common.search': 'بحث',
   'common.searching': 'جارٍ البحث…',
@@ -550,7 +551,8 @@ export const ar: Catalogue = {
   'periods.reopen': 'إعادة الفتح',
 
   'periods.closeIt': 'أقفله',
-  'periods.confirmClose': 'إقفال {month}؟ لن يمكن ترحيل أي شيء إليه حتى يُعاد فتحه.',
+  'periods.closeTitle': 'إقفال {month}؟',
+  'periods.confirmClose': 'لن يمكن ترحيل أي شيء إليه حتى يُعاد فتحه.',
 
   'periods.caption': 'كل أشهر الدفاتر، الأحدث أولًا.',
   'periods.colMonth': 'الشهر',
@@ -1235,8 +1237,8 @@ export const ar: Catalogue = {
   'passkey.colLastUsed': 'آخر استخدام',
   'passkey.neverUsed': 'لم يُستخدَم قط',
   'passkey.forget': 'احذفه',
-  'passkey.forgetConfirm':
-    'هل تحذف {label}؟ لن يعود هذا الجهاز قادرًا على إدخالك، ولا يمكن التراجع عن ذلك.',
+  'passkey.forgetTitle': 'هل تحذف {label}؟',
+  'passkey.forgetConfirm': 'لن يعود هذا الجهاز قادرًا على إدخالك، ولا يمكن التراجع عن ذلك.',
   'passkey.forgot': 'حُذِف {label}.',
 
   // --- استعادة الوصول إلى الحساب -----------------------------------------------------
@@ -1375,8 +1377,7 @@ export const ar: Catalogue = {
   'admin.setUpDealership': 'إنشاء وكالة',
   // «إيقاف» لا «تعليق»: حالة الوكالة تُكتب «موقوفة»، وكلمتان لحالة واحدة
   // تُقرأان كأنهما حالتان مختلفتان.
-  'admin.suspendConfirm':
-    'هل توقف {name}؟ سيُسجَّل خروج جميع من فيها فورًا ولن يتمكنوا من العمل حتى تُستأنف.',
+  'admin.suspendConfirm': 'سيُسجَّل خروج جميع من فيها فورًا ولن يتمكنوا من العمل حتى تُستأنف.',
   'admin.dealershipReady': '{name} جاهزة',
   'admin.firstManager':
     'أول مدير لديهم هو {email}. اقرأ له هذا الرمز — به يختار كلمة مروره بنفسه في شاشة تسجيل الدخول.',
@@ -1401,6 +1402,7 @@ export const ar: Catalogue = {
   'admin.colInService': 'قيد الخدمة',
   'admin.resume': 'استئناف',
   'admin.suspend': 'إيقاف',
+  'admin.suspendTitle': 'هل توقف {name}؟',
 
   'admin.setUpNote':
     'ينشئ هذا قاعدة بياناتهم، ويفتح دفاترهم لهذا الشهر، وينشئ مديرًا واحدًا يضيف بعده بقية الموظفين. لن ترى كلمة مرورهم ولن تختارها أبدًا.',

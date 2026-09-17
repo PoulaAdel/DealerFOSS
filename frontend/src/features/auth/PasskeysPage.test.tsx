@@ -20,7 +20,7 @@
 
 import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { PasskeysPage } from './PasskeysPage';
 import { apiCalls, mockApi } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
@@ -185,7 +185,6 @@ describe('adding one', () => {
 describe('forgetting one', () => {
   it('asks first, and says what will stop working', async () => {
     fake = stubAuthenticator();
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     mockApi({
       '/auth/passkeys/p1': { ok: true, status: 204 },
@@ -195,25 +194,28 @@ describe('forgetting one', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Forget it' }));
 
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Work laptop'));
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('cannot be undone'));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByRole('heading', { name: /Work laptop/ })).toBeVisible();
+    expect(within(dialog).getByText(/cannot be undone/)).toBeVisible();
+    expect(apiCalls().some((c) => c.init?.method === 'DELETE')).toBe(false);
   });
 
   it('does nothing when the answer is no', async () => {
     fake = stubAuthenticator();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     mockApi({ '/auth/passkeys': { ok: true, body: [passkey()] } });
     renderPasskeys();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Forget it' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
 
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(apiCalls().some((c) => c.init?.method === 'DELETE')).toBe(false);
   });
 
   it('deletes it when the answer is yes', async () => {
     fake = stubAuthenticator();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     mockApi({
       '/auth/passkeys/p1': { ok: true, status: 204 },
@@ -225,6 +227,8 @@ describe('forgetting one', () => {
     renderPasskeys();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Forget it' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Forget it' }));
 
     expect(await screen.findByText('Work laptop is gone.')).toBeVisible();
 

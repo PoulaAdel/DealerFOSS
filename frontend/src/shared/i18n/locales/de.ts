@@ -33,6 +33,7 @@ export const de: Catalogue = {
   'common.saving': 'Wird gespeichert…',
   'common.cancel': 'Abbrechen',
   'common.close': 'Schließen',
+  'confirm.typeToConfirm': 'Geben Sie {text} ein, um zu bestätigen.',
   'common.retry': 'Erneut versuchen',
   'common.search': 'Suchen',
   'common.searching': 'Wird gesucht…',
@@ -520,8 +521,9 @@ export const de: Catalogue = {
   'periods.reopen': 'Wieder öffnen',
 
   'periods.closeIt': 'Abschließen',
+  'periods.closeTitle': '{month} abschließen?',
   'periods.confirmClose':
-    '{month} abschließen? Es kann nichts mehr hineingebucht werden, bis er wieder geöffnet wird.',
+    'Es kann nichts mehr hineingebucht werden, bis er wieder geöffnet wird.',
 
   'periods.caption': 'Alle Monate der Bücher, neueste zuerst.',
   'periods.colMonth': 'Monat',
@@ -1176,8 +1178,9 @@ export const de: Catalogue = {
   'passkey.colLastUsed': 'Zuletzt verwendet',
   'passkey.neverUsed': 'Nie verwendet',
   'passkey.forget': 'Entfernen',
+  'passkey.forgetTitle': '{label} entfernen?',
   'passkey.forgetConfirm':
-    '{label} entfernen? Dieses Gerät kann Sie dann nicht mehr anmelden, und das lässt sich nicht rückgängig machen.',
+    'Dieses Gerät kann Sie dann nicht mehr anmelden, und das lässt sich nicht rückgängig machen.',
   'passkey.forgot': '{label} ist entfernt.',
 
   // --- Wieder Zugang zum Konto bekommen ----------------------------------------
@@ -1302,7 +1305,7 @@ export const de: Catalogue = {
   // "Aussetzen", nicht "Sperren": der Status heißt "Ausgesetzt", und zwei Wörter
   // für einen Zustand lesen sich wie zwei verschiedene Zustände.
   'admin.suspendConfirm':
-    '{name} aussetzen? Alle dort werden sofort abgemeldet und können nicht arbeiten, bis der Zugang wieder aufgenommen wird.',
+    'Alle dort werden sofort abgemeldet und können nicht arbeiten, bis der Zugang wieder aufgenommen wird.',
   'admin.dealershipReady': '{name} ist bereit',
   'admin.firstManager':
     'Die erste Leitung dort ist {email}. Lesen Sie ihr diesen Code vor — damit vergibt sie im Anmeldebildschirm ihr eigenes Passwort.',
@@ -1324,6 +1327,7 @@ export const de: Catalogue = {
   'admin.colInService': 'In Betrieb',
   'admin.resume': 'Fortsetzen',
   'admin.suspend': 'Aussetzen',
+  'admin.suspendTitle': '{name} aussetzen?',
 
   'admin.setUpNote':
     'Dies legt ihre Datenbank an, eröffnet ihre Bücher für diesen Monat und erstellt eine Leitung, die anschließend alle anderen hinzufügt. Sie werden ihr Passwort nie sehen und nie wählen.',

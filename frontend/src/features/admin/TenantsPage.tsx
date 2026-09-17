@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi, adminPost } from '../../shared/adminApi';
+import { Confirm } from '../../shared/Confirm';
 import type { Page, ProvisionedTenant, TenantRow } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
@@ -38,6 +39,7 @@ export function TenantsPage() {
   const [working, setWorking] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [provisioned, setProvisioned] = useState<ProvisionedTenant | null>(null);
+  const [suspending, setSuspending] = useState<TenantRow | null>(null);
 
   const fetchTenants = useCallback(async () => {
     setLoad({ kind: 'loading' });
@@ -60,13 +62,7 @@ export function TenantsPage() {
   }, [fetchTenants]);
 
   async function setStatus(tenant: TenantRow, status: 'Active' | 'Suspended') {
-    if (
-      status === 'Suspended' &&
-      !window.confirm(t('admin.suspendConfirm', { name: tenant.name }))
-    ) {
-      return;
-    }
-
+    setSuspending(null);
     setWorking(tenant.slug);
 
     try {
@@ -191,7 +187,7 @@ export function TenantsPage() {
                       <button
                         type="button"
                         disabled={working === tenant.slug}
-                        onClick={() => void setStatus(tenant, 'Suspended')}
+                        onClick={() => setSuspending(tenant)}
                       >
                         {t('admin.suspend')}
                       </button>
@@ -203,6 +199,18 @@ export function TenantsPage() {
           </table>
         </div>
       ) : null}
+
+      {suspending === null ? null : (
+        <Confirm
+          title={t('admin.suspendTitle', { name: suspending.name })}
+          body={t('admin.suspendConfirm')}
+          confirmLabel={t('admin.suspend')}
+          typeToConfirm={suspending.name}
+          busy={working === suspending.slug}
+          onConfirm={() => void setStatus(suspending, 'Suspended')}
+          onCancel={() => setSuspending(null)}
+        />
+      )}
     </>
   );
 }

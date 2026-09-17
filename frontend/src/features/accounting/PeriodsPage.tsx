@@ -25,6 +25,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
+import { Confirm } from '../../shared/Confirm';
 import type { AccountingPeriodView } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
@@ -50,6 +51,7 @@ export function PeriodsPage() {
   const [reopening, setReopening] = useState<AccountingPeriodView | null>(null);
   const [reason, setReason] = useState('');
   const [opening, setOpening] = useState(false);
+  const [closing, setClosing] = useState<AccountingPeriodView | null>(null);
 
   const find = useCallback(async () => {
     setLoad({ kind: 'loading' });
@@ -225,27 +227,7 @@ export function PeriodsPage() {
                   </td>
                   <td>
                     {period.state === 'Open' ? (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => {
-                          // A real lock on real figures, so it asks first — the
-                          // same reasoning as suspending a dealership.
-                          if (
-                            window.confirm(
-                              t('periods.confirmClose', {
-                                month: monthName(period.year, period.month),
-                              }),
-                            )
-                          ) {
-                            void act(() =>
-                              post(`/accounting/periods/${period.year}/${period.month}/close`, {
-                                note: null,
-                              }),
-                            );
-                          }
-                        }}
-                      >
+                      <button type="button" disabled={busy} onClick={() => setClosing(period)}>
                         {t('periods.closeIt')}
                       </button>
                     ) : (
@@ -259,6 +241,24 @@ export function PeriodsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {closing === null ? null : (
+        <Confirm
+          title={t('periods.closeTitle', { month: monthName(closing.year, closing.month) })}
+          body={t('periods.confirmClose')}
+          confirmLabel={t('periods.closeIt')}
+          typeToConfirm={monthName(closing.year, closing.month)}
+          busy={busy}
+          onConfirm={() => {
+            const period = closing;
+            setClosing(null);
+            void act(() =>
+              post(`/accounting/periods/${period.year}/${period.month}/close`, { note: null }),
+            );
+          }}
+          onCancel={() => setClosing(null)}
+        />
       )}
 
       {load.periods.some((p) => p.history.length > 1) ? (

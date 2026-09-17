@@ -27,6 +27,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post, remove } from '../../shared/api';
+import { Confirm } from '../../shared/Confirm';
 import type {
   PasskeyRegistrationChallenge,
   RegisteredPasskey,
@@ -50,6 +51,7 @@ export function PasskeysPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
+  const [forgetting, setForgetting] = useState<RegisteredPasskey | null>(null);
 
   const [canRegister] = useState(passkeysAvailable);
 
@@ -112,10 +114,7 @@ export function PasskeysPage() {
   }
 
   async function forget(passkey: RegisteredPasskey) {
-    if (!window.confirm(t('passkey.forgetConfirm', { label: passkey.label }))) {
-      return;
-    }
-
+    setForgetting(null);
     setError(null);
     setAnnouncement(null);
     setBusy(true);
@@ -181,7 +180,24 @@ export function PasskeysPage() {
       </p>
 
       <h2>{t('passkey.yoursTitle')}</h2>
-      <Body load={load} onRetry={() => void find()} busy={busy} onForget={forget} format={format} />
+      <Body
+        load={load}
+        onRetry={() => void find()}
+        busy={busy}
+        onForget={(passkey) => setForgetting(passkey)}
+        format={format}
+      />
+
+      {forgetting === null ? null : (
+        <Confirm
+          title={t('passkey.forgetTitle', { label: forgetting.label })}
+          body={t('passkey.forgetConfirm')}
+          confirmLabel={t('passkey.forget')}
+          busy={busy}
+          onConfirm={() => void forget(forgetting)}
+          onCancel={() => setForgetting(null)}
+        />
+      )}
     </section>
   );
 }
@@ -196,7 +212,7 @@ function Body({
   load: Load;
   onRetry: () => void;
   busy: boolean;
-  onForget: (passkey: RegisteredPasskey) => Promise<void>;
+  onForget: (passkey: RegisteredPasskey) => void;
   format: ReturnType<typeof useI18n>['format'];
 }) {
   const { t } = useI18n();
@@ -259,7 +275,7 @@ function Body({
                     )}
                   </td>
                   <td>
-                    <button type="button" disabled={busy} onClick={() => void onForget(passkey)}>
+                    <button type="button" disabled={busy} onClick={() => onForget(passkey)}>
                       {t('passkey.forget')}
                     </button>
                   </td>

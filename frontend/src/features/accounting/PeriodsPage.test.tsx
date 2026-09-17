@@ -18,7 +18,7 @@
 //   month honest afterwards. The server demands one too; this stops somebody
 //   discovering that only after clicking.
 
-import { render, screen } from '../../test/render';
+import { render, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
@@ -136,18 +136,22 @@ describe('the books', () => {
 
 describe('closing a month', () => {
   it('asks before closing, because it locks real figures', async () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     mockApi({ '/accounting/periods': { ok: true, body: [open] } });
     renderPeriods();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Close it' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByRole('heading', { name: /August 2026/ })).toBeVisible();
 
-    expect(confirm).toHaveBeenCalled();
+    // Typed confirmation stays disabled until the month is typed back.
+    expect(within(dialog).getByRole('button', { name: 'Close it' })).toBeDisabled();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(apiCalls().some((c) => c.path.includes('/close'))).toBe(false);
   });
 
-  it('closes when the question is answered yes', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('closes when the month is typed back and confirmed', async () => {
     mockApi({
       '/accounting/periods/2026/8/close': { ok: true, body: { ...open, state: 'Closed' } },
       '/accounting/periods': { ok: true, body: [open] },
@@ -155,12 +159,14 @@ describe('closing a month', () => {
     renderPeriods();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Close it' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.type(within(dialog).getByRole('textbox'), 'August 2026');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close it' }));
 
     expect(apiCalls().some((c) => c.path === '/accounting/periods/2026/8/close')).toBe(true);
   });
 
   it('shows the server refusal rather than predicting it', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     mockApi({
       '/accounting/periods/2026/8/close': {
         ok: false,
@@ -173,6 +179,9 @@ describe('closing a month', () => {
     renderPeriods();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Close it' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.type(within(dialog).getByRole('textbox'), 'August 2026');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close it' }));
 
     expect(await screen.findByText(/organization-wide permission/i)).toBeVisible();
   });

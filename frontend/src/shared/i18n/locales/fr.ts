@@ -30,6 +30,7 @@ export const fr: Catalogue = {
   'common.saving': 'Enregistrement…',
   'common.cancel': 'Annuler',
   'common.close': 'Fermer',
+  'confirm.typeToConfirm': 'Saisissez {text} pour confirmer.',
   'common.retry': 'Réessayer',
   'common.search': 'Rechercher',
   'common.searching': 'Recherche…',
@@ -518,8 +519,9 @@ export const fr: Catalogue = {
   'periods.reopen': 'Rouvrir',
 
   'periods.closeIt': 'Clôturer',
+  'periods.closeTitle': 'Clôturer {month} ?',
   'periods.confirmClose':
-    'Clôturer {month} ? Plus rien ne pourra y être comptabilisé tant qu’il ne sera pas rouvert.',
+    'Plus rien ne pourra y être comptabilisé tant qu’il ne sera pas rouvert.',
 
   'periods.caption': 'Tous les mois des comptes, du plus récent au plus ancien.',
   'periods.colMonth': 'Mois',
@@ -1173,8 +1175,8 @@ export const fr: Catalogue = {
   'passkey.colLastUsed': 'Dernière utilisation',
   'passkey.neverUsed': 'Jamais utilisée',
   'passkey.forget': 'L’oublier',
-  'passkey.forgetConfirm':
-    'Oublier {label} ? Cet appareil ne pourra plus vous connecter, et c’est irréversible.',
+  'passkey.forgetTitle': 'Oublier {label} ?',
+  'passkey.forgetConfirm': 'Cet appareil ne pourra plus vous connecter, et c’est irréversible.',
   'passkey.forgot': '{label} a été supprimée.',
 
   // --- Retrouver l’accès à son compte ---------------------------------------------
@@ -1299,7 +1301,7 @@ export const fr: Catalogue = {
   'admin.dealerships': 'Concessions',
   'admin.setUpDealership': 'Créer une concession',
   'admin.suspendConfirm':
-    'Suspendre {name} ? Tout le monde y est déconnecté immédiatement et ne peut plus travailler tant que l’accès n’est pas rétabli.',
+    'Tout le monde y est déconnecté immédiatement et ne peut plus travailler tant que l’accès n’est pas rétabli.',
   'admin.dealershipReady': '{name} est prête',
   'admin.firstManager':
     'Leur premier responsable est {email}. Lisez-lui ce code à voix haute — il définira lui-même son mot de passe avec, sur l’écran de connexion.',
@@ -1320,6 +1322,7 @@ export const fr: Catalogue = {
   'admin.colInService': 'En service',
   'admin.resume': 'Réactiver',
   'admin.suspend': 'Suspendre',
+  'admin.suspendTitle': 'Suspendre {name} ?',
 
   'admin.setUpNote':
     'Ceci crée leur base de données, ouvre leur exercice pour le mois en cours et crée un responsable qui ajoutera ensuite tout le monde. Vous ne verrez ni ne choisirez jamais leur mot de passe.',

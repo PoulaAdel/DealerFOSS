@@ -16,7 +16,7 @@
 
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { App } from './App';
 import { apiCalls, mockApi, page } from '../test/setup';
 
@@ -163,15 +163,36 @@ describe('the administration console', () => {
       '/admin/tenants/northgroup/status': { ok: true, body: { slug: 'northgroup', status: 'Suspended' } },
     });
 
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<App />);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Suspend' }));
 
-    expect(confirm).toHaveBeenCalledOnce();
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByRole('heading', { name: /North Auto Group/ })).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
     // Said no, so nothing was sent. A suspension is a real outage for real
     // people, and a misclick must not cause one.
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(apiCalls().some((c) => c.path.includes('/status'))).toBe(false);
+  });
+
+  it('suspends once the dealership name is typed back and confirmed', async () => {
+    atAdmin();
+    mockApi({
+      '/admin/me': { ok: true, body: administrator },
+      '/admin/tenants': { ok: true, body: page(tenants) },
+      '/admin/tenants/northgroup/status': { ok: true, body: { slug: 'northgroup', status: 'Suspended' } },
+    });
+
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Suspend' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.type(within(dialog).getByRole('textbox'), 'North Auto Group');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Suspend' }));
+
+    expect(apiCalls().some((c) => c.path === '/admin/tenants/northgroup/status')).toBe(true);
   });
 
   it('will not open a support visit without a written reason', async () => {

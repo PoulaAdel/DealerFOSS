@@ -32,6 +32,7 @@ export const ru: Catalogue = {
   'common.saving': 'Сохранение…',
   'common.cancel': 'Отмена',
   'common.close': 'Закрыть',
+  'confirm.typeToConfirm': 'Введите {text}, чтобы подтвердить.',
   'common.retry': 'Повторить',
   'common.search': 'Поиск',
   'common.searching': 'Поиск…',
@@ -533,8 +534,9 @@ export const ru: Catalogue = {
   'periods.reopen': 'Открыть заново',
 
   'periods.closeIt': 'Закрыть',
+  'periods.closeTitle': 'Закрыть {month}?',
   'periods.confirmClose':
-    'Закрыть {month}? Больше ничего нельзя будет туда провести, пока месяц не откроют заново.',
+    'Больше ничего нельзя будет туда провести, пока месяц не откроют заново.',
 
   'periods.caption': 'Все месяцы учёта, начиная с последнего.',
   'periods.colMonth': 'Месяц',
@@ -1213,8 +1215,8 @@ export const ru: Catalogue = {
   'passkey.colLastUsed': 'Последнее использование',
   'passkey.neverUsed': 'Ни разу не использован',
   'passkey.forget': 'Удалить',
-  'passkey.forgetConfirm':
-    'Удалить {label}? Это устройство больше не сможет вас впускать, и отменить это нельзя.',
+  'passkey.forgetTitle': 'Удалить {label}?',
+  'passkey.forgetConfirm': 'Это устройство больше не сможет вас впускать, и отменить это нельзя.',
   'passkey.forgot': '{label} удалён.',
 
   // --- Возврат доступа к учётной записи -------------------------------------------
@@ -1345,7 +1347,7 @@ export const ru: Catalogue = {
   'admin.dealerships': 'Дилеры',
   'admin.setUpDealership': 'Создать дилера',
   'admin.suspendConfirm':
-    'Приостановить «{name}»? Все сотрудники будут немедленно отключены и не смогут работать, пока доступ не восстановят.',
+    'Все сотрудники будут немедленно отключены и не смогут работать, пока доступ не восстановят.',
   'admin.dealershipReady': '«{name}» готов',
   'admin.firstManager':
     'Первый руководитель — {email}. Продиктуйте ему этот код: с ним он сам задаст пароль на экране входа.',
@@ -1368,6 +1370,7 @@ export const ru: Catalogue = {
   'admin.colInService': 'В работе',
   'admin.resume': 'Возобновить',
   'admin.suspend': 'Приостановить',
+  'admin.suspendTitle': 'Приостановить «{name}»?',
 
   'admin.setUpNote':
     'Будет создана база данных дилера, открыт учётный период на текущий месяц и заведён один руководитель, который затем добавит остальных. Вы никогда не увидите и не выберете их пароль.',

@@ -58,6 +58,16 @@
      token is why that pair is stated once instead of hard-coded twice. */
   --on-accent: #ffffff;
 
+  /* What is legible on --fail used as a fill, for the Confirm dialog's
+     destructive button (C2). White holds up at every weight of --fail in
+     both themes — see the dark entry for why that is not true the other
+     way round. */
+  --on-fail: #ffffff;
+
+  /* The dialog's backdrop, for Confirm (C2). Not themed by hue — a scrim has
+     no identity to carry — only by how dark the page beneath already is. */
+  --scrim: rgb(10 14 18 / 45%);
+
   /* The logo's two colours, from the brand sheet supplied 2026-09-11: a deep
      petrol teal and a gold. THEY BELONG TO IDENTITY ONLY — the mark, the
      wordmark and the tagline, never a chip, a button or a state. --accent
@@ -169,6 +179,12 @@
   --accent: #e0973f;
   --accent-soft: #33240f;
   --on-accent: #16191f;
+
+  /* --fail here (#e07a6d) is lifted for TEXT on a dark surface, the same way
+     --accent is — so it is too light to carry white text as a button fill.
+     Same near-black as --on-accent, for the same reason. */
+  --on-fail: #16191f;
+  --scrim: rgb(0 0 0 / 60%);
 
   /* THE ARTWORK'S TEAL IS UNUSABLE HERE AND THAT IS NOT A JUDGEMENT CALL.
      #054b60 measures 1.80:1 against this surface — dim to the point of
@@ -292,6 +308,23 @@ button[type='submit'] {
   border-color: var(--accent);
   color: var(--on-accent);
   font-weight: 600;
+}
+
+/* The Confirm dialog's destructive action (C2) — suspending a dealership,
+   closing a period. Deliberately not a chip colour: this is an act, not a
+   state, and .chip's vocabulary already means something else. */
+button.danger {
+  background: var(--fail);
+  border-color: var(--fail);
+  color: var(--on-fail);
+  font-weight: 600;
+}
+
+button.danger:disabled {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink-3-on-surface);
+  font-weight: 400;
 }
 
 button:disabled {
@@ -1272,7 +1305,7 @@ table button.link {
   flex-wrap: wrap;
 }
 
-/* --- the shortcuts sheet --- */
+/* --- sheets: the shortcuts panel and the Confirm dialog -------------------- */
 
 .sheet {
   position: fixed;
@@ -1283,11 +1316,31 @@ table button.link {
   inline-size: min(30rem, calc(100vw - 32px));
   max-block-size: 70vh;
   overflow-y: auto;
-  padding: 20px 24px;
+  padding: var(--s-5);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--surface);
   box-shadow: var(--lift);
+}
+
+/* Confirm (C2) sits over a backdrop, unlike the shortcuts panel, and is
+   narrower — it holds a question and two buttons, not a table of bindings. */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--scrim);
+}
+
+.sheet--confirm {
+  z-index: 21;
+  inline-size: min(24rem, calc(100vw - 32px));
+  max-block-size: 80vh;
+}
+
+.sheet--confirm h2 {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-section);
 }
 
 /* The sheet is centred by translating half its own width — which is the wrong

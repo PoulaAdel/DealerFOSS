@@ -34,6 +34,7 @@ export const es: Catalogue = {
   'common.saving': 'Guardando…',
   'common.cancel': 'Cancelar',
   'common.close': 'Cerrar',
+  'confirm.typeToConfirm': 'Escriba {text} para confirmar.',
   'common.retry': 'Inténtelo de nuevo',
   'common.search': 'Buscar',
   'common.searching': 'Buscando…',
@@ -526,7 +527,8 @@ export const es: Catalogue = {
   'periods.reopen': 'Reabrir',
 
   'periods.closeIt': 'Cerrarlo',
-  'periods.confirmClose': '¿Cerrar {month}? No se podrá contabilizar nada más hasta que se reabra.',
+  'periods.closeTitle': '¿Cerrar {month}?',
+  'periods.confirmClose': 'No se podrá contabilizar nada más hasta que se reabra.',
 
   'periods.caption': 'Todos los meses de la contabilidad, del más reciente al más antiguo.',
   'periods.colMonth': 'Mes',
@@ -1183,8 +1185,9 @@ export const es: Catalogue = {
   'passkey.colLastUsed': 'Último uso',
   'passkey.neverUsed': 'Nunca usada',
   'passkey.forget': 'Olvidarla',
+  'passkey.forgetTitle': '¿Olvidar {label}?',
   'passkey.forgetConfirm':
-    '¿Olvidar {label}? Ese dispositivo dejará de poder identificarle, y esto no se puede deshacer.',
+    'Ese dispositivo dejará de poder identificarle, y esto no se puede deshacer.',
   'passkey.forgot': '{label} ya no está.',
 
   // --- Getting back into an account -----------------------------------------
@@ -1305,7 +1308,7 @@ export const es: Catalogue = {
   'admin.dealerships': 'Concesionarios',
   'admin.setUpDealership': 'Dar de alta un concesionario',
   'admin.suspendConfirm':
-    '¿Suspender {name}? Todo su personal se desconecta inmediatamente y no podrá trabajar hasta que se reanude.',
+    'Todo su personal se desconecta inmediatamente y no podrá trabajar hasta que se reanude.',
   'admin.dealershipReady': '{name} está listo',
   'admin.firstManager':
     'Su primer responsable es {email}. Léale este código: con él establece su propia contraseña en la pantalla de inicio de sesión.',
@@ -1327,6 +1330,7 @@ export const es: Catalogue = {
   'admin.colInService': 'En servicio',
   'admin.resume': 'Reanudar',
   'admin.suspend': 'Suspender',
+  'admin.suspendTitle': '¿Suspender {name}?',
 
   'admin.setUpNote':
     'Esto crea su base de datos, abre su contabilidad de este mes y crea un responsable que después añade a todos los demás. Usted nunca verá ni elegirá su contraseña.',
