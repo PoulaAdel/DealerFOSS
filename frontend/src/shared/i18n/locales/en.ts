@@ -1175,6 +1175,29 @@ export const en = {
   'labour.period':
     'Counted from work invoiced between {from} and {to}. Work still in progress is not revenue.',
 
+  // --- What the workshop sold, by who pays ------------------------------------
+  'workshop.payTypeReport': 'Pay-type report',
+  'payType.title': 'Who paid for what',
+  'payType.from': 'From',
+  'payType.to': 'To',
+  'payType.loading': 'Working out the figures…',
+  'payType.denied':
+    'You do not have access to this workshop’s figures. Ask a manager if you think that is wrong.',
+  'payType.headlineCaption': 'Total revenue invoiced over the period.',
+  'payType.totalRevenue': 'Total revenue',
+  'payType.tableCaption': 'Labour, parts and sublet revenue, split by who pays.',
+  'payType.colPayer': 'Paid by',
+  'payType.colLabour': 'Labour',
+  'payType.colParts': 'Parts',
+  'payType.colSublet': 'Sublet',
+  'payType.colRevenue': 'Total',
+  'payType.colPartsCost': 'Parts cost',
+  'payType.colPartsGross': 'Parts gross',
+  'payType.colOrders': 'Orders',
+  'payType.nothingInvoiced': 'Nothing was invoiced in this period, so there is nothing to reconcile.',
+  'payType.partsGrossNote':
+    'Gross profit is shown for parts only. A part’s cost is frozen at invoicing; labour and sublet work carry no cost basis this system has ever recorded, so blending all three into one figure would average a real number against two invented ones.',
+
   // --- Safety recalls --------------------------------------------------------
   // Translators — `recalls.caveat` and `recalls.noneFound` are about somebody's
   // brakes. Both say the same careful thing: the public record is about a MODEL

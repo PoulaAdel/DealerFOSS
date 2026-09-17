@@ -625,6 +625,70 @@ public sealed class RepairOrderTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task The_pay_type_report_splits_revenue_by_who_pays()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Service", hours = 1m, rate = 100m,
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 1m, rate = 80m, payType = "Warranty",
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Part", description = "Recon part for stock", unitAmount = 40m, payType = "Internal",
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        var report = await PayTypeReportAsync(Manager);
+
+        var payers = report.GetProperty("byPayer").EnumerateArray()
+            .ToDictionary(p => p.GetProperty("payType").GetString()!, p => p);
+
+        // The suite's data accumulates across runs, so exact totals are not
+        // assertable — but this job's own lines must be somewhere in each
+        // bucket, which is what "greater than or equal" checks here.
+        payers.Should().ContainKey("CustomerPay");
+        payers["CustomerPay"].GetProperty("labourRevenue").GetDecimal().Should().BeGreaterThanOrEqualTo(100m);
+
+        payers.Should().ContainKey("Warranty");
+        payers["Warranty"].GetProperty("labourRevenue").GetDecimal().Should().BeGreaterThanOrEqualTo(80m);
+
+        payers.Should().ContainKey("Internal");
+        payers["Internal"].GetProperty("partsRevenue").GetDecimal().Should().BeGreaterThanOrEqualTo(40m);
+
+        // A hand-typed part draws from no shelf, so it carries no recorded
+        // cost — the report must show that as zero, not invent one.
+        payers["Internal"].GetProperty("partsCost").GetDecimal().Should().Be(0m);
+
+        report.GetProperty("totalRevenue").GetDecimal().Should().BeGreaterThanOrEqualTo(220m);
+    }
+
+    [Fact]
+    public async Task The_pay_type_reports_period_is_refused_backwards_too()
+    {
+        using var response = await SendAsync(
+            HttpMethod.Get, $"{Jobs}/pay-type-reconciliation?from=2026-08-31&to=2026-08-01", Manager);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("service.backwards_period");
+    }
+
+    [Fact]
+    public async Task Somebody_with_no_service_access_cannot_read_the_pay_type_report()
+    {
+        using var response = await SendAsync(HttpMethod.Get, $"{Jobs}/pay-type-reconciliation", Sales);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Work_found_during_the_job_cannot_be_invoiced_until_the_customer_answers()
     {
         var jobId = await ReadyToBillWithFoundWorkAsync();
@@ -917,6 +981,19 @@ public sealed class RepairOrderTests(HostFixture fixture)
         var to = today.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         using var response = await SendAsync(HttpMethod.Get, $"{Jobs}/labour?from={from}&to={to}", email);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        return await response.Content.ReadFromJsonAsync<JsonElement>();
+    }
+
+    private async Task<JsonElement> PayTypeReportAsync(string email)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var from = today.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var to = today.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        using var response = await SendAsync(
+            HttpMethod.Get, $"{Jobs}/pay-type-reconciliation?from={from}&to={to}", email);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         return await response.Content.ReadFromJsonAsync<JsonElement>();

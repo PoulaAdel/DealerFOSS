@@ -237,6 +237,7 @@ describe('the catalogues', () => {
       ['ageing.colTotal', 'the same word in French'],
       ['ageing.totals', 'the same word in French'],
       ['statement.colDate', 'the same word in French'],
+      ['payType.colRevenue', 'the same word in French'],
     ]);
 
     for (const [name, catalogue] of Object.entries(catalogues)) {

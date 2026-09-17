@@ -1146,6 +1146,27 @@ export const es: Catalogue = {
   'labour.period':
     'Contado a partir del trabajo facturado entre el {from} y el {to}. El trabajo en curso no es ingreso.',
 
+  'workshop.payTypeReport': 'Informe por forma de pago',
+  'payType.title': 'Quién pagó qué',
+  'payType.from': 'Desde',
+  'payType.to': 'Hasta',
+  'payType.loading': 'Calculando las cifras…',
+  'payType.denied': 'No tiene acceso a las cifras de este taller. Consulte a un gerente si cree que es un error.',
+  'payType.headlineCaption': 'Ingreso total facturado en el período.',
+  'payType.totalRevenue': 'Ingreso total',
+  'payType.tableCaption': 'Ingreso de mano de obra, repuestos y subcontratación, por quién paga.',
+  'payType.colPayer': 'Pagado por',
+  'payType.colLabour': 'Mano de obra',
+  'payType.colParts': 'Repuestos',
+  'payType.colSublet': 'Subcontratado',
+  'payType.colRevenue': 'Total',
+  'payType.colPartsCost': 'Costo de repuestos',
+  'payType.colPartsGross': 'Margen de repuestos',
+  'payType.colOrders': 'Órdenes',
+  'payType.nothingInvoiced': 'No se facturó nada en este período, así que no hay nada que conciliar.',
+  'payType.partsGrossNote':
+    'El margen bruto se muestra solo para repuestos. El costo de un repuesto se fija al facturar; la mano de obra y el trabajo subcontratado no tienen un costo registrado en este sistema, así que combinar los tres en una sola cifra promediaría un número real con dos inventados.',
+
   // --- Llamadas a revisión ---------------------------------------------------
   'recalls.title': 'Llamadas a revisión',
   'recalls.onRequest':

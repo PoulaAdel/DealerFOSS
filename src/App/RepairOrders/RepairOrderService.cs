@@ -329,6 +329,90 @@ public sealed class RepairOrderService(
     private static decimal Realised(decimal revenue, decimal hours) =>
         hours == 0m ? 0m : Math.Round(revenue / hours, 2, MidpointRounding.AwayFromZero);
 
+    public async Task<Result<PayTypeReconciliation>> PayTypeReconciliationAsync(
+        LabourQuery query,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<PayTypeReconciliation>(ServiceErrors.Forbidden);
+        }
+
+        if (query.RooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<PayTypeReconciliation>(ServiceErrors.Forbidden);
+        }
+
+        if (query.To < query.From)
+        {
+            return Result.Failure<PayTypeReconciliation>(ServiceErrors.BackwardsPeriod);
+        }
+
+        // Inclusive of the last day, the same rule LabourAsync uses.
+        var from = new DateTimeOffset(query.From.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var to = new DateTimeOffset(query.To.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+        var orders = _db.RepairOrders
+            .AsNoTracking()
+            .Where(o => o.Status == RepairOrderStatus.Invoiced
+                && o.InvoicedAt >= from && o.InvoicedAt < to);
+
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            orders = orders.Where(o => allowed.Contains(o.RooftopId));
+        }
+
+        if (query.RooftopId is { } only)
+        {
+            orders = orders.Where(o => o.RooftopId == only);
+        }
+
+        var rows = await orders.Include(o => o.Lines).ToListAsync(cancellationToken);
+
+        // Flattened in memory, the same reason LabourAsync does: Amount is a
+        // computed property (declined work is worth nothing), and translating
+        // that rule into SQL a second time is a second place for it to drift
+        // from the invoice.
+        var lines = rows
+            .SelectMany(o => o.Lines
+                .Where(l => l.Authorization != LineAuthorization.Declined)
+                .Select(l => new { OrderId = o.Id, l.Kind, l.PayType, l.Amount, l.CostAmount }))
+            .ToList();
+
+        var byPayer = lines
+            .GroupBy(l => l.PayType)
+            .Select(g =>
+            {
+                var labourRevenue = g.Where(l => l.Kind == ServiceLineKind.Labour).Sum(l => l.Amount);
+                var partsRevenue = g.Where(l => l.Kind == ServiceLineKind.Part).Sum(l => l.Amount);
+                var subletRevenue = g.Where(l => l.Kind == ServiceLineKind.Sublet).Sum(l => l.Amount);
+                var partsCost = g.Where(l => l.Kind == ServiceLineKind.Part).Sum(l => l.CostAmount ?? 0m);
+
+                return new PayTypeBucket(
+                    g.Key.ToString(),
+                    labourRevenue,
+                    partsRevenue,
+                    subletRevenue,
+                    labourRevenue + partsRevenue + subletRevenue,
+                    partsCost,
+                    partsRevenue - partsCost,
+                    g.Count(),
+                    g.Select(l => l.OrderId).Distinct().Count());
+            })
+            .OrderBy(p => p.PayType, StringComparer.Ordinal)
+            .ToList();
+
+        return Result.Success(new PayTypeReconciliation(
+            query.From,
+            query.To,
+            byPayer.Sum(p => p.Revenue),
+            byPayer));
+    }
+
     public async Task<Result<RepairOrderDetail>> GetAsync(
         Guid repairOrderId,
         CancellationToken cancellationToken)

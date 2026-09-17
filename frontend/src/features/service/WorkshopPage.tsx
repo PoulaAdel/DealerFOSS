@@ -229,6 +229,7 @@ export function WorkshopPage() {
             different period, not a detail of anything in this list. ADR-020
             keeps routes for areas, and "how did the workshop do" is one. */}
         <Link to="/workshop/labour">{t('workshop.labourReport')}</Link>{' '}
+        <Link to="/workshop/pay-type">{t('workshop.payTypeReport')}</Link>{' '}
         <Link to="/workshop/setup">{t('workshop.setupLink')}</Link>
       </header>
 

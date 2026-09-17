@@ -50,6 +50,17 @@ public interface IRepairOrders
     /// </summary>
     Task<Result<LabourPerformance>> LabourAsync(LabourQuery query, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// What the workshop sold over a period, split by who pays — customer,
+    /// warranty, or the dealership itself. The mix is the point: a shop where
+    /// warranty has quietly become half the work is running a different
+    /// business than it was last quarter, and no single revenue total shows
+    /// that.
+    /// </summary>
+    Task<Result<PayTypeReconciliation>> PayTypeReconciliationAsync(
+        LabourQuery query,
+        CancellationToken cancellationToken);
+
     Task<Result<RepairOrderDetail>> RemoveLineAsync(
         Guid repairOrderId,
         Guid lineId,
@@ -304,6 +315,51 @@ public sealed record TechnicianLabour(
     decimal? Productivity);
 
 public sealed record LabourByPayer(string PayType, decimal HoursSold, decimal Revenue);
+
+/// <summary>
+/// Every kind of work invoiced over a period, rolled up by who pays.
+/// </summary>
+/// <remarks>
+/// <b>Counted from invoiced jobs only</b>, the same rule as
+/// <see cref="LabourPerformance"/>, and for the same reason: work in progress
+/// is not revenue.
+///
+/// <b>Gross profit is reported for parts only.</b> A part's cost is frozen at
+/// invoicing (<c>ServiceLine.CostAmount</c>); labour and sublet work carry no
+/// cost basis this system has ever recorded, so a "gross" across all three
+/// would quietly average a real figure against two invented ones. The parts
+/// figure is honest; the other two kinds are left as revenue alone.
+/// </remarks>
+public sealed record PayTypeReconciliation(
+    DateOnly From,
+    DateOnly To,
+    decimal TotalRevenue,
+    IReadOnlyList<PayTypeBucket> ByPayer);
+
+/// <summary>
+/// One pay type's share: what it billed, by kind of work, and what its parts
+/// cost the dealership.
+/// </summary>
+public sealed record PayTypeBucket(
+    string PayType,
+    decimal LabourRevenue,
+    decimal PartsRevenue,
+    decimal SubletRevenue,
+
+    /// <summary>Labour, parts and sublet revenue added together.</summary>
+    decimal Revenue,
+
+    /// <summary>What the parts billed here cost the dealership, frozen at invoicing.</summary>
+    decimal PartsCost,
+
+    /// <summary>Parts revenue less parts cost. See the caveat on <see cref="PayTypeReconciliation"/>.</summary>
+    decimal PartsGrossProfit,
+
+    /// <summary>How many lines make up this row.</summary>
+    int LineCount,
+
+    /// <summary>How many distinct repair orders contributed to this row.</summary>
+    int OrderCount);
 
 /// <summary>
 /// The figures the trade expects that this system cannot honestly produce, and

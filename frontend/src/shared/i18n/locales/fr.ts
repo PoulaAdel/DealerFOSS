@@ -1136,6 +1136,28 @@ export const fr: Catalogue = {
   'labour.period':
     'Calculé sur les travaux facturés entre le {from} et le {to}. Les travaux en cours ne sont pas du chiffre d’affaires.',
 
+  'workshop.payTypeReport': 'Rapport par mode de paiement',
+  'payType.title': 'Qui a payé quoi',
+  'payType.from': 'Du',
+  'payType.to': 'Au',
+  'payType.loading': 'Calcul des chiffres…',
+  'payType.denied':
+    'Vous n’avez pas accès aux chiffres de cet atelier. Demandez à un responsable si cela vous semble anormal.',
+  'payType.headlineCaption': 'Chiffre d’affaires total facturé sur la période.',
+  'payType.totalRevenue': 'Chiffre d’affaires total',
+  'payType.tableCaption': 'Chiffre d’affaires main-d’œuvre, pièces et sous-traitance, par mode de paiement.',
+  'payType.colPayer': 'Payé par',
+  'payType.colLabour': 'Main-d’œuvre',
+  'payType.colParts': 'Pièces',
+  'payType.colSublet': 'Sous-traité',
+  'payType.colRevenue': 'Total',
+  'payType.colPartsCost': 'Coût des pièces',
+  'payType.colPartsGross': 'Marge sur pièces',
+  'payType.colOrders': 'Ordres',
+  'payType.nothingInvoiced': 'Rien n’a été facturé sur cette période, il n’y a donc rien à réconcilier.',
+  'payType.partsGrossNote':
+    'La marge brute n’est indiquée que pour les pièces. Le coût d’une pièce est figé à la facturation ; la main-d’œuvre et la sous-traitance n’ont aucun coût enregistré dans ce système, donc combiner les trois en un seul chiffre moyennerait un nombre réel avec deux nombres inventés.',
+
   // --- Rappels de sécurité ---------------------------------------------------
   'recalls.title': 'Rappels de sécurité',
   'recalls.onRequest':

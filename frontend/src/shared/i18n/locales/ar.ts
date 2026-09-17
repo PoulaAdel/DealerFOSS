@@ -1196,6 +1196,27 @@ export const ar: Catalogue = {
   'labour.period':
     'محسوب من الأعمال التي صدرت فواتيرها بين {from} و{to}. والعمل الجاري ليس إيرادًا.',
 
+  'workshop.payTypeReport': 'تقرير جهة الدفع',
+  'payType.title': 'من دفع مقابل ماذا',
+  'payType.from': 'من',
+  'payType.to': 'إلى',
+  'payType.loading': 'جارٍ حساب الأرقام…',
+  'payType.denied': 'ليس لديك صلاحية الوصول إلى أرقام هذا الورشة. اسأل مديرًا إذا رأيت أن هذا خطأ.',
+  'payType.headlineCaption': 'إجمالي الإيراد المفوتر خلال الفترة.',
+  'payType.totalRevenue': 'إجمالي الإيراد',
+  'payType.tableCaption': 'إيراد العمالة وقطع الغيار والأعمال الخارجية، حسب جهة الدفع.',
+  'payType.colPayer': 'دفعها',
+  'payType.colLabour': 'العمالة',
+  'payType.colParts': 'قطع الغيار',
+  'payType.colSublet': 'عمل خارجي',
+  'payType.colRevenue': 'الإجمالي',
+  'payType.colPartsCost': 'تكلفة القطع',
+  'payType.colPartsGross': 'هامش القطع',
+  'payType.colOrders': 'أوامر العمل',
+  'payType.nothingInvoiced': 'لم تصدر أي فاتورة خلال هذه الفترة، فلا يوجد ما يُطابَق.',
+  'payType.partsGrossNote':
+    'يُعرض هامش الربح لقطع الغيار فقط. تُحدَّد تكلفة القطعة عند الفوترة؛ أما العمالة والأعمال الخارجية فلم يسجّل هذا النظام لها تكلفة قط — ودمج الثلاثة في رقم واحد كان سيخلط رقمًا حقيقيًا برقمين مُختلَقين.',
+
   // --- حملات استدعاء السلامة -------------------------------------------------
   'recalls.title': 'حملات استدعاء السلامة',
   'recalls.onRequest': 'هذا يسأل جهة سلامة الطرق، فلا يعمل إلا حين تطلبه أنت.',

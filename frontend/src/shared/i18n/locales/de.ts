@@ -1139,6 +1139,28 @@ export const de: Catalogue = {
   'labour.period':
     'Gezählt aus Arbeiten, die zwischen {from} und {to} berechnet wurden. Laufende Arbeit ist kein Umsatz.',
 
+  'workshop.payTypeReport': 'Kostenträger-Bericht',
+  'payType.title': 'Wer wofür bezahlt hat',
+  'payType.from': 'Von',
+  'payType.to': 'Bis',
+  'payType.loading': 'Berechne die Zahlen…',
+  'payType.denied':
+    'Sie haben keinen Zugriff auf die Zahlen dieser Werkstatt. Fragen Sie eine Führungskraft, wenn Sie das für falsch halten.',
+  'payType.headlineCaption': 'Gesamtumsatz im Zeitraum.',
+  'payType.totalRevenue': 'Gesamtumsatz',
+  'payType.tableCaption': 'Umsatz aus Arbeit, Teilen und Fremdvergabe, nach Kostenträger.',
+  'payType.colPayer': 'Bezahlt von',
+  'payType.colLabour': 'Arbeit',
+  'payType.colParts': 'Teile',
+  'payType.colSublet': 'Fremdvergabe',
+  'payType.colRevenue': 'Summe',
+  'payType.colPartsCost': 'Teilekosten',
+  'payType.colPartsGross': 'Teile-Rohertrag',
+  'payType.colOrders': 'Aufträge',
+  'payType.nothingInvoiced': 'In diesem Zeitraum wurde nichts berechnet, also gibt es nichts abzugleichen.',
+  'payType.partsGrossNote':
+    'Rohertrag wird nur für Teile ausgewiesen. Die Kosten eines Teils werden bei der Rechnungsstellung festgeschrieben; für Arbeit und Fremdvergabe hat dieses System nie eine Kostenbasis erfasst — alle drei in einer Zahl zu vermischen würde eine reale Zahl mit zwei erfundenen mitteln.',
+
   // --- Sicherheitsrückrufe ---------------------------------------------------
   'recalls.title': 'Sicherheitsrückrufe',
   'recalls.onRequest':

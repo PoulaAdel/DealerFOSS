@@ -727,6 +727,31 @@ export interface LabourByPayer {
 }
 
 /**
+ * What the workshop sold over a period, split by who pays.
+ *
+ * `partsGrossProfit` is the only gross-profit figure on this report — see
+ * PayTypeBucket for why labour and sublet are left as revenue alone.
+ */
+export interface PayTypeReconciliation {
+  from: string;
+  to: string;
+  totalRevenue: number;
+  byPayer: PayTypeBucket[];
+}
+
+export interface PayTypeBucket {
+  payType: ServicePayType;
+  labourRevenue: number;
+  partsRevenue: number;
+  subletRevenue: number;
+  revenue: number;
+  partsCost: number;
+  partsGrossProfit: number;
+  lineCount: number;
+  orderCount: number;
+}
+
+/**
  * Safety recall campaigns for a car's YEAR, MAKE AND MODEL.
  *
  * Read `appliesToModelNotVehicle` — it is always true, and it is the whole

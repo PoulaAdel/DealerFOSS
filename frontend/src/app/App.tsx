@@ -46,6 +46,7 @@ import { DealsPage } from '../features/deals/DealsPage';
 import { StaffPage } from '../features/staff/StaffPage';
 import { WorkshopPage } from '../features/service/WorkshopPage';
 import { LabourPage } from '../features/service/LabourPage';
+import { PayTypeReportPage } from '../features/service/PayTypeReportPage';
 import { ServiceSetupPage } from '../features/service/ServiceSetupPage';
 import { PasskeysPage } from '../features/auth/PasskeysPage';
 import { PartsPage } from '../features/parts/PartsPage';
@@ -182,6 +183,7 @@ function AppRoutes() {
             because the failure would be the labour report becoming
             unreachable. */}
         <Route path="/workshop/labour" element={<LabourPage />} />
+        <Route path="/workshop/pay-type" element={<PayTypeReportPage />} />
         <Route path="/workshop/setup" element={<ServiceSetupPage />} />
         <Route path="/workshop/:id?" element={<WorkshopPage />} />
         <Route path="/parts" element={<PartsPage />} />

@@ -40,6 +40,7 @@ internal static class RepairOrderEndpoints
         // would not catch it anyway — but keeping the literal first means it stays
         // that way if the constraint is ever loosened.
         group.MapGet("/labour", LabourAsync);
+        group.MapGet("/pay-type-reconciliation", PayTypeReconciliationAsync);
         group.MapGet("/{repairOrderId:guid}", GetAsync);
         group.MapPost("", OpenAsync);
         group.MapPost("/{repairOrderId:guid}/lines", AddLineAsync);
@@ -68,6 +69,24 @@ internal static class RepairOrderEndpoints
         var start = from ?? new DateOnly(today.Year, today.Month, 1);
 
         var result = await service.LabourAsync(
+            new LabourQuery(start, to ?? today, rooftopId is null ? null : new RooftopId(rooftopId.Value)),
+            cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    /// <summary>What the workshop sold over a period, split by who pays.</summary>
+    private static async Task<IResult> PayTypeReconciliationAsync(
+        IRepairOrders service,
+        CancellationToken cancellationToken,
+        DateOnly? from = null,
+        DateOnly? to = null,
+        Guid? rooftopId = null)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var start = from ?? new DateOnly(today.Year, today.Month, 1);
+
+        var result = await service.PayTypeReconciliationAsync(
             new LabourQuery(start, to ?? today, rooftopId is null ? null : new RooftopId(rooftopId.Value)),
             cancellationToken);
 
