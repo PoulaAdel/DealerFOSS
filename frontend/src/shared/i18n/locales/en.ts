@@ -86,6 +86,10 @@ export const en = {
   'shell.appearance': 'Appearance',
 
   'nav.dashboard': 'This month',
+  'nav.groupSales': 'Sales',
+  'nav.groupService': 'Service',
+  'nav.groupAccounting': 'Accounting',
+  'nav.groupPeople': 'People & security',
   'nav.customers': 'Customers',
   'nav.leads': 'Enquiries',
   'nav.deals': 'Deals',

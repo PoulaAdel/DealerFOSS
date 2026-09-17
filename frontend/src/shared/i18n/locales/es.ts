@@ -81,6 +81,10 @@ export const es: Catalogue = {
   'shell.appearance': 'Apariencia',
 
   'nav.dashboard': 'Este mes',
+  'nav.groupSales': 'Ventas',
+  'nav.groupService': 'Taller',
+  'nav.groupAccounting': 'Contabilidad',
+  'nav.groupPeople': 'Personal y seguridad',
   'nav.customers': 'Clientes',
   'nav.leads': 'Consultas',
   'nav.deals': 'Operaciones',

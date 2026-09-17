@@ -23,6 +23,7 @@ import {
   Route,
   BrowserRouter as Router,
   Routes,
+  useLocation,
   useNavigate,
 } from 'react-router';
 import { SessionProvider, useSession } from './session';
@@ -30,6 +31,7 @@ import { AppearanceProvider } from '../shared/appearance';
 import { I18nProvider, useI18n } from '../shared/i18n';
 import { AppearanceControls } from './AppearanceControls';
 import { Mark, Wordmark } from './Mark';
+import { NavGroup } from './NavGroup';
 import { ShortcutsPanel } from './Shortcuts';
 import { useHotkeys } from '../shared/useHotkeys';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
@@ -202,10 +204,17 @@ function AppRoutes() {
  * Sign-out stays: locking a person into a screen with no way out would turn a
  * security measure into a trap, and they must be able to leave a shared machine.
  */
+/** Whether the current route is one this nav group is responsible for, so its
+ * trigger can carry the same "you are here" highlight a top-level link gets. */
+function groupContains(pathname: string, prefixes: string[]) {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 function Shell({ restricted = false }: { restricted?: boolean }) {
   const { tenant, signOut } = useSession();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [showingShortcuts, setShowingShortcuts] = useState(false);
 
   // Bound here rather than on each screen, so "g s" works from wherever you are.
@@ -243,25 +252,50 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
         {restricted ? null : (
           <nav aria-label={t('shell.mainNavigation')}>
             <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink>
-            <NavLink to="/customers">{t('nav.customers')}</NavLink>
+
             {/* Ordered the way the work happens: an enquiry arrives, and some of
                 them become deals. */}
-            <NavLink to="/leads">{t('nav.leads')}</NavLink>
-            <NavLink to="/deals">{t('nav.deals')}</NavLink>
-            <NavLink to="/inventory">{t('nav.stock')}</NavLink>
-            <NavLink to="/workshop">{t('nav.workshop')}</NavLink>
-            <NavLink to="/parts">{t('nav.parts')}</NavLink>
-            <NavLink to="/accounting" end>
-              {t('nav.trialBalance')}
-            </NavLink>
-            <NavLink to="/accounting/periods">{t('nav.books')}</NavLink>
-            <NavLink to="/accounting/reports">{t('nav.reports')}</NavLink>
-            <NavLink to="/receivables/ageing">{t('nav.ageing')}</NavLink>
-            <NavLink to="/receivables/statements">{t('nav.statements')}</NavLink>
+            <NavGroup
+              label={t('nav.groupSales')}
+              active={groupContains(pathname, ['/customers', '/leads', '/deals', '/inventory'])}
+            >
+              <NavLink to="/customers">{t('nav.customers')}</NavLink>
+              <NavLink to="/leads">{t('nav.leads')}</NavLink>
+              <NavLink to="/deals">{t('nav.deals')}</NavLink>
+              <NavLink to="/inventory">{t('nav.stock')}</NavLink>
+            </NavGroup>
+
+            <NavGroup
+              label={t('nav.groupService')}
+              active={groupContains(pathname, ['/workshop', '/parts'])}
+            >
+              <NavLink to="/workshop">{t('nav.workshop')}</NavLink>
+              <NavLink to="/parts">{t('nav.parts')}</NavLink>
+            </NavGroup>
+
+            <NavGroup
+              label={t('nav.groupAccounting')}
+              active={groupContains(pathname, ['/accounting', '/receivables'])}
+            >
+              <NavLink to="/accounting" end>
+                {t('nav.trialBalance')}
+              </NavLink>
+              <NavLink to="/accounting/periods">{t('nav.books')}</NavLink>
+              <NavLink to="/accounting/reports">{t('nav.reports')}</NavLink>
+              <NavLink to="/receivables/ageing">{t('nav.ageing')}</NavLink>
+              <NavLink to="/receivables/statements">{t('nav.statements')}</NavLink>
+            </NavGroup>
+
+            <NavGroup
+              label={t('nav.groupPeople')}
+              active={groupContains(pathname, ['/staff', '/security'])}
+            >
+              <NavLink to="/staff">{t('nav.staff')}</NavLink>
+              <NavLink to="/security/second-factor">{t('nav.secondFactor')}</NavLink>
+              <NavLink to="/security/passkeys">{t('nav.passkeys')}</NavLink>
+            </NavGroup>
+
             <NavLink to="/records">{t('nav.records')}</NavLink>
-            <NavLink to="/staff">{t('nav.staff')}</NavLink>
-            <NavLink to="/security/second-factor">{t('nav.secondFactor')}</NavLink>
-            <NavLink to="/security/passkeys">{t('nav.passkeys')}</NavLink>
           </nav>
         )}
 

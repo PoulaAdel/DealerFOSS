@@ -183,7 +183,9 @@ describe('when the dealership requires it', () => {
     // The obligation lifts server-side the moment the code is accepted, and the
     // browser asks again rather than making somebody sign in a second time.
     await waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Stock' })).toBeVisible(),
+      expect(screen.getByRole('button', { name: 'Sales' })).toBeVisible(),
     );
+    await userEvent.click(screen.getByRole('button', { name: 'Sales' }));
+    expect(screen.getByRole('link', { name: 'Stock' })).toBeVisible();
   });
 });

@@ -88,6 +88,10 @@ export const ar: Catalogue = {
   'shell.appearance': 'المظهر',
 
   'nav.dashboard': 'هذا الشهر',
+  'nav.groupSales': 'المبيعات',
+  'nav.groupService': 'الورشة',
+  'nav.groupAccounting': 'المحاسبة',
+  'nav.groupPeople': 'الموظفون والأمان',
   'nav.customers': 'العملاء',
   'nav.leads': 'الاستفسارات',
   'nav.deals': 'الصفقات',

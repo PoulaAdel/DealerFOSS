@@ -671,6 +671,86 @@ textarea {
   transform: none;
 }
 
+/* --- nav groups: Sales / Service / Accounting / People & security -------
+   The sixteen-link flat nav used to wrap into two or three ragged rows with
+   no signal that any of them were related. Each group collapses a cluster of
+   related destinations behind one trigger, so the bar reads as five or six
+   named places instead of a list to scan word by word. */
+.navgroup {
+  position: relative;
+}
+
+.navgroup__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--r-pill);
+  min-block-size: auto;
+  background: none;
+  box-shadow: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--beat) ease, color var(--beat) ease;
+}
+
+.navgroup__trigger:hover {
+  background: var(--idle-soft);
+  color: var(--ink);
+  transform: none;
+}
+
+.navgroup__trigger--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.navgroup__caret {
+  transition: transform var(--beat) ease;
+}
+
+.navgroup__trigger[aria-expanded='true'] .navgroup__caret {
+  transform: rotate(180deg);
+}
+
+/* Floats below the trigger rather than pushing the row. A group opening
+   should never reflow the six items beside it. */
+.navgroup__menu {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: var(--s-2);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--lift);
+}
+
+.navgroup__menu a {
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.navgroup__menu a:hover {
+  background: var(--idle-soft);
+}
+
+.navgroup__menu a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .shell__right {
   grid-area: utilities;
   margin-inline-start: auto;

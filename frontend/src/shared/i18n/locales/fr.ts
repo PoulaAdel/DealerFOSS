@@ -77,6 +77,10 @@ export const fr: Catalogue = {
   'shell.appearance': 'Apparence',
 
   'nav.dashboard': 'Ce mois-ci',
+  'nav.groupSales': 'Ventes',
+  'nav.groupService': 'Atelier',
+  'nav.groupAccounting': 'Comptabilité',
+  'nav.groupPeople': 'Personnel et sécurité',
   'nav.customers': 'Clients',
   'nav.leads': 'Demandes',
   'nav.deals': 'Ventes',

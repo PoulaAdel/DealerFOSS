@@ -78,6 +78,10 @@ export const ru: Catalogue = {
   'shell.appearance': 'Оформление',
 
   'nav.dashboard': 'Этот месяц',
+  'nav.groupSales': 'Продажи',
+  'nav.groupService': 'Сервис',
+  'nav.groupAccounting': 'Учёт',
+  'nav.groupPeople': 'Персонал и безопасность',
   'nav.customers': 'Клиенты',
   'nav.leads': 'Обращения',
   'nav.deals': 'Сделки',

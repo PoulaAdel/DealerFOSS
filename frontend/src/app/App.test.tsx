@@ -76,6 +76,7 @@ describe('the application shell', () => {
     // rather than the heading, which is a month name and therefore a moving
     // target every first of the month.
     expect(await screen.findByText('So far this month.')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Accounting' }));
     expect(screen.getByRole('link', { name: 'Trial balance' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible();
     expect(screen.getByText('northgroup')).toBeVisible();
@@ -97,6 +98,7 @@ describe('the application shell', () => {
     render(<App />);
     await screen.findByText('So far this month.');
 
+    await userEvent.click(screen.getByRole('button', { name: 'Accounting' }));
     await userEvent.click(screen.getByRole('link', { name: 'Trial balance' }));
 
     expect(await screen.findByRole('heading', { name: 'Trial balance' })).toBeVisible();
