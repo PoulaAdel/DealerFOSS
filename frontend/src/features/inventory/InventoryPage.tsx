@@ -12,10 +12,17 @@
 //   Every state a real screen needs is here on purpose — loading, empty,
 //   permission-denied, failure, and retry (doc 10 §5). A screen that only
 //   renders the happy path is not finished.
+//
+//   The open car lives in the address bar (`/inventory/:id`), not in this
+//   component's state. The detail band below the list is unchanged and is
+//   still a band — see `useRecordRoute` and the 2026-09-16 amendment to
+//   ADR-020 for why those two facts do not contradict each other.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ApiError, api, post } from '../../shared/api';
+import { RecordBandStatus } from '../../shared/RecordBand';
+import { useRecordRoute } from '../../shared/useRecordRoute';
 import {
   inventoryStatuses,
   type InventoryStatus,
@@ -56,8 +63,17 @@ export function InventoryPage() {
   // nothing here" rather than as "you are past the end".
   const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
-  const [selected, setSelected] = useState<InventoryUnitDetail | null>(null);
   const [taking, setTaking] = useState(false);
+
+  const record = useRecordRoute<InventoryUnitDetail>({
+    area: '/inventory',
+    load: (unitId, signal) => api<InventoryUnitDetail>(`/inventory/${unitId}`, { signal }),
+
+    // `?stock=` is a real filter on this screen, so it travels with the car and
+    // comes back with it. See the flag's own comment for why that is not the
+    // default.
+    carryQuery: true,
+  });
 
   // Somebody arrived here from a car named somewhere else — the dashboard's
   // oldest-stock list is the one that does this. Landing on the whole list
@@ -91,14 +107,6 @@ export function InventoryPage() {
   useEffect(() => {
     void fetchUnits();
   }, [fetchUnits]);
-
-  async function open(unitId: string) {
-    try {
-      setSelected(await api<InventoryUnitDetail>(`/inventory/${unitId}`));
-    } catch (failure) {
-      setLoad({ kind: 'failed', message: describe(failure) });
-    }
-  }
 
   return (
     <>
@@ -138,7 +146,11 @@ export function InventoryPage() {
             // Adding a customer closes its panel and changes nothing visible,
             // and somebody has to search to learn it worked; a car arriving is
             // the same event and gets the opposite treatment.
-            setSelected(unit);
+            //
+            // `openWith` rather than `open`: the server has just handed back
+            // the whole car, so asking for it again would be a second request
+            // and a flicker through "Opening…" to reach what is already here.
+            record.openWith(unit.id, unit);
             void fetchUnits();
           }}
         />
@@ -158,17 +170,19 @@ export function InventoryPage() {
       <Body
         load={load}
         onRetry={fetchUnits}
-        selectedId={selected?.id ?? null}
-        onOpen={(id) => void open(id)}
+        selectedId={record.openId}
+        onOpen={record.open}
         onPage={setOffset}
       />
 
-      {selected === null ? null : (
+      <RecordBandStatus route={record} />
+
+      {record.state.kind !== 'open' ? null : (
         <UnitDetail
-          unit={selected}
-          onClose={() => setSelected(null)}
+          unit={record.state.record}
+          onClose={record.close}
           onMoved={(moved) => {
-            setSelected(moved);
+            record.refresh(moved);
             void fetchUnits();
           }}
         />
@@ -181,8 +195,13 @@ export function InventoryPage() {
  * ADR-020's detail band: the selected unit, inline, below the list.
  *
  * Below and not instead. The zero-jump rule is the point — the list keeps its
- * filter and its scroll position, and going back is not an operation. A route
- * per record would lose all three every time somebody checked a cost.
+ * filter and its scroll position while a car is open.
+ *
+ * This band now also has an address (`/inventory/:id`), which is NOT the
+ * "route per record" ADR-020 rejected. That would have replaced the list with
+ * a second screen and lost the filter and the scroll on every open. The URL
+ * only names which car the band is showing; the list never leaves. See the
+ * 2026-09-16 amendment in that ADR.
  */
 function UnitDetail({
   unit,

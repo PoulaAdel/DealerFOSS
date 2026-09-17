@@ -14,10 +14,9 @@
 //   once a deal is submitted. Both are the kind of thing that looks like a
 //   tidy-up and loses somebody's work.
 
-import { render, screen, waitFor } from '../../test/render';
+import { render, renderAtRecordRoute, screen, waitFor } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router';
 import { DealTerms } from './DealTerms';
 import { DealsPage } from './DealsPage';
 import { apiCalls, mockApi, page } from '../../test/setup';
@@ -167,11 +166,7 @@ describe('once a deal is submitted', () => {
       '/deals/d1': { ok: true, body: { ...base, status: 'Submitted', termsAreOpen: false } },
     });
 
-    render(
-      <MemoryRouter initialEntries={['/deals']}>
-        <DealsPage />
-      </MemoryRouter>,
-    );
+    renderAtRecordRoute('/deals', <DealsPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Marisol Alvarez' }));
 
     // A disabled form still reads as somewhere to type. Somebody fills it in,
@@ -187,11 +182,7 @@ describe('once a deal is submitted', () => {
       '/deals/d1': { ok: true, body: base },
     });
 
-    render(
-      <MemoryRouter initialEntries={['/deals']}>
-        <DealsPage />
-      </MemoryRouter>,
-    );
+    renderAtRecordRoute('/deals', <DealsPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Marisol Alvarez' }));
 
     expect(await screen.findByRole('button', { name: 'Save the numbers' })).toBeVisible();
@@ -211,11 +202,7 @@ describe('starting a deal', () => {
       '/customers': { ok: true, body: page([]) },
     });
 
-    render(
-      <MemoryRouter initialEntries={['/deals']}>
-        <DealsPage />
-      </MemoryRouter>,
-    );
+    renderAtRecordRoute('/deals', <DealsPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Start a deal' }));
 
     // A car on somebody else's deal is held; offering it and then explaining the
@@ -237,11 +224,7 @@ describe('starting a deal', () => {
       '/deals/d1': { ok: true, body: base },
     });
 
-    render(
-      <MemoryRouter initialEntries={['/deals']}>
-        <DealsPage />
-      </MemoryRouter>,
-    );
+    renderAtRecordRoute('/deals', <DealsPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Start a deal' }));
 
     await userEvent.selectOptions(await screen.findByLabelText('Who is buying'), 'c1');
@@ -269,11 +252,7 @@ describe('starting a deal', () => {
       '/customers': { ok: true, body: page([]) },
     });
 
-    render(
-      <MemoryRouter initialEntries={['/deals']}>
-        <DealsPage />
-      </MemoryRouter>,
-    );
+    renderAtRecordRoute('/deals', <DealsPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Start a deal' }));
 
     expect(await screen.findByRole('button', { name: 'Start the deal' })).toBeDisabled();
@@ -286,11 +265,7 @@ describe('starting a deal', () => {
       '/customers': { ok: true, body: page([]) },
     });
 
-    render(
-      <MemoryRouter initialEntries={['/deals']}>
-        <DealsPage />
-      </MemoryRouter>,
-    );
+    renderAtRecordRoute('/deals', <DealsPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'Start a deal' }));
 
     expect(await screen.findByText(/Nothing on the lot is available/)).toBeVisible();

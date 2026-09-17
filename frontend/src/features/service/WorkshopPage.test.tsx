@@ -14,10 +14,9 @@
 //   somebody still needs to ring about. A disabled button would be a second
 //   copy of the rule and a worse message.
 
-import { render, screen, within } from '../../test/render';
+import { renderAtRecordRoute, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { MemoryRouter } from 'react-router';
 import { WorkshopPage } from './WorkshopPage';
 import { apiCalls, mockApi, page } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
@@ -105,14 +104,12 @@ const detail = (over: Partial<RepairOrderDetail> = {}): RepairOrderDetail => ({
   ...over,
 });
 
-function renderWorkshop() {
+function renderWorkshop(at = '/workshop') {
   setCurrentTenant('northgroup');
 
-  return render(
-    <MemoryRouter initialEntries={['/workshop']}>
-      <WorkshopPage />
-    </MemoryRouter>,
-  );
+  // At the screen's real route: the optional `:id` segment carries the open
+  // job, and a bare mount would have nowhere to navigate to.
+  return renderAtRecordRoute('/workshop', <WorkshopPage />, at);
 }
 
 const noStaff = { ok: true as const, body: [] };
@@ -892,5 +889,78 @@ describe('billing a part off the shelf', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
 
     expect(lineBody().description).toBe('Oil filter');
+  });
+});
+
+/**
+ * A job with an address of its own (2026-09-16).
+ *
+ * This is the screen that wanted it most. "Have a look at RO-1084" is a
+ * sentence a service manager says all day, and until now the only way to act on
+ * it was to describe where to click.
+ */
+describe('a job reached by its own address', () => {
+  it('arrives open when the address names the job', async () => {
+    mockApi({
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/appointments': { ok: true, body: { appointments: [], load: [] } },
+      '/staff': { ok: true, body: [] },
+    });
+    renderWorkshop('/workshop/ro1');
+
+    expect(
+      await screen.findByRole('heading', { name: /RO-1001 NAG-01 · Daniel Okafor/ }),
+    ).toBeVisible();
+  });
+
+  it('puts the job in the address when a row is opened', async () => {
+    mockApi({
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/appointments': { ok: true, body: { appointments: [], load: [] } },
+      '/staff': { ok: true, body: [] },
+    });
+    const { address } = renderWorkshop();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'RO-1001' }));
+    await screen.findByRole('heading', { name: /RO-1001 NAG-01 · Daniel Okafor/ });
+
+    expect(address()).toBe('/workshop/ro1');
+  });
+
+  it('keeps the list and its filter while a job is open and closed again', async () => {
+    // The zero-jump rule, asserted at the screen rather than only in the hook's
+    // own test. Two routes instead of one optional segment would remount this
+    // page and silently reset the "open jobs only" box on every click.
+    mockApi({
+      '/repair-orders/ro1': { ok: true, body: detail() },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/appointments': { ok: true, body: { appointments: [], load: [] } },
+      '/staff': { ok: true, body: [] },
+    });
+    renderWorkshop();
+
+    await userEvent.click(await screen.findByLabelText('Only what is still open'));
+    expect(screen.getByLabelText('Only what is still open')).not.toBeChecked();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'RO-1001' }));
+    await screen.findByRole('heading', { name: /RO-1001 NAG-01 · Daniel Okafor/ });
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(screen.getByLabelText('Only what is still open')).not.toBeChecked();
+  });
+
+  it('says so in one sentence when the address names a job it cannot open', async () => {
+    mockApi({
+      '/repair-orders/ro9': { ok: false, status: 403, code: 'service.forbidden', detail: 'No.' },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/appointments': { ok: true, body: { appointments: [], load: [] } },
+      '/staff': { ok: true, body: [] },
+    });
+    renderWorkshop('/workshop/ro9');
+
+    expect(await screen.findByText(/That record cannot be opened/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Back to the list' })).toBeVisible();
   });
 });

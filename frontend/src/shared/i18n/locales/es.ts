@@ -47,6 +47,11 @@ export const es: Catalogue = {
   'common.notPermitted': 'No tiene permiso para ver esto.',
   'common.unreachable': 'No se ha podido contactar con el servidor. ¿Está funcionando?',
 
+  'record.opening': 'Abriendo el registro…',
+  'record.unreachable':
+    'No se puede abrir ese registro. Puede que se haya eliminado o que pertenezca a una parte del negocio que usted no puede ver.',
+  'record.backToList': 'Volver a la lista',
+
   // --- Refusals the reader sees on any screen -------------------------------
   'error.network': 'No se ha podido contactar con el servidor. ¿Está funcionando?',
   'error.invalidCredentials': 'Ese correo y esa contraseña no corresponden a ninguna cuenta.',

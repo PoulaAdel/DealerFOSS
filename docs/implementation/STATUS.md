@@ -3,20 +3,23 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the workshop can be measured**. A job line can be a
-catalogued op code billed at the rate its own rooftop posts, a technician goes on
-the clock, and productivity stops being a figure the labour report refuses to
-invent. Overpayment leaves a credit instead of a wrong balance, a job number says
-which lot it belongs to, and the right record can be found before the wrong one
-is booked. What is next is on the register in
-[`docs/11`](../11-Franchise-and-External-Scope.md) §12 — but see the re-review of
-2026-09-16 below before choosing from it: five milestones in a week moved the
-planning indicator by one point, because all five landed in the stage with the
-least room left and the hardest ceiling.
-Last verified: 2026-09-16 · `dotnet build` 0 warnings/0 errors, `dotnet test` 775/775,
+Current milestone: **every record has an address**. A car, a customer, an
+enquiry, a deal and a workshop job can each be opened by its own URL, sent to a
+colleague, bookmarked, or held open in two tabs at once — and the back button
+closes a record instead of leaving the screen. The list never moves while it
+happens: the record's segment is optional on the same route, so the page is not
+remounted and the filter survives. This narrowed a recorded decision rather than
+ignoring one; see the 2026-09-17 amendment in
+[ADR-020](../adr/0020-screen-shape-and-interface-standards.md). What is next is
+on the register in [`docs/11`](../11-Franchise-and-External-Scope.md) §12 — but
+see the re-review of 2026-09-16 below before choosing from it: five milestones
+in a week moved the planning indicator by one point, because all five landed in
+the stage with the least room left and the hardest ceiling. This one moves it by
+nothing at all, and was chosen with that known.
+Last verified: 2026-09-17 · `dotnet build` 0 warnings/0 errors, `dotnet test` 775/775,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 397/397, and `npm run build` all pass
+`npm run typecheck`, `npm test` 431/431, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1306,3 +1309,23 @@ to come.
   **The page could not answer the question, so the page was changed.** It showed how much of each stage exists and never how much is left, or who the rest waits on — which is how a month of work went into the stage with the least room and the hardest ceiling without anything saying so. A headroom table now sits above the stage list: points remaining per stage, and who each one waits on. The staleness mechanism worked exactly as designed and was still not enough on its own; it said "seven stages need re-reading" for days without saying which of them was worth re-reading *first*.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **775/775**, `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **397/397**, `npm run build`. No source file changed; the change is to `docs/PROGRESS.md`, this file, and the generator behind `local/progress.html`.
+
+- **2026-09-17 — Every record has an address, so one can be sent to somebody instead of described.** `/customers/:id`, `/leads/:id`, `/deals/:id`, `/inventory/:id` and `/workshop/:id`. A link opens the record. The back button closes it. Two tabs can hold two cars. None of that was possible the day before: every record lived in component state, and the only way to say which one you meant was to describe where to click.
+
+  **This contradicted a recorded decision, and the decision was narrowed rather than ignored.** ADR-020 says *"a detail is a band, not a route… routes are for areas and never for records within an area."* Read whole, every argument in that section is about **replacing the list with a second screen** — the operator losing their place, their filter and their scroll. None of it is about the address bar. The amendment dated 2026-09-17 in that ADR narrows the rule to what it was protecting: **a detail is still a band, and the band may have an address.**
+
+  **`path="/inventory/:id?"` — an OPTIONAL segment on the SAME route — is the load-bearing detail.** Two routes, one for the list and one for the record, are two different matches, so React Router unmounts and remounts the page on every open and every close and the filter goes with it. That is the exact failure ADR-020 forbade, and it is still forbidden. One route with an optional segment keeps the page mounted, and `useRecordRoute.test` proves it **by counting mounts** rather than by reading the screen — a remount is invisible in rendered output.
+
+  **A filter travels with the record; an instruction does not.** The stock list's `?stock=` is a real filter, so it goes with the car and comes back with it. The deal desk's `?leadId=` is a one-shot handoff from a won enquiry, and a link carrying it would **start a second deal on the same enquiry** for whoever opened it. `carryQuery` is off by default and opted into, because a URL that does less when pasted is the safer one.
+
+  **One sentence for every reason a record will not open.** Deleted, never existed, and belongs to a rooftop you may not see all read identically, from one place — `RecordBand.tsx` — so five screens cannot drift into five answers. The server already refuses to tell those apart for scoped records (`InventoryService`, `LeadService`, `DealService`, `RepairOrderService` each carry the comment), and a screen saying "that job belongs to another branch" would hand back the fact the server withheld, one guessed id at a time. Customers answer 404 for a genuinely missing record because a customer is organization-wide and there is nothing to leak; the screen still says the same sentence, so a later server change cannot quietly become a probe.
+
+  **Signing in keeps the address.** The signed-out router redirected to `/sign-in` and threw the requested address away, so a shared link opened by somebody signed out landed them on the dashboard — and somebody signed out, or whose session lapsed overnight, is the commonest reader of a shared link. Sign-in now renders where they asked to be, which needs no state carried at all: once the session exists the routing table is replaced and the location is still `/workshop/ro1`.
+
+  **The tests had been mounting a tree the application never builds.** Five screens were rendered bare inside a `MemoryRouter` with no `Routes` — fine while the record was component state, useless the moment the page read `useParams`. Five tests failed for a reason that had nothing to do with the screens. `renderAtRecordRoute` in `test/render.tsx` mounts them the way `App.tsx` does, and returns an `address()` so a test can read what the address bar would say, which a `MemoryRouter` otherwise hides.
+
+  Also closed: ADR-020's item 6, whose outstanding list was a signal band for untouched enquiries and detail bands on stock and customers. All three exist.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **775/775**, `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **431/431** (was 397 — 11 for the hook, 23 across the five screens and the router), `npm run build`.
+
+  Walked in a browser, all five screens. Clicking RO-1074 put `/workshop/1d58bcd8-…` in the address and the band read *"RO-1074 NAG-01 · Mateo Petrov"*; the back button closed the record and left the list and its 54 rows exactly where they were; a cold load of that same URL opened the job with the list beneath it. `/inventory?stock=A1001` carried its filter into `/inventory/907ea1f6-…?stock=A1001`. A made-up id answered *"That record cannot be opened…"* with the list still underneath and a way back. And the whole point, end to end: signed out, opened the job's link, got the sign-in form **at the job's own address**, signed in, and the job opened.

@@ -29,6 +29,7 @@
 
 import { render as testingLibraryRender, type RenderOptions } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { I18nProvider } from '../shared/i18n';
 import { AppearanceProvider } from '../shared/appearance';
 
@@ -56,6 +57,56 @@ function Providers({ children }: { children: ReactNode }) {
  */
 export function render(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
   return testingLibraryRender(ui, { wrapper: Providers, ...options });
+}
+
+/**
+ * Mounts a screen at its REAL route, including the optional `:id` segment that
+ * carries the open record.
+ *
+ * The five screens with a detail band used to be rendered bare inside a
+ * `MemoryRouter`, which was fine while the open record lived in component
+ * state. It stopped being fine on 2026-09-16: a bare mount has no route match,
+ * so `useParams` returns nothing and `navigate('/inventory/x')` lands on a path
+ * the test's router does not define. Opening a record then does nothing at all,
+ * and five tests failed for a reason that had nothing to do with the screens.
+ *
+ * Mounting the way `App.tsx` mounts is also the honest version: a test that
+ * builds a tree the application never builds can pass while the application is
+ * broken.
+ */
+export function renderAtRecordRoute(area: string, element: ReactElement, at: string = area) {
+  const seen = { address: at };
+
+  const result = render(
+    <MemoryRouter initialEntries={[at]}>
+      <Routes>
+        <Route
+          path={`${area}/:id?`}
+          element={
+            <>
+              <Address seen={seen} />
+              {element}
+            </>
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+
+  /**
+   * What the address bar would say. A MemoryRouter never touches
+   * `window.location`, so a test cannot read the address the obvious way — and
+   * "the record is in the address" is the property most of these screens now
+   * need to prove.
+   */
+  return { ...result, address: () => seen.address };
+}
+
+/** Records the current address for `renderAtRecordRoute`; renders nothing. */
+function Address({ seen }: { seen: { address: string } }) {
+  const where = useLocation();
+  seen.address = `${where.pathname}${where.search}`;
+  return null;
 }
 
 // Everything else — screen, waitFor, within, act, cleanup — unchanged.

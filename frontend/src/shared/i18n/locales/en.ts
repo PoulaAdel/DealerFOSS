@@ -43,6 +43,13 @@ export const en = {
   'common.notPermitted': 'You do not have permission to see this.',
   'common.unreachable': 'Could not reach the server. Is it running?',
 
+  // --- A record opened by its own address -----------------------------------
+  // One sentence for every reason a record will not open: see RecordBand.tsx.
+  'record.opening': 'Opening the record…',
+  'record.unreachable':
+    'That record cannot be opened. It may have been removed, or it may belong to a part of the business you cannot see.',
+  'record.backToList': 'Back to the list',
+
   // --- Refusals the reader sees on any screen -------------------------------
   // See apiMessage.ts for why these are translated and the rest are not.
   'error.network': 'Could not reach the server. Is it running?',

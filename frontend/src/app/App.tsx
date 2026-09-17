@@ -112,7 +112,22 @@ function AppRoutes() {
         {/* Anonymous by necessity, like /set-password: not having a session is
             the state this screen exists to fix. */}
         <Route path="/recover" element={<RecoverPassword />} />
-        <Route path="*" element={<Navigate to="/sign-in" replace />} />
+
+        {/* Sign-in is rendered WHERE THEY ASKED TO BE, rather than by
+            redirecting to /sign-in.
+
+            This used to be `<Navigate to="/sign-in" replace />`, which threw the
+            requested address away: signing in then landed on the dashboard. It
+            did not matter while every record lived in component state, because
+            no address named one. It matters now — the first thing a shared link
+            meets is often somebody who is signed out or whose session lapsed
+            overnight, and dropping them on the dashboard is exactly the failure
+            "send them the link" was meant to end.
+
+            Keeping the address is also the version with no state to carry:
+            once the session exists, this whole table is replaced and the
+            location is still /workshop/ro1, so the record simply opens. */}
+        <Route path="*" element={<SignIn />} />
       </Routes>
     );
   }
@@ -136,19 +151,33 @@ function AppRoutes() {
     <Routes>
       <Route element={<Shell />}>
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/customers" element={<CustomersPage />} />
-        <Route path="/leads" element={<LeadsPage />} />
-        <Route path="/deals" element={<DealsPage />} />
-        <Route path="/inventory" element={<InventoryPage />} />
+
+        {/* `:id?` is an OPTIONAL segment on the SAME route, and that is load
+            bearing. Two routes — one for the list, one for the record — would
+            be two different matches, so React Router would unmount and remount
+            the page on every open and every close, taking the filter, the page
+            number and the scroll position with it. That is precisely the
+            zero-jump rule ADR-020 exists to protect, and this is how a record
+            gets an address without breaking it. See `useRecordRoute`. */}
+        <Route path="/customers/:id?" element={<CustomersPage />} />
+        <Route path="/leads/:id?" element={<LeadsPage />} />
+        <Route path="/deals/:id?" element={<DealsPage />} />
+        <Route path="/inventory/:id?" element={<InventoryPage />} />
+
         <Route path="/accounting" element={<TrialBalancePage />} />
         <Route path="/accounting/periods" element={<PeriodsPage />} />
         <Route path="/accounting/reports" element={<ReportsPage />} />
         <Route path="/records" element={<RecordsPage />} />
-        <Route path="/workshop" element={<WorkshopPage />} />
-        {/* An area, not a record: a different question over a different period.
-            ADR-020 keeps routes for areas and bands for records. */}
+
+        {/* Areas, not records: a different question over a different period.
+            They are listed BEFORE the job route for a reader's benefit only —
+            React Router ranks a static segment above a dynamic one whatever
+            the order here, and `App.test` proves it rather than trusting it,
+            because the failure would be the labour report becoming
+            unreachable. */}
         <Route path="/workshop/labour" element={<LabourPage />} />
         <Route path="/workshop/setup" element={<ServiceSetupPage />} />
+        <Route path="/workshop/:id?" element={<WorkshopPage />} />
         <Route path="/parts" element={<PartsPage />} />
         <Route path="/staff" element={<StaffPage />} />
         <Route path="/security/second-factor" element={<SecondFactorSetup />} />

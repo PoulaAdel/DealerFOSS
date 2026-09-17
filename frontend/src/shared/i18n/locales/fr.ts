@@ -43,6 +43,11 @@ export const fr: Catalogue = {
   'common.notPermitted': 'Vous n’avez pas l’autorisation de voir ceci.',
   'common.unreachable': 'Impossible de joindre le serveur. Est-il démarré ?',
 
+  'record.opening': 'Ouverture de la fiche…',
+  'record.unreachable':
+    'Cette fiche ne peut pas être ouverte. Elle a peut-être été supprimée, ou elle relève d’une partie de l’entreprise que vous n’êtes pas autorisé à voir.',
+  'record.backToList': 'Retour à la liste',
+
   'error.network': 'Impossible de joindre le serveur. Est-il démarré ?',
   'error.invalidCredentials':
     'Cette adresse e-mail et ce mot de passe ne correspondent à aucun compte.',

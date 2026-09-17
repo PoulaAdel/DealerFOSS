@@ -17,10 +17,9 @@
 //   already filters to the caller's lots, so a picker would promise access
 //   the server refuses.
 
-import { render, screen, waitFor, within } from '../../test/render';
+import { renderAtRecordRoute, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { MemoryRouter } from 'react-router';
 import { LeadsPage } from './LeadsPage';
 import { SessionProvider } from '../../app/session';
 import { apiCalls, mockApi, mockApiUnreachable, page } from '../../test/setup';
@@ -67,15 +66,17 @@ const detail = (over: Partial<LeadDetail> = {}): LeadDetail => ({
 });
 
 /** The session is real, because the screen asks it who "mine" is. */
-function renderLeads() {
+function renderLeads(at = '/leads') {
   setCurrentTenant('northgroup');
 
-  return render(
-    <MemoryRouter initialEntries={['/leads']}>
-      <SessionProvider>
-        <LeadsPage />
-      </SessionProvider>
-    </MemoryRouter>,
+  // At the screen's real route: the optional `:id` segment carries the open
+  // enquiry, and a bare mount would have nowhere to navigate to.
+  return renderAtRecordRoute(
+    '/leads',
+    <SessionProvider>
+      <LeadsPage />
+    </SessionProvider>,
+    at,
   );
 }
 
@@ -661,5 +662,56 @@ describe('a walk-in nobody has met', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Not on file/ }));
 
     expect(screen.getByRole('button', { name: 'Add and use them' })).toBeDisabled();
+  });
+});
+
+/**
+ * An enquiry with an address of its own (2026-09-16).
+ *
+ * A sales manager chasing an unclaimed enquiry now has something to send. The
+ * list stays underneath, signal band and all.
+ */
+describe('an enquiry reached by its own address', () => {
+  it('arrives open when the address names the enquiry', async () => {
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads/l1': { ok: true, body: detail() },
+      '/leads': { ok: true, body: page([summary]) },
+      '/staff': { ok: true, body: [] },
+    });
+    renderLeads('/leads/l1');
+
+    expect(
+      await screen.findByRole('heading', { name: /Priya Raman · 2021 Toyota RAV4 XLE/ }),
+    ).toBeVisible();
+  });
+
+  it('puts the enquiry in the address when a row is opened', async () => {
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads/l1': { ok: true, body: detail() },
+      '/leads': { ok: true, body: page([summary]) },
+      '/staff': { ok: true, body: [] },
+    });
+    const { address } = renderLeads();
+
+    await openLead();
+    await screen.findByRole('heading', { name: /Priya Raman · 2021 Toyota RAV4 XLE/ });
+
+    expect(address()).toBe('/leads/l1');
+  });
+
+  it('says so in one sentence when the address names an enquiry it cannot open', async () => {
+    // An enquiry IS rooftop-scoped, so this is the case that matters most:
+    // "belongs to another branch" and "never existed" must read identically,
+    // or a guessed id becomes a way to learn what other lots are working on.
+    mockApi({
+      '/auth/me': signedIn,
+      '/leads': { ok: true, body: page([summary]) },
+      '/leads/l9': { ok: false, status: 403, code: 'lead.forbidden', detail: 'No.' },
+    });
+    renderLeads('/leads/l9');
+
+    expect(await screen.findByText(/That record cannot be opened/)).toBeVisible();
   });
 });

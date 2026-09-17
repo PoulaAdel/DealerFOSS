@@ -31,7 +31,7 @@ section.page
 ├── .panel--signal   0..n  WHAT NEEDS A PERSON NOW  — omitted entirely when empty
 ├── .panel--context  0..n  THE NEXT THING, in place  — the diary above the ramps
 ├── .scroll > table    1   THE RECORD LIST          — scrolls inside its own box
-└── .panel--detail   0..1  THE SELECTED RECORD, inline — never a second route
+└── .panel--detail   0..1  THE SELECTED RECORD, inline — below, never instead
 ```
 
 **The bands are ordered by urgency, not by data model.** `panel--signal` is the
@@ -45,6 +45,11 @@ below the list with the list still on screen. This is the zero-jump rule: the
 operator keeps their place, their filter and their scroll position, and going
 "back" is not an operation. Routes are for *areas* — stock, workshop, deals — and
 never for *records within an area*.
+
+> **Amended 2026-09-17** — see the amendment near the end of this document. The
+> band may now have an ADDRESS (`/inventory/:id`) without becoming a second
+> screen: the list stays put, the segment is optional on the same route, and
+> the page is never remounted. What stays forbidden is replacing the list.
 
 **A modal is permitted for exactly one thing:** confirming an act that is hard to
 undo and that the server will happily perform (suspending a dealership, deleting
@@ -104,6 +109,15 @@ steps is a form that is asking for things it does not need.
 
    Still to do: a signal band for enquiries nobody has touched, and detail bands
    on stock and customers, which are read-only lists today.
+
+   **Closed 2026-09-17.** All three landed: the enquiry screen has its signal
+   band ("Nobody is chasing these"), and stock and customers both have detail
+   bands. Zero-jump is now proven rather than followed — the hook that puts a
+   record in the address counts mounts, so the one change that would quietly
+   break it fails a test instead. The sentence above — *"no screen puts a
+   record behind a route"* — is still true in the sense it was written: no
+   screen REPLACES its list with a record. Records do have addresses now; see
+   the amendment.
 7. **Smart defaults.** Present where somebody thought of it — the short name
    suggested from a dealership's name, the workshop inferred rather than asked
    for, the last dealer group remembered at sign-in. Not systematic, and nothing
@@ -188,6 +202,76 @@ target-size sweep initially ran against pages that had not rendered, and the
 focus-ring check reported every control as failing because programmatic `.focus()`
 does not trigger `:focus-visible`. A measurement that has not itself been checked
 is not evidence.
+
+## Amendment — a band may have an address (2026-09-17)
+
+**Status:** Accepted · Amends the "Decision — the shape of a screen" section above.
+
+The rule as written says *"A detail is a band, not a route… Routes are for areas
+and never for records within an area."* Read as one sentence it forbids
+`/inventory/:id`, and that reading is what this amendment narrows.
+
+**What the rule was protecting is the zero-jump property**, spelled out in the
+same paragraph: the operator keeps their place, their filter and their scroll
+position, and going back is not an operation. Every argument in the original
+section is about *replacing the list with a second screen*. None of them is
+about the address bar.
+
+**What the rule was costing** was not visible until the product had enough
+records to need paging and a picker to find one. By 2026-09-10 a walk could
+reach page five of the stock list and pick the right car out of five hundred,
+and then had no way to tell anybody which car it was. "Have a look at RO-1084"
+is a sentence a service manager says all day and the system could not answer it.
+A receptionist with a customer on the telephone had to say "search for Okonkwo,
+no, the other one". Nothing could be bookmarked, or opened in two tabs to
+compare, and the back button left the screen instead of closing the record —
+which is the first thing everybody tries.
+
+### The narrowing
+
+**A detail is still a band. The band may have an address.**
+
+- The list stays on screen, with its filter, its page and its scroll position.
+  The detail still renders below it as `panel--detail`.
+- The address gains an **optional** segment — `path="/inventory/:id?"` — and
+  this is the load-bearing part. Two routes, one for the list and one for the
+  record, would be two different matches, so React Router would unmount and
+  remount the page on every open and every close, and the filter and scroll
+  would go with it. That is the thing the original rule forbade, and it is
+  still forbidden. One route with an optional segment keeps the page mounted
+  throughout, which `useRecordRoute.test` proves by counting mounts.
+- Opening pushes, so **back closes the record** rather than leaving the screen.
+  Closing goes back rather than forward, so opening three records does not
+  leave six entries to walk out through. Arriving on a record's own URL is the
+  exception: there is no entry of ours behind it, so closing replaces instead,
+  and the browser's back button still points wherever they were before.
+
+### Two things the address made us decide
+
+**A filter travels; an instruction does not.** The stock list's `?stock=` is a
+real filter and goes with the car, so the list is not silently widened on the
+way back. The deal desk's `?leadId=` is a one-shot handoff from a won enquiry,
+and a link carrying it would **start a second deal on the same enquiry** for
+whoever opened it. `carryQuery` is therefore off by default and opted into.
+When in doubt, the URL that does less when pasted is the right one.
+
+**One sentence for every reason a record will not open.** Deleted, never
+existed, and belongs to a rooftop the reader may not see all read identically.
+The server already refuses to tell those apart for scoped records, and a
+helpful screen saying "that job belongs to another branch" would hand back the
+fact the server withheld, one guessed id at a time. `RecordBand.tsx` is the one
+place that sentence lives, so five screens cannot drift into five answers.
+
+**Sign-in keeps the address.** The signed-out router used to redirect to
+`/sign-in`, which threw the requested address away — so a shared link opened by
+somebody signed out landed them on the dashboard. The commonest reader of a
+shared link is exactly that person. Sign-in now renders where they asked to be.
+
+### What is unchanged
+
+The five bands, their order, the states each must render, the signal band
+disappearing when empty, and the rule that a modal is for one thing. A screen
+that cannot be expressed in the five bands is still evidence about the shape.
 
 ## Validation / review trigger
 

@@ -46,6 +46,11 @@ export const de: Catalogue = {
   'common.notPermitted': 'Sie haben keine Berechtigung, dies zu sehen.',
   'common.unreachable': 'Der Server ist nicht erreichbar. Läuft er?',
 
+  'record.opening': 'Datensatz wird geöffnet…',
+  'record.unreachable':
+    'Dieser Datensatz kann nicht geöffnet werden. Möglicherweise wurde er entfernt, oder er gehört zu einem Bereich des Unternehmens, den Sie nicht sehen dürfen.',
+  'record.backToList': 'Zurück zur Liste',
+
   'error.network': 'Der Server ist nicht erreichbar. Läuft er?',
   'error.invalidCredentials':
     'Diese E-Mail-Adresse und dieses Passwort gehören zu keinem Konto.',

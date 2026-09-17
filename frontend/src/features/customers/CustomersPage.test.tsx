@@ -14,12 +14,21 @@
 //   history and their deals, and nobody notices until it matters. If that
 //   check is ever removed as friction, these tests are what says so.
 
-import { render, screen, waitFor, within } from '../../test/render';
+import { renderAtRecordRoute, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { CustomersPage } from './CustomersPage';
 import { apiCalls, mockApi, mockApiUnreachable, page } from '../../test/setup';
 import type { CustomerSummary } from '../../shared/contracts';
+
+/**
+ * At the screen's real route. The optional `:id` segment carries the open
+ * customer, so a bare mount has no route to navigate within and clicking a row
+ * would do nothing.
+ */
+function renderCustomers(at = '/customers') {
+  return renderAtRecordRoute('/customers', <CustomersPage />, at);
+}
 
 const ada: CustomerSummary = {
   id: '11111111-1111-1111-1111-111111111111',
@@ -45,7 +54,7 @@ async function fillNewCustomer(lastName: string) {
 describe('finding customers', () => {
   it('lists who is already here', async () => {
     mockApi({ '/customers': { ok: true, body: page([ada, garage]) } });
-    render(<CustomersPage />);
+    renderCustomers();
 
     expect(await screen.findByText('Ada Lovelace')).toBeVisible();
     expect(screen.getByText('Bob’s Garage')).toBeVisible();
@@ -54,7 +63,7 @@ describe('finding customers', () => {
 
   it('asks the server to do the matching', async () => {
     mockApi({ '/customers': { ok: true, body: page([ada]) } });
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Ada Lovelace');
 
     // No Enter. The list follows the box.
@@ -69,7 +78,7 @@ describe('finding customers', () => {
 
   it('collapses a burst of typing into one search', async () => {
     mockApi({ '/customers': { ok: true, body: page([ada]) } });
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Ada Lovelace');
 
     await userEvent.type(screen.getByLabelText('Find someone'), 'lovelace');
@@ -102,7 +111,7 @@ describe('finding customers', () => {
       '/customers': { ok: true, body: page([ada]) },
     });
 
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Ada Lovelace');
 
     const box = screen.getByLabelText('Find someone');
@@ -127,7 +136,7 @@ describe('finding customers', () => {
 
   it('says nobody matches rather than showing an empty table', async () => {
     mockApi({ '/customers': { ok: true, body: page([]) } });
-    render(<CustomersPage />);
+    renderCustomers();
 
     expect(await screen.findByText('Nobody matches that.')).toBeVisible();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
@@ -135,14 +144,14 @@ describe('finding customers', () => {
 
   it('explains a refusal in words somebody can act on', async () => {
     mockApi({ '/customers': { ok: false, status: 403, code: 'customers.forbidden', detail: 'No.' } });
-    render(<CustomersPage />);
+    renderCustomers();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/do not have access to customer records/i);
   });
 
   it('offers a retry when the server is unreachable', async () => {
     mockApiUnreachable();
-    render(<CustomersPage />);
+    renderCustomers();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not reach the server/);
     expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
@@ -156,7 +165,7 @@ describe('finding customers', () => {
     }));
 
     mockApi({ '/customers': { ok: true, body: page(many, { total: 2140, limit: 100 }) } });
-    render(<CustomersPage />);
+    renderCustomers();
 
     // Not "the first 100, there may be more", which was true and useless to
     // somebody trying to find out how many customers they have.
@@ -167,7 +176,7 @@ describe('finding customers', () => {
 describe('adding a customer', () => {
   it('looks for an existing record before creating one', async () => {
     mockApi({ '/customers': { ok: true, body: page([ada]) } });
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Ada Lovelace');
 
     await fillNewCustomer('Lovelace');
@@ -180,7 +189,7 @@ describe('adding a customer', () => {
 
   it('shows who it found, with enough to recognise them', async () => {
     mockApi({ '/customers': { ok: true, body: page([ada]) } });
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Ada Lovelace');
 
     await fillNewCustomer('Lovelace');
@@ -193,7 +202,7 @@ describe('adding a customer', () => {
 
   it('creates nobody when the person says it is one of these', async () => {
     mockApi({ '/customers': { ok: true, body: page([ada]) } });
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Ada Lovelace');
 
     await fillNewCustomer('Lovelace');
@@ -216,7 +225,7 @@ describe('adding a customer', () => {
       ],
     });
 
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Ada Lovelace');
 
     await fillNewCustomer('Lovelace');
@@ -240,7 +249,7 @@ describe('adding a customer', () => {
       ],
     });
 
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Nobody matches that.');
 
     await fillNewCustomer('Likethis');
@@ -256,7 +265,7 @@ describe('adding a customer', () => {
 
   it('checks the phone and the email too, not only the name', async () => {
     mockApi({ '/customers': { ok: true, body: page([]) } });
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Nobody matches that.');
 
     await userEvent.click(screen.getByRole('button', { name: 'Add a customer' }));
@@ -277,7 +286,7 @@ describe('adding a customer', () => {
 
   it('will not submit without a name', async () => {
     mockApi({ '/customers': { ok: true, body: page([]) } });
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Nobody matches that.');
 
     await userEvent.click(screen.getByRole('button', { name: 'Add a customer' }));
@@ -287,7 +296,7 @@ describe('adding a customer', () => {
 
   it('asks for a business name rather than a last name for a business', async () => {
     mockApi({ '/customers': { ok: true, body: page([]) } });
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Nobody matches that.');
 
     await userEvent.click(screen.getByRole('button', { name: 'Add a customer' }));
@@ -307,12 +316,85 @@ describe('adding a customer', () => {
       ],
     });
 
-    render(<CustomersPage />);
+    renderCustomers();
     await screen.findByText('Nobody matches that.');
 
     await fillNewCustomer('Refused');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     expect(await screen.findByText('You cannot add customers.')).toBeVisible();
+  });
+});
+
+/**
+ * A customer with an address of their own (2026-09-16).
+ *
+ * The results stay on screen with the search term intact — that part is
+ * unchanged and is the whole reason the band was a band. What is new is that
+ * `/customers/:id` says which of them is open, so "I will send you the link"
+ * replaces "search for Lovelace, no, the other one" on a telephone call.
+ */
+describe('a customer reached by their own address', () => {
+  const detail = {
+    id: ada.id,
+    displayName: 'Ada Lovelace',
+    kind: 'Person' as const,
+    firstName: 'Ada',
+    lastName: 'Lovelace',
+    homeRooftopId: null,
+    address: null,
+    contactPoints: [],
+    externalReference: null,
+  };
+
+  it('arrives open when the address names the customer', async () => {
+    mockApi({
+      '/customers': { ok: true, body: page([ada]) },
+      [`/customers/${ada.id}`]: { ok: true, body: detail },
+    });
+    renderCustomers(`/customers/${ada.id}`);
+
+    expect(await screen.findByRole('region', { name: 'Ada Lovelace' })).toBeVisible();
+  });
+
+  it('puts the customer in the address when a row is opened', async () => {
+    mockApi({
+      '/customers': { ok: true, body: page([ada]) },
+      [`/customers/${ada.id}`]: { ok: true, body: detail },
+    });
+    const { address } = renderCustomers();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ada Lovelace' }));
+    await screen.findByRole('region', { name: 'Ada Lovelace' });
+
+    expect(address()).toBe(`/customers/${ada.id}`);
+  });
+
+  it('leaves the search term alone, because the box is not worth a history entry', async () => {
+    // Typing is not navigation. A keystroke per history entry would turn the
+    // back button into an undo for typing, which is not what anybody presses it
+    // for. Only the open record goes in the address.
+    mockApi({
+      '/customers': { ok: true, body: page([ada]) },
+      [`/customers/${ada.id}`]: { ok: true, body: detail },
+    });
+    const { address } = renderCustomers();
+    await screen.findByText('Ada Lovelace');
+
+    await userEvent.type(screen.getByLabelText('Find someone'), 'love');
+
+    expect(address()).toBe('/customers');
+  });
+
+  it('says so in one sentence when the address names somebody it cannot open', async () => {
+    mockApi({
+      '/customers': { ok: true, body: page([ada]) },
+      '/customers/00000000-0000-0000-0000-000000000000': {
+        ok: false, status: 404, code: 'customer.not_found', detail: 'No.',
+      },
+    });
+    renderCustomers('/customers/00000000-0000-0000-0000-000000000000');
+
+    expect(await screen.findByText(/That record cannot be opened/)).toBeVisible();
   });
 });

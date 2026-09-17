@@ -18,10 +18,17 @@
 //   So: a button a caller may not use is *absent*, with a sentence saying
 //   why. A disabled button with no explanation teaches nobody anything, and
 //   a button that is present and then refused wastes somebody's time.
+//
+//   The open deal lives at `/deals/:id` and the query string DOES NOT travel
+//   with it — `carryQuery` stays off here on purpose. `?leadId=` is a one-shot
+//   instruction to start a deal, not a filter, and a link carrying it would
+//   start a second deal on the same enquiry for whoever opened it.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ApiError, api, openDocument, post } from '../../shared/api';
+import { RecordBandStatus } from '../../shared/RecordBand';
+import { useRecordRoute } from '../../shared/useRecordRoute';
 import { DealTerms } from './DealTerms';
 import { DealProducts } from './DealProducts';
 import { DealTax, SoldTax } from './DealTax';
@@ -59,8 +66,12 @@ export function DealsPage() {
   // page 3 of all of them.
   const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
-  const [selected, setSelected] = useState<DealDetail | null>(null);
   const [starting, setStarting] = useState(fromLead !== null);
+
+  const record = useRecordRoute<DealDetail>({
+    area: '/deals',
+    load: (dealId, signal) => api<DealDetail>(`/deals/${dealId}`, { signal }),
+  });
 
   const find = useCallback(async (open: boolean, from: number) => {
     setLoad({ kind: 'loading' });
@@ -85,14 +96,6 @@ export function DealsPage() {
   useEffect(() => {
     void find(openOnly, offset);
   }, [find, openOnly, offset]);
-
-  async function open(dealId: string) {
-    try {
-      setSelected(await api<DealDetail>(`/deals/${dealId}`));
-    } catch (failure) {
-      setLoad({ kind: 'failed', message: describe(failure) });
-    }
-  }
 
   // Submitted and not yet signed off. The server decides who may approve; this
   // is only the list of what is blocked, and it is drawn from the summary
@@ -127,10 +130,11 @@ export function DealsPage() {
           customerId={forCustomer}
           onStarted={async (deal) => {
             setStarting(false);
-            setSelected(deal);
-            // The handoff is spent. Leaving it in the address bar would restart
-            // the same deal on a refresh, or on the back button.
-            setParams({}, { replace: true });
+            // The handoff is spent, and this is what spends it: `carryQuery` is
+            // off for this screen, so navigating to the new deal's own address
+            // leaves `?leadId=` behind. Leaving it in the address bar would
+            // restart the same deal on a refresh, or on the back button.
+            record.openWith(deal.id, deal);
             await find(openOnly, offset);
           }}
           onCancel={() => {
@@ -166,7 +170,7 @@ export function DealsPage() {
                     the job number. It names the specific car — which is what a
                     manager asks about — and keeps this control distinct from
                     the customer-name button on the row below. */}
-                <button type="button" className="link" onClick={() => void open(deal.id)}>
+                <button type="button" className="link" onClick={() => record.open(deal.id)}>
                   <span dir="ltr">{deal.stockNumber}</span> — {deal.customerName}
                 </button>{' '}
                 <span className="muted">
@@ -178,21 +182,23 @@ export function DealsPage() {
         </section>
       )}
 
-      {selected === null ? null : (
+      <RecordBandStatus route={record} />
+
+      {record.state.kind !== 'open' ? null : (
         <DealPanel
-          deal={selected}
+          deal={record.state.record}
           onChanged={async (updated) => {
-            setSelected(updated);
+            record.refresh(updated);
             await find(openOnly, offset);
           }}
-          onClose={() => setSelected(null)}
+          onClose={record.close}
         />
       )}
 
       <Body
         load={load}
         onRetry={() => void find(openOnly, offset)}
-        onOpen={(id) => void open(id)}
+        onOpen={record.open}
         onPage={setOffset}
       />
     </>

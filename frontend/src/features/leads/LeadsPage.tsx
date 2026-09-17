@@ -19,10 +19,16 @@
 //   LeadService already filters to the caller's authorized lots, so the list
 //   is *already* the right list. Offering a picker would imply a person can
 //   look at another location's enquiries, and the server would refuse.
+//
+//   (3) The open enquiry lives at `/leads/:id`, so a manager can send one to
+//   the person who should be chasing it. The list stays on screen underneath —
+//   see `useRecordRoute` and the 2026-09-16 amendment to ADR-020.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ApiError, api, post } from '../../shared/api';
+import { RecordBandStatus } from '../../shared/RecordBand';
+import { useRecordRoute } from '../../shared/useRecordRoute';
 import { useSession } from '../../app/session';
 import { CaptureLead } from './CaptureLead';
 import type {
@@ -53,8 +59,12 @@ export function LeadsPage() {
   const [openOnly, setOpenOnly] = useState(true);
   const [mineOnly, setMineOnly] = useState(false);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
-  const [selected, setSelected] = useState<LeadDetail | null>(null);
   const [capturing, setCapturing] = useState(false);
+
+  const record = useRecordRoute<LeadDetail>({
+    area: '/leads',
+    load: (leadId, signal) => api<LeadDetail>(`/leads/${leadId}`, { signal }),
+  });
 
   // Which page of the list. Reset whenever a filter changes, because page 3 of
   // one filter is not page 3 of another and landing on an empty page reads as
@@ -96,14 +106,6 @@ export function LeadsPage() {
     void find(query);
   }, [find, query]);
 
-  async function open(leadId: string) {
-    try {
-      setSelected(await api<LeadDetail>(`/leads/${leadId}`));
-    } catch (failure) {
-      setLoad({ kind: 'failed', message: describe(failure) });
-    }
-  }
-
   return (
     <>
       <header className="page__head">
@@ -136,7 +138,9 @@ export function LeadsPage() {
         <CaptureLead
           onCaptured={async (lead) => {
             setCapturing(false);
-            setSelected(lead);
+            // The server has just handed back the whole enquiry, so it is shown
+            // without a second request for what is already here.
+            record.openWith(lead.id, lead);
             await find(query);
           }}
           onCancel={() => setCapturing(false)}
@@ -149,20 +153,19 @@ export function LeadsPage() {
         </div>
       )}
 
-      <Untouched
-        load={load}
-        onOpen={(id) => void open(id)}
-      />
+      <Untouched load={load} onOpen={record.open} />
 
-      {selected === null ? null : (
+      <RecordBandStatus route={record} />
+
+      {record.state.kind !== 'open' ? null : (
         <LeadPanel
-          lead={selected}
+          lead={record.state.record}
           me={me}
           onChanged={async (updated) => {
-            setSelected(updated);
+            record.refresh(updated);
             await find(query);
           }}
-          onClose={() => setSelected(null)}
+          onClose={record.close}
         />
       )}
 
@@ -170,7 +173,7 @@ export function LeadsPage() {
         load={load}
         me={me}
         onRetry={() => void find(query)}
-        onOpen={(id) => void open(id)}
+        onOpen={record.open}
         onPage={setOffset}
       />
     </>

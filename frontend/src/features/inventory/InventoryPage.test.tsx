@@ -12,10 +12,9 @@
 //   happy path is not finished, and this file is what stops that claim being
 //   taken on trust.
 
-import { render, screen } from '../../test/render';
+import { renderAtRecordRoute, screen } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { MemoryRouter } from 'react-router';
 import { InventoryPage } from './InventoryPage';
 import { apiCalls, mockApi, mockApiPending, mockApiUnreachable, page } from '../../test/setup';
 import type { InventoryUnitSummary } from '../../shared/contracts';
@@ -31,15 +30,12 @@ const unit: InventoryUnitSummary = {
 };
 
 /**
- * Inside a router because the screen reads `?stock=` from the address — that is
- * how the dashboard hands somebody a specific car.
+ * At the screen's real route, because the address carries two things it reads:
+ * `?stock=` — how the dashboard hands somebody a specific car — and the
+ * optional `:id` segment that says which car is open.
  */
 function renderStock(at = '/inventory') {
-  return render(
-    <MemoryRouter initialEntries={[at]}>
-      <InventoryPage />
-    </MemoryRouter>,
-  );
+  return renderAtRecordRoute('/inventory', <InventoryPage />, at);
 }
 
 describe('the stock list', () => {
@@ -413,5 +409,88 @@ describe('moving a car between stock states', () => {
     expect(
       await screen.findByText('This car has been sold. Reverse the deal to undo that.'),
     ).toBeVisible();
+  });
+});
+
+/**
+ * A car with an address of its own (2026-09-16).
+ *
+ * The detail band is unchanged — still below the list, still with the list on
+ * screen. What is new is that `/inventory/:id` says which car it is showing, so
+ * a sales manager can send one rather than describe where to click.
+ */
+describe('a car reached by its own address', () => {
+  const detail = {
+    ...unit,
+    costAmount: 14500,
+    costCurrency: 'USD',
+    acquiredOn: null,
+    history: [],
+  };
+
+  it('arrives open when the address names the car', async () => {
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: { ok: true, body: detail },
+    });
+    renderStock(`/inventory/${unit.id}`);
+
+    expect(await screen.findByRole('region', { name: /NAG-1042/ })).toBeVisible();
+  });
+
+  it('puts the car in the address when a row is opened, so the link can be sent', async () => {
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: { ok: true, body: detail },
+    });
+    const { address } = renderStock();
+
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+    await screen.findByRole('region', { name: /NAG-1042/ });
+
+    expect(address()).toBe(`/inventory/${unit.id}`);
+  });
+
+  it('carries the filter with the car, because ?stock= is a real filter', async () => {
+    // Contrast with the deal desk, whose `?leadId=` is an instruction and is
+    // deliberately left behind. See `carryQuery` in useRecordRoute.
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: { ok: true, body: detail },
+    });
+    const { address } = renderStock('/inventory?stock=NAG-1042');
+
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+    await screen.findByRole('region', { name: /NAG-1042/ });
+
+    expect(address()).toBe(`/inventory/${unit.id}?stock=NAG-1042`);
+  });
+
+  it('says so in one sentence when the address names a car it cannot open', async () => {
+    // Deleted, never existed, or belongs to a lot this person may not see —
+    // all one answer, because the server already refuses to tell them apart.
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      '/inventory/00000000-0000-0000-0000-000000000000': {
+        ok: false, status: 403, code: 'inventory.forbidden', detail: 'No.',
+      },
+    });
+    renderStock('/inventory/00000000-0000-0000-0000-000000000000');
+
+    expect(await screen.findByText(/That record cannot be opened/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Back to the list' })).toBeVisible();
+  });
+
+  it('keeps the list underneath a dead link, so the way on is still there', async () => {
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      '/inventory/00000000-0000-0000-0000-000000000000': {
+        ok: false, status: 403, code: 'inventory.forbidden', detail: 'No.',
+      },
+    });
+    renderStock('/inventory/00000000-0000-0000-0000-000000000000');
+
+    await screen.findByText(/That record cannot be opened/);
+    expect(screen.getByRole('button', { name: /NAG-1042/ })).toBeVisible();
   });
 });

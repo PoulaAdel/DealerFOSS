@@ -56,6 +56,11 @@ export const ar: Catalogue = {
   'common.notPermitted': 'ليس لديك إذن لعرض هذا.',
   'common.unreachable': 'تعذَّر الوصول إلى الخادم. هل هو قيد التشغيل؟',
 
+  'record.opening': 'جارٍ فتح السجل…',
+  'record.unreachable':
+    'تعذَّر فتح هذا السجل. ربما جرى حذفه، أو أنه يخصُّ جزءًا من العمل لا يمكنك الاطّلاع عليه.',
+  'record.backToList': 'العودة إلى القائمة',
+
   'error.network': 'تعذَّر الوصول إلى الخادم. هل هو قيد التشغيل؟',
   'error.invalidCredentials': 'لا يوجد حساب يطابق هذا البريد الإلكتروني وكلمة المرور.',
   'error.sessionRequired': 'سجّل الدخول لاستخدام هذا.',

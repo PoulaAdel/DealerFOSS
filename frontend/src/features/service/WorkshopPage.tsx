@@ -8,7 +8,8 @@
 //   Reachable at /workshop. Selecting a job opens it.
 //
 // Coding Instructions:
-//   Four things here are deliberate.
+//   Six things here are deliberate. (It said "four" while listing five for a
+//   month, which is what a hand-maintained count does.)
 //
 //   (1) The list leads with **work waiting on a customer**, not with a status
 //   filter. Every one of those is a phone call somebody owes and an invoice
@@ -41,10 +42,20 @@
 //   Warranty and internal work needs no customer authorization and the
 //   server marks it authorized on arrival, so the "Agreed?" column says so
 //   rather than claiming somebody was asked.
+//
+//   (6) The open job lives at `/workshop/:id`. This is the screen that wanted
+//   it most: "have a look at RO-1084" is a sentence people say all day, and
+//   until now the only way to act on it was to describe where to click. The
+//   list stays on screen underneath — see `useRecordRoute` and the 2026-09-16
+//   amendment to ADR-020. `/workshop/labour` and `/workshop/setup` are still
+//   areas and still their own routes; React Router ranks their static segment
+//   above `:id`, and `App.test` proves it.
 
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { ApiError, api, openDocument, post, remove } from '../../shared/api';
+import { RecordBandStatus } from '../../shared/RecordBand';
+import { useRecordRoute } from '../../shared/useRecordRoute';
 import { DiaryPanel } from './DiaryPanel';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
@@ -134,7 +145,11 @@ export function WorkshopPage() {
   // Which page. Reset when the filter changes.
   const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
-  const [selected, setSelected] = useState<RepairOrderDetail | null>(null);
+
+  const record = useRecordRoute<RepairOrderDetail>({
+    area: '/workshop',
+    load: (jobId, signal) => api<RepairOrderDetail>(`/repair-orders/${jobId}`, { signal }),
+  });
 
   // `quiet` keeps the list and the open job on screen while the list is
   // refetched. Without it, every act on a job — answering a line, assigning a
@@ -173,10 +188,6 @@ export function WorkshopPage() {
   useEffect(() => {
     void find(openOnly, offset);
   }, [find, openOnly, offset]);
-
-  async function open(jobId: string) {
-    setSelected(await api<RepairOrderDetail>(`/repair-orders/${jobId}`));
-  }
 
   if (load.kind === 'loading') {
     return <p>{t('workshop.loading')}</p>;
@@ -251,7 +262,9 @@ export function WorkshopPage() {
           somebody hold half the answer in their head. */}
       <DiaryPanel
         onArrived={(job) => {
-          setSelected(job);
+          // The whole job came back with the arrival, so it is shown without a
+          // second request for what is already here.
+          record.openWith(job.id, job);
           void find(openOnly, offset, true);
         }}
       />
@@ -267,7 +280,7 @@ export function WorkshopPage() {
           <ul className="calls">
             {waiting.map((job) => (
               <li key={job.id}>
-                <button type="button" className="link" onClick={() => void open(job.id)}>
+                <button type="button" className="link" onClick={() => record.open(job.id)}>
                   {job.number}
                   {mixed && job.rooftopCode !== '' ? ` ${job.rooftopCode}` : ''} —{' '}
                   {job.customerName}
@@ -282,12 +295,14 @@ export function WorkshopPage() {
         </section>
       )}
 
-      {selected === null ? null : (
+      <RecordBandStatus route={record} />
+
+      {record.state.kind !== 'open' ? null : (
         <Job
-          job={selected}
-          onClose={() => setSelected(null)}
+          job={record.state.record}
+          onClose={record.close}
           onChanged={async (updated) => {
-            setSelected(updated);
+            record.refresh(updated);
             await find(openOnly, offset, true);
           }}
         />
@@ -318,7 +333,7 @@ export function WorkshopPage() {
               {load.page.rows.map((job) => (
                 <tr key={job.id}>
                   <td>
-                    <button type="button" className="link" onClick={() => void open(job.id)}>
+                    <button type="button" className="link" onClick={() => record.open(job.id)}>
                       {job.number}
                     </button>
                     {/* Only when the list actually mixes lots. At a one-site

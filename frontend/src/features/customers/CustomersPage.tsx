@@ -21,9 +21,16 @@
 //   name, and a shop that cannot record the second one will get a fake name
 //   typed in instead. The screen's job is to make the duplicate obvious, not
 //   to decide.
+//
+//   The open customer lives at `/customers/:id`. The search box does not: a
+//   receptionist types into it fifty times a day and every keystroke would be
+//   a history entry, so the back button would become an undo for typing. What
+//   goes in the address is what somebody would want to send to a colleague.
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
+import { RecordBandStatus } from '../../shared/RecordBand';
+import { useRecordRoute } from '../../shared/useRecordRoute';
 import { useDebounced } from '../../shared/useDebounced';
 import type { CustomerDetail, CustomerSummary, NewCustomer, Page } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
@@ -65,7 +72,10 @@ export function CustomersPage() {
   const [offset, setOffset] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
 
-  const [selected, setSelected] = useState<CustomerDetail | null>(null);
+  const record = useRecordRoute<CustomerDetail>({
+    area: '/customers',
+    load: (customerId, signal) => api<CustomerDetail>(`/customers/${customerId}`, { signal }),
+  });
 
   const [adding, setAdding] = useState<Adding>({ step: 'closed' });
   const [draft, setDraft] = useState<NewCustomer>(empty);
@@ -113,14 +123,6 @@ export function CustomersPage() {
     void find(settled, offset, stop.signal);
     return () => stop.abort();
   }, [find, settled, offset]);
-
-  async function open(customerId: string) {
-    try {
-      setSelected(await api<CustomerDetail>(`/customers/${customerId}`));
-    } catch (failure) {
-      setLoad({ kind: 'failed', message: describe(failure) });
-    }
-  }
 
   /**
    * Looks for anybody who might already be this person before creating them.
@@ -236,13 +238,15 @@ export function CustomersPage() {
       <Results
         load={load}
         onRetry={() => void find(search, offset)}
-        selectedId={selected?.id ?? null}
-        onOpen={(id) => void open(id)}
+        selectedId={record.openId}
+        onOpen={record.open}
         onPage={setOffset}
       />
 
-      {selected === null ? null : (
-        <CustomerPanel customer={selected} onClose={() => setSelected(null)} />
+      <RecordBandStatus route={record} />
+
+      {record.state.kind !== 'open' ? null : (
+        <CustomerPanel customer={record.state.record} onClose={record.close} />
       )}
     </>
   );
@@ -252,9 +256,15 @@ export function CustomersPage() {
  * ADR-020's detail band: the selected customer, inline, below the results.
  *
  * The zero-jump rule matters more here than anywhere. A receptionist opens this
- * screen fifty times a day with somebody on the telephone; a route per customer
- * would throw away the search term they just typed every time they looked at a
- * record, and they would type it again with the caller waiting.
+ * screen fifty times a day with somebody on the telephone; a screen that
+ * REPLACED the results with the customer would throw away the search term they
+ * just typed, and they would type it again with the caller waiting.
+ *
+ * Giving the customer an address does not do that, and the distinction is the
+ * whole of the 2026-09-16 amendment to ADR-020: the results stay on screen with
+ * their search term intact, and `/customers/:id` only says which of them is
+ * open. What it buys is the thing the telephone makes obvious — "I will send
+ * you the link" instead of "search for Okonkwo, no, the other one".
  */
 function CustomerPanel({
   customer, onClose,

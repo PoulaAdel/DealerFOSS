@@ -16,8 +16,7 @@
 //   one. If these tests start asserting that a button is hidden from a
 //   particular person, the rule has been copied and the copies will drift.
 
-import { render, screen, waitFor, within } from '../../test/render';
-import { MemoryRouter } from 'react-router';
+import { renderAtRecordRoute, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DealsPage } from './DealsPage';
@@ -66,11 +65,7 @@ const detail = (over: Partial<DealDetail> = {}): DealDetail => ({
  * product never runs.
  */
 function renderDeals(at = '/deals') {
-  return render(
-    <MemoryRouter initialEntries={[at]}>
-      <DealsPage />
-    </MemoryRouter>,
-  );
+  return renderAtRecordRoute('/deals', <DealsPage />, at);
 }
 
 async function openDeal() {
@@ -455,5 +450,66 @@ describe('one deal', () => {
     expect(entries[0]).toHaveTextContent('Submitted');
     expect(entries[0]).toHaveTextContent('Priced up.');
     expect(entries[1]).toHaveTextContent('Draft');
+  });
+});
+
+/**
+ * A deal with an address of its own (2026-09-16).
+ *
+ * This screen is the one where the query string had to be thought about: the
+ * deal desk's `?leadId=` is a one-shot instruction from a won enquiry, not a
+ * filter, so it must NOT travel into a shareable address. The stock list's
+ * `?stock=` is a filter and does travel. See `carryQuery` in useRecordRoute.
+ */
+describe('a deal reached by its own address', () => {
+  it('arrives open when the address names the deal', async () => {
+    mockApi({
+      '/deals': { ok: true, body: page([summary]) },
+      '/deals/d1': { ok: true, body: detail() },
+    });
+    renderDeals('/deals/d1');
+
+    expect(
+      await screen.findByRole('heading', { name: /Marisol Alvarez · 2021 Toyota RAV4 XLE/ }),
+    ).toBeVisible();
+  });
+
+  it('puts the deal in the address when a row is opened', async () => {
+    mockApi({
+      '/deals': { ok: true, body: page([summary]) },
+      '/deals/d1': { ok: true, body: detail() },
+    });
+    const { address } = renderDeals();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Marisol Alvarez' }));
+    await screen.findByRole('heading', { name: /Marisol Alvarez · 2021 Toyota RAV4 XLE/ });
+
+    expect(address()).toBe('/deals/d1');
+  });
+
+  it('leaves the handoff behind, so a shared link does not start a second deal', async () => {
+    // The dangerous version of this feature: a manager is sent
+    // `/deals/d1?leadId=l1`, opens it, and the screen starts a NEW deal on an
+    // enquiry that already has one.
+    mockApi({
+      '/deals': { ok: true, body: page([summary]) },
+      '/deals/d1': { ok: true, body: detail() },
+    });
+    const { address } = renderDeals('/deals?leadId=l1&customerId=c1');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Marisol Alvarez' }));
+    await screen.findByRole('heading', { name: /Marisol Alvarez · 2021 Toyota RAV4 XLE/ });
+
+    expect(address()).toBe('/deals/d1');
+  });
+
+  it('says so in one sentence when the address names a deal it cannot open', async () => {
+    mockApi({
+      '/deals': { ok: true, body: page([summary]) },
+      '/deals/d9': { ok: false, status: 403, code: 'deal.forbidden', detail: 'No.' },
+    });
+    renderDeals('/deals/d9');
+
+    expect(await screen.findByText(/That record cannot be opened/)).toBeVisible();
   });
 });
