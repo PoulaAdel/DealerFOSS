@@ -1005,8 +1005,8 @@ tfoot td {
 }
 
 .panel h2 {
-  margin: 24px 0 8px;
-  font-size: 1rem;
+  margin: var(--s-5) 0 var(--s-2);
+  font-size: var(--t-body);
 }
 
 .steps {
@@ -1015,7 +1015,7 @@ tfoot td {
 }
 
 .steps > li {
-  margin-bottom: 24px;
+  margin-bottom: var(--s-5);
 }
 
 .steps > li:last-child {
@@ -1025,15 +1025,15 @@ tfoot td {
 /* A white quiet zone regardless of theme: a QR code inverted by a dark
    background is one many phone cameras will not read. */
 .panel svg {
-  padding: 8px;
-  border-radius: 8px;
+  padding: var(--s-2);
+  border-radius: var(--r-sm);
   background: #ffffff;
 }
 
 .secret {
-  padding: 8px 12px;
+  padding: var(--s-2) var(--s-3);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--ground);
   /* Long enough to wrap, and it must wrap somewhere harmless — a secret broken
      mid-character is one somebody will mistype. */
@@ -1124,7 +1124,12 @@ tfoot td {
   margin-top: var(--s-4);
 }
 
-.actions button.primary {
+/* Not scoped to `.actions` — several page headers put their primary "Add"
+   button straight in `.page__head`, with no `.actions` ancestor at all, and
+   the old `.actions button.primary` selector silently did nothing for those
+   (PartsPage, StaffPage, PeriodsPage, TenantsPage). The class is the
+   contract; where it sits in the tree is not. */
+.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
@@ -1132,7 +1137,7 @@ tfoot td {
 }
 
 /* A disabled primary must not still read as "the thing to press". */
-.actions button.primary:disabled {
+.primary:disabled {
   background: var(--surface);
   border-color: var(--line);
   color: var(--ink-3-on-surface);
