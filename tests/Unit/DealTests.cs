@@ -219,6 +219,87 @@ public sealed class DealTests
         undo.Should().Throw<InvalidOperationException>().WithMessage("*finished*");
     }
 
+    [Fact]
+    public void Cancelling_a_sold_product_leaves_the_original_sale_untouched()
+    {
+        var deal = Delivered();
+        var product = deal.Products.Single();
+
+        var cancelled = deal.CancelProduct(product.Id, DateTimeOffset.UtcNow, 800m, "Customer backed out");
+
+        cancelled.IsCancelled.Should().BeTrue();
+        cancelled.RefundAmount.Should().Be(800m);
+        cancelled.CancellationReason.Should().Be("Customer backed out");
+
+        // What was actually agreed at the point of sale never moves — that is
+        // the audit trail a cancellation must not erase.
+        cancelled.Price.Should().Be(999m);
+        cancelled.Cost.Should().Be(400m);
+    }
+
+    [Fact]
+    public void A_cancelled_products_gross_drops_out_of_the_deals_current_total()
+    {
+        var deal = Delivered();
+        var product = deal.Products.Single();
+
+        deal.ProductGross.Amount.Should().Be(599m, because: "999 price less 400 cost, before any cancellation");
+
+        deal.CancelProduct(product.Id, DateTimeOffset.UtcNow, 999m, null);
+
+        deal.ProductGross.Amount.Should().Be(0m,
+            because: "the deal no longer represents a sale that stands — the reversing ledger entry is what keeps the ORIGINAL month correctly stated");
+    }
+
+    [Fact]
+    public void A_refund_cannot_exceed_what_the_product_actually_sold_for()
+    {
+        var deal = Delivered();
+        var product = deal.Products.Single();
+
+        var tooMuch = () => deal.CancelProduct(product.Id, DateTimeOffset.UtcNow, 1000m, null);
+
+        tooMuch.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void A_product_cannot_be_cancelled_twice()
+    {
+        var deal = Delivered();
+        var product = deal.Products.Single();
+        deal.CancelProduct(product.Id, DateTimeOffset.UtcNow, 500m, null);
+
+        var again = () => deal.CancelProduct(product.Id, DateTimeOffset.UtcNow, 100m, null);
+
+        again.Should().Throw<InvalidOperationException>().WithMessage("*already been cancelled*");
+    }
+
+    [Fact]
+    public void A_product_cannot_be_cancelled_before_the_deal_is_delivered()
+    {
+        var deal = Start();
+        deal.SetTerms([(ChargeKind.VehiclePrice, "2021 RAV4", 26995m)], null);
+        deal.SetProducts([(Guid.NewGuid(), "Extended Warranty", 999m, 400m, 36, 36000)]);
+        deal.ChangeStatus(DealStatus.Submitted, DateTimeOffset.UtcNow);
+
+        // Nothing has been invoiced or posted yet at Submitted — CancelProduct
+        // must refuse it there too, not only before approval.
+        var product = deal.Products.Single();
+        var early = () => deal.CancelProduct(product.Id, DateTimeOffset.UtcNow, 999m, null);
+
+        early.Should().Throw<InvalidOperationException>().WithMessage("*nothing to cancel*");
+    }
+
+    [Fact]
+    public void Cancelling_an_unknown_product_is_refused()
+    {
+        var deal = Delivered();
+
+        var unknown = () => deal.CancelProduct(Guid.NewGuid(), DateTimeOffset.UtcNow, 0m, null);
+
+        unknown.Should().Throw<ArgumentException>();
+    }
+
     private static Deal Start() => Deal.Start(
         Guid.NewGuid(), RooftopId.New(), Guid.NewGuid(), Guid.NewGuid(), "USD", DateTimeOffset.UtcNow);
 
@@ -227,6 +308,17 @@ public sealed class DealTests
         var deal = Start();
         deal.SetTerms([(ChargeKind.VehiclePrice, "2021 RAV4", 26995m)], null);
         deal.ChangeStatus(DealStatus.Submitted, DateTimeOffset.UtcNow);
+        return deal;
+    }
+
+    private static Deal Delivered()
+    {
+        var deal = Start();
+        deal.SetTerms([(ChargeKind.VehiclePrice, "2021 RAV4", 26995m)], null);
+        deal.SetProducts([(Guid.NewGuid(), "Extended Warranty", 999m, 400m, 36, 36000)]);
+        deal.ChangeStatus(DealStatus.Submitted, DateTimeOffset.UtcNow);
+        deal.ChangeStatus(DealStatus.Approved, DateTimeOffset.UtcNow, Guid.NewGuid());
+        deal.ChangeStatus(DealStatus.Delivered, DateTimeOffset.UtcNow, Guid.NewGuid());
         return deal;
     }
 }

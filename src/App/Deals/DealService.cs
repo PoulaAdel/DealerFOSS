@@ -392,6 +392,111 @@ public sealed class DealService(
         return await DescribeAsync(deal, cancellationToken);
     }
 
+    public async Task<Result<DealDetail>> CancelProductAsync(
+        Guid dealId,
+        Guid dealProductId,
+        CancelProduct cancellation,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(cancellation);
+
+        var deal = await LoadAsync(dealId, tracked: true, cancellationToken);
+        if (deal is null)
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        var product = deal.Products.SingleOrDefault(p => p.Id == dealProductId);
+        if (product is null)
+        {
+            return Result.Failure<DealDetail>(DealErrors.UnknownProduct);
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            deal.CancelProduct(dealProductId, _clock.UtcNow, cancellation.RefundAmount, cancellation.Reason);
+        }
+        catch (ArgumentException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<DealDetail>(Error.Validation("deals.cancel_product_invalid", ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<DealDetail>(Error.Conflict("deals.cancel_product_not_allowed", ex.Message));
+        }
+
+        // Zero is a real answer — a product cancelled inside a non-refundable
+        // window — and needs no financial movement at all: nothing is owed back,
+        // so nothing posts and no credit is raised.
+        if (cancellation.RefundAmount > 0m)
+        {
+            var posted = await _accounting.PostProductCancellationAsync(
+                new ProductCancellationPosting(
+                    deal.RooftopId,
+                    deal.Id.ToString(),
+                    deal.Currency,
+                    cancellation.RefundAmount,
+                    $"{product.Name} cancelled"),
+                cancellationToken);
+
+            if (posted.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<DealDetail>(posted.Error);
+            }
+
+            // The same mechanism an overpayment uses: money the dealership now
+            // owes back, which the desk can apply to what the customer still
+            // owes on this deal or hand back directly — see ReceivableService's
+            // ApplyCreditAsync and RefundCreditAsync.
+            var credited = await _receivables.RaiseCreditAsync(
+                new NewCredit(
+                    deal.RooftopId,
+                    deal.CustomerId,
+                    cancellation.RefundAmount,
+                    deal.Currency,
+                    deal.Id.ToString(),
+                    _clock.UtcNow),
+                cancellationToken);
+
+            if (credited.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<DealDetail>(credited.Error);
+            }
+        }
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<DealDetail>(DealErrors.ChangedElsewhere);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, WritePermission, AuditOutcome.Allowed,
+                "Deal", deal.Id.ToString(), deal.RooftopId.Value,
+                $"{product.Name} cancelled, {cancellation.RefundAmount} {deal.Currency} credited",
+                null, null),
+            cancellationToken);
+
+        return await DescribeAsync(deal, cancellationToken);
+    }
+
     public async Task<Result<DealDetail>> SetTaxAsync(
         Guid dealId,
         DealTaxEntry tax,
@@ -764,7 +869,11 @@ public sealed class DealService(
                     p.Cost,
                     p.Gross,
                     p.TermMonths,
-                    p.TermMiles))
+                    p.TermMiles,
+                    p.IsCancelled,
+                    p.CancelledAt,
+                    p.RefundAmount,
+                    p.CancellationReason))
                 .ToList(),
             deal.ProductGross.Amount,
             deal.SalespersonUserId,

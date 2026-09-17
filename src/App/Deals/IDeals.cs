@@ -55,6 +55,19 @@ public interface IDeals
         Guid dealId,
         DealStatusChangeRequest change,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Cancels one F&amp;I product already sold on a delivered deal. The original
+    /// sale is left exactly as agreed; this records a separate event and, when
+    /// something is owed back, raises a credit the customer can have applied to
+    /// what they still owe or handed back — the same mechanism an overpayment
+    /// uses.
+    /// </summary>
+    Task<Result<DealDetail>> CancelProductAsync(
+        Guid dealId,
+        Guid dealProductId,
+        CancelProduct cancellation,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>One deal as a desk list shows it.</summary>
@@ -129,7 +142,18 @@ public sealed record DealProductView(
     decimal Cost,
     decimal Gross,
     int? TermMonths,
-    int? TermMiles);
+    int? TermMiles,
+    bool IsCancelled,
+    DateTimeOffset? CancelledAt,
+    decimal? RefundAmount,
+    string? CancellationReason);
+
+/// <summary>What a caller supplies to cancel a sold product.</summary>
+/// <param name="RefundAmount">
+/// What is owed back to the customer, capped at the product's own price. Zero
+/// is a real answer — a product cancelled inside a non-refundable window.
+/// </param>
+public sealed record CancelProduct(decimal RefundAmount, string? Reason = null);
 
 /// <summary>
 /// A product being sold, at the price and cost agreed for this deal. Both are

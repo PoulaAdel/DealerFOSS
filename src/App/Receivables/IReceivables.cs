@@ -63,6 +63,14 @@ public interface IReceivables
     Task<Result<Receivable>> OpenAsync(NewReceivable receivable, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Raises a credit for a reason other than an overpayment — today, a
+    /// cancelled F&amp;I product. Called inside the caller's transaction; does
+    /// not save. The same contract as <see cref="OpenAsync"/>: the caller has
+    /// already authorized the event this credit comes from.
+    /// </summary>
+    Task<Result<CustomerCredit>> RaiseCreditAsync(NewCredit credit, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Records money arriving and posts it: cash up, receivable down. Owns its
     /// own transaction.
     /// </summary>
@@ -123,6 +131,17 @@ public sealed record NewPayment(
     decimal Amount,
     string Method,
     string? Note = null);
+
+/// <summary>What a caller supplies to raise a credit that did not come from an overpayment.</summary>
+public sealed record NewCredit(
+    RooftopId RooftopId,
+    Guid CustomerId,
+    decimal Amount,
+    string Currency,
+
+    /// <summary>What this credit came from, so a customer asking can be told.</summary>
+    string Reference,
+    DateTimeOffset RaisedAt);
 
 /// <summary>How a caller narrows the list of what is owed.</summary>
 public sealed record ReceivableQuery(

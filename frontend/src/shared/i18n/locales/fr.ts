@@ -671,6 +671,13 @@ export const fr: Catalogue = {
   'deals.colPrice': 'Prix',
   'deals.colGross': 'Marge',
   'deals.productGross': '{amount} de marge sur ce qui a été vendu avec le véhicule.',
+  'deals.cancelProduct': 'Annuler',
+  'deals.productCancelled': 'Annulé le {date}, {refund} crédité au client',
+  'deals.cancelProductTitle': 'Annuler {product}',
+  'deals.cancelProductNote': "Jusqu'à {max} peut être crédité au client.",
+  'deals.refundAmount': 'Montant à rembourser',
+  'deals.cancelReason': 'Motif (facultatif)',
+  'deals.confirmCancelProduct': 'Annuler le produit',
 
   'terms.title': 'Le chiffrage',
   'terms.caption': 'Les lignes de cette vente',

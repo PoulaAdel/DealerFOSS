@@ -252,7 +252,156 @@ public sealed class FinanceProductTests(HostFixture fixture)
             && l.GetProperty("debit").GetDecimal() == 700m);
     }
 
+    [Fact]
+    public async Task Cancelling_a_delivered_product_reverses_its_revenue_and_credits_the_customer()
+    {
+        var product = await AddProductAsync(price: 1200m, cost: 700m);
+        var deal = await StartDealAsync(vehiclePrice: 20000m);
+        var sold = await SetProductsAsync(deal, [(product, 1200m, 700m)]);
+        var dealProductId = sold.GetProperty("products").EnumerateArray().Single().GetProperty("id").GetGuid();
+
+        await DeliverAsync(deal);
+
+        using var response = await SendAsync(
+            HttpMethod.Post, $"/api/v1/deals/{deal}/products/{dealProductId}/cancel", Manager,
+            new { refundAmount = 1200m, reason = "Customer backed out" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, because: await response.Content.ReadAsStringAsync());
+
+        var after = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var cancelledView = after.GetProperty("products").EnumerateArray().Single();
+        cancelledView.GetProperty("isCancelled").GetBoolean().Should().BeTrue();
+        cancelledView.GetProperty("refundAmount").GetDecimal().Should().Be(1200m);
+        cancelledView.GetProperty("price").GetDecimal().Should().Be(1200m,
+            because: "what was actually sold never moves");
+
+        after.GetProperty("productGross").GetDecimal().Should().Be(0m,
+            because: "a cancelled product no longer contributes to the deal's current gross");
+
+        // The reversing entry: revenue debited, the customer credit liability up.
+        using var entries = await SendAsync(
+            HttpMethod.Get, $"/api/v1/accounting/journal?reference={deal}", Manager);
+        var rows = (await entries.Content.ReadFromJsonAsync<JsonElement>()).Rows();
+        rows.Should().HaveCount(2, because: "the delivery and now the cancellation");
+
+        using var entry = await SendAsync(HttpMethod.Get, $"/api/v1/accounting/journal/{rows[0].GetProperty("id").GetGuid()}", Manager);
+        var lines = (await entry.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("lines").EnumerateArray().ToList();
+
+        lines.Should().Contain(l =>
+            l.GetProperty("accountCode").GetString() == "4500" && l.GetProperty("debit").GetDecimal() == 1200m);
+        lines.Should().Contain(l =>
+            l.GetProperty("accountCode").GetString() == "2200" && l.GetProperty("credit").GetDecimal() == 1200m);
+
+        // The credit is real and can settle what the customer still owes on
+        // this very deal — the same mechanism an overpayment uses.
+        using var receivable = await SendAsync(
+            HttpMethod.Get, $"/api/v1/receivables/for/Deal/{deal}", Manager);
+        var owed = (await receivable.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var credits = await SendAsync(HttpMethod.Get, $"/api/v1/receivables/credits", Manager);
+        var creditId = (await credits.Content.ReadFromJsonAsync<JsonElement>())
+            .Rows().Single(c => c.GetProperty("reference").GetString() == deal.ToString())
+            .GetProperty("id").GetGuid();
+
+        using var applied = await SendAsync(
+            HttpMethod.Post, $"/api/v1/receivables/credits/{creditId}/apply", Manager,
+            new { receivableId = owed, amount = 1200m, note = (string?)null });
+
+        applied.StatusCode.Should().Be(HttpStatusCode.OK, because: await applied.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Cancelling_more_than_the_product_sold_for_is_refused()
+    {
+        var product = await AddProductAsync(price: 1200m, cost: 700m);
+        var deal = await StartDealAsync(vehiclePrice: 20000m);
+        var sold = await SetProductsAsync(deal, [(product, 1200m, 700m)]);
+        var dealProductId = sold.GetProperty("products").EnumerateArray().Single().GetProperty("id").GetGuid();
+
+        await DeliverAsync(deal);
+
+        using var response = await SendAsync(
+            HttpMethod.Post, $"/api/v1/deals/{deal}/products/{dealProductId}/cancel", Manager,
+            new { refundAmount = 5000m, reason = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task A_product_cannot_be_cancelled_before_the_deal_is_delivered()
+    {
+        var product = await AddProductAsync(price: 1200m, cost: 700m);
+        var deal = await StartDealAsync(vehiclePrice: 20000m);
+        var sold = await SetProductsAsync(deal, [(product, 1200m, 700m)]);
+        var dealProductId = sold.GetProperty("products").EnumerateArray().Single().GetProperty("id").GetGuid();
+
+        await PostAsync($"/api/v1/deals/{deal}/status", new { status = "Submitted", note = (string?)null });
+        await PostAsync($"/api/v1/deals/{deal}/status", new { status = "Approved", note = (string?)null });
+
+        using var response = await SendAsync(
+            HttpMethod.Post, $"/api/v1/deals/{deal}/products/{dealProductId}/cancel", Manager,
+            new { refundAmount = 1200m, reason = (string?)null });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict,
+            because: "nothing has actually been charged for it until the car is delivered");
+    }
+
+    [Fact]
+    public async Task A_product_cannot_be_cancelled_twice()
+    {
+        var product = await AddProductAsync(price: 1200m, cost: 700m);
+        var deal = await StartDealAsync(vehiclePrice: 20000m);
+        var sold = await SetProductsAsync(deal, [(product, 1200m, 700m)]);
+        var dealProductId = sold.GetProperty("products").EnumerateArray().Single().GetProperty("id").GetGuid();
+
+        await DeliverAsync(deal);
+        await PostAsync($"/api/v1/deals/{deal}/products/{dealProductId}/cancel",
+            new { refundAmount = 600m, reason = (string?)null });
+
+        using var again = await SendAsync(
+            HttpMethod.Post, $"/api/v1/deals/{deal}/products/{dealProductId}/cancel", Manager,
+            new { refundAmount = 100m, reason = (string?)null });
+
+        again.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Cancelling_a_product_for_no_refund_posts_nothing()
+    {
+        // A cancellation inside a non-refundable window is still a real event —
+        // just one with no money attached, so nothing needs to balance.
+        var product = await AddProductAsync(price: 1200m, cost: 700m);
+        var deal = await StartDealAsync(vehiclePrice: 20000m);
+        var sold = await SetProductsAsync(deal, [(product, 1200m, 700m)]);
+        var dealProductId = sold.GetProperty("products").EnumerateArray().Single().GetProperty("id").GetGuid();
+
+        await DeliverAsync(deal);
+
+        using var response = await SendAsync(
+            HttpMethod.Post, $"/api/v1/deals/{deal}/products/{dealProductId}/cancel", Manager,
+            new { refundAmount = 0m, reason = "Outside the window" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, because: await response.Content.ReadAsStringAsync());
+
+        var after = await response.Content.ReadFromJsonAsync<JsonElement>();
+        after.GetProperty("products").EnumerateArray().Single()
+            .GetProperty("isCancelled").GetBoolean().Should().BeTrue();
+
+        using var entries = await SendAsync(
+            HttpMethod.Get, $"/api/v1/accounting/journal?reference={deal}", Manager);
+        (await entries.Content.ReadFromJsonAsync<JsonElement>()).Rows().Should().HaveCount(1,
+            because: "only the original delivery — no money moved on cancellation");
+    }
+
     // --- helpers -----------------------------------------------------------
+
+    private async Task DeliverAsync(Guid deal)
+    {
+        await PostAsync($"/api/v1/deals/{deal}/status", new { status = "Submitted", note = (string?)null });
+        await PostAsync($"/api/v1/deals/{deal}/status", new { status = "Approved", note = (string?)null });
+        await PostAsync($"/api/v1/deals/{deal}/status", new { status = "Delivered", note = (string?)null });
+    }
 
     private async Task<Guid> AddProductAsync(decimal price = 500m, decimal cost = 250m)
     {

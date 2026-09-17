@@ -721,6 +721,13 @@ export const ar: Catalogue = {
   'deals.colPrice': 'السعر',
   'deals.colGross': 'مجمل الربح',
   'deals.productGross': '{amount} مجمل ربح مما بيع مع السيارة.',
+  'deals.cancelProduct': 'إلغاء',
+  'deals.productCancelled': 'أُلغي في {date}، وأُعيد للعميل كرصيد {refund}',
+  'deals.cancelProductTitle': 'إلغاء {product}',
+  'deals.cancelProductNote': 'يمكن رد حتى {max} للعميل كرصيد.',
+  'deals.refundAmount': 'مبلغ الاسترداد',
+  'deals.cancelReason': 'السبب (اختياري)',
+  'deals.confirmCancelProduct': 'إلغاء المنتج',
 
   'terms.title': 'الأرقام',
   'terms.caption': 'بنود هذه الصفقة',

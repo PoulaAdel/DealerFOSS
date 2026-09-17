@@ -141,6 +141,16 @@ public interface IAccounting
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Records an F&amp;I product sold on a delivered deal being cancelled:
+    /// reverses the revenue already recognized and raises what is owed back to
+    /// the customer as a liability (2200), the same account an overpayment
+    /// uses. Called inside the deal's transaction; does not save.
+    /// </summary>
+    Task<Result<JournalEntryDetail>> PostProductCancellationAsync(
+        ProductCancellationPosting cancellation,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// What the business made over a period: revenue and cost of sales by
     /// department, then what it costs to run the place, then the difference.
     /// </summary>
@@ -360,6 +370,15 @@ public sealed record CreditRefundPosting(
     string Reference,
     string Currency,
     decimal Amount,
+    string Memo);
+
+public sealed record ProductCancellationPosting(
+    RooftopId RooftopId,
+
+    /// <summary>The deal's own id, so this reads beside the delivery it partly undoes.</summary>
+    string Reference,
+    string Currency,
+    decimal RefundAmount,
     string Memo);
 
 public sealed record StockPurchasePosting(

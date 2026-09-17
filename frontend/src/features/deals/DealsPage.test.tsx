@@ -200,6 +200,10 @@ describe('one deal', () => {
               gross: 250,
               termMonths: 36,
               termMiles: null,
+              isCancelled: false,
+              cancelledAt: null,
+              refundAmount: null,
+              cancellationReason: null,
             },
           ],
           productGross: 250,
@@ -214,6 +218,102 @@ describe('one deal', () => {
 
     expect(await screen.findByText('$950.00')).toBeVisible();
     expect(screen.getByText('$24,950.00')).toBeVisible();
+  });
+
+  it('cancels a product sold on a delivered deal, crediting the refund back', async () => {
+    const sold = {
+      id: 'dp1',
+      financeProductId: 'fp1',
+      name: '3-year warranty',
+      provider: 'Northgate Underwriting',
+      price: 950,
+      cost: 700,
+      gross: 250,
+      termMonths: 36,
+      termMiles: null,
+      isCancelled: false,
+      cancelledAt: null,
+      refundAmount: null,
+      cancellationReason: null,
+    };
+
+    mockApi({
+      '/deals/d1': {
+        ok: true,
+        body: detail({ status: 'Delivered', termsAreOpen: false, products: [sold], productGross: 250 }),
+      },
+      '/deals/d1/products/dp1/cancel': {
+        ok: true,
+        body: detail({
+          status: 'Delivered',
+          termsAreOpen: false,
+          products: [{
+            ...sold,
+            isCancelled: true,
+            cancelledAt: '2026-09-17T10:00:00Z',
+            refundAmount: 950,
+            cancellationReason: 'Customer backed out',
+          }],
+          productGross: 0,
+        }),
+      },
+      '/deals': { ok: true, body: page([{ ...summary, status: 'Delivered' }]) },
+      '/finance/products': { ok: true, body: [] },
+    });
+
+    renderDeals();
+    await openDeal();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+    const reason = screen.getByLabelText('Reason (optional)');
+    await userEvent.type(reason, 'Customer backed out');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel the product' }));
+
+    expect(await screen.findByText(/Cancelled .+, \$950\.00 credited back/)).toBeVisible();
+
+    const sent = apiCalls().find((c) => c.path === '/deals/d1/products/dp1/cancel');
+    expect(sent?.init?.method).toBe('POST');
+    expect(JSON.parse(sent!.init!.body as string)).toEqual({
+      refundAmount: 950,
+      reason: 'Customer backed out',
+    });
+  });
+
+  it('offers no cancel button once a product is already cancelled', async () => {
+    mockApi({
+      '/deals/d1': {
+        ok: true,
+        body: detail({
+          status: 'Delivered',
+          termsAreOpen: false,
+          products: [{
+            id: 'dp1',
+            financeProductId: 'fp1',
+            name: '3-year warranty',
+            provider: 'Northgate Underwriting',
+            price: 950,
+            cost: 700,
+            gross: 250,
+            termMonths: 36,
+            termMiles: null,
+            isCancelled: true,
+            cancelledAt: '2026-09-17T10:00:00Z',
+            refundAmount: 950,
+            cancellationReason: null,
+          }],
+          productGross: 0,
+        }),
+      },
+      '/deals': { ok: true, body: page([{ ...summary, status: 'Delivered' }]) },
+      '/finance/products': { ok: true, body: [] },
+    });
+
+    renderDeals();
+    await openDeal();
+
+    await screen.findByText(/Cancelled .+, \$950\.00 credited back/);
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
   });
 
   it('shows a trade-in as reducing what is owed, so the column adds up', async () => {

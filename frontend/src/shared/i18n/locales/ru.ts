@@ -700,6 +700,13 @@ export const ru: Catalogue = {
   'deals.colPrice': 'Цена',
   'deals.colGross': 'Маржа',
   'deals.productGross': '{amount} маржи на том, что продано вместе с автомобилем.',
+  'deals.cancelProduct': 'Отменить',
+  'deals.productCancelled': 'Отменено {date}, {refund} зачислено клиенту',
+  'deals.cancelProductTitle': 'Отменить {product}',
+  'deals.cancelProductNote': 'Клиенту может быть зачислено до {max}.',
+  'deals.refundAmount': 'Сумма возврата',
+  'deals.cancelReason': 'Причина (необязательно)',
+  'deals.confirmCancelProduct': 'Отменить продукт',
 
   'terms.title': 'Расчёт',
   'terms.caption': 'Строки этой сделки',

@@ -68,18 +68,23 @@ public sealed class Deal : AuditableEntity
     /// <summary>Everything on the deal added up, before the trade.</summary>
     public Money Subtotal => new(_charges.Sum(c => c.Amount) + _products.Sum(p => p.Price), Currency);
 
-    /// <summary>What the F&amp;I products on this deal sold for.</summary>
-    public Money ProductRevenue => new(_products.Sum(p => p.Price), Currency);
+    /// <summary>
+    /// What the F&amp;I products on this deal sold for. Excludes anything since
+    /// cancelled — this is what the deal currently represents, not its history;
+    /// the cancellation's own ledger entry is what keeps a past period's figure
+    /// correctly stated.
+    /// </summary>
+    public Money ProductRevenue => new(_products.Where(p => !p.IsCancelled).Sum(p => p.Price), Currency);
 
-    /// <summary>What they cost the dealership.</summary>
-    public Money ProductCost => new(_products.Sum(p => p.Cost), Currency);
+    /// <summary>What they cost the dealership. Same exclusion as <see cref="ProductRevenue"/>.</summary>
+    public Money ProductCost => new(_products.Where(p => !p.IsCancelled).Sum(p => p.Cost), Currency);
 
     /// <summary>
     /// What the dealership made on the products. Reported separately from the car
     /// because a dealer principal reads them as two different businesses, and on
     /// many deals this is the larger of the two.
     /// </summary>
-    public Money ProductGross => new(_products.Sum(p => p.Gross), Currency);
+    public Money ProductGross => new(_products.Where(p => !p.IsCancelled).Sum(p => p.Gross), Currency);
 
     public IReadOnlyList<DealTaxLine> TaxLines => _taxLines;
 
@@ -261,6 +266,35 @@ public sealed class Deal : AuditableEntity
 
         _products.Clear();
         _products.AddRange(replacement);
+    }
+
+    /// <summary>
+    /// Cancels one product already sold, on a delivered deal — a customer
+    /// backing out of a warranty or GAP policy after taking the car. The
+    /// original sale row is untouched; this only marks it and records what
+    /// comes back to the customer, so the desk can still see exactly what was
+    /// agreed at the time.
+    /// </summary>
+    /// <remarks>
+    /// DELIVERED ONLY. Before delivery nothing has been invoiced or posted, so
+    /// removing a product a customer no longer wants is what SetProducts is
+    /// for — sending the deal back to Draft and replacing the list, with
+    /// nothing to refund because nothing was ever charged.
+    /// </remarks>
+    public DealProduct CancelProduct(Guid dealProductId, DateTimeOffset cancelledAt, decimal refundAmount, string? reason)
+    {
+        if (Status != DealStatus.Delivered)
+        {
+            throw new InvalidOperationException(
+                $"A {Status} deal has nothing to cancel a sold product against. "
+                + "Only a delivered deal has actually charged for one.");
+        }
+
+        var product = _products.SingleOrDefault(p => p.Id == dealProductId)
+            ?? throw new ArgumentException("That product is not on this deal.", nameof(dealProductId));
+
+        product.Cancel(cancelledAt, refundAmount, reason);
+        return product;
     }
 
     /// <summary>

@@ -357,7 +357,7 @@ function DealPanel({
       ) : (
         <>
           <p className="note">{t('deals.frozen')}</p>
-          {deal.products.length === 0 ? null : <SoldProducts deal={deal} />}
+          {deal.products.length === 0 ? null : <SoldProducts deal={deal} onChanged={onChanged} />}
           {deal.taxLines.length === 0 ? null : <SoldTax deal={deal} />}
 
           {/* Renders nothing until the car is delivered, because nothing is
@@ -498,9 +498,18 @@ function Body({
  * the editor is gone at this point, and this is the record of what a manager
  * approved.
  */
-function SoldProducts({ deal }: { deal: DealDetail }) {
+function SoldProducts({
+  deal, onChanged,
+}: {
+  deal: DealDetail;
+  onChanged: (updated: DealDetail) => void;
+}) {
   const { t, format } = useI18n();
   const money = (amount: number) => format.money(amount, deal.currency);
+
+  // Which product's cancel form is open, if any. One at a time — cancelling
+  // is a deliberate act with its own refund figure, not a batch operation.
+  const [cancelling, setCancelling] = useState<string | null>(null);
 
   return (
     <>
@@ -516,26 +525,140 @@ function SoldProducts({ deal }: { deal: DealDetail }) {
               <th scope="col" className="num">
                 {t('deals.colGross')}
               </th>
+              {/* Cancelling only ever makes sense once the car has actually been
+                  delivered — nothing was charged for it before that, and
+                  DealService refuses the attempt anyway. Rather than show a
+                  button that always fails on an earlier status, the column is
+                  absent entirely. */}
+              {deal.status === 'Delivered' ? <th scope="col" aria-hidden="true" /> : null}
             </tr>
           </thead>
           <tbody>
             {deal.products.map((product) => (
-              <tr key={product.id}>
+              <tr key={product.id} className={product.isCancelled ? 'muted' : undefined}>
                 <td>
                   {product.name}
                   {product.provider === null ? null : (
                     <div className="muted">{product.provider}</div>
                   )}
+                  {product.isCancelled ? (
+                    <div className="muted">
+                      {t('deals.productCancelled', {
+                        date: format.date(product.cancelledAt!),
+                        refund: money(product.refundAmount ?? 0),
+                      })}
+                      {product.cancellationReason === null ? '' : ` — ${product.cancellationReason}`}
+                    </div>
+                  ) : null}
                 </td>
                 <td className="num">{money(product.price)}</td>
                 <td className="num">{money(product.gross)}</td>
+                {deal.status === 'Delivered' ? (
+                  <td>
+                    {product.isCancelled ? null : cancelling === product.id ? null : (
+                      <button type="button" onClick={() => setCancelling(product.id)}>
+                        {t('deals.cancelProduct')}
+                      </button>
+                    )}
+                  </td>
+                ) : null}
               </tr>
             ))}
+
+            {cancelling === null ? null : (
+              <tr>
+                <td colSpan={deal.status === 'Delivered' ? 4 : 3}>
+                  <CancelProductForm
+                    deal={deal}
+                    product={deal.products.find((p) => p.id === cancelling)!}
+                    onDone={(updated) => {
+                      if (updated !== null) {
+                        onChanged(updated);
+                      }
+                      setCancelling(null);
+                    }}
+                  />
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
       <p className="note">{t('deals.productGross', { amount: money(deal.productGross) })}</p>
     </>
+  );
+}
+
+function CancelProductForm({
+  deal, product, onDone,
+}: {
+  deal: DealDetail;
+  product: DealDetail['products'][number];
+  onDone: (updated: DealDetail | null) => void;
+}) {
+  const { t, format } = useI18n();
+  const describe = useApiMessage();
+
+  const [refund, setRefund] = useState(String(product.price));
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirm() {
+    setBusy(true);
+    setError(null);
+
+    try {
+      onDone(
+        await post<DealDetail>(`/deals/${deal.id}/products/${product.id}/cancel`, {
+          refundAmount: Number(refund) || 0,
+          reason: reason.trim() === '' ? null : reason.trim(),
+        }),
+      );
+    } catch (failure) {
+      setError(describe(failure));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="panel-inset" aria-label={t('deals.cancelProductTitle', { product: product.name })}>
+      <h4>{t('deals.cancelProductTitle', { product: product.name })}</h4>
+      <p className="note">
+        {t('deals.cancelProductNote', { max: format.money(product.price, deal.currency) })}
+      </p>
+
+      <label htmlFor={`refund-${product.id}`}>{t('deals.refundAmount')}</label>
+      <input
+        id={`refund-${product.id}`}
+        inputMode="decimal"
+        value={refund}
+        disabled={busy}
+        onChange={(event) => setRefund(event.target.value)}
+      />
+
+      <label htmlFor={`reason-${product.id}`}>{t('deals.cancelReason')}</label>
+      <input
+        id={`reason-${product.id}`}
+        value={reason}
+        disabled={busy}
+        autoComplete="off"
+        onChange={(event) => setReason(event.target.value)}
+      />
+
+      <p className="error" aria-live="polite">
+        {error ?? ''}
+      </p>
+
+      <div className="actions">
+        <button type="button" disabled={busy} onClick={() => void confirm()}>
+          {busy ? t('common.saving') : t('deals.confirmCancelProduct')}
+        </button>
+        <button type="button" disabled={busy} onClick={() => onDone(null)}>
+          {t('common.cancel')}
+        </button>
+      </div>
+    </section>
   );
 }
 

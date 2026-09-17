@@ -138,6 +138,8 @@ internal sealed class DealProductConfiguration : IEntityTypeConfiguration<DealPr
         builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Price).HasPrecision(18, 2);
         builder.Property(x => x.Cost).HasPrecision(18, 2);
+        builder.Property(x => x.RefundAmount).HasPrecision(18, 2);
+        builder.Property(x => x.CancellationReason).HasMaxLength(500);
 
         // Price minus cost, computed.
         builder.Ignore(x => x.Gross);

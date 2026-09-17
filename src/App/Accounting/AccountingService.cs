@@ -892,6 +892,30 @@ public sealed class AccountingService(
     }
 
     /// <summary>
+    /// PostPermission, not RefundPermission: no cash leaves the business here,
+    /// only a liability is raised — the same as applying a credit. Cash only
+    /// actually leaves when that liability is later refunded, through
+    /// PostCreditRefundAsync, which does hold RefundPermission.
+    /// </summary>
+    public Task<Result<JournalEntryDetail>> PostProductCancellationAsync(
+        ProductCancellationPosting cancellation,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(cancellation);
+
+        return PostCreditMovementAsync(
+            cancellation.RooftopId,
+            cancellation.Reference,
+            cancellation.Currency,
+            cancellation.RefundAmount,
+            cancellation.Memo,
+            JournalSource.ProductCancelled,
+            PostPermission,
+            accounts => BuildProductCancellationLines(cancellation, accounts),
+            cancellationToken);
+    }
+
+    /// <summary>
     /// The half of a credit movement that is the same whichever direction it
     /// goes: the permission, the open period, the account 2200 has to exist, and
     /// an entry that is added but NOT saved because the sub-ledger's transaction
@@ -1512,6 +1536,28 @@ public sealed class AccountingService(
         [
             (credits.Code, credits.Id, r.Amount, 0m, "Credit refunded"),
             (cash.Code, cash.Id, 0m, r.Amount, "Money out"),
+        ];
+    }
+
+    /// <summary>
+    /// An F&amp;I product cancelled: the revenue recognized at delivery is
+    /// reversed, and the same amount becomes a liability owed back to the
+    /// customer. Deliberately silent on the cost side — this system has no
+    /// modelled way to know whether the provider actually refunds the
+    /// dealership, so it states only the half it can stand behind rather than
+    /// inventing a provider-refund entry nothing confirms happened.
+    /// </summary>
+    private static List<(string, Guid, decimal, decimal, string?)> BuildProductCancellationLines(
+        ProductCancellationPosting c,
+        IReadOnlyDictionary<string, Account> accounts)
+    {
+        var revenue = accounts[AccountCodes.FinanceProductRevenue];
+        var credits = accounts[AccountCodes.CustomerCredits];
+
+        return
+        [
+            (revenue.Code, revenue.Id, c.RefundAmount, 0m, "Product cancelled"),
+            (credits.Code, credits.Id, 0m, c.RefundAmount, "Owed back to the customer"),
         ];
     }
 

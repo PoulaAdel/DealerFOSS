@@ -473,6 +473,35 @@ public sealed class ReceivableService(
         return Result.Success(opened);
     }
 
+    public Task<Result<CustomerCredit>> RaiseCreditAsync(NewCredit credit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(credit);
+
+        // No permission check and no save, for the same reason as OpenAsync: the
+        // caller has already authorized the event this credit is a consequence
+        // of — a cancelled product, not a fresh look at the customer's account.
+        CustomerCredit raised;
+        try
+        {
+            raised = CustomerCredit.Raise(
+                Guid.NewGuid(),
+                credit.RooftopId,
+                credit.CustomerId,
+                new Money(credit.Amount, credit.Currency),
+                credit.Reference,
+                sourceReceivableId: null,
+                credit.RaisedAt);
+        }
+        catch (Exception ex) when (ex is ArgumentException or ArgumentOutOfRangeException)
+        {
+            return Task.FromResult(Result.Failure<CustomerCredit>(Error.Validation("receivables.credit_invalid", ex.Message)));
+        }
+
+        _db.CustomerCredits.Add(raised);
+
+        return Task.FromResult(Result.Success(raised));
+    }
+
     public async Task<Result<ReceivableDetail>> RecordPaymentAsync(
         Guid receivableId,
         NewPayment payment,

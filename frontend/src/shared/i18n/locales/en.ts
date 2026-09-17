@@ -696,6 +696,13 @@ export const en = {
   'deals.colPrice': 'Price',
   'deals.colGross': 'Gross',
   'deals.productGross': '{amount} made on what was sold with the car.',
+  'deals.cancelProduct': 'Cancel',
+  'deals.productCancelled': 'Cancelled {date}, {refund} credited back',
+  'deals.cancelProductTitle': 'Cancel {product}',
+  'deals.cancelProductNote': 'Up to {max} may be credited back to the customer.',
+  'deals.refundAmount': 'Refund amount',
+  'deals.cancelReason': 'Reason (optional)',
+  'deals.confirmCancelProduct': 'Cancel the product',
 
   // --- Deal terms (the charges editor) --------------------------------------
   'terms.title': 'The numbers',

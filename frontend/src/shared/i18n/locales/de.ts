@@ -674,6 +674,13 @@ export const de: Catalogue = {
   'deals.colPrice': 'Preis',
   'deals.colGross': 'Rohertrag',
   'deals.productGross': '{amount} Rohertrag aus dem, was mit dem Fahrzeug verkauft wurde.',
+  'deals.cancelProduct': 'Stornieren',
+  'deals.productCancelled': 'Storniert am {date}, {refund} dem Kunden gutgeschrieben',
+  'deals.cancelProductTitle': '{product} stornieren',
+  'deals.cancelProductNote': 'Bis zu {max} können dem Kunden gutgeschrieben werden.',
+  'deals.refundAmount': 'Erstattungsbetrag',
+  'deals.cancelReason': 'Grund (optional)',
+  'deals.confirmCancelProduct': 'Produkt stornieren',
 
   'terms.title': 'Die Kalkulation',
   'terms.caption': 'Die Positionen dieses Verkaufs',

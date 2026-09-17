@@ -204,4 +204,11 @@ public enum JournalSource
     /// why it needs its own permission rather than riding on Accounting.Post.
     /// </summary>
     CreditRefunded = 7,
+
+    /// <summary>
+    /// An F&amp;I product sold on a delivered deal was cancelled. Reverses the
+    /// revenue already recognized and raises what is owed back to the customer
+    /// as a credit — no cash moves here, the same as CreditApplied.
+    /// </summary>
+    ProductCancelled = 8,
 }

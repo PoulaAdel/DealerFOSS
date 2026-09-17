@@ -363,6 +363,10 @@ export interface DealProductView {
   gross: number;
   termMonths: number | null;
   termMiles: number | null;
+  isCancelled: boolean;
+  cancelledAt: string | null;
+  refundAmount: number | null;
+  cancellationReason: string | null;
 }
 
 export type AccountingPeriodState = 'Open' | 'Closed';

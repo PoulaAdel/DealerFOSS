@@ -40,6 +40,7 @@ internal static class DealEndpoints
         // F&I manager sells the products afterwards, so one call replacing both
         // would let either wipe the other's work.
         group.MapPost("/{dealId:guid}/products", SetProductsAsync);
+        group.MapPost("/{dealId:guid}/products/{dealProductId:guid}/cancel", CancelProductAsync);
         group.MapPost("/{dealId:guid}/tax", SetTaxAsync);
         group.MapPost("/{dealId:guid}/status", ChangeStatusAsync);
     }
@@ -108,6 +109,19 @@ internal static class DealEndpoints
         ArgumentNullException.ThrowIfNull(request);
 
         var result = await deals.SetProductsAsync(dealId, request.Products ?? [], cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> CancelProductAsync(
+        Guid dealId,
+        Guid dealProductId,
+        CancelProduct request,
+        IDeals deals,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await deals.CancelProductAsync(dealId, dealProductId, request, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 

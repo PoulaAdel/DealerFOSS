@@ -20,6 +20,12 @@
 //   Gross is price minus cost, and it is the number an F&I manager is
 //   measured on. It is computed here rather than stored, because two stored
 //   figures and a stored difference is one figure too many.
+//
+//   CANCELLATION IS A SEPARATE EVENT, NOT AN EDIT. Price and Cost stay exactly
+//   as sold — that is the audit trail, and the same reason the catalogue is
+//   never re-read. A cancelled product records what came back to the customer
+//   alongside what was originally agreed, rather than rewriting either figure
+//   to zero.
 
 using DealerFOSS.Core;
 
@@ -58,6 +64,18 @@ public sealed class DealProduct
 
     /// <summary>What the dealership made on it.</summary>
     public decimal Gross => Price - Cost;
+
+    public bool IsCancelled { get; private set; }
+
+    public DateTimeOffset? CancelledAt { get; private set; }
+
+    /// <summary>
+    /// What was credited back to the customer. Zero is a real answer — a
+    /// product cancelled inside a non-refundable window still needs recording.
+    /// </summary>
+    public decimal? RefundAmount { get; private set; }
+
+    public string? CancellationReason { get; private set; }
 
     private DealProduct()
     {
@@ -99,5 +117,33 @@ public sealed class DealProduct
         Cost = cost;
         TermMonths = termMonths;
         TermMiles = termMiles;
+    }
+
+    /// <summary>
+    /// Cancels a product already sold. Once only — a product cancelled twice is
+    /// a mistake, not a bigger refund.
+    /// </summary>
+    internal void Cancel(DateTimeOffset cancelledAt, decimal refundAmount, string? reason)
+    {
+        if (IsCancelled)
+        {
+            throw new InvalidOperationException($"{Name} has already been cancelled.");
+        }
+
+        if (refundAmount < 0m)
+        {
+            throw new ArgumentOutOfRangeException(nameof(refundAmount), "A refund cannot be negative.");
+        }
+
+        if (refundAmount > Price)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(refundAmount), $"That is more than the {Price} the customer paid for this.");
+        }
+
+        IsCancelled = true;
+        CancelledAt = cancelledAt;
+        RefundAmount = refundAmount;
+        CancellationReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
     }
 }
