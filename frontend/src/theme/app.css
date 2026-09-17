@@ -111,6 +111,52 @@
   /* How long a state change takes to read as a change rather than a jump. */
   --beat: 140ms;
   --lift: 0 1px 2px rgb(16 25 31 / 6%), 0 8px 24px rgb(16 25 31 / 6%);
+
+  /* C1 (UX audit, 2026-09-17): no rule existed for a bare <a>, so every
+     unclassed link fell to the browser default #0000EE — 9.4:1 here, which is
+     why it survived, and 1.84–2.0:1 in dark against the same 4.5:1 bar. */
+  --link: #0b5fae;
+  --link-visited: #6a3d9a;
+
+  /* H1 (same audit): --ink-3 was measured against --ground, not against a
+     panel, where nearly all muted text actually sits — 4.31:1 light / 4.01:1
+     dark inside a panel, under 4.5:1. Retuned against --surface specifically;
+     --ink-3 itself is left alone since it still passes on the page. */
+  --ink-3-on-surface: #556071;
+}
+
+/* --- scales: space, type, radius, control height ---------------------------
+   Added 2026-09-17 (UX audit phase 1, H2). None of these are colour, so there
+   is one copy, not a light/dark pair. 29 padding, 19 margin, 18 font-size and
+   9 border-radius literals existed in this file before these landed; new
+   rules are written against these tokens, and old ones fold in as they are
+   touched rather than all at once — see docs/adr/0020 for the running list. */
+:root {
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  --t-caption: 0.68rem;
+  --t-meta: 0.76rem;
+  --t-small: 0.85rem;
+  --t-body: 1rem;
+  --t-section: 1.05rem;
+  --t-page: 1.5rem;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-pill: 999px;
+
+  /* One height for button, input and select in a toolbar, so they align
+     because the row cannot do otherwise — not because someone checked. Table
+     and chip controls keep their own smaller floor (WCAG 2.5.8's 24px,
+     below) and reset this explicitly; see the control-height exceptions
+     near the bottom of the file. */
+  --control-h: 40px;
 }
 
 :root[data-theme='dark'] {
@@ -156,6 +202,16 @@
   --idle: #6d7683;
   --idle-soft: #1c2229;
   --lift: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 30%);
+
+  /* C1: the browser default #0000EE measures 1.84–2.0:1 here. #86b8f5 and
+     #c79df0 keep the same light/visited distinction at a readable weight. */
+  --link: #86b8f5;
+  --link-visited: #c79df0;
+
+  /* H1: --ink-3 (#7b8593) is 4.01:1 inside a panel. Lifted specifically for
+     that case rather than changing --ink-3 itself, which still passes on the
+     page background it was measured against. */
+  --ink-3-on-surface: #8f99a7;
 }
 
 /* Somebody who has asked their machine for less movement has asked this
@@ -194,16 +250,32 @@ body {
   outline-offset: 2px;
 }
 
+/* C1: the one rule that was missing. Without it every bare <a> — the skip
+   link, the dashboard's oldest-stock links, the workshop's area links — fell
+   to the browser default, unreadable in dark. */
+a {
+  color: var(--link);
+}
+
+a:visited {
+  color: var(--link-visited);
+}
+
 h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: var(--t-page);
   letter-spacing: -0.02em;
 }
 
+/* One control height (H2/M1): button, input and select all resolve to
+   --control-h so a toolbar aligns without anyone checking. Table and chip
+   buttons reset it explicitly further down — they keep the WCAG 2.5.8 floor
+   of 24px, not this. */
 button {
   font: inherit;
-  padding: 8px 14px;
-  border-radius: 8px;
+  min-block-size: var(--control-h);
+  padding-inline: var(--s-4);
+  border-radius: var(--r-sm);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
@@ -228,17 +300,18 @@ button:disabled {
 }
 
 button.link {
+  min-block-size: auto;
   border: 0;
   background: none;
   color: var(--ink-2);
   text-decoration: underline;
-  padding: 8px 0;
+  padding: var(--s-2) 0;
 }
 
 label {
   display: block;
-  margin-top: 14px;
-  font-size: 0.85rem;
+  margin-top: var(--s-4);
+  font-size: var(--t-small);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -248,15 +321,17 @@ select,
 textarea {
   font: inherit;
   width: 100%;
-  margin-top: 4px;
-  padding: 9px 11px;
-  border-radius: 8px;
+  margin-top: var(--s-1);
+  min-block-size: var(--control-h);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-sm);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
 }
 
 textarea {
+  min-block-size: 0;
   resize: vertical;
 }
 
@@ -295,7 +370,7 @@ textarea {
 
 .signin__lede {
   margin: 8px 0 4px;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
   font-size: 0.9rem;
 }
 
@@ -344,10 +419,10 @@ textarea {
 
 /* Reserves its line so the form does not jump when a message appears. */
 .error {
-  margin: 12px 0 0;
+  margin: var(--s-3) 0 0;
   min-height: 1.4em;
   color: var(--fail);
-  font-size: 0.88rem;
+  font-size: var(--t-small);
 }
 
 /* --- shell --- */
@@ -532,8 +607,8 @@ textarea {
 
 .shell__tenant {
   font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--ink-3);
+  font-size: var(--t-meta);
+  color: var(--ink-3-on-surface);
 }
 
 .shell__main {
@@ -550,9 +625,9 @@ textarea {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--s-4);
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: var(--s-4);
 }
 
 .filter {
@@ -566,16 +641,16 @@ textarea {
 /* --- states --- */
 
 .state {
-  padding: 28px;
+  padding: var(--s-6);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   color: var(--ink-2);
   text-align: center;
 }
 
 .state button {
-  margin-top: 12px;
+  margin-top: var(--s-3);
 }
 
 /* --- table --- */
@@ -584,29 +659,29 @@ textarea {
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--t-small);
 }
 
 th {
   text-align: start;
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: var(--t-caption);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-3);
-  padding: 12px 14px;
+  color: var(--ink-3-on-surface);
+  padding: var(--s-3) var(--s-4);
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 
 td {
-  padding: 11px 14px;
+  padding: var(--s-3) var(--s-4);
   border-bottom: 1px solid var(--line);
 }
 
@@ -620,15 +695,15 @@ tbody tr:last-child td {
 }
 
 .vin {
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 /* The chip says its own name, so colour is reinforcement and never the message. */
 .chip {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.76rem;
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-pill);
+  font-size: var(--t-meta);
   font-weight: 600;
   background: var(--idle-soft);
   color: var(--ink-2);
@@ -710,7 +785,7 @@ tbody tr:last-child td {
 }
 
 .muted {
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 tfoot td {
@@ -752,9 +827,9 @@ tfoot td {
 
 .panel {
   max-width: 34rem;
-  padding: 20px 24px;
+  padding: var(--s-5);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--surface);
 }
 
@@ -796,9 +871,9 @@ tfoot td {
 }
 
 .note {
-  margin: 16px 0 0;
-  color: var(--ink-3);
-  font-size: 0.88rem;
+  margin: var(--s-4) 0 0;
+  color: var(--ink-3-on-surface);
+  font-size: var(--t-small);
 }
 
 .codes {
@@ -874,8 +949,8 @@ tfoot td {
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
 }
 
 .actions button.primary {
@@ -889,7 +964,7 @@ tfoot td {
 .actions button.primary:disabled {
   background: var(--surface);
   border-color: var(--line);
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
   font-weight: 400;
 }
 
@@ -904,7 +979,7 @@ tfoot td {
   max-width: 30rem;
   white-space: pre-wrap;
   word-break: break-word;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 .chip--failed {
@@ -933,10 +1008,10 @@ tfoot td {
    readable rather than a dense table — somebody is being asked to recognise a
    person, not to scan a report. */
 .matches {
-  margin: 12px 0 0;
-  padding: 12px 16px;
+  margin: var(--s-3) 0 0;
+  padding: var(--s-3) var(--s-4);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--ground);
   list-style: none;
 }
@@ -979,10 +1054,10 @@ tfoot td {
    recent entry reads as the first thing that happened — the exact opposite of
    the truth. The stage name at the start of each line is the marker. */
 .history {
-  margin: 8px 0 0;
+  margin: var(--s-2) 0 0;
   padding-inline-start: 0;
   list-style: none;
-  font-size: 0.88rem;
+  font-size: var(--t-small);
 }
 
 .history li {
@@ -1147,6 +1222,7 @@ table button.link {
 }
 
 .switcher button {
+  min-block-size: auto;
   border: 0;
   border-radius: 0;
   padding: 5px 11px;
@@ -1174,7 +1250,7 @@ table button.link {
 
 .switcher button:disabled {
   cursor: default;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 .appearance {
@@ -1365,7 +1441,7 @@ kbd + kbd {
   font-size: 0.68rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 .tile__value {
@@ -1376,7 +1452,7 @@ kbd + kbd {
 
 .tile__change {
   font-size: 0.8rem;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 .tile__change--up {
@@ -1431,7 +1507,7 @@ kbd + kbd {
   font-size: 0.68rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 .figures dd {
@@ -1493,7 +1569,7 @@ kbd + kbd {
 abbr[title] {
   cursor: help;
   text-decoration: none;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 /* --- Form and panel scaffolding ------------------------------------------
@@ -1512,12 +1588,12 @@ abbr[title] {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-block-end: 16px;
+  gap: var(--s-2);
+  margin-block-end: var(--s-4);
 }
 
 .field > label {
-  font-size: 0.85rem;
+  font-size: var(--t-small);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -1528,7 +1604,7 @@ abbr[title] {
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 16px;
+  gap: 0 var(--s-4);
 }
 
 .row > .field {
@@ -1545,7 +1621,7 @@ abbr[title] {
 .hint {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 /* Title, a count, and the action that belongs to this panel. The action is
@@ -1635,7 +1711,7 @@ abbr[title] {
 
 .inline-edit__value:disabled {
   cursor: default;
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 /* Sized to the content it replaces, so the row does not jump on opening —
@@ -1793,7 +1869,7 @@ tbody tr[aria-selected='true'] {
 }
 
 .facts dt {
-  color: var(--ink-3);
+  color: var(--ink-3-on-surface);
 }
 
 .facts dd {
@@ -1917,6 +1993,7 @@ tbody tr[aria-selected='true'] {
 .picker-results button {
   display: block;
   width: 100%;
+  min-block-size: auto;
   padding: 0.4rem 0.6rem;
   border: 0;
   background: none;
