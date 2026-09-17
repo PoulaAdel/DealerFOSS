@@ -304,11 +304,20 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
           {restricted ? null : (
             <button
               type="button"
-              className="link"
+              className="icon-button"
               onClick={() => setShowingShortcuts(true)}
               title={t('shell.shortcutsTitle')}
+              aria-label={t('shell.shortcuts')}
             >
-              {t('shell.shortcuts')}
+              <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <rect x="1" y="4" width="14" height="9" rx="1.5" fill="none" stroke="currentColor" />
+                <path
+                  d="M3.5 6.5h0M6 6.5h0M8.5 6.5h0M11 6.5h0M3.5 9h0M12.5 9h0M6 9.5h4"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                />
+              </svg>
             </button>
           )}
           <span className="shell__tenant">{tenant}</span>

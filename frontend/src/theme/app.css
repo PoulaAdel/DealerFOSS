@@ -167,6 +167,13 @@
      below) and reset this explicitly; see the control-height exceptions
      near the bottom of the file. */
   --control-h: 40px;
+
+  /* The shell bar's own utilities — theme, language, shortcuts, sign out —
+     are chrome around the page, not the page's own controls, and at
+     --control-h they competed with the tenant name and the nav for weight.
+     One shorter height, shared by every control in .shell__right, so the
+     row reads as one unit instead of five differently-sized ones. */
+  --control-h-sm: 32px;
 }
 
 :root[data-theme='dark'] {
@@ -756,16 +763,30 @@ textarea {
   margin-inline-start: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--s-3);
+  font-size: var(--t-small);
   /* Wraps for the same reason the navigation does: the bar carries appearance
      controls now, and at 375px an unwrapped row pushes the page sideways. */
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
+/* Every direct control in the utility row shares one height and one type
+   size, so "Auto/Light/Dark", the language picker, the shortcuts icon, the
+   tenant name and Sign out read as one row rather than five components each
+   sized to their own default. Sign out keeps its border/shadow — it is the
+   one action worth a touch more weight — everything else here is flatter
+   chrome by design. */
+.shell__right button,
+.shell__right select,
+.shell__right .switcher {
+  min-block-size: var(--control-h-sm);
+  font-size: inherit;
+}
+
 .shell__tenant {
   font-family: var(--mono);
-  font-size: var(--t-meta);
+  font-size: inherit;
   color: var(--ink-3-on-surface);
 }
 
@@ -1409,6 +1430,11 @@ table button.link:hover:not(:disabled) {
   font-size: 0.8rem;
   color: var(--ink-2);
   background: none;
+  /* Segments of one pill, not standalone buttons — the base button rule's
+     shadow and hover-lift would make each segment float independently
+     inside `.switcher`'s own border, breaking the one-piece look this
+     control exists for. */
+  box-shadow: none;
   transition: background var(--beat) ease, color var(--beat) ease;
 }
 
@@ -1418,6 +1444,7 @@ table button.link:hover:not(:disabled) {
 
 .switcher button:hover:not(:disabled) {
   background: var(--idle-soft);
+  transform: none;
 }
 
 /* aria-pressed is the source of truth, so the highlight and what a screen reader
@@ -1433,8 +1460,64 @@ table button.link:hover:not(:disabled) {
   color: var(--ink-3-on-surface);
 }
 
+/* The theme switcher: three icons, not three words — see AppearanceControls
+   for why. Square segments instead of the text switcher's text-width ones,
+   sized off --control-h-sm so it lines up with the rest of the utility row. */
+.switcher--icons button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--control-h-sm);
+  block-size: var(--control-h-sm);
+  padding: 0;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--control-h-sm);
+  min-block-size: var(--control-h-sm);
+  padding: 0;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  box-shadow: none;
+}
+
+.icon-button:hover:not(:disabled) {
+  border-color: var(--ink-3);
+  color: var(--ink);
+  transform: none;
+  background: var(--idle-soft);
+}
+
+/* The globe sits inside the select's own box rather than beside it, so the
+   control is still one visual piece and one hit target — not an icon next
+   to an unrelated dropdown. */
+.language-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-3-on-surface);
+}
+
+.language-picker svg {
+  position: absolute;
+  inset-inline-start: 10px;
+  pointer-events: none;
+}
+
+.language-picker select {
+  padding-inline-start: 30px;
+  border-radius: var(--r-pill);
+  color: var(--ink-2);
+}
+
 .appearance {
   display: flex;
+  align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 }
