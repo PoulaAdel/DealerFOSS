@@ -1620,7 +1620,7 @@ abbr[title] {
    field is the first thing to disappear when the viewport narrows. */
 .hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--t-small);
   color: var(--ink-3-on-surface);
 }
 
@@ -1630,8 +1630,8 @@ abbr[title] {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 12px;
-  margin-block-end: 12px;
+  gap: var(--s-3);
+  margin-block-end: var(--s-3);
 }
 
 .panel__head > h2,
@@ -1861,11 +1861,11 @@ tbody tr[aria-selected='true'] {
    announces rows and columns to a screen reader, and this is a description of
    one record. */
 .facts {
-  margin: 0 0 16px;
+  margin: 0 0 var(--s-4);
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 6px 16px;
-  font-size: 0.9rem;
+  gap: var(--s-2) var(--s-4);
+  font-size: var(--t-small);
 }
 
 .facts dt {
