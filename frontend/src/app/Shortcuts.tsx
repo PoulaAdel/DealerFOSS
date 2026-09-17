@@ -23,6 +23,7 @@
 //   would describe a key the reader does not have.
 
 import { useEffect, useRef } from 'react';
+import { CloseButton } from '../shared/CloseButton';
 import { useI18n, type MessageKey } from '../shared/i18n';
 
 export interface Shortcut {
@@ -95,9 +96,7 @@ export function ShortcutsPanel({ onClose }: { onClose: () => void }) {
     >
       <div className="sheet__head">
         <h2>{t('shortcuts.title')}</h2>
-        <button type="button" onClick={onClose}>
-          {t('common.close')}
-        </button>
+        <CloseButton onClick={onClose} />
       </div>
 
       <dl className="keys">

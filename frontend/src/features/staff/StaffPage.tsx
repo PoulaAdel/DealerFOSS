@@ -26,6 +26,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post, remove } from '../../shared/api';
+import { CloseButton } from '../../shared/CloseButton';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import type { RooftopSummary, StaffEnrolmentCode, StaffMember, StaffRole } from '../../shared/contracts';
@@ -373,9 +374,7 @@ function Person({
     <section className="panel panel--deal">
       <header className="page__head">
         <h2>{person.displayName}</h2>
-        <button type="button" onClick={onClose}>
-          {t('common.close')}
-        </button>
+        <CloseButton onClick={onClose} />
       </header>
 
       <p className="muted">

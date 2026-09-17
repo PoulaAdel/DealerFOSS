@@ -54,6 +54,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { ApiError, api, openDocument, post, remove } from '../../shared/api';
+import { CloseButton } from '../../shared/CloseButton';
 import { RecordBandStatus } from '../../shared/RecordBand';
 import { useRecordRoute } from '../../shared/useRecordRoute';
 import { DiaryPanel } from './DiaryPanel';
@@ -394,9 +395,7 @@ function Job({
           )}{' '}
           <span className="muted">·</span> {job.customerName}
         </h2>
-        <button type="button" onClick={onClose}>
-          {t('common.close')}
-        </button>
+        <CloseButton onClick={onClose} />
       </header>
 
       <p className="muted">

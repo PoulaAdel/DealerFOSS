@@ -27,6 +27,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ApiError, api, post } from '../../shared/api';
+import { CloseButton } from '../../shared/CloseButton';
 import { RecordBandStatus } from '../../shared/RecordBand';
 import { useRecordRoute } from '../../shared/useRecordRoute';
 import { useSession } from '../../app/session';
@@ -298,9 +299,7 @@ function LeadPanel({
             </>
           )}
         </h2>
-        <button type="button" onClick={onClose}>
-          {t('common.close')}
-        </button>
+        <CloseButton onClick={onClose} />
       </header>
 
       <p className="muted">
