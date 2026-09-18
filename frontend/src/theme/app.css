@@ -137,10 +137,21 @@
 
 /* --- scales: space, type, radius, control height ---------------------------
    Added 2026-09-17 (UX audit phase 1, H2). None of these are colour, so there
-   is one copy, not a light/dark pair. 29 padding, 19 margin, 18 font-size and
-   9 border-radius literals existed in this file before these landed; new
-   rules are written against these tokens, and old ones fold in as they are
-   touched rather than all at once — see docs/adr/0020 for the running list. */
+   is one copy, not a light/dark pair.
+
+   MIGRATION FINISHED 2026-09-18, and finishing it is the point. The plan was
+   "new rules use the tokens, old ones fold in as they are touched", which left
+   the file with the scales defined and roughly a third applied: 17 font sizes,
+   9 radii, 21 paddings and 16 margins still written as literals, beside tokens
+   naming the same values. That is the worst state a design system can be in —
+   worse than no tokens at all — because the next person cannot tell which of
+   the two is authoritative, and both answers are defensible.
+
+   What survives as a literal now is deliberate, and each one says why at its
+   own site: `0` and `auto`, three `clamp()` responsive paddings, two `em`
+   sizes that must track their parent (.mono and the wordmark tagline), two
+   `inherit`s, a list indent in rem, and 30px of clearance measured against a
+   glyph rather than a rhythm. Anything else is a bug. */
 :root {
   --s-1: 4px;
   --s-2: 8px;
@@ -150,15 +161,33 @@
   --s-6: 32px;
   --s-7: 48px;
 
-  --t-caption: 0.68rem;
-  --t-meta: 0.76rem;
-  --t-small: 0.85rem;
-  --t-body: 1rem;
-  --t-section: 1.05rem;
-  --t-page: 1.5rem;
+  /* Eight steps, each named for a ROLE rather than a size, because a name is
+     what stops the next person adding a ninth. Adjusted 2026-09-18 when the
+     literals were folded in and two things became obvious:
+
+     --t-meta was 0.76rem and had one consumer, while 0.8rem appeared six times
+     as a literal and was the commonest small size in the file. The step moved
+     to meet the content rather than six sites being shrunk to meet the step.
+
+     --t-figure and --t-display are new because a DISPLAYED NUMBER is not a
+     heading. Forcing .tile__value onto --t-page would have made a dashboard
+     figure and a page title the same size, which is precisely the distinction
+     the dashboard exists to draw. */
+  --t-caption: 0.68rem; /* table headers, the smallest print */
+  --t-meta: 0.8rem; /* chips, helper text, confirmations */
+  --t-small: 0.85rem; /* table content, labels */
+  --t-body: 1rem; /* body, and a panel heading */
+  --t-section: 1.15rem; /* a band heading */
+  --t-figure: 1.25rem; /* a number shown as content inside a band */
+  --t-page: 1.5rem; /* the page title */
+  --t-display: 1.6rem; /* the dashboard tile's headline number */
 
   --r-sm: 6px;
   --r-md: 10px;
+
+  /* Cards and the sign-in panel. Added with the same reasoning as the type
+     steps above: 12px and 14px were both in use and neither is --r-md. */
+  --r-lg: 12px;
   --r-pill: 999px;
 
   /* One height for button, input and select in a toolbar, so they align
@@ -167,6 +196,10 @@
      below) and reset this explicitly; see the control-height exceptions
      near the bottom of the file. */
   --control-h: 40px;
+
+  /* See the note above `button`: the floor only holds if the content inside
+     it is shorter than the floor. */
+  --control-line: 1.25;
 
   /* The shell bar's own utilities — theme, language, shortcuts, sign out —
      are chrome around the page, not the page's own controls, and at
@@ -300,10 +333,28 @@ h1 {
 /* One control height (H2/M1): button, input and select all resolve to
    --control-h so a toolbar aligns without anyone checking. Table and chip
    buttons reset it explicitly further down — they keep the WCAG 2.5.8 floor
-   of 24px, not this. */
+   of 24px, not this.
+
+   --control-line is why that actually works. min-block-size is a FLOOR, not a
+   height, and a control whose content is taller simply ignores it: measured on
+   2026-09-18, a toolbar on /accounting held a select at 41.5px, a text input at
+   42.8 and a date input at 44.8, all three carrying `min-block-size: 40px` and
+   none of them 40. Pinning the line-height makes the content shorter than the
+   floor, so the floor is what every control lands on.
+
+   1.25 and not `normal`: `normal` is the font's own metric, which differs
+   between a select (rendered by the platform) and an input, which is exactly
+   how three controls in one row ended up three different heights.
+
+   A SELECT NEEDS MORE THAN THAT. Chrome ignores line-height on `<select>`
+   entirely — the rule above lands and the computed value stays `normal` — so
+   the stock filter still measured 41.5 beside a 40px button. Selects get an
+   explicit block-size below. They cannot wrap, so a fixed height is safe for
+   them in a way it would not be for an input or a textarea. */
 button {
   font: inherit;
   font-weight: 500;
+  line-height: var(--control-line);
   min-block-size: var(--control-h);
   padding-inline: var(--s-4);
   border-radius: var(--r-md);
@@ -386,6 +437,7 @@ input,
 select,
 textarea {
   font: inherit;
+  line-height: var(--control-line);
   width: 100%;
   margin-top: var(--s-1);
   min-block-size: var(--control-h);
@@ -395,6 +447,14 @@ textarea {
   background: var(--surface);
   color: var(--ink);
   transition: border-color var(--beat) ease, box-shadow var(--beat) ease;
+}
+
+/* See the note above `button`. A select cannot wrap, so pinning its height is
+   safe — and it is the only thing that works, because Chrome will not apply
+   line-height to one. Scoped away from table and shell selects, which keep
+   their own smaller heights on purpose. */
+select:not(.shell__bar select):not(table select) {
+  block-size: var(--control-h);
 }
 
 input:focus-visible,
@@ -416,7 +476,7 @@ textarea {
   padding: clamp(20px, 5vw, 32px);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-lg);
 }
 
 /* Theme and language, above the form. `inline-end` rather than `right`, so it
@@ -425,7 +485,7 @@ textarea {
 .signin__appearance {
   display: flex;
   justify-content: flex-end;
-  margin-block-end: 12px;
+  margin-block-end: var(--s-3);
 }
 
 /* The mark and the name on one baseline. This is the one screen where the
@@ -434,7 +494,7 @@ textarea {
 .signin__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--s-3);
 }
 
 .signin__brand h1 {
@@ -442,9 +502,9 @@ textarea {
 }
 
 .signin__lede {
-  margin: 8px 0 4px;
+  margin: var(--s-2) 0 var(--s-1);
   color: var(--ink-3-on-surface);
-  font-size: 0.9rem;
+  font-size: var(--t-small);
 }
 
 /* The password field and the passkey button, together — the decision of
@@ -467,7 +527,7 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
 .signin__beside input {
@@ -476,13 +536,13 @@ textarea {
 }
 
 .signin__passkey {
-  margin-top: 4px;
+  margin-top: var(--s-1);
   flex: 0 1 auto;
 }
 
 .signin button[type='submit'] {
   width: 100%;
-  margin-top: 20px;
+  margin-top: var(--s-5);
 }
 
 .signin button.link {
@@ -504,10 +564,10 @@ textarea {
   position: absolute;
   inset-inline-start: -9999px;
   top: 8px;
-  padding: 10px 16px;
+  padding: var(--s-2) var(--s-4);
   background: var(--surface);
   border: 1px solid var(--accent);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   z-index: 10;
 }
 
@@ -534,9 +594,9 @@ textarea {
     'brand utilities'
     'nav   nav';
   align-items: center;
-  column-gap: 20px;
-  row-gap: 6px;
-  padding: 10px clamp(14px, 3vw, 28px);
+  column-gap: var(--s-5);
+  row-gap: var(--s-1);
+  padding: var(--s-2) clamp(14px, 3vw, 28px);
   background: var(--surface);
 
   /* A 2px accent line along the very top of the viewport, with the grey rule
@@ -576,7 +636,7 @@ textarea {
   grid-area: brand;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--s-2);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -648,12 +708,12 @@ textarea {
   grid-area: nav;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--s-1);
   min-width: 0;
 }
 
 .shell__bar nav a {
-  padding: 6px 12px;
+  padding: var(--s-1) var(--s-3);
   border-radius: var(--r-pill);
   color: var(--ink-2);
   font-weight: 500;
@@ -690,8 +750,8 @@ textarea {
 .navgroup__trigger {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
+  gap: var(--s-1);
+  padding: var(--s-1) var(--s-3);
   border: 0;
   border-radius: var(--r-pill);
   min-block-size: auto;
@@ -1013,10 +1073,10 @@ tfoot td {
 /* The headline of a trial balance is whether it balances, so it is stated in
    words and not left to be inferred from two numbers. */
 .verdict {
-  margin: 0 0 16px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 0.92rem;
+  margin: 0 0 var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  font-size: var(--t-small);
 }
 
 .verdict--ok {
@@ -1056,6 +1116,8 @@ tfoot td {
 
 .steps {
   margin: 0;
+  /* rem, not a step: a list indent has to track the font size or the markers
+     hang out of alignment with the text they belong to. */
   padding-inline-start: 1.2rem;
 }
 
@@ -1095,17 +1157,17 @@ tfoot td {
 .codes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-  gap: 8px;
-  margin: 12px 0 0;
-  padding: 12px;
+  gap: var(--s-2);
+  margin: var(--s-3) 0 0;
+  padding: var(--s-3);
   border: 1px dashed var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   list-style: none;
 }
 
 .codes li {
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-sm);
   background: var(--ground);
   text-align: center;
   user-select: all;
@@ -1121,12 +1183,12 @@ tfoot td {
 }
 
 .shell__badge {
-  margin-inline-start: 8px;
-  padding: 2px 8px;
-  border-radius: 999px;
+  margin-inline-start: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-pill);
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 0.72rem;
+  font-size: var(--t-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1149,14 +1211,14 @@ tfoot td {
 .signin--admin h1 {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--s-1);
   flex-wrap: wrap;
 }
 
 /* Sits under a table rather than beside a field, so it needs its own spacing. */
 .note--footer {
   margin: 0;
-  padding: 10px 14px;
+  padding: var(--s-2) var(--s-3);
   border-top: 1px solid var(--line);
 }
 
@@ -1190,8 +1252,8 @@ tfoot td {
 }
 
 .panel h3 {
-  margin: 22px 0 4px;
-  font-size: 0.95rem;
+  margin: var(--s-5) 0 var(--s-1);
+  font-size: var(--t-body);
 }
 
 /* The refused row, quoted back exactly. It may be long and it must stay
@@ -1222,7 +1284,7 @@ tfoot td {
 /* --- customers --- */
 
 .actions--lead {
-  margin: 0 0 18px;
+  margin: 0 0 var(--s-4);
 }
 
 /* The near-matches shown before a customer is created. Deliberately plain and
@@ -1238,8 +1300,8 @@ tfoot td {
 }
 
 .matches li + li {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
   border-top: 1px solid var(--line);
 }
 
@@ -1257,16 +1319,16 @@ tfoot td {
 
 .panel--deal {
   max-width: none;
-  margin-bottom: 18px;
+  margin-bottom: var(--s-4);
 }
 
 .panel--deal .page__head {
-  margin-bottom: 4px;
+  margin-bottom: var(--s-1);
 }
 
 .panel--deal h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--t-section);
 }
 
 /* What happened to this deal, newest first. Plain list rather than a table:
@@ -1282,7 +1344,7 @@ tfoot td {
 }
 
 .history li {
-  margin-bottom: 4px;
+  margin-bottom: var(--s-1);
 }
 
 .chip--draft {
@@ -1329,16 +1391,16 @@ tfoot td {
 /* The address the tax was resolved from. A fieldset because the four boxes are
    one question, and a screen reader should hear it asked once. */
 .taxAddress {
-  margin-block: 12px 4px;
-  padding: 10px 14px 14px;
+  margin-block: var(--s-3) var(--s-1);
+  padding: var(--s-2) var(--s-3) var(--s-3);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   background: var(--surface);
 }
 
 .taxAddress legend {
-  padding-inline: 6px;
-  font-size: 0.8rem;
+  padding-inline: var(--s-1);
+  font-size: var(--t-meta);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -1364,8 +1426,8 @@ tfoot td {
 /* What the customer actually said, kept as their words rather than paraphrased
    into a field. Indented so it reads as a quotation and not as more form. */
 .enquiry {
-  margin: 12px 0;
-  padding: 8px 14px;
+  margin: var(--s-3) 0;
+  padding: var(--s-2) var(--s-3);
   border-inline-start: 3px solid var(--line);
   color: var(--ink-2);
 }
@@ -1375,7 +1437,7 @@ tfoot td {
 .filter label.check {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s-1);
   margin: 0;
 }
 
@@ -1386,8 +1448,21 @@ tfoot td {
 
 /* A customer name in the list opens the deal. It reads as a link and behaves as
    a button, because it changes this page rather than navigating. */
+/* WCAG 2.5.8 again, and this one was measured wrong twice.
+
+   A row's open-the-record button carries `padding: 0` so the cell stays dense,
+   which leaves its height as whatever the line box happens to be. On the
+   committed stylesheet that was 21px — already under the 24px floor, on 24
+   controls across the enquiry, deal and customer lists, and the sweep of
+   2026-09-17 missed it. Pinning the control line-height on 2026-09-18 then took
+   it to 17px, which is how it was finally caught.
+
+   The floor goes on explicitly rather than by removing the padding rule: these
+   are the most repeated controls in the product and the row should stay tight.
+   24px of target with 17px of ink is exactly what 2.5.8 is for. */
 table button.link {
   padding: 0;
+  min-block-size: 24px;
   text-align: start;
   color: var(--ink);
 }
@@ -1399,8 +1474,8 @@ table button.link:hover:not(:disabled) {
 /* --- entering the numbers on a deal --- */
 
 .terms {
-  margin-top: 18px;
-  padding-top: 14px;
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
   border-top: 1px solid var(--line);
 }
 
@@ -1417,7 +1492,7 @@ table button.link:hover:not(:disabled) {
 }
 
 .terms table {
-  margin-bottom: 4px;
+  margin-bottom: var(--s-1);
 }
 
 /* The kind dropdown was clipping "VehiclePrice" to "VehiclePri". A select that
@@ -1441,7 +1516,7 @@ table button.link:hover:not(:disabled) {
 .switcher {
   display: inline-flex;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--surface);
   overflow: hidden;
 }
@@ -1450,8 +1525,8 @@ table button.link:hover:not(:disabled) {
   min-block-size: auto;
   border: 0;
   border-radius: 0;
-  padding: 5px 11px;
-  font-size: 0.8rem;
+  padding: var(--s-1) var(--s-3);
+  font-size: var(--t-meta);
   color: var(--ink-2);
   background: none;
   /* Segments of one pill, not standalone buttons — the base button rule's
@@ -1534,6 +1609,8 @@ table button.link:hover:not(:disabled) {
 }
 
 .language-picker select {
+  /* Not a step: clearance for the globe glyph drawn over this select, so it
+     is measured against that artwork rather than the spacing rhythm. */
   padding-inline-start: 30px;
   border-radius: var(--r-pill);
   color: var(--ink-2);
@@ -1542,7 +1619,7 @@ table button.link:hover:not(:disabled) {
 .appearance {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s-1);
   flex-wrap: wrap;
 }
 
@@ -1594,24 +1671,24 @@ table button.link:hover:not(:disabled) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--s-4);
 }
 
 .sheet__head h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--t-section);
 }
 
 .keys {
   display: grid;
-  gap: 8px;
-  margin: 18px 0 0;
+  gap: var(--s-2);
+  margin: var(--s-4) 0 0;
 }
 
 .keys > div {
   display: grid;
   grid-template-columns: 6.5rem 1fr;
-  gap: 12px;
+  gap: var(--s-3);
   align-items: baseline;
 }
 
@@ -1623,18 +1700,18 @@ table button.link:hover:not(:disabled) {
 kbd {
   display: inline-block;
   min-inline-size: 1.6rem;
-  padding: 2px 6px;
+  padding: var(--s-1) var(--s-1);
   border: 1px solid var(--line);
   border-block-end-width: 2px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: var(--ground);
   font-family: var(--mono);
-  font-size: 0.78rem;
+  font-size: var(--t-meta);
   text-align: center;
 }
 
 kbd + kbd {
-  margin-inline-start: 4px;
+  margin-inline-start: var(--s-1);
 }
 
 /* --- how did we do this month? --- */
@@ -1658,14 +1735,14 @@ kbd + kbd {
 }
 
 .dash__lede {
-  margin: 2px 0 0;
-  font-size: 0.88rem;
+  margin: var(--s-1) 0 0;
+  font-size: var(--t-small);
 }
 
 .dash__controls {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  gap: var(--s-3);
   flex-wrap: wrap;
 }
 
@@ -1677,13 +1754,13 @@ kbd + kbd {
 }
 
 .notice {
-  margin: 0 0 16px;
-  padding: 10px 14px;
+  margin: 0 0 var(--s-4);
+  padding: var(--s-2) var(--s-3);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--surface);
   color: var(--ink-2);
-  font-size: 0.9rem;
+  font-size: var(--t-small);
 }
 
 .verdict--open {
@@ -1711,8 +1788,8 @@ kbd + kbd {
 .tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
 }
 
 @media (width >= 60rem) {
@@ -1730,10 +1807,10 @@ kbd + kbd {
 .tile {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px;
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   background: var(--surface);
 }
 
@@ -1745,20 +1822,20 @@ kbd + kbd {
 
 .tile__label {
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: var(--t-caption);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-3-on-surface);
 }
 
 .tile__value {
-  font-size: 1.6rem;
+  font-size: var(--t-display);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .tile__change {
-  font-size: 0.8rem;
+  font-size: var(--t-meta);
   color: var(--ink-3-on-surface);
 }
 
@@ -1784,47 +1861,47 @@ kbd + kbd {
 .dash__split {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr));
-  gap: 16px;
+  gap: var(--s-4);
   align-items: start;
-  margin-bottom: 16px;
+  margin-bottom: var(--s-4);
 }
 
 .panel--dash {
   max-width: none;
-  padding: 16px 18px;
+  padding: var(--s-4) var(--s-4);
 }
 
 .panel--dash h2 {
-  margin: 0 0 12px;
-  font-size: 1rem;
+  margin: 0 0 var(--s-3);
+  font-size: var(--t-body);
 }
 
 .panel--dash h3 {
-  margin: 20px 0 8px;
+  margin: var(--s-4) 0 var(--s-2);
 }
 
 .figures {
   display: grid;
-  gap: 12px;
+  gap: var(--s-3);
   margin: 0;
 }
 
 .figures dt {
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: var(--t-caption);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-3-on-surface);
 }
 
 .figures dd {
-  margin: 2px 0 0;
-  font-size: 1.25rem;
+  margin: var(--s-1) 0 0;
+  font-size: var(--t-figure);
   font-variant-numeric: tabular-nums;
 }
 
 .figures dd .muted {
-  font-size: 0.8rem;
+  font-size: var(--t-meta);
 }
 
 /* --- stock age bands ---
@@ -1835,7 +1912,7 @@ kbd + kbd {
 
 .bands {
   display: grid;
-  gap: 8px;
+  gap: var(--s-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1844,9 +1921,9 @@ kbd + kbd {
 .bands li {
   display: grid;
   grid-template-columns: 8.5rem 1fr 2.5rem;
-  gap: 10px;
+  gap: var(--s-2);
   align-items: center;
-  font-size: 0.88rem;
+  font-size: var(--t-small);
 }
 
 .bands__name {
@@ -1855,7 +1932,7 @@ kbd + kbd {
 
 .bands__bar {
   block-size: 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--idle-soft);
   overflow: hidden;
 }
@@ -1863,7 +1940,7 @@ kbd + kbd {
 .bands__bar > span {
   display: block;
   block-size: 100%;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--accent);
   transition: inline-size var(--beat) ease;
 }
@@ -1944,7 +2021,7 @@ abbr[title] {
 .panel__head > h2,
 .panel__head > h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--t-body);
 }
 
 .panel__head > button:last-child {
@@ -1956,8 +2033,8 @@ abbr[title] {
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 16px;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-4);
   padding: 0;
   list-style: none;
 }
@@ -1966,26 +2043,26 @@ abbr[title] {
    narrow panels use. */
 .panel--diary {
   max-width: none;
-  margin-block-end: 24px;
+  margin-block-end: var(--s-5);
 }
 
 .panel--diary .panel__head > .muted {
-  font-size: 0.85rem;
+  font-size: var(--t-small);
 }
 
 /* A note that is a caution rather than an aside — an outstanding password reset
    is the case it exists for. Carries a border on the INLINE START edge, so it
    moves to the right-hand side when the page mirrors. */
 .note--warn {
-  padding: 8px 12px;
+  padding: var(--s-2) var(--s-3);
   border-inline-start: 3px solid var(--accent);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
   background: var(--accent-soft);
   color: var(--ink);
 }
 
 :root[dir='rtl'] .note--warn {
-  border-radius: 6px 0 0 6px;
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
 }
 
 /* --- Changing a value where it is written --------------------------------- */
@@ -1993,16 +2070,16 @@ abbr[title] {
 .inline-edit {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
 /* Reads as text until it is hovered or focused, then admits it is a control.
    A value that looks like a button everywhere makes a table look like a
    toolbar; one that never does is a mouse-only secret. */
 .inline-edit__value {
-  padding: 2px 6px;
+  padding: var(--s-1) var(--s-1);
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: none;
   color: inherit;
   font: inherit;
@@ -2027,9 +2104,9 @@ abbr[title] {
   inline-size: 100%;
   min-inline-size: 4rem;
   max-inline-size: 12rem;
-  padding: 2px 6px;
+  padding: var(--s-1) var(--s-1);
   border: 1px solid var(--accent);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
@@ -2037,14 +2114,14 @@ abbr[title] {
 
 .inline-edit__saved {
   color: var(--done);
-  font-size: 0.8rem;
+  font-size: var(--t-meta);
   font-weight: 600;
   animation: inline-edit-confirm var(--beat) ease;
 }
 
 .inline-edit__failed {
   color: var(--fail);
-  font-size: 0.8rem;
+  font-size: var(--t-meta);
 }
 
 @keyframes inline-edit-confirm {
@@ -2099,7 +2176,7 @@ td a,
 .check {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
 .check input[type='checkbox'] {
@@ -2120,7 +2197,7 @@ td a,
 
 .panel--signal {
   max-width: none;
-  margin-block-end: 20px;
+  margin-block-end: var(--s-5);
   border-inline-start: 4px solid var(--accent);
   background: var(--accent-soft);
 }
@@ -2142,7 +2219,7 @@ td a,
 
 .panel--detail {
   max-width: none;
-  margin-block-start: 16px;
+  margin-block-start: var(--s-4);
   border-inline-start: 4px solid var(--line);
 }
 
@@ -2203,14 +2280,14 @@ tbody tr[aria-selected='true'] {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
 .calls > li {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--s-1);
 }
 
 /* --- Safety recalls -------------------------------------------------------
@@ -2220,8 +2297,8 @@ tbody tr[aria-selected='true'] {
    below, which are answers from two different places. */
 
 .recalls {
-  margin-block-start: 16px;
-  padding-block-start: 12px;
+  margin-block-start: var(--s-4);
+  padding-block-start: var(--s-3);
   border-block-start: 1px solid var(--line);
 }
 
@@ -2234,16 +2311,16 @@ tbody tr[aria-selected='true'] {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--s-3);
 }
 
 .recalls__list > li {
-  padding-inline-start: 12px;
+  padding-inline-start: var(--s-3);
   border-inline-start: 3px solid var(--line);
 }
 
 .recalls__list p {
-  margin: 4px 0;
+  margin: var(--s-1) 0;
 }
 
 /* A button that reads as a link, because it navigates within the screen rather
@@ -2274,19 +2351,19 @@ tbody tr[aria-selected='true'] {
 .picker {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--s-1);
 }
 
 /* Matches a <label> for the case where the choice is made and no input remains
  * to label. Same weight and size, so nothing shifts when it is swapped in. */
 .picker-label {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--t-small);
 }
 
 .picker-chosen {
   margin: 0;
-  padding: 0.45rem 0.6rem;
+  padding: var(--s-2) var(--s-2);
   border: 1px solid var(--line);
   background: var(--surface);
 }
@@ -2313,7 +2390,7 @@ tbody tr[aria-selected='true'] {
   display: block;
   width: 100%;
   min-block-size: auto;
-  padding: 0.4rem 0.6rem;
+  padding: var(--s-1) var(--s-2);
   border: 0;
   background: none;
   text-align: start;
@@ -2329,13 +2406,13 @@ tbody tr[aria-selected='true'] {
  * Distinct from the panel around it without being a second panel, because it is
  * part of the same answer rather than a new one. */
 .panel-inset {
-  margin: 0.6rem 0;
-  padding: 0.6rem 0.75rem;
+  margin: var(--s-2) 0;
+  padding: var(--s-2) var(--s-3);
   border: 1px solid var(--line);
   background: var(--ground);
 }
 
 .panel-inset h4 {
-  margin: 0 0 0.35rem;
-  font-size: 0.9rem;
+  margin: 0 0 var(--s-1);
+  font-size: var(--t-small);
 }

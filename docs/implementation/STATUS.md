@@ -16,10 +16,10 @@ next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
 the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no contextual actions, 124 Tab stops to reach a pager, and a
 token migration that is defined but only a third applied.
-Last verified: 2026-09-18 · `dotnet build` 0 warnings/0 errors, `dotnet test` 808/808,
+Last verified: 2026-09-18 · `dotnet build` 0 warnings/0 errors, `dotnet test` 824/824,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 446/446, and `npm run build` all pass
+`npm run typecheck`, `npm test` 451/451, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1345,3 +1345,15 @@ to come.
   Walked as two people. **Technician** (`tech@dev.local`, holds six permissions): four destinations — Sales containing only Customers, Service containing Workshop and Parts, People & security containing only their own two screens, no Accounting group and no Records link. They then typed `/accounting` anyway: the screen loaded, the server answered **403**, and it read *"You do not have access to these figures."* **Manager** (`gm@dev.local`, holds all 33): six destinations, everything open.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **808/808** (was 801 — seven new integration tests), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **446/446** (was 440 — six new screen tests), `npm run build`.
+
+- **2026-09-18 — The design tokens stopped being advice.** No feature. The scales added the day before were defined and roughly a third applied: **17 font sizes, 9 radii, 21 paddings and 16 margins** still written as literals, sitting beside tokens that named the same values. That is the worst state a design system can be in — worse than none — because the next person cannot tell which of the two is authoritative and both answers are defensible. Now: **3 font sizes, 1 radius, 3 paddings, 3 margins, 0 gaps**, and every survivor is deliberate with its reason at its own site (`0`, `auto`, three responsive `clamp()`s, two `em` values that must track their parent, two `inherit`s, a list indent in rem, and 30px of clearance measured against a glyph rather than a rhythm).
+
+  **The scale was adjusted to fit the content, not the other way round.** `--t-meta` was 0.76rem with one consumer while `0.8rem` appeared six times as the commonest small size in the file; the step moved to meet the content rather than six sites being shrunk to meet the step. Two steps were added because the scale had no name for things that plainly exist: `--t-figure` and `--t-display`, because **a displayed number is not a heading** — forcing `.tile__value` onto `--t-page` would have made a dashboard figure and a page title the same size, which is exactly the distinction the dashboard draws. `--r-lg` likewise, for the cards at 12 and 14px that were neither `--r-md` nor a pill.
+
+  **`--control-h` did not work, and the walk is what found it.** `min-block-size` is a **floor, not a height**, and a control whose content is taller simply ignores it: one toolbar on `/accounting` held a select at 41.5px, a text input at 42.8 and a date input at 44.8 — all three carrying `min-block-size: 40px`, none of them 40. Pinning `--control-line: 1.25` makes the content shorter than the floor so the floor is what everything lands on. **A select needed more**: Chrome does not apply `line-height` to `<select>` at all, so the rule landed and the computed value stayed `normal`; selects get an explicit `block-size`, which is safe for them because they cannot wrap. Every page control on six screens now measures **exactly 40px**, from three to seven distinct heights before.
+
+  **A pre-existing WCAG failure surfaced, and I had made it worse before finding it.** A row's open-the-record button carries `padding: 0` to keep cells dense, leaving its height as whatever the line box is: **21px on the committed stylesheet, under the 24px floor, on 24 controls** across the enquiry, deal and customer lists. The sweep of 2026-09-17 missed it. Pinning the line-height took it to 17px, which is how it was caught. Attribution was settled by measuring — the committed stylesheet was checked out, measured at 21px, and restored — rather than by reasoning about the diff. Fixed with an explicit 24px floor, keeping the tight row: 24px of target around 17px of ink is what 2.5.8 is for.
+
+  Measured after, across ten screens in both themes: **contrast failures 85 → 0 in dark and 65 → 0 in light** (2,112 text elements), **targets under 24px 24 → 0**, sideways scroll 0 at 320px. Walked in both themes at desktop width.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **824/824**, `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **451/451**, `npm run build`.
