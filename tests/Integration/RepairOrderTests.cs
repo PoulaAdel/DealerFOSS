@@ -974,6 +974,195 @@ public sealed class RepairOrderTests(HostFixture fixture)
         owed.GetProperty("amount").GetDecimal().Should().Be(100m,
             because: "the customer agreed to 100 of it; the rest is not theirs to settle");
     }
+
+    [Fact]
+    public async Task Invoicing_warranty_pay_work_opens_a_claim()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 2m, rate = 90m, payType = "Warranty",
+        });
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Service", hours = 1m, rate = 100m,
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        var job = await GetJobAsync(jobId, Manager);
+        var claim = job.GetProperty("warrantyClaim");
+
+        claim.GetProperty("status").GetString().Should().Be("Open");
+        claim.GetProperty("amount").GetDecimal().Should().Be(180m);
+        claim.GetProperty("amountPaid").ValueKind.Should().Be(JsonValueKind.Null);
+        claim.GetProperty("availableMoves").EnumerateArray()
+            .Select(v => v.GetString()).Should().Contain(["Submitted", "Denied"]);
+    }
+
+    [Fact]
+    public async Task A_job_with_no_warranty_work_has_no_claim()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Service", hours = 1m, rate = 100m,
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        var job = await GetJobAsync(jobId, Manager);
+        job.GetProperty("warrantyClaim").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task A_claim_moves_from_open_to_paid_and_posts_the_cash_arriving()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 2m, rate = 100m, payType = "Warranty",
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var submitted = await PostAsync(
+            $"{Jobs}/{jobId}/claim", Manager, new { status = "Submitted", note = "Sent by portal" });
+        submitted.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var approved = await PostAsync(
+            $"{Jobs}/{jobId}/claim", Manager, new { status = "Approved", note = (string?)null });
+        approved.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // The manufacturer disputed one line and paid less than billed — the
+        // ordinary case, not an edge case.
+        using var paid = await PostAsync(
+            $"{Jobs}/{jobId}/claim", Manager, new { status = "Paid", amountPaid = 180m, note = "Cheque received" });
+        paid.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var job = await paid.Content.ReadFromJsonAsync<JsonElement>();
+        var claim = job.GetProperty("warrantyClaim");
+        claim.GetProperty("status").GetString().Should().Be("Paid");
+        claim.GetProperty("amount").GetDecimal().Should().Be(200m, because: "what was billed never moves");
+        claim.GetProperty("amountPaid").GetDecimal().Should().Be(180m);
+        claim.GetProperty("history").GetArrayLength().Should().Be(4);
+
+        // The cash actually arriving is a real ledger event: 1000 up, 1200
+        // down, by exactly what was paid — not what was billed.
+        var claimEntry = await FindEntryWithLinesAsync(jobId, "1000", 180m, "1200", 180m);
+        claimEntry.Should().BeTrue(because: "the manufacturer's payment must move cash in and settle 1200");
+    }
+
+    [Fact]
+    public async Task Denying_a_claim_needs_a_reason()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 1m, rate = 80m, payType = "Warranty",
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var refused = await PostAsync(
+            $"{Jobs}/{jobId}/claim", Manager, new { status = "Denied", note = (string?)null });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await refused.Content.ReadAsStringAsync()).Should().Contain("service.claim_denial_needs_reason");
+    }
+
+    [Fact]
+    public async Task Recording_a_claim_paid_needs_an_amount()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 1m, rate = 80m, payType = "Warranty",
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        await PostAsync($"{Jobs}/{jobId}/claim", Manager, new { status = "Submitted", note = (string?)null });
+        await PostAsync($"{Jobs}/{jobId}/claim", Manager, new { status = "Approved", note = (string?)null });
+
+        using var refused = await PostAsync(
+            $"{Jobs}/{jobId}/claim", Manager, new { status = "Paid", amountPaid = (decimal?)null, note = (string?)null });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await refused.Content.ReadAsStringAsync()).Should().Contain("service.claim_payment_needs_amount");
+    }
+
+    [Fact]
+    public async Task A_claim_cannot_skip_straight_to_paid()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Warranty repair", hours = 1m, rate = 80m, payType = "Warranty",
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var refused = await PostAsync(
+            $"{Jobs}/{jobId}/claim", Manager, new { status = "Paid", amountPaid = 80m, note = (string?)null });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task A_job_with_no_claim_refuses_a_claim_move()
+    {
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Service", hours = 1m, rate = 100m,
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        using var refused = await PostAsync(
+            $"{Jobs}/{jobId}/claim", Manager, new { status = "Submitted", note = (string?)null });
+
+        refused.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await refused.Content.ReadAsStringAsync()).Should().Contain("service.no_warranty_claim");
+    }
+
+    /// <summary>Whether any journal entry for this job carries exactly these two lines.</summary>
+    private async Task<bool> FindEntryWithLinesAsync(
+        string jobId, string debitCode, decimal debitAmount, string creditCode, decimal creditAmount)
+    {
+        using var list = await SendAsync(HttpMethod.Get, $"{Ledger}?reference={jobId}", Manager);
+        var rows = (await list.Content.ReadFromJsonAsync<JsonElement>()).Rows();
+
+        foreach (var row in rows)
+        {
+            using var detail = await SendAsync(
+                HttpMethod.Get, $"{Ledger}/{row.GetProperty("id").GetString()}", Manager);
+            var lines = (await detail.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("lines");
+
+            if (Debit(lines, debitCode) == debitAmount && Credit(lines, creditCode) == creditAmount)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private async Task<JsonElement> LabourReportAsync(string email)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);

@@ -1161,6 +1161,29 @@ export const de: Catalogue = {
   'payType.partsGrossNote':
     'Rohertrag wird nur für Teile ausgewiesen. Die Kosten eines Teils werden bei der Rechnungsstellung festgeschrieben; für Arbeit und Fremdvergabe hat dieses System nie eine Kostenbasis erfasst — alle drei in einer Zahl zu vermischen würde eine reale Zahl mit zwei erfundenen mitteln.',
 
+  'claim.title': 'Garantieanspruch',
+  'claim.status': 'Status',
+  'claim.billed': 'Dem Hersteller berechnet',
+  'claim.paid': 'Vom Hersteller bezahlt',
+  'claim.markSubmitted': 'Als an den Hersteller gesendet markieren',
+  'claim.markApproved': 'Als genehmigt markieren',
+  'claim.recordPaid': 'Als bezahlt erfassen',
+  'claim.paidNote':
+    'Was der Hersteller tatsächlich gezahlt hat, kann vom berechneten Betrag abweichen — erfassen Sie, was eingegangen ist.',
+  'claim.amountPaid': 'Gezahlter Betrag',
+  'claim.note': 'Notiz (wird festgehalten)',
+  'claim.confirmPaid': 'Zahlung erfassen',
+  'claim.markDenied': 'Als abgelehnt markieren',
+  'claim.denyReason': 'Vom Hersteller genannter Grund',
+  'claim.confirmDenied': 'Ablehnung erfassen',
+  'claim.historyTitle': 'Was mit diesem Anspruch geschah',
+
+  'enum.warrantyClaimStatus.Open': 'Fällig, noch nicht gesendet',
+  'enum.warrantyClaimStatus.Submitted': 'An den Hersteller gesendet',
+  'enum.warrantyClaimStatus.Approved': 'Genehmigt',
+  'enum.warrantyClaimStatus.Denied': 'Abgelehnt',
+  'enum.warrantyClaimStatus.Paid': 'Bezahlt',
+
   // --- Sicherheitsrückrufe ---------------------------------------------------
   'recalls.title': 'Sicherheitsrückrufe',
   'recalls.onRequest':

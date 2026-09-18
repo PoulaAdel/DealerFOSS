@@ -960,6 +960,30 @@ tbody tr:last-child td {
   color: var(--done);
 }
 
+/* A warranty claim's own status, distinct from ".chip--pay-warranty" (the
+   pay-type chip a service line already carries) so the two never look
+   identical next to each other on the same screen. */
+.chip--claim-open {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--claim-submitted {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip--claim-approved,
+.chip--claim-paid {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.chip--claim-denied {
+  background: var(--fail-soft);
+  color: var(--fail);
+}
+
 /* Tabular figures so a column of money lines up on the decimal instead of
    drifting with the glyph widths, and `width: 1%` so a numeric column takes
    only what it needs. Without the second half the browser shares the width

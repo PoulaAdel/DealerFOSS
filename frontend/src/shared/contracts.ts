@@ -685,6 +685,35 @@ export interface RepairOrderDetail {
    * in time, as against labourTotal which is what it was worth.
    */
   clockedHours: number;
+
+  /**
+   * This job's warranty claim, when it has one — meaning it has been invoiced
+   * with warranty-pay work on it. Null before invoicing, and null forever on
+   * a job with no warranty lines.
+   */
+  warrantyClaim: WarrantyClaimView | null;
+}
+
+export type WarrantyClaimStatus = 'Open' | 'Submitted' | 'Approved' | 'Denied' | 'Paid';
+
+/** One repair order's warranty claim: what was billed, and where it stands. */
+export interface WarrantyClaimView {
+  id: string;
+  status: WarrantyClaimStatus;
+  amount: number;
+  /** What the manufacturer actually paid. Null until status is Paid, and may differ from `amount`. */
+  amountPaid: number | null;
+  currency: string;
+  availableMoves: WarrantyClaimStatus[];
+  history: WarrantyClaimHistoryEntry[];
+}
+
+export interface WarrantyClaimHistoryEntry {
+  fromStatus: WarrantyClaimStatus | null;
+  toStatus: WarrantyClaimStatus;
+  occurredAt: string;
+  changedByUserId: string | null;
+  note: string | null;
 }
 
 /**

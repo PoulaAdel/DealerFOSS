@@ -193,6 +193,7 @@ describe('the routes a record address sits beside', () => {
     lines: [],
     clockings: [],
     clockedHours: 0,
+    warrantyClaim: null,
     history: [],
   };
 

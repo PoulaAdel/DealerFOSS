@@ -1195,6 +1195,28 @@ export const ru: Catalogue = {
   'payType.partsGrossNote':
     'Валовая прибыль показана только для запчастей. Себестоимость запчасти фиксируется при выставлении счёта; для работы и субподряда эта система никогда не фиксировала себестоимость — объединение всех трёх в одну цифру смешало бы реальное число с двумя выдуманными.',
 
+  'claim.title': 'Гарантийная претензия',
+  'claim.status': 'Статус',
+  'claim.billed': 'Выставлено производителю',
+  'claim.paid': 'Оплачено производителем',
+  'claim.markSubmitted': 'Отметить как отправленную производителю',
+  'claim.markApproved': 'Отметить как одобренную',
+  'claim.recordPaid': 'Отметить как оплаченную',
+  'claim.paidNote': 'То, что производитель фактически заплатил, может отличаться от выставленной суммы — укажите, сколько пришло.',
+  'claim.amountPaid': 'Оплаченная сумма',
+  'claim.note': 'Примечание (для записи)',
+  'claim.confirmPaid': 'Записать оплату',
+  'claim.markDenied': 'Отметить как отклонённую',
+  'claim.denyReason': 'Причина, указанная производителем',
+  'claim.confirmDenied': 'Записать отказ',
+  'claim.historyTitle': 'Что происходило с этой претензией',
+
+  'enum.warrantyClaimStatus.Open': 'Причитается, ещё не отправлена',
+  'enum.warrantyClaimStatus.Submitted': 'Отправлена производителю',
+  'enum.warrantyClaimStatus.Approved': 'Одобрена',
+  'enum.warrantyClaimStatus.Denied': 'Отклонена',
+  'enum.warrantyClaimStatus.Paid': 'Оплачена',
+
   // --- Отзывные кампании -----------------------------------------------------
   'recalls.title': 'Отзывные кампании',
   'recalls.onRequest':

@@ -50,6 +50,7 @@ internal static class RepairOrderEndpoints
         group.MapPost("/{repairOrderId:guid}/clock-on", ClockOnAsync);
         group.MapPost("/{repairOrderId:guid}/clock-off", ClockOffAsync);
         group.MapPost("/{repairOrderId:guid}/status", ChangeStatusAsync);
+        group.MapPost("/{repairOrderId:guid}/claim", ChangeClaimStatusAsync);
     }
 
     /// <summary>
@@ -213,6 +214,16 @@ internal static class RepairOrderEndpoints
         CancellationToken cancellationToken)
     {
         var result = await repairOrders.ChangeStatusAsync(repairOrderId, request, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ChangeClaimStatusAsync(
+        Guid repairOrderId,
+        WarrantyClaimStatusChangeRequest request,
+        IRepairOrders repairOrders,
+        CancellationToken cancellationToken)
+    {
+        var result = await repairOrders.ChangeClaimStatusAsync(repairOrderId, request, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 }

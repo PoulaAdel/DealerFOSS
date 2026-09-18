@@ -211,4 +211,11 @@ public enum JournalSource
     /// as a credit — no cash moves here, the same as CreditApplied.
     /// </summary>
     ProductCancelled = 8,
+
+    /// <summary>
+    /// A manufacturer paid a warranty claim. The counterpart to the debit a
+    /// service invoice raises against account 1200 — without this, that
+    /// balance only ever grew.
+    /// </summary>
+    WarrantyClaimPaid = 9,
 }

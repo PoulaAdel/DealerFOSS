@@ -151,6 +151,14 @@ public interface IAccounting
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Records a manufacturer paying a warranty claim: cash up, 1200 down.
+    /// Called inside the claim's transaction; does not save.
+    /// </summary>
+    Task<Result<JournalEntryDetail>> PostWarrantyClaimPaymentAsync(
+        WarrantyClaimPaymentPosting payment,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// What the business made over a period: revenue and cost of sales by
     /// department, then what it costs to run the place, then the difference.
     /// </summary>
@@ -379,6 +387,15 @@ public sealed record ProductCancellationPosting(
     string Reference,
     string Currency,
     decimal RefundAmount,
+    string Memo);
+
+public sealed record WarrantyClaimPaymentPosting(
+    RooftopId RooftopId,
+
+    /// <summary>The repair order's own id, so this reads beside the invoice it settles.</summary>
+    string Reference,
+    string Currency,
+    decimal Amount,
     string Memo);
 
 public sealed record StockPurchasePosting(

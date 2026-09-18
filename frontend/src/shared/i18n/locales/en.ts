@@ -1198,6 +1198,33 @@ export const en = {
   'payType.partsGrossNote':
     'Gross profit is shown for parts only. A part’s cost is frozen at invoicing; labour and sublet work carry no cost basis this system has ever recorded, so blending all three into one figure would average a real number against two invented ones.',
 
+  // --- A repair order's warranty claim ----------------------------------------
+  // Internal tracking only — nothing here talks to a manufacturer's own claim
+  // system. "Submitted" means a person said they sent it, not that a portal
+  // confirmed receipt.
+  'claim.title': 'Warranty claim',
+  'claim.status': 'Status',
+  'claim.billed': 'Billed to the manufacturer',
+  'claim.paid': 'Paid by the manufacturer',
+  'claim.markSubmitted': 'Mark as sent to the manufacturer',
+  'claim.markApproved': 'Mark as approved',
+  'claim.recordPaid': 'Record as paid',
+  'claim.paidNote':
+    'What the manufacturer actually paid may differ from what was billed — record what arrived.',
+  'claim.amountPaid': 'Amount paid',
+  'claim.note': 'Note (goes on the record)',
+  'claim.confirmPaid': 'Record the payment',
+  'claim.markDenied': 'Mark as denied',
+  'claim.denyReason': 'Reason the manufacturer gave',
+  'claim.confirmDenied': 'Record the denial',
+  'claim.historyTitle': 'What happened to this claim',
+
+  'enum.warrantyClaimStatus.Open': 'Owed, not yet sent',
+  'enum.warrantyClaimStatus.Submitted': 'Sent to the manufacturer',
+  'enum.warrantyClaimStatus.Approved': 'Approved',
+  'enum.warrantyClaimStatus.Denied': 'Denied',
+  'enum.warrantyClaimStatus.Paid': 'Paid',
+
   // --- Safety recalls --------------------------------------------------------
   // Translators — `recalls.caveat` and `recalls.noneFound` are about somebody's
   // brakes. Both say the same careful thing: the public record is about a MODEL

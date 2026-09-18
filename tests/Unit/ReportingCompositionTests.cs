@@ -261,6 +261,10 @@ public sealed class ReportingCompositionTests
             ProductCancellationPosting cancellation, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        public Task<Result<JournalEntryDetail>> PostWarrantyClaimPaymentAsync(
+            WarrantyClaimPaymentPosting payment, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task<Result<ProfitAndLoss>> ProfitAndLossAsync(
             BalanceQuery query, CancellationToken cancellationToken) =>
             throw new NotSupportedException();

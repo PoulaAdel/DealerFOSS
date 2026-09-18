@@ -60,6 +60,7 @@ import { useRecordRoute } from '../../shared/useRecordRoute';
 import { DiaryPanel } from './DiaryPanel';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { useEnumLabel } from '../../shared/i18n/enums';
 import { ListScreen, type ListLoad } from '../../shared/ListScreen';
 import { RecordPicker, type PickerOption } from '../../shared/RecordPicker';
 import { TakePayment } from '../receivables/TakePayment';
@@ -75,6 +76,7 @@ import {
   type ServicePayType,
   type StaffMember,
   type Page,
+  type WarrantyClaimView,
 } from '../../shared/contracts';
 
 const PageSize = 50;
@@ -450,6 +452,12 @@ function Job({
           the only thing left to do was print it. */}
       <TakePayment source="RepairOrder" reference={job.id} watch={job.status} />
 
+      {/* Renders nothing until the job is invoiced with warranty-pay work on
+          it — a job with none has nothing here to track. */}
+      {job.warrantyClaim === null ? null : (
+        <WarrantyClaimPanel jobId={job.id} claim={job.warrantyClaim} onChanged={onChanged} />
+      )}
+
       <h3>{t('workshop.whatHappened')}</h3>
       <ol className="history">
         {[...job.history].reverse().map((entry, index) => (
@@ -462,6 +470,197 @@ function Job({
           </li>
         ))}
       </ol>
+    </section>
+  );
+}
+
+/**
+ * Where this job's warranty claim stands, and the one move available next.
+ *
+ * INTERNAL TRACKING ONLY. Nothing here talks to a manufacturer's claim
+ * portal — "Submitted" means a person told this system they sent it, not
+ * that a claim portal confirmed receipt. See the file header on
+ * WarrantyClaim for why that gap is deliberate.
+ */
+function WarrantyClaimPanel({
+  jobId,
+  claim,
+  onChanged,
+}: {
+  jobId: string;
+  claim: WarrantyClaimView;
+  onChanged: (updated: RepairOrderDetail) => Promise<void>;
+}) {
+  const { t, format } = useI18n();
+  const label = useEnumLabel();
+  const describe = useApiMessage();
+
+  const [denying, setDenying] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [reason, setReason] = useState('');
+  const [amountPaid, setAmountPaid] = useState(String(claim.amount));
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const money = (amount: number) => format.money(amount, claim.currency);
+
+  async function move(status: string, extra?: { amountPaid?: number; note?: string | null }) {
+    setError(null);
+    setBusy(true);
+
+    try {
+      await onChanged(
+        await post<RepairOrderDetail>(`/repair-orders/${jobId}/claim`, {
+          status,
+          amountPaid: extra?.amountPaid ?? null,
+          note: extra?.note ?? null,
+        }),
+      );
+      setDenying(false);
+      setPaying(false);
+      setReason('');
+      setNote('');
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="panel-inset" aria-label={t('claim.title')}>
+      <h3>{t('claim.title')}</h3>
+
+      <dl className="facts">
+        <dt>{t('claim.status')}</dt>
+        <dd>
+          <span className={`chip chip--claim-${claim.status.toLowerCase()}`}>
+            {label('warrantyClaimStatus', claim.status)}
+          </span>
+        </dd>
+
+        <dt>{t('claim.billed')}</dt>
+        <dd className="num">{money(claim.amount)}</dd>
+
+        {claim.amountPaid === null ? null : (
+          <>
+            <dt>{t('claim.paid')}</dt>
+            <dd className="num">{money(claim.amountPaid)}</dd>
+          </>
+        )}
+      </dl>
+
+      {claim.availableMoves.includes('Submitted') ? (
+        <div className="actions">
+          <button type="button" disabled={busy} onClick={() => void move('Submitted')}>
+            {t('claim.markSubmitted')}
+          </button>
+        </div>
+      ) : null}
+
+      {claim.availableMoves.includes('Approved') ? (
+        <div className="actions">
+          <button type="button" disabled={busy} onClick={() => void move('Approved')}>
+            {t('claim.markApproved')}
+          </button>
+        </div>
+      ) : null}
+
+      {claim.availableMoves.includes('Paid') && !paying ? (
+        <div className="actions">
+          <button type="button" disabled={busy} onClick={() => setPaying(true)}>
+            {t('claim.recordPaid')}
+          </button>
+        </div>
+      ) : null}
+
+      {paying ? (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void move('Paid', { amountPaid: Number(amountPaid) || 0, note: note.trim() || null });
+          }}
+        >
+          <p className="note">{t('claim.paidNote')}</p>
+          <label htmlFor="claim-amount-paid">{t('claim.amountPaid')}</label>
+          <input
+            id="claim-amount-paid"
+            inputMode="decimal"
+            value={amountPaid}
+            disabled={busy}
+            onChange={(event) => setAmountPaid(event.target.value)}
+          />
+          <label htmlFor="claim-paid-note">{t('claim.note')}</label>
+          <input
+            id="claim-paid-note"
+            value={note}
+            disabled={busy}
+            autoComplete="off"
+            onChange={(event) => setNote(event.target.value)}
+          />
+          <div className="actions">
+            <button type="submit" disabled={busy}>
+              {busy ? t('common.saving') : t('claim.confirmPaid')}
+            </button>
+            <button type="button" disabled={busy} onClick={() => setPaying(false)}>
+              {t('common.cancel')}
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      {claim.availableMoves.includes('Denied') && !denying ? (
+        <div className="actions">
+          <button type="button" disabled={busy} onClick={() => setDenying(true)}>
+            {t('claim.markDenied')}
+          </button>
+        </div>
+      ) : null}
+
+      {denying ? (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void move('Denied', { note: reason.trim() });
+          }}
+        >
+          <label htmlFor="claim-deny-reason">{t('claim.denyReason')}</label>
+          <input
+            id="claim-deny-reason"
+            value={reason}
+            disabled={busy}
+            autoComplete="off"
+            onChange={(event) => setReason(event.target.value)}
+          />
+          <div className="actions">
+            <button type="submit" disabled={busy || reason.trim() === ''}>
+              {busy ? t('common.saving') : t('claim.confirmDenied')}
+            </button>
+            <button type="button" disabled={busy} onClick={() => setDenying(false)}>
+              {t('common.cancel')}
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      <p className="error" aria-live="polite">
+        {error ?? ''}
+      </p>
+
+      {claim.history.length === 0 ? null : (
+        <ol className="history" aria-label={t('claim.historyTitle')}>
+          {[...claim.history].reverse().map((entry, index) => (
+            <li key={`${entry.toStatus}-${entry.occurredAt}-${index}`}>
+              <span className="strong">{label('warrantyClaimStatus', entry.toStatus)}</span>{' '}
+              <span className="muted">
+                {format.dateTime(entry.occurredAt)}
+                {entry.note === null ? '' : ` — ${entry.note}`}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }

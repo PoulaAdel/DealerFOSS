@@ -114,6 +114,17 @@ public interface IRepairOrders
         Guid repairOrderId,
         RepairOrderStatusChangeRequest change,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Moves this order's warranty claim on — submitted, approved, denied, or
+    /// recorded as paid. Internal tracking only; nothing here talks to a
+    /// manufacturer's own system. Paid is the one move that posts to the
+    /// ledger, since it is the one where cash actually arrives.
+    /// </summary>
+    Task<Result<RepairOrderDetail>> ChangeClaimStatusAsync(
+        Guid repairOrderId,
+        WarrantyClaimStatusChangeRequest change,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Which repair orders a list covers. Every filter narrows; none widens.</summary>
@@ -226,7 +237,54 @@ public sealed record RepairOrderDetail(
     /// Hours actually spent, summed from the CLOSED clockings. What the job
     /// cost in time, as against LabourTotal which is what it was worth.
     /// </summary>
-    decimal ClockedHours);
+    decimal ClockedHours,
+
+    /// <summary>
+    /// This order's warranty claim, when it has one — meaning it has been
+    /// invoiced with warranty-pay work on it. Null before invoicing, and null
+    /// forever on a job with no warranty lines.
+    /// </summary>
+    WarrantyClaimView? WarrantyClaim);
+
+/// <summary>
+/// One repair order's warranty claim: what was billed, where it stands, and
+/// what the manufacturer has done about it so far.
+/// </summary>
+public sealed record WarrantyClaimView(
+    Guid Id,
+    string Status,
+    decimal Amount,
+
+    /// <summary>What the manufacturer actually paid. Null until Status is Paid.</summary>
+    decimal? AmountPaid,
+    string Currency,
+
+    /// <summary>The statuses this claim may move to next.</summary>
+    IReadOnlyList<string> AvailableMoves,
+    IReadOnlyList<WarrantyClaimHistoryEntry> History);
+
+public sealed record WarrantyClaimHistoryEntry(
+    string? FromStatus,
+    string ToStatus,
+    DateTimeOffset OccurredAt,
+    Guid? ChangedByUserId,
+    string? Note);
+
+/// <summary>
+/// What a caller supplies to move a warranty claim on.
+/// </summary>
+/// <param name="AmountPaid">
+/// Required when <paramref name="Status"/> is Paid; ignored otherwise. May
+/// differ from what was billed — see WarrantyClaim's own file header.
+/// </param>
+/// <param name="Note">
+/// Required when <paramref name="Status"/> is Denied, where it is the reason.
+/// Optional everywhere else.
+/// </param>
+public sealed record WarrantyClaimStatusChangeRequest(
+    string Status,
+    decimal? AmountPaid = null,
+    string? Note = null);
 
 /// <summary>A period, and optionally one workshop within it.</summary>
 public sealed record LabourQuery(DateOnly From, DateOnly To, RooftopId? RooftopId = null);

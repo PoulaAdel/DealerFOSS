@@ -891,6 +891,84 @@ public sealed class AccountingService(
             cancellationToken);
     }
 
+    public async Task<Result<JournalEntryDetail>> PostWarrantyClaimPaymentAsync(
+        WarrantyClaimPaymentPosting payment,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(payment);
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, PostPermission, payment.RooftopId, cancellationToken))
+        {
+            return Result.Failure<JournalEntryDetail>(LedgerErrors.Forbidden);
+        }
+
+        if (payment.Amount <= 0m)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.warranty_payment_invalid", "A warranty payment is for an amount above zero."));
+        }
+
+        var rooftop = await _organization.GetRooftopAsync(payment.RooftopId, cancellationToken);
+        if (rooftop.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(rooftop.Error);
+        }
+
+        var refusal = await PeriodRefusalAsync(
+            DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime), cancellationToken);
+
+        if (refusal is not null)
+        {
+            return Result.Failure<JournalEntryDetail>(refusal);
+        }
+
+        var accounts = await AccountMapAsync(cancellationToken);
+        if (accounts.IsFailure)
+        {
+            return Result.Failure<JournalEntryDetail>(accounts.Error);
+        }
+
+        var cash = accounts.Value[AccountCodes.Cash];
+        var owed = accounts.Value[AccountCodes.WarrantyReceivable];
+
+        JournalEntry entry;
+        try
+        {
+            entry = JournalEntry.Post(
+                Guid.NewGuid(),
+                rooftop.Value.LegalEntityId,
+                payment.RooftopId,
+                DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime),
+                JournalSource.WarrantyClaimPaid,
+                payment.Reference,
+                payment.Memo,
+                payment.Currency,
+                [
+                    (cash.Code, cash.Id, payment.Amount, 0m, "Money in"),
+                    (owed.Code, owed.Id, 0m, payment.Amount, "Off what the manufacturer owed"),
+                ],
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<JournalEntryDetail>(
+                Error.Validation("accounting.will_not_balance", ex.Message));
+        }
+
+        _db.JournalEntries.Add(entry);
+
+        // Deliberately NOT saved here — called inside the claim's own
+        // transaction, the same contract PostProductCancellationAsync uses.
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, PostPermission, AuditOutcome.Allowed,
+                "JournalEntry", entry.Id.ToString(), payment.RooftopId.Value,
+                payment.Memo, null, null),
+            cancellationToken);
+
+        return Result.Success(await DescribeAsync(entry, cancellationToken));
+    }
+
     /// <summary>
     /// PostPermission, not RefundPermission: no cash leaves the business here,
     /// only a liability is raised — the same as applying a credit. Cash only

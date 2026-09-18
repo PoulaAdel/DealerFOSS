@@ -1167,6 +1167,29 @@ export const es: Catalogue = {
   'payType.partsGrossNote':
     'El margen bruto se muestra solo para repuestos. El costo de un repuesto se fija al facturar; la mano de obra y el trabajo subcontratado no tienen un costo registrado en este sistema, así que combinar los tres en una sola cifra promediaría un número real con dos inventados.',
 
+  'claim.title': 'Reclamo de garantía',
+  'claim.status': 'Estado',
+  'claim.billed': 'Facturado al fabricante',
+  'claim.paid': 'Pagado por el fabricante',
+  'claim.markSubmitted': 'Marcar como enviado al fabricante',
+  'claim.markApproved': 'Marcar como aprobado',
+  'claim.recordPaid': 'Registrar como pagado',
+  'claim.paidNote':
+    'Lo que el fabricante realmente pagó puede diferir de lo facturado — registre lo que llegó.',
+  'claim.amountPaid': 'Importe pagado',
+  'claim.note': 'Nota (queda en el registro)',
+  'claim.confirmPaid': 'Registrar el pago',
+  'claim.markDenied': 'Marcar como denegado',
+  'claim.denyReason': 'Motivo que dio el fabricante',
+  'claim.confirmDenied': 'Registrar la denegación',
+  'claim.historyTitle': 'Qué pasó con este reclamo',
+
+  'enum.warrantyClaimStatus.Open': 'Adeudado, aún no enviado',
+  'enum.warrantyClaimStatus.Submitted': 'Enviado al fabricante',
+  'enum.warrantyClaimStatus.Approved': 'Aprobado',
+  'enum.warrantyClaimStatus.Denied': 'Denegado',
+  'enum.warrantyClaimStatus.Paid': 'Pagado',
+
   // --- Llamadas a revisión ---------------------------------------------------
   'recalls.title': 'Llamadas a revisión',
   'recalls.onRequest':

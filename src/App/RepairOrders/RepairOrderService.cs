@@ -951,6 +951,22 @@ public sealed class RepairOrderService(
                     return Result.Failure<RepairOrderDetail>(owed.Error);
                 }
             }
+
+            // Warranty work already posted a debit to 1200 above (BuildPosting's
+            // Warranty line); this is what gives that debit a life after
+            // posting — see the file header on WarrantyClaim.
+            if (order.WarrantyTotal.Amount > 0m)
+            {
+                var claim = WarrantyClaim.Open(
+                    Guid.NewGuid(),
+                    order.RooftopId,
+                    order.Id,
+                    new Money(order.WarrantyTotal.Amount, order.Currency),
+                    _clock.UtcNow,
+                    _currentUser.Id);
+
+                _db.WarrantyClaims.Add(claim);
+            }
         }
 
         try
@@ -969,6 +985,117 @@ public sealed class RepairOrderService(
             new AuditEntry(_currentUser.Id, WritePermission, AuditOutcome.Allowed,
                 "RepairOrder", order.Id.ToString(), order.RooftopId.Value,
                 $"{from} to {next}", null, null),
+            cancellationToken);
+
+        return await DescribeAsync(order, cancellationToken);
+    }
+
+    public async Task<Result<RepairOrderDetail>> ChangeClaimStatusAsync(
+        Guid repairOrderId,
+        WarrantyClaimStatusChangeRequest change,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+
+        var order = await LoadAsync(repairOrderId, tracked: false, cancellationToken);
+        if (order is null)
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
+        }
+
+        var claim = await _db.WarrantyClaims
+            .Include(c => c.History)
+            .SingleOrDefaultAsync(c => c.RepairOrderId == repairOrderId, cancellationToken);
+
+        if (claim is null)
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.NoWarrantyClaim);
+        }
+
+        if (!Enum.TryParse<WarrantyClaimStatus>(change.Status, ignoreCase: true, out var next))
+        {
+            return Result.Failure<RepairOrderDetail>(ServiceErrors.UnknownClaimStatus);
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            switch (next)
+            {
+                case WarrantyClaimStatus.Submitted:
+                    claim.Submit(_clock.UtcNow, _currentUser.Id, change.Note);
+                    break;
+                case WarrantyClaimStatus.Approved:
+                    claim.Approve(_clock.UtcNow, _currentUser.Id, change.Note);
+                    break;
+                case WarrantyClaimStatus.Denied:
+                    if (string.IsNullOrWhiteSpace(change.Note))
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return Result.Failure<RepairOrderDetail>(ServiceErrors.ClaimDenialNeedsReason);
+                    }
+
+                    claim.Deny(_clock.UtcNow, _currentUser.Id, change.Note);
+                    break;
+                case WarrantyClaimStatus.Paid:
+                    if (change.AmountPaid is not { } paid || paid <= 0m)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return Result.Failure<RepairOrderDetail>(ServiceErrors.ClaimPaymentNeedsAmount);
+                    }
+
+                    claim.RecordPaid(paid, _clock.UtcNow, _currentUser.Id, change.Note);
+                    break;
+                default:
+                    await transaction.RollbackAsync(cancellationToken);
+                    return Result.Failure<RepairOrderDetail>(ServiceErrors.UnknownClaimStatus);
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<RepairOrderDetail>(Error.Conflict("service.claim_move_not_allowed", ex.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<RepairOrderDetail>(Error.Validation("service.claim_move_invalid", ex.Message));
+        }
+
+        // Paid is the one move where money actually arrives, so it is the only
+        // one that posts. The other three are administrative record-keeping —
+        // see the file header on WarrantyClaim.
+        if (next == WarrantyClaimStatus.Paid)
+        {
+            var posted = await _accounting.PostWarrantyClaimPaymentAsync(
+                new WarrantyClaimPaymentPosting(
+                    order.RooftopId,
+                    order.Id.ToString(),
+                    claim.Currency,
+                    claim.AmountPaid!.Value,
+                    $"Warranty claim paid against {order.Number}"),
+                cancellationToken);
+
+            if (posted.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result.Failure<RepairOrderDetail>(posted.Error);
+            }
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, WritePermission, AuditOutcome.Allowed,
+                "WarrantyClaim", claim.Id.ToString(), order.RooftopId.Value,
+                $"Claim on {order.Number} moved to {next}", null, null),
             cancellationToken);
 
         return await DescribeAsync(order, cancellationToken);
@@ -1217,6 +1344,11 @@ public sealed class RepairOrderService(
             .Where(c => c.RepairOrderId == order.Id)
             .ToListAsync(cancellationToken);
 
+        var claim = await _db.WarrantyClaims
+            .AsNoTracking()
+            .Include(c => c.History)
+            .SingleOrDefaultAsync(c => c.RepairOrderId == order.Id, cancellationToken);
+
         // A job that has only just been opened has its first history row in memory
         // rather than in a separate query's results.
         if (history.Count == 0)
@@ -1287,8 +1419,24 @@ public sealed class RepairOrderService(
             // Closed entries only. An open one contributes zero until it stops —
             // see TechnicianClocking.Hours for why a figure that changes every
             // time somebody looks at it is worse than no figure.
-            clockings.Sum(c => c.Hours)));
+            clockings.Sum(c => c.Hours),
+            claim is null ? null : DescribeClaim(claim)));
     }
+
+    private static WarrantyClaimView DescribeClaim(WarrantyClaim claim) =>
+        new(
+            claim.Id,
+            claim.Status.ToString(),
+            claim.Amount,
+            claim.AmountPaid,
+            claim.Currency,
+            WarrantyClaimRules.MovesFrom(claim.Status).Select(s => s.ToString()).ToList(),
+            claim.History
+                .OrderBy(h => h.OccurredAt)
+                .ThenBy(h => h.Sequence)
+                .Select(h => new WarrantyClaimHistoryEntry(
+                    h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt, h.ChangedByUserId, h.Note))
+                .ToList());
 }
 
 /// <summary>Stable error codes for the RepairOrders capability (doc 06 §6).</summary>
@@ -1362,4 +1510,20 @@ internal static class ServiceErrors
     public static Error ChangedElsewhere { get; } = Error.Conflict(
         "service.changed_elsewhere",
         "Somebody else changed this job. Reload it and try again.");
+
+    public static Error NoWarrantyClaim { get; } = Error.NotFound(
+        "service.no_warranty_claim",
+        "This job has no warranty claim — either it has not been invoiced, or none of its work was warranty pay.");
+
+    public static Error UnknownClaimStatus { get; } = Error.Validation(
+        "service.unknown_claim_status",
+        "That is not a warranty claim status.");
+
+    public static Error ClaimDenialNeedsReason { get; } = Error.Validation(
+        "service.claim_denial_needs_reason",
+        "Denying a claim needs a reason on the record.");
+
+    public static Error ClaimPaymentNeedsAmount { get; } = Error.Validation(
+        "service.claim_payment_needs_amount",
+        "Recording a claim as paid needs the amount above zero that actually arrived.");
 }

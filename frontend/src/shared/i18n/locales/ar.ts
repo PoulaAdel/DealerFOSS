@@ -1217,6 +1217,28 @@ export const ar: Catalogue = {
   'payType.partsGrossNote':
     'يُعرض هامش الربح لقطع الغيار فقط. تُحدَّد تكلفة القطعة عند الفوترة؛ أما العمالة والأعمال الخارجية فلم يسجّل هذا النظام لها تكلفة قط — ودمج الثلاثة في رقم واحد كان سيخلط رقمًا حقيقيًا برقمين مُختلَقين.',
 
+  'claim.title': 'مطالبة الضمان',
+  'claim.status': 'الحالة',
+  'claim.billed': 'مفوترة للشركة المصنّعة',
+  'claim.paid': 'مدفوعة من الشركة المصنّعة',
+  'claim.markSubmitted': 'تعليمها كمُرسَلة إلى الشركة المصنّعة',
+  'claim.markApproved': 'تعليمها كمعتمدة',
+  'claim.recordPaid': 'تسجيلها كمدفوعة',
+  'claim.paidNote': 'قد يختلف ما دفعته الشركة المصنّعة فعليًا عمّا فُوتر — سجّل المبلغ الذي وصل.',
+  'claim.amountPaid': 'المبلغ المدفوع',
+  'claim.note': 'ملاحظة (تُسجَّل في السجل)',
+  'claim.confirmPaid': 'تسجيل الدفعة',
+  'claim.markDenied': 'تعليمها كمرفوضة',
+  'claim.denyReason': 'السبب الذي ذكرته الشركة المصنّعة',
+  'claim.confirmDenied': 'تسجيل الرفض',
+  'claim.historyTitle': 'ما حدث لهذه المطالبة',
+
+  'enum.warrantyClaimStatus.Open': 'مستحقة، لم تُرسَل بعد',
+  'enum.warrantyClaimStatus.Submitted': 'أُرسلت إلى الشركة المصنّعة',
+  'enum.warrantyClaimStatus.Approved': 'معتمدة',
+  'enum.warrantyClaimStatus.Denied': 'مرفوضة',
+  'enum.warrantyClaimStatus.Paid': 'مدفوعة',
+
   // --- حملات استدعاء السلامة -------------------------------------------------
   'recalls.title': 'حملات استدعاء السلامة',
   'recalls.onRequest': 'هذا يسأل جهة سلامة الطرق، فلا يعمل إلا حين تطلبه أنت.',

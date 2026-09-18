@@ -1158,6 +1158,29 @@ export const fr: Catalogue = {
   'payType.partsGrossNote':
     'La marge brute n’est indiquée que pour les pièces. Le coût d’une pièce est figé à la facturation ; la main-d’œuvre et la sous-traitance n’ont aucun coût enregistré dans ce système, donc combiner les trois en un seul chiffre moyennerait un nombre réel avec deux nombres inventés.',
 
+  'claim.title': 'Réclamation de garantie',
+  'claim.status': 'Statut',
+  'claim.billed': 'Facturé au constructeur',
+  'claim.paid': 'Payé par le constructeur',
+  'claim.markSubmitted': 'Marquer comme envoyée au constructeur',
+  'claim.markApproved': 'Marquer comme approuvée',
+  'claim.recordPaid': 'Enregistrer comme payée',
+  'claim.paidNote':
+    'Ce que le constructeur a réellement payé peut différer du montant facturé — enregistrez ce qui est arrivé.',
+  'claim.amountPaid': 'Montant payé',
+  'claim.note': 'Note (consignée au dossier)',
+  'claim.confirmPaid': 'Enregistrer le paiement',
+  'claim.markDenied': 'Marquer comme refusée',
+  'claim.denyReason': 'Motif donné par le constructeur',
+  'claim.confirmDenied': 'Enregistrer le refus',
+  'claim.historyTitle': 'Ce qui est arrivé à cette réclamation',
+
+  'enum.warrantyClaimStatus.Open': 'Due, pas encore envoyée',
+  'enum.warrantyClaimStatus.Submitted': 'Envoyée au constructeur',
+  'enum.warrantyClaimStatus.Approved': 'Approuvée',
+  'enum.warrantyClaimStatus.Denied': 'Refusée',
+  'enum.warrantyClaimStatus.Paid': 'Payée',
+
   // --- Rappels de sécurité ---------------------------------------------------
   'recalls.title': 'Rappels de sécurité',
   'recalls.onRequest':

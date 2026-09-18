@@ -24,6 +24,7 @@ import type {
   RepairOrderDetail,
   RepairOrderSummary,
   ServiceLineView,
+  WarrantyClaimView,
 } from '../../shared/contracts';
 
 const summary = (over: Partial<RepairOrderSummary> = {}): RepairOrderSummary => ({
@@ -91,6 +92,7 @@ const detail = (over: Partial<RepairOrderDetail> = {}): RepairOrderDetail => ({
   lines: [line()],
   clockings: [],
   clockedHours: 0,
+  warrantyClaim: null,
   history: [
     {
       fromStatus: null,
@@ -889,6 +891,109 @@ describe('billing a part off the shelf', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Write it up' }));
 
     expect(lineBody().description).toBe('Oil filter');
+  });
+});
+
+describe("a job's warranty claim", () => {
+  const claim: WarrantyClaimView = {
+    id: 'claim1',
+    status: 'Open',
+    amount: 180,
+    amountPaid: null,
+    currency: 'USD',
+    availableMoves: ['Submitted', 'Denied'],
+    history: [
+      { fromStatus: null, toStatus: 'Open', occurredAt: '2026-08-01T09:00:00Z', changedByUserId: 'u1', note: null },
+    ],
+  };
+
+  it('renders nothing when the job has no claim', async () => {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail({ warrantyClaim: null }) },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    await screen.findByText('Daniel Okafor');
+    expect(screen.queryByText('Warranty claim')).not.toBeInTheDocument();
+  });
+
+  it('shows what was billed and offers the next move', async () => {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail({ warrantyClaim: claim }) },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    const panel = (await screen.findByRole('region', { name: 'Warranty claim' }));
+    expect(within(panel).getByText('$180.00')).toBeVisible();
+    expect(within(panel).getByRole('button', { name: 'Mark as sent to the manufacturer' })).toBeVisible();
+    expect(within(panel).queryByRole('button', { name: 'Mark as approved' })).not.toBeInTheDocument();
+  });
+
+  it('submits the claim status move', async () => {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail({ warrantyClaim: claim }) },
+      '/repair-orders/ro1/claim': { ok: true, body: detail({ warrantyClaim: { ...claim, status: 'Submitted' } }) },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Mark as sent to the manufacturer' }));
+
+    const call = apiCalls().find((c) => c.path === '/repair-orders/ro1/claim');
+    expect(JSON.parse(String(call?.init?.body))).toEqual({ status: 'Submitted', amountPaid: null, note: null });
+    expect(await screen.findByText('Sent to the manufacturer')).toBeVisible();
+  });
+
+  it('needs a reason before it will record a denial', async () => {
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail({ warrantyClaim: claim }) },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Mark as denied' }));
+
+    expect(screen.getByRole('button', { name: 'Record the denial' })).toBeDisabled();
+  });
+
+  it('records what the manufacturer actually paid, which may differ from what was billed', async () => {
+    const approved: WarrantyClaimView = { ...claim, status: 'Approved', availableMoves: ['Paid', 'Denied'] };
+    mockApi({
+      '/appointments': noDiary,
+      '/repair-orders/ro1': { ok: true, body: detail({ warrantyClaim: approved }) },
+      '/repair-orders/ro1/claim': {
+        ok: true,
+        body: detail({ warrantyClaim: { ...approved, status: 'Paid', amountPaid: 160 } }),
+      },
+      '/repair-orders': { ok: true, body: page([summary()]) },
+      '/staff': noStaff,
+    });
+    renderWorkshop();
+    await openJob();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Record as paid' }));
+
+    const amountBox = screen.getByLabelText('Amount paid');
+    await userEvent.clear(amountBox);
+    await userEvent.type(amountBox, '160');
+    await userEvent.click(screen.getByRole('button', { name: 'Record the payment' }));
+
+    const call = apiCalls().find((c) => c.path === '/repair-orders/ro1/claim');
+    expect(JSON.parse(String(call?.init?.body))).toEqual({ status: 'Paid', amountPaid: 160, note: null });
   });
 });
 
