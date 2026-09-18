@@ -3,23 +3,23 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **every record has an address**. A car, a customer, an
-enquiry, a deal and a workshop job can each be opened by its own URL, sent to a
-colleague, bookmarked, or held open in two tabs at once — and the back button
-closes a record instead of leaving the screen. The list never moves while it
-happens: the record's segment is optional on the same route, so the page is not
-remounted and the filter survives. This narrowed a recorded decision rather than
-ignoring one; see the 2026-09-17 amendment in
-[ADR-020](../adr/0020-screen-shape-and-interface-standards.md). What is next is
-on the register in [`docs/11`](../11-Franchise-and-External-Scope.md) §12 — but
-see the re-review of 2026-09-16 below before choosing from it: five milestones
-in a week moved the planning indicator by one point, because all five landed in
-the stage with the least room left and the hardest ceiling. This one moves it by
-nothing at all, and was chosen with that known.
-Last verified: 2026-09-17 · `dotnet build` 0 warnings/0 errors, `dotnet test` 775/775,
+Current milestone: **the navigation reflects the job**. The session now tells
+the browser what the caller holds, so a technician sees four destinations
+instead of six and the two they could never use are simply absent. It is a
+**hint and not a control**: every endpoint enforces exactly as before, typing
+the hidden address still reaches the screen and still gets the server's
+refusal, and a test named `Permissions_are_a_hint_not_a_control` fails the day
+somebody decides the browser already filters it. See
+[ADR-025](../adr/0025-the-session-carries-permissions-as-a-hint.md). What is
+next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
+§12 — but see the re-review of 2026-09-16 below before choosing from it, and
+the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
+record having no contextual actions, 124 Tab stops to reach a pager, and a
+token migration that is defined but only a third applied.
+Last verified: 2026-09-18 · `dotnet build` 0 warnings/0 errors, `dotnet test` 808/808,
 `verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 431/431, and `npm run build` all pass
+`npm run typecheck`, `npm test` 446/446, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1329,3 +1329,19 @@ to come.
   Evidence: `dotnet build` 0/0, `dotnet test` **775/775**, `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **431/431** (was 397 — 11 for the hook, 23 across the five screens and the router), `npm run build`.
 
   Walked in a browser, all five screens. Clicking RO-1074 put `/workshop/1d58bcd8-…` in the address and the band read *"RO-1074 NAG-01 · Mateo Petrov"*; the back button closed the record and left the list and its 54 rows exactly where they were; a cold load of that same URL opened the job with the list beneath it. `/inventory?stock=A1001` carried its filter into `/inventory/907ea1f6-…?stock=A1001`. A made-up id answered *"That record cannot be opened…"* with the list still underneath and a way back. And the whole point, end to end: signed out, opened the job's link, got the sign-in form **at the job's own address**, signed in, and the job opened.
+
+- **2026-09-18 — The navigation reflects the job, and hiding a link did not become a lock.** `/auth/me` now returns `permissions`: everything the caller holds somewhere, sorted, empty while they owe a second factor. The bar filters on it, a group whose every child is hidden hides itself, and Records appears for anybody who can import *or* export.
+
+  **Why it did not exist already.** Not an oversight. This project holds one copy of an authorization rule and keeps it on the server; shipping a permission table to the browser looks exactly like starting a second copy, which is the mistake the deal desk and the workshop each nearly made with their transition tables. Per *record* the pattern was already solved — the server sends `availableMoves` and the screen offers precisely those. There was no equivalent for a *module*, so the bar assumed everybody was a general manager and a technician learned the shape of their own job by collecting refusals.
+
+  **What makes it a hint rather than a control**, which is the whole of [ADR-025](../adr/0025-the-session-carries-permissions-as-a-hint.md): the list is deliberately **lossy** — it carries no scope, so a person holding accounting at one rooftop of four looks identical to one holding it everywhere, and a screen *cannot* misuse it to filter data because the information is not there. Nothing on the server branches on it. Every endpoint enforces exactly as before. And `SessionPermissionsTests.Permissions_are_a_hint_not_a_control` signs in as a technician, asserts their list lacks `Accounting.Read`, then calls the accounting endpoint and **requires a 403** — so the day somebody reasons "the browser already filters this", the suite goes red.
+
+  **Never hidden:** the dashboard, because it is the landing screen and already withholds figures band by band rather than refusing wholesale — hiding it would leave somebody signed in with nowhere to be; and two-step sign-in and passkeys, because a person's own credentials are not the dealership's business.
+
+  **The Identity surface changed**, and CLAUDE.md requires that be said out loud rather than done quietly. `IAccessDirectory` gained `GetHeldPermissionsAsync`. It is a method on an already-public interface rather than a newly public type, and it decides nothing — but it is the first thing on that contract that hands out information instead of a verdict, and it carries the longest remarks there for exactly that reason. One query, not thirty-three: the obvious alternative is calling `GetAuthorizedScopeAsync` once per permission on every page load.
+
+  **What the tests caught.** Three existing tests failed the moment the nav started believing the session — because seven fixtures said `{ userId, mustEnrolSecondFactor }` and the browser now reads that as "this person holds nothing", so the bar came up empty. Correct behaviour, wrong fixtures. `test/session.ts` gives one `signedInAs()` whose default is everything, so the next fixture cannot make the same mistake and a test about the deal desk does not have to know which permission the deal desk needs.
+
+  Walked as two people. **Technician** (`tech@dev.local`, holds six permissions): four destinations — Sales containing only Customers, Service containing Workshop and Parts, People & security containing only their own two screens, no Accounting group and no Records link. They then typed `/accounting` anyway: the screen loaded, the server answered **403**, and it read *"You do not have access to these figures."* **Manager** (`gm@dev.local`, holds all 33): six destinations, everything open.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **808/808** (was 801 — seven new integration tests), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **446/446** (was 440 — six new screen tests), `npm run build`.

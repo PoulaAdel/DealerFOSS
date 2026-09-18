@@ -314,12 +314,49 @@ internal static class AuthEndpoints
     /// finds out that it must show the enrolment screen rather than the
     /// application.
     /// </summary>
-    private static IResult Me(ICurrentUser currentUser) =>
-        Results.Ok(new
+    /// <remarks>
+    /// <para>
+    /// <c>permissions</c> is what the caller holds somewhere, and it is a
+    /// <b>hint for drawing a screen, not a decision</b>. Until 2026-09-18 the
+    /// browser had no idea what anybody held, so every signed-in person was
+    /// shown every module and discovered the truth by being refused — a
+    /// technician saw Books and Staff on the navigation.
+    /// </para>
+    /// <para>
+    /// It stays a hint. Every endpoint enforces for itself, exactly as before,
+    /// and an integration test forbids a caller from reaching accounting on the
+    /// strength of a list that said they could. Nothing here is a second copy
+    /// of the authorization rule: this endpoint asks the same
+    /// <see cref="IAccessDirectory"/> every service asks.
+    /// </para>
+    /// <para>
+    /// A caller who owes a second factor gets an EMPTY list. Their session can
+    /// reach enrolment and nothing else, so listing what they will hold once
+    /// they enrol would describe an application they cannot use yet.
+    /// </para>
+    /// </remarks>
+    private static async Task<IResult> Me(
+        ICurrentUser currentUser,
+        IAccessDirectory access,
+        CancellationToken cancellationToken)
+    {
+        var permissions = currentUser.MustEnrolSecondFactor
+            ? new HashSet<string>()
+            : (ISet<string>)new HashSet<string>(
+                await access.GetHeldPermissionsAsync(currentUser.Id, cancellationToken),
+                StringComparer.Ordinal);
+
+        return Results.Ok(new
         {
             userId = currentUser.Id,
             mustEnrolSecondFactor = currentUser.MustEnrolSecondFactor,
+
+            // Ordered so the payload is stable between calls. An unordered set
+            // would make this response differ byte for byte on every request,
+            // which is a nuisance to anything that caches or diffs it.
+            permissions = permissions.OrderBy(p => p, StringComparer.Ordinal).ToArray(),
         });
+    }
 
     /// <summary>
     /// Internal rather than private so the control plane sets its own cookies

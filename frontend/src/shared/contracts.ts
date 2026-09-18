@@ -27,6 +27,22 @@ export interface CurrentUser {
    * shell whose every link answers 403.
    */
   mustEnrolSecondFactor: boolean;
+
+  /**
+   * Every permission this person holds SOMEWHERE — organization-wide, or on at
+   * least one rooftop. Sorted, and empty while they owe a second factor.
+   *
+   * **For deciding what to OFFER, never for deciding what is allowed.** The
+   * server enforces every act for itself and will refuse one regardless of
+   * what this list says; hiding a link is only a courtesy so that a technician
+   * stops seeing Books and Staff and learning by being refused.
+   *
+   * It carries no scope on purpose. Somebody who may read accounting at one
+   * rooftop out of four appears here the same as somebody who may read it
+   * everywhere, because the question it answers is whether to draw the link at
+   * all. Anything that needs to know *where* must ask the server.
+   */
+  permissions: string[];
 }
 
 /**

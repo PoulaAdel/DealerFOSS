@@ -12,6 +12,10 @@
 //   by asking the server, which is also the only answer worth having — a
 //   session revoked on another device must stop working here on the next
 //   request, and only the server knows that.
+//
+//   `holds` is the same kind of answer and carries the same warning: it says
+//   what to OFFER, never what is allowed. Read its own comment before using it
+//   anywhere except to decide whether to draw something.
 
 import {
   createContext,
@@ -31,6 +35,25 @@ interface Session {
   tenant: string;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
+
+  /**
+   * Whether the signed-in person holds a permission *somewhere*.
+   *
+   * **Use this to decide what to DRAW, and nothing else.** It is not a
+   * security check and cannot be one: the list came over the wire and the
+   * browser is not a place where access is decided. Every endpoint enforces
+   * for itself and will refuse an act whatever this returns.
+   *
+   * What it is for: a technician used to see Books and Staff on the navigation
+   * and learn by clicking and being refused. Now those links are simply not
+   * drawn. If this function ever returns the wrong answer the worst outcome is
+   * a link that leads to a screen saying "you do not have access" — which is
+   * exactly what happened before, for everybody, all the time.
+   *
+   * False while the session is still loading, so nothing flashes into view and
+   * then disappears.
+   */
+  holds: (permission: string) => boolean;
 }
 
 const SessionContext = createContext<Session | null>(null);
@@ -70,9 +93,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // A Set rather than `array.includes`, because the navigation asks this once
+  // per destination on every render of the shell.
+  const held = useMemo(() => new Set(user?.permissions ?? []), [user]);
+
+  const holds = useCallback((permission: string) => held.has(permission), [held]);
+
   const value = useMemo<Session>(
-    () => ({ user, tenant, refresh, signOut }),
-    [user, tenant, refresh, signOut],
+    () => ({ user, tenant, refresh, signOut, holds }),
+    [user, tenant, refresh, signOut, holds],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

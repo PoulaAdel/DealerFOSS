@@ -19,6 +19,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { App } from './App';
 import { mockApi, mockApiUnreachable, page } from '../test/setup';
+import { signedInAs } from '../test/session';
+import { Permission } from '../shared/permissions';
 import { setCurrentTenant } from '../shared/api';
 import type { MonthInReview, RepairOrderDetail } from '../shared/contracts';
 
@@ -48,7 +50,7 @@ const month: MonthInReview = {
 
 /** What a signed-in browser asks for the moment it lands. */
 const signedIn = {
-  '/auth/me': { ok: true as const, body: { userId: 'u1', mustEnrolSecondFactor: false } },
+  '/auth/me': signedInAs(),
   '/reporting/month': { ok: true as const, body: month },
   '/organization': { ok: true as const, body: { legalEntities: [] } },
 };
@@ -253,7 +255,7 @@ describe('the routes a record address sits beside', () => {
       ],
       '/reporting/month': signedIn['/reporting/month'],
       '/organization': signedIn['/organization'],
-      '/auth/sign-in': { ok: true, body: { userId: 'u1', mustEnrolSecondFactor: false } },
+      '/auth/sign-in': signedInAs(),
       [`/repair-orders/${job.id}`]: { ok: true, body: job },
       '/repair-orders': { ok: true, body: page([]) },
       '/appointments': { ok: true, body: { appointments: [], load: [] } },
@@ -264,5 +266,106 @@ describe('the routes a record address sits beside', () => {
     // The form appears where they asked to be, not at /sign-in.
     await screen.findByRole('button', { name: 'Sign in' });
     expect(window.location.pathname).toBe(`/workshop/${job.id}`);
+  });
+});
+
+/**
+ * The navigation stopped offering doors that answer 403 (2026-09-18).
+ *
+ * The rule these guard is the one that is easy to lose: **hiding a link is a
+ * courtesy, not a control.** The last test in this block is the one that
+ * matters — it proves the screen behind a hidden link is still reachable and
+ * still refuses for itself. If somebody ever "tidies up" by making the browser
+ * the thing that blocks access, that test fails, and it should.
+ */
+describe('a navigation that reflects what the caller holds', () => {
+  const technician = [Permission.ServiceRead, Permission.PartsRead];
+
+  it('offers the groups a technician can use, and not the others', async () => {
+    setCurrentTenant('northgroup');
+    mockApi({ ...signedIn, '/auth/me': signedInAs(technician) });
+
+    render(<App />);
+    await screen.findByText('So far this month.');
+
+    expect(screen.getByRole('button', { name: 'Service' })).toBeVisible();
+
+    // A technician used to see these, click one, and be told off by the server.
+    expect(screen.queryByRole('button', { name: 'Accounting' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sales' })).not.toBeInTheDocument();
+  });
+
+  it('hides a group whose every child is hidden, rather than opening onto nothing', async () => {
+    // "Accounting ▾" with an empty menu looks broken. Absent looks deliberate.
+    setCurrentTenant('northgroup');
+    mockApi({ ...signedIn, '/auth/me': signedInAs(technician) });
+
+    render(<App />);
+    await screen.findByText('So far this month.');
+
+    expect(screen.queryByRole('button', { name: 'Accounting' })).not.toBeInTheDocument();
+  });
+
+  it('still shows the dashboard, whatever the person holds', async () => {
+    // It is the landing screen and it already withholds figures band by band
+    // rather than refusing wholesale. Hiding it would leave somebody signed in
+    // with nowhere to be.
+    setCurrentTenant('northgroup');
+    mockApi({ ...signedIn, '/auth/me': signedInAs([]) });
+
+    render(<App />);
+
+    expect(await screen.findByRole('link', { name: 'This month' })).toBeVisible();
+  });
+
+  it('still offers a person their own security screens, which need no permission', async () => {
+    // Looking after your own passkeys is not the dealership's business.
+    setCurrentTenant('northgroup');
+    mockApi({ ...signedIn, '/auth/me': signedInAs([]) });
+
+    render(<App />);
+    await screen.findByText('So far this month.');
+
+    await userEvent.click(screen.getByRole('button', { name: 'People & security' }));
+    expect(screen.getByRole('link', { name: 'Passkeys' })).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'People' })).not.toBeInTheDocument();
+  });
+
+  it('offers Records to somebody who can only export, not only to an importer', async () => {
+    setCurrentTenant('northgroup');
+    mockApi({ ...signedIn, '/auth/me': signedInAs([Permission.MigrationExport]) });
+
+    render(<App />);
+    await screen.findByText('So far this month.');
+
+    expect(screen.getByRole('link', { name: 'Records' })).toBeVisible();
+  });
+
+  it('HIDES A LINK WITHOUT CLOSING THE DOOR — the screen still refuses for itself', async () => {
+    // The whole safety argument in one test. Somebody whose navigation shows no
+    // Accounting types the address anyway, or follows an old bookmark. They
+    // reach the screen, and the SERVER refuses — exactly as it did before any
+    // of this existed. The browser never became the thing that decides.
+    setCurrentTenant('northgroup');
+    window.history.pushState({}, '', '/accounting');
+    mockApi({
+      ...signedIn,
+      '/auth/me': signedInAs(technician),
+      '/accounting/balances': {
+        ok: false, status: 403, code: 'access.denied', detail: 'No.',
+      },
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Trial balance' })).toBeVisible();
+
+    // The server's refusal, on the screen, from the screen's own request.
+    const refusals = await screen.findAllByRole('alert');
+    expect(refusals.some((r) => /do not have|permission|access/i.test(r.textContent ?? ''))).toBe(
+      true,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Accounting' })).not.toBeInTheDocument();
   });
 });

@@ -23,6 +23,7 @@ import { describe, expect, it } from 'vitest';
 import { LeadsPage } from './LeadsPage';
 import { SessionProvider } from '../../app/session';
 import { apiCalls, mockApi, mockApiUnreachable, page } from '../../test/setup';
+import { allPermissions } from '../../test/session';
 import { setCurrentTenant } from '../../shared/api';
 import type { LeadDetail, LeadSummary } from '../../shared/contracts';
 
@@ -80,7 +81,7 @@ function renderLeads(at = '/leads') {
   );
 }
 
-const signedIn = { ok: true as const, body: { userId: me, mustEnrolSecondFactor: false } };
+const signedIn = { ok: true as const, body: { userId: me, mustEnrolSecondFactor: false, permissions: allPermissions } };
 
 /**
  * The row's own control, not the one in the signal band above it.

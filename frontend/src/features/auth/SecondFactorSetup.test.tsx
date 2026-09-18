@@ -21,6 +21,7 @@ import { App } from '../../app/App';
 import { SecondFactorSetup } from './SecondFactorSetup';
 import { SessionProvider } from '../../app/session';
 import { apiCalls, mockApi, page } from '../../test/setup';
+import { signedInAs } from '../../test/session';
 import { setCurrentTenant } from '../../shared/api';
 
 const enrolment = {
@@ -35,7 +36,7 @@ const recoveryCodes = [
 /** The screen on its own, with a session that does not demand anything. */
 function renderAlone() {
   mockApi({
-    '/auth/me': { ok: true, body: { userId: 'u1', mustEnrolSecondFactor: false } },
+    '/auth/me': signedInAs(),
     '/auth/mfa/enrol': { ok: true, body: enrolment },
     '/auth/mfa/confirm': { ok: true, body: { recoveryCodes } },
   });
@@ -109,7 +110,7 @@ describe('setting up two-step sign-in', () => {
 
   it('lets somebody try again after a wrong code, on the same screen', async () => {
     mockApi({
-      '/auth/me': { ok: true, body: { userId: 'u1', mustEnrolSecondFactor: false } },
+      '/auth/me': signedInAs(),
       '/auth/mfa/enrol': { ok: true, body: enrolment },
       '/auth/mfa/confirm': [
         { ok: false, status: 400, code: 'auth.mfa_code_invalid', detail: 'That code was not right.' },
@@ -167,7 +168,7 @@ describe('when the dealership requires it', () => {
     mockApi({
       '/auth/me': [
         { ok: true, body: { userId: 'u1', mustEnrolSecondFactor: true } },
-        { ok: true, body: { userId: 'u1', mustEnrolSecondFactor: false } },
+        signedInAs(),
       ],
       '/auth/mfa/enrol': { ok: true, body: enrolment },
       '/auth/mfa/confirm': { ok: true, body: { recoveryCodes } },

@@ -28,7 +28,8 @@ import {
 } from 'react-router';
 import { SessionProvider, useSession } from './session';
 import { AppearanceProvider } from '../shared/appearance';
-import { I18nProvider, useI18n } from '../shared/i18n';
+import { I18nProvider, useI18n, type MessageKey } from '../shared/i18n';
+import { Permission } from '../shared/permissions';
 import { AppearanceControls } from './AppearanceControls';
 import { Mark, Wordmark } from './Mark';
 import { NavGroup } from './NavGroup';
@@ -212,6 +213,119 @@ function groupContains(pathname: string, prefixes: string[]) {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
+/**
+ * Every destination in the bar, and what a person must hold to be offered it.
+ *
+ * Data rather than sixteen hand-written `holds(...) ? <NavLink/> : null`, which
+ * is sixteen chances to forget one. `needs: null` means everybody sees it.
+ *
+ * WHAT THIS IS NOT: a security boundary. Hiding a link does not protect the
+ * screen behind it — that screen's endpoints refuse for themselves, as they
+ * always have, and typing the URL still reaches the same honest "you do not
+ * have access to this". See the remarks on `holds` in session.tsx. What this
+ * buys is that a technician stops being shown Books and Staff and learning by
+ * being refused.
+ *
+ * Two deliberate exceptions to filtering, both marked `needs: null`:
+ *
+ *   - The dashboard. It is the landing screen and it already withholds the
+ *     figures a reader may not see, one band at a time, rather than refusing
+ *     wholesale. Hiding it would leave somebody signed in with nowhere to be.
+ *   - Two-step sign-in and passkeys. Those are a person's own account, not the
+ *     dealership's business, and nobody needs a permission to look after their
+ *     own credentials.
+ */
+const navigation: {
+  label: MessageKey;
+  covers: string[];
+  links: { to: string; label: MessageKey; needs: string | null; end?: boolean }[];
+}[] = [
+  {
+    // Ordered the way the work happens: an enquiry arrives, and some of them
+    // become deals.
+    label: 'nav.groupSales',
+    covers: ['/customers', '/leads', '/deals', '/inventory'],
+    links: [
+      { to: '/customers', label: 'nav.customers', needs: Permission.CustomersRead },
+      { to: '/leads', label: 'nav.leads', needs: Permission.LeadsRead },
+      { to: '/deals', label: 'nav.deals', needs: Permission.DealsRead },
+      { to: '/inventory', label: 'nav.stock', needs: Permission.InventoryRead },
+    ],
+  },
+  {
+    label: 'nav.groupService',
+    covers: ['/workshop', '/parts'],
+    links: [
+      { to: '/workshop', label: 'nav.workshop', needs: Permission.ServiceRead },
+      { to: '/parts', label: 'nav.parts', needs: Permission.PartsRead },
+    ],
+  },
+  {
+    // Receivables read behind Accounting.Read too — see ReceivableService.
+    label: 'nav.groupAccounting',
+    covers: ['/accounting', '/receivables'],
+    links: [
+      { to: '/accounting', label: 'nav.trialBalance', needs: Permission.AccountingRead, end: true },
+      { to: '/accounting/periods', label: 'nav.books', needs: Permission.AccountingRead },
+      { to: '/accounting/reports', label: 'nav.reports', needs: Permission.AccountingRead },
+      { to: '/receivables/ageing', label: 'nav.ageing', needs: Permission.AccountingRead },
+      { to: '/receivables/statements', label: 'nav.statements', needs: Permission.AccountingRead },
+    ],
+  },
+  {
+    label: 'nav.groupPeople',
+    covers: ['/staff', '/security'],
+    links: [
+      { to: '/staff', label: 'nav.staff', needs: Permission.StaffRead },
+      { to: '/security/second-factor', label: 'nav.secondFactor', needs: null },
+      { to: '/security/passkeys', label: 'nav.passkeys', needs: null },
+    ],
+  },
+];
+
+function MainNavigation({ pathname }: { pathname: string }) {
+  const { t } = useI18n();
+  const { holds } = useSession();
+
+  // Import and export are separate permissions and either one makes the screen
+  // worth offering: it does both, and says which half you cannot use.
+  const canReachRecords =
+    holds(Permission.MigrationImport) || holds(Permission.MigrationExport);
+
+  return (
+    <nav aria-label={t('shell.mainNavigation')}>
+      <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink>
+
+      {navigation.map((group) => {
+        const visible = group.links.filter((link) => link.needs === null || holds(link.needs));
+
+        // A group whose every child is hidden hides itself, rather than opening
+        // onto nothing. "Accounting ▾" with an empty menu is worse than no
+        // accounting menu: it looks broken instead of looking absent.
+        if (visible.length === 0) {
+          return null;
+        }
+
+        return (
+          <NavGroup
+            key={group.label}
+            label={t(group.label)}
+            active={groupContains(pathname, group.covers)}
+          >
+            {visible.map((link) => (
+              <NavLink key={link.to} to={link.to} end={link.end}>
+                {t(link.label)}
+              </NavLink>
+            ))}
+          </NavGroup>
+        );
+      })}
+
+      {canReachRecords ? <NavLink to="/records">{t('nav.records')}</NavLink> : null}
+    </nav>
+  );
+}
+
 function Shell({ restricted = false }: { restricted?: boolean }) {
   const { tenant, signOut } = useSession();
   const { t } = useI18n();
@@ -251,55 +365,7 @@ function Shell({ restricted = false }: { restricted?: boolean }) {
           <Wordmark />
         </span>
 
-        {restricted ? null : (
-          <nav aria-label={t('shell.mainNavigation')}>
-            <NavLink to="/dashboard">{t('nav.dashboard')}</NavLink>
-
-            {/* Ordered the way the work happens: an enquiry arrives, and some of
-                them become deals. */}
-            <NavGroup
-              label={t('nav.groupSales')}
-              active={groupContains(pathname, ['/customers', '/leads', '/deals', '/inventory'])}
-            >
-              <NavLink to="/customers">{t('nav.customers')}</NavLink>
-              <NavLink to="/leads">{t('nav.leads')}</NavLink>
-              <NavLink to="/deals">{t('nav.deals')}</NavLink>
-              <NavLink to="/inventory">{t('nav.stock')}</NavLink>
-            </NavGroup>
-
-            <NavGroup
-              label={t('nav.groupService')}
-              active={groupContains(pathname, ['/workshop', '/parts'])}
-            >
-              <NavLink to="/workshop">{t('nav.workshop')}</NavLink>
-              <NavLink to="/parts">{t('nav.parts')}</NavLink>
-            </NavGroup>
-
-            <NavGroup
-              label={t('nav.groupAccounting')}
-              active={groupContains(pathname, ['/accounting', '/receivables'])}
-            >
-              <NavLink to="/accounting" end>
-                {t('nav.trialBalance')}
-              </NavLink>
-              <NavLink to="/accounting/periods">{t('nav.books')}</NavLink>
-              <NavLink to="/accounting/reports">{t('nav.reports')}</NavLink>
-              <NavLink to="/receivables/ageing">{t('nav.ageing')}</NavLink>
-              <NavLink to="/receivables/statements">{t('nav.statements')}</NavLink>
-            </NavGroup>
-
-            <NavGroup
-              label={t('nav.groupPeople')}
-              active={groupContains(pathname, ['/staff', '/security'])}
-            >
-              <NavLink to="/staff">{t('nav.staff')}</NavLink>
-              <NavLink to="/security/second-factor">{t('nav.secondFactor')}</NavLink>
-              <NavLink to="/security/passkeys">{t('nav.passkeys')}</NavLink>
-            </NavGroup>
-
-            <NavLink to="/records">{t('nav.records')}</NavLink>
-          </nav>
-        )}
+        {restricted ? null : <MainNavigation pathname={pathname} />}
 
         <div className="shell__right">
           <AppearanceControls />
