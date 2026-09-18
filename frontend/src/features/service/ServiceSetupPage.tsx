@@ -272,6 +272,7 @@ function RatesPanel({
       <div className="actions">
         <button
           type="button"
+          className="primary"
           disabled={!ready}
           onClick={() => {
             void onSet({
@@ -395,6 +396,7 @@ function OpCodesPanel({
       <div className="actions">
         <button
           type="button"
+          className="primary"
           disabled={!ready}
           onClick={() => {
             void onAdd({

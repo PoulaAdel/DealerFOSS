@@ -26,6 +26,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useDebounced } from '../../shared/useDebounced';
 import { ApiError, api, post } from '../../shared/api';
+import { CloseButton } from '../../shared/CloseButton';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { Emphasised } from '../../shared/i18n/Emphasised';
@@ -496,9 +497,7 @@ function Part({
         <h2>
           {part.partNumber} <span className="muted">·</span> {part.description}
         </h2>
-        <button type="button" onClick={onClose}>
-          Close
-        </button>
+        <CloseButton onClick={onClose} />
       </header>
 
       {part.stock.length === 0 ? (

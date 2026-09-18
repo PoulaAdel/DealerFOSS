@@ -132,7 +132,7 @@ export function InventoryPage() {
           </select>
         </div>
 
-        <button type="button" onClick={() => setTaking((open) => !open)}>
+        <button type="button" className="primary" onClick={() => setTaking((open) => !open)}>
           {t('stock.takeItIn')}
         </button>
       </header>
