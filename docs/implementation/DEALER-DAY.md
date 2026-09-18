@@ -122,8 +122,8 @@ fails without the fix.
 
 **What is deliberately not built:** ~~credit balances (hence refusing
 overpayment)~~ — **built 2026-09-14**, on account 2200, with applying and
-refunding both real — receivable ageing as a report, statements, and credit
-limits. The historical
+refunding both real. ~~Receivable ageing as a report, statements, and credit
+limits~~ — **built 2026-09-17**, with a screen for each. The historical
 deliveries and invoices in the seeded dealership are *not* back-filled into the
 sub-ledger â they were genuinely posted as cash at the time, and rewriting a
 posted ledger to look tidier is the one thing an accounting system must not do.
