@@ -103,6 +103,29 @@ public interface ICustomers
     /// been given, for a value that is not personal data.
     /// </remarks>
     Task<Result<decimal?>> GetCreditLimitAsync(Guid customerId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Records that the provider this customer came from no longer has them, or
+    /// that it is serving them again (<paramref name="removedOn"/> null).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For <see cref="Integrations.IRecordSink"/> implementations, and nothing
+    /// else — a member of staff who wants a record out of the way uses
+    /// archiving, which is the dealership's own decision. This one records
+    /// somebody else's statement about their own database.
+    /// </para>
+    /// <para>
+    /// IT DOES NOT HIDE OR DELETE ANYTHING. See ADR-026. Idempotent, because a
+    /// held cursor replays the same deletion every night: marking a record
+    /// already marked, or restoring one that was never marked, is a no-op that
+    /// succeeds.
+    /// </para>
+    /// </remarks>
+    Task<Result> SetRemovedAtProviderAsync(
+        Guid customerId,
+        DateTimeOffset? removedOn,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Enough to identify a customer in a list.</summary>
@@ -111,7 +134,14 @@ public sealed record CustomerSummary(
     string DisplayName,
     string Kind,
     string? PrimaryEmail,
-    string? PrimaryPhone);
+    string? PrimaryPhone,
+
+    /// <summary>
+    /// When the system this customer came from stopped having them, or null.
+    /// A MARK, NOT A REMOVAL (ADR-026): the row stays listed and searchable and
+    /// is barred only from being chosen for new work.
+    /// </summary>
+    DateTimeOffset? RemovedAtProviderOn = null);
 
 /// <summary>One customer in full, as a screen or another module would show them.</summary>
 public sealed record CustomerDetail(
@@ -126,7 +156,10 @@ public sealed record CustomerDetail(
     string? ExternalReference = null,
 
     /// <summary>The most this customer may owe across every open bill, or null for no cap.</summary>
-    decimal? CreditLimit = null);
+    decimal? CreditLimit = null,
+
+    /// <summary>See <see cref="CustomerSummary.RemovedAtProviderOn"/>.</summary>
+    DateTimeOffset? RemovedAtProviderOn = null);
 
 public sealed record ContactPointView(Guid Id, string Kind, string Value, bool IsPrimary);
 

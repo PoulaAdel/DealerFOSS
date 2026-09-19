@@ -20,12 +20,12 @@ the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no cross-module actions and the arrival-motion work recorded in
 the device-only motion audit. The pager finding closed on 2026-09-19; the token
 migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 837/837,
+Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 845/845,
 `verify-e2e.ps1` PASS against the configured SQL container (the canonical LocalDB
 catalogue is detached with its MDF still on disk; see the milestone below),
 frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 473/473, and `npm run build` all pass
+`npm run typecheck`, `npm test` 476/476, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -158,7 +158,7 @@ I2-shaped work landed out of order — [doc 09](../09-Implementation-Roadmap.md)
 criteria are met, three are part-met, and two are not met.
 
 - [x] **Killing and restarting a sync cannot lose committed records or advance an unsafe checkpoint.** Proven by five tests in `ConnectorRuntimeTests`: a provider that skips the start of a window **does not get the cursor moved past the hole**; a held window is asked for again next run rather than skipped; a provider that returns nothing still leaves a cursor a later run can use; a run that never finished leaves the evidence that it started; and two cursors for one feed are refused by the database. What is *not* tested is a literal process kill — the checkpoint safety is what is proven, and that is the substance of the criterion *(automated)*
-- [ ] **Duplicate, reordered, delete and partial-page tests pass** — two of four. **Duplicate** holds twice over: the same batch delivered twice produces one set of customers, and importing the same file twice creates no second copy. **Partial page** is the cursor-hole test above. **Reordered has no test at all.** **Deletes are not modelled** — there is no tombstone and no `IsDeleted` anywhere in `src/App/Integrations`, so a record removed at the provider is invisible to us
+- [x] **Duplicate, reordered, delete and partial-page tests pass** — all four, as of 2026-09-19. **Duplicate** holds three ways over: the same batch delivered twice produces one set of customers, importing the same file twice creates no second copy, and a record repeated *inside* one batch is applied once. **Partial page** is the cursor-hole test. **Reordered** is now two tests, because the criterion hides two different properties: independent records reach the same state in any order, and records about the *same* thing are applied in the order the provider sent them — "created then deleted" and "deleted then created" describe different days, and a sink that sorted its batch would turn one into the other. **Deletes are modelled** as a mark and never a removal (ADR-026)
 - [ ] **Quarantined records are inspectable and replayable** — inspectable yes, replayable no. A rejected record is kept with the payload that caused it, stops being listed when its retention runs out, and leaves the queue but stays on the record when resolved. **Replay does not exist**, and the code says so itself: `QuarantinedRecord.cs` carries the comment *"Does not replay it — nothing replays yet."* Resolving a record marks it dealt with; it does not re-run it
 - [x] **A trial import is repeatable with stable counts and explicit exceptions.** A trial and the real run agree about an unusual VIN — the case where only the write would otherwise notice; the file is hashed so a trial and its run are provably about the same data; a bad row is reported by the line number a person sees in their spreadsheet and does not stop the others; and the counts add up to the row total *(automated)*
 - [ ] **Export round-trip tests preserve IDs, relationships and documents** — IDs yes, the other two no. Records survive a round trip into another dealership, a hand-typed customer with no external reference still exports and imports, and exporting twice unchanged produces the same checksum. But **export covers customer and vehicle columns only**: there is no relationship manifest, and documents are not exported at all even though a Documents capability exists
@@ -1509,3 +1509,19 @@ to come.
   The stock detail band now shows acquisition, reconditioning and the total separately, with the postings behind it. The list column still reads "Acquisition cost" — which is what it is, and honest, so it was left alone.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **837/837** (was 828 — nine new), `verify-e2e.ps1` PASS against the SQL container, `npm audit` clean at high, `npm run typecheck`, `npm test` **473/473** (was 460), `npm run build`.
+
+- **2026-09-19 — A record the provider deleted stops being theirs without stopping being ours.** Stage 2's exit criteria named four delivery behaviours a sync must survive — duplicate, reordered, partial-page and delete. Three had tests; **delete had no implementation at all**, and reordered had never been written. Both are now closed, which takes the unmet criteria from five to four.
+
+  **The question the mechanism could not answer.** A provider withdrawing a customer has said something about *its* database. We may have three repair orders, two deals and an outstanding balance against that person. The obvious implementation — hide the record — is worse than leaving deletes unmodelled: the repair orders would still name somebody the screens can no longer find, and an advisor with that customer on the telephone would search and get nothing. A defect that removes information silently is harder to notice, and much harder to explain, than a missing feature.
+
+  **[ADR-026](../adr/0026-a-deleted-record-is-marked-not-removed.md): a delete is a mark, never a removal.** `RemovedAtProviderOn` is deliberately not `IsArchived` — archiving is the dealership's own decision to stop seeing a record, and this is somebody else's statement about their own database. A marked customer stays in every list and every search, still resolves from everything that names them, and loses only the right to be chosen for *new* work. The mark is **visible**: a chip in the list and a sentence on the record saying they are kept and that everything already attached still works. A mark nobody can see is silent removal under another name.
+
+  **A structural constraint pointed at the answer.** `FeatureBoundaryTests` forbids Customers from referencing `Deal` or `RepairOrder`, so the sink *cannot ask* whether a customer has been used. Any "hide it only if unused" design would have needed a cross-capability usage probe invented to support a behaviour we did not want — and would have produced a rule nobody can predict, where the same provider action has two outcomes depending on invisible state. The uniform answer needed no new machinery.
+
+  **Deletes ride on the record, not a second method.** `ProviderRecord` carries a `RecordAction`, because deletes arrive interleaved with upserts in one delta feed and the order between them is the provider's meaning. Four behaviours, each tested: a delete marks and counts as applied; a replayed delete is `Unchanged`, so a stuck feed cannot look busy; a delete for a record we never had is `Unchanged` rather than rejected, because delta feeds report those constantly and quarantining them would bury the real refusals; and a provider serving the record again restores it, because feeds undelete.
+
+  **The reordered criterion hid two different properties**, which is probably why it was never written. Independent records must reach the same state in any order — order between them carries no meaning. Records about the *same* thing must be applied in the order sent — "created then deleted" and "deleted then created" describe different days, and a sink that sorted its batch would turn one into the other. Both are now tests, and so is idempotence *within* a single batch, which a provider paging over a moving window will exercise.
+
+  One defensive fix found on the way: the screen guarded on `=== null`, so a response missing the field entirely threw inside `format.date` and blanked the whole detail band. A field absent from the wire must never blank a screen.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **845/845** (was 837 — eight new), `verify-e2e.ps1` PASS against the SQL container, `npm audit` clean at high, `npm run typecheck`, `npm test` **476/476** (was 473), `npm run build`.

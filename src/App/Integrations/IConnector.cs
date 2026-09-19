@@ -42,7 +42,41 @@ namespace DealerFOSS.Integrations;
 public sealed record ProviderRecord(
     string ExternalId,
     string? ExternalVersion,
-    IReadOnlyDictionary<string, string?> Fields);
+    IReadOnlyDictionary<string, string?> Fields,
+    RecordAction Action = RecordAction.Upsert);
+
+/// <summary>
+/// What the provider is saying about a record: that it exists, or that it is
+/// gone.
+/// </summary>
+/// <remarks>
+/// <para>
+/// One enum on the record rather than a second method on
+/// <see cref="IRecordSink"/>, because <b>deletes arrive interleaved with
+/// upserts in the same delta feed and the order between them is the provider's
+/// meaning</b>. "Created, then deleted" and "deleted, then created" are
+/// different feeds describing different days, and splitting them into two
+/// method calls throws that away — the sink would have no way to know which
+/// came first.
+/// </para>
+/// <para>
+/// Defaulted, so every existing connector and every test that builds a record
+/// keeps saying what it already said.
+/// </para>
+/// </remarks>
+public enum RecordAction
+{
+    /// <summary>The provider is serving this record as current.</summary>
+    Upsert = 0,
+
+    /// <summary>
+    /// The provider no longer has this record. It is NOT an instruction to
+    /// delete ours — see <see cref="Customers"/>'s sink and ADR-026. A
+    /// dealership's own record of somebody it has done business with is not the
+    /// provider's to remove.
+    /// </summary>
+    Delete = 1,
+}
 
 /// <summary>What one fetch returned.</summary>
 /// <param name="Records">The records served, in the order the provider gave them.</param>

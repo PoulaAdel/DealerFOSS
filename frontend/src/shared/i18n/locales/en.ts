@@ -438,6 +438,9 @@ export const en = {
   'customers.noMatches': 'Nobody matches that.',
   'customers.colName': 'Name',
   'customers.colKind': 'Kind',
+  'customers.removedAtProvider': 'Removed at the provider',
+  'customers.removedAtProviderOn':
+    'The system this record came from no longer has this customer, as of {when}. They are kept here, and everything already attached to them still works — but they cannot be chosen for new work.',
   'customers.colEmail': 'Email',
   'customers.colPhone': 'Phone',
   'customers.count': { one: '{count} customer', other: '{count} customers' },

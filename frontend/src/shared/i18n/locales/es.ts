@@ -427,6 +427,9 @@ export const es: Catalogue = {
   'customers.noMatches': 'No hay nadie que coincida.',
   'customers.colName': 'Nombre',
   'customers.colKind': 'Tipo',
+  'customers.removedAtProvider': 'Eliminado en el proveedor',
+  'customers.removedAtProviderOn':
+    'El sistema del que procede este registro ya no tiene a este cliente, desde el {when}. Se conserva aquí y todo lo que ya está asociado a él sigue funcionando, pero no puede elegirse para trabajos nuevos.',
   'customers.colEmail': 'Correo',
   'customers.colPhone': 'Teléfono',
   'customers.count': { one: '{count} cliente', other: '{count} clientes' },

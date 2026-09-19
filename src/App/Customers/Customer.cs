@@ -40,6 +40,18 @@ public sealed class Customer : AuditableEntity
     public bool IsArchived { get; private set; }
 
     /// <summary>
+    /// When the system this customer came from stopped having them, or null.
+    /// See <see cref="MarkRemovedAtProvider"/> — this marks, it does not hide.
+    /// </summary>
+    public DateTimeOffset? RemovedAtProviderOn { get; private set; }
+
+    /// <summary>
+    /// Whether the provider has withdrawn this record. Barred from new work;
+    /// still readable, still listed, still attached to everything that names it.
+    /// </summary>
+    public bool IsRemovedAtProvider => RemovedAtProviderOn is not null;
+
+    /// <summary>
     /// The most this customer may owe across every open bill, or null for no
     /// cap. Read by Receivables before opening a new debt — see
     /// <see cref="ICustomers.GetCreditLimitAsync"/>.
@@ -171,6 +183,32 @@ public sealed class Customer : AuditableEntity
 
     /// <summary>Archives rather than deletes: history must stay attributable.</summary>
     public void Archive() => IsArchived = true;
+
+    /// <summary>
+    /// Records that the system this customer came from no longer has them.
+    ///
+    /// <para>
+    /// A MARK, NOT A REMOVAL, and the distinction is the whole of ADR-026.
+    /// Archiving is the dealership's own decision to stop seeing a record;
+    /// this is somebody else's statement about their own database, and the two
+    /// must not be the same flag. A tombstoned customer stays in every list and
+    /// every search, still resolves from the three repair orders that name
+    /// them, and is barred only from being chosen for new work.
+    /// </para>
+    /// <para>
+    /// Deliberately not <c>Archive()</c>: a customer who quietly vanished from
+    /// search while an advisor was on the telephone to them would be worse than
+    /// never modelling deletes at all.
+    /// </para>
+    /// </summary>
+    public void MarkRemovedAtProvider(DateTimeOffset when) => RemovedAtProviderOn = when;
+
+    /// <summary>
+    /// The provider is serving this record again. Feeds do this — a record
+    /// deleted in error, or moved between systems and restored — so an undelete
+    /// has to be as ordinary as the delete was.
+    /// </summary>
+    public void RestoreAtProvider() => RemovedAtProviderOn = null;
 
     private void MakePrimary(ContactPoint point)
     {

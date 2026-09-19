@@ -434,6 +434,9 @@ export const ar: Catalogue = {
   'customers.noMatches': 'لا أحد يطابق ذلك.',
   'customers.colName': 'الاسم',
   'customers.colKind': 'النوع',
+  'customers.removedAtProvider': 'محذوف لدى المزوّد',
+  'customers.removedAtProviderOn':
+    'لم يعد النظام الذي وردت منه هذه البيانات يحتفظ بهذا العميل، اعتبارًا من {when}. يبقى السجل هنا ويظل كل ما يرتبط به يعمل، لكن لا يمكن اختياره لعمل جديد.',
   'customers.colEmail': 'البريد الإلكتروني',
   'customers.colPhone': 'الهاتف',
   'customers.count': {

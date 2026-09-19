@@ -182,7 +182,8 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
 
         var runtime = new ConnectorRuntime(
             scope.Services.GetRequiredService<TenantDb>(),
-            [new CustomerRecordSink(scope.Services.GetRequiredService<ICustomers>())],
+            [new CustomerRecordSink(
+                scope.Services.GetRequiredService<ICustomers>(), new FixedClock(Start))],
             new CurrentUser(),
             new FixedClock(Start));
 
@@ -224,7 +225,8 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
 
         var runtime = new ConnectorRuntime(
             scope.Services.GetRequiredService<TenantDb>(),
-            [new CustomerRecordSink(scope.Services.GetRequiredService<ICustomers>())],
+            [new CustomerRecordSink(
+                scope.Services.GetRequiredService<ICustomers>(), new FixedClock(Start))],
             scope.Services.GetRequiredService<ICurrentUser>(),
             new FixedClock(Start));
 
@@ -275,6 +277,233 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
         customer.ContactPoints.Should().Contain(p => p.Value.Contains("example.invalid"));
     }
 
+    // --- A record the provider no longer has (ADR-026) ------------------------
+    //
+    // The exit criterion in STATUS said "deletes are not modelled" and it was
+    // right: there was no tombstone and no IsDeleted anywhere in Integrations,
+    // so a record removed at the provider stayed ours and nobody could tell.
+    //
+    // What these guard is the SHAPE of the answer, not just its presence. A
+    // delete marks the record; it never hides or removes one. A customer who
+    // quietly vanished from search while an advisor was on the telephone to them
+    // would be worse than never modelling deletes at all.
+
+    [Fact]
+    public async Task A_deleted_record_is_marked_and_still_listed()
+    {
+        var reference = $"{_prefix}-GONE";
+        await ApplyAsync(Upsert(reference, "Okonkwo"));
+
+        var marked = await ApplyAsync(Delete(reference));
+
+        marked.Applied.Should().Be(1);
+
+        var customer = await FindAsync(reference);
+        customer.Should().NotBeNull();
+        customer!.RemovedAtProviderOn.Should().NotBeNull(
+            because: "the provider said it no longer has them, and that is worth recording");
+        customer.IsArchived.Should().BeFalse(
+            because: "ARCHIVING IS THE DEALERSHIP'S OWN DECISION. The provider is making a "
+                + "statement about its own database, and conflating the two is how a customer "
+                + "with three repair orders silently disappears from the screen somebody is "
+                + "looking at");
+
+        // The part that matters most: it is still there to be found.
+        (await ListedReferencesAsync()).Should().Contain(reference,
+            because: "a tombstone marks, it does not hide");
+    }
+
+    [Fact]
+    public async Task Deleting_the_same_record_twice_changes_nothing_the_second_time()
+    {
+        // A held cursor replays the same window every night, so the second
+        // delivery of a deletion is the normal case rather than the odd one.
+        var reference = $"{_prefix}-TWICE";
+        await ApplyAsync(Upsert(reference, "Replay"));
+        await ApplyAsync(Delete(reference));
+
+        var again = await ApplyAsync(Delete(reference));
+
+        again.Applied.Should().Be(0);
+        again.Unchanged.Should().Be(1,
+            because: "\"3 applied, 497 unchanged\" is the shape of a feed that is working; "
+                + "counting a replayed deletion as applied every night hides that");
+    }
+
+    [Fact]
+    public async Task Deleting_a_record_we_never_had_is_not_a_rejection()
+    {
+        // Delta feeds routinely report deletions of records this dealership
+        // never received. Quarantining them would bury the real refusals.
+        var outcome = await ApplyAsync(Delete($"{_prefix}-NEVERMINE"));
+
+        outcome.Rejected.Should().BeEmpty();
+        outcome.Unchanged.Should().Be(1);
+        (await FindAsync($"{_prefix}-NEVERMINE")).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_provider_serving_a_deleted_record_again_restores_it()
+    {
+        // Feeds restore records removed in error, or moved between systems and
+        // put back. An undelete has to be as ordinary as the delete was.
+        var reference = $"{_prefix}-BACK";
+        await ApplyAsync(Upsert(reference, "Returned"));
+        await ApplyAsync(Delete(reference));
+
+        var restored = await ApplyAsync(Upsert(reference, "Returned"));
+
+        restored.Applied.Should().Be(1);
+        (await FindAsync(reference))!.RemovedAtProviderOn.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_deletion_never_removes_a_row()
+    {
+        var reference = $"{_prefix}-KEPT";
+        await ApplyAsync(Upsert(reference, "Kept"));
+        await ApplyAsync(Delete(reference));
+
+        // Said plainly, because this is the promise ADR-026 makes and the one a
+        // future "tidy up the deleted ones" change would break.
+        (await StoredAsync()).Should().Contain(reference,
+            because: "nothing the provider says can delete a dealership's own record");
+    }
+
+    // --- Reordered delivery ---------------------------------------------------
+    //
+    // The fourth of the four delivery tests named in STATUS's exit criteria, and
+    // the one that had never been written. Two different properties live here
+    // and conflating them is why it is easy to get wrong.
+
+    [Fact]
+    public async Task Independent_records_reach_the_same_state_in_any_order()
+    {
+        // Order between DIFFERENT records carries no meaning, so a provider that
+        // serves a page in a different sequence must not produce a different
+        // dealership.
+        var forward = $"{_prefix}-A";
+        var backward = $"{_prefix}-B";
+
+        await ApplyAsync(Upsert(forward, "Alpha"), Upsert(backward, "Beta"));
+        var first = await ListedReferencesAsync();
+
+        var other = $"{_prefix}-C";
+        var another = $"{_prefix}-D";
+        await ApplyAsync(Upsert(another, "Delta"), Upsert(other, "Gamma"));
+
+        var second = (await ListedReferencesAsync()).Except(first).Order().ToList();
+
+        second.Should().Equal([other, another],
+            because: "the same two records delivered in the opposite order are the same two "
+                + "records");
+    }
+
+    [Fact]
+    public async Task Order_within_one_record_is_the_providers_meaning_and_is_obeyed()
+    {
+        // Order between records ABOUT THE SAME THING is the opposite case: it is
+        // the provider telling us what happened and in which sequence. "Created,
+        // then deleted" and "deleted, then created" describe different days, and
+        // a sink that sorted its batch would turn one into the other.
+        var gone = $"{_prefix}-SEQ1";
+        await ApplyAsync(Upsert(gone, "Gone"), Delete(gone));
+
+        (await FindAsync(gone))!.RemovedAtProviderOn.Should().NotBeNull(
+            because: "the last thing the provider said about this record is that it is gone");
+
+        var here = $"{_prefix}-SEQ2";
+        await ApplyAsync(Delete(here), Upsert(here, "Here"));
+
+        (await FindAsync(here))!.RemovedAtProviderOn.Should().BeNull(
+            because: "the same two records the other way round mean the opposite, and the sink "
+                + "must not reorder them into agreement");
+    }
+
+    [Fact]
+    public async Task A_record_repeated_inside_one_batch_is_applied_once()
+    {
+        // Idempotence has to hold WITHIN a batch, not only between runs — a
+        // provider paging over a moving window serves the same row twice.
+        var reference = $"{_prefix}-DUP";
+
+        var outcome = await ApplyAsync(
+            Upsert(reference, "Once"), Upsert(reference, "Twice"));
+
+        outcome.Applied.Should().Be(1);
+        outcome.Unchanged.Should().Be(1);
+        (await StoredAsync()).Count(r => r == reference).Should().Be(1);
+    }
+
+    // --- Plumbing for the two blocks above ------------------------------------
+
+    private static ProviderRecord Upsert(string reference, string lastName) =>
+        new(reference, null, new Dictionary<string, string?>
+        {
+            [CustomerFields.Kind] = "Person",
+            // The surname carries the reference so the LIST can be searched for
+            // these rows: SearchAsync matches names, not external references.
+            [CustomerFields.LastName] = lastName + reference,
+            [CustomerFields.FirstName] = "Test",
+        });
+
+    /// <summary>
+    /// A deletion carries no fields — the provider is saying the record is gone,
+    /// not describing it. A sink that needed fields here could not accept the
+    /// tombstones real delta feeds actually send.
+    /// </summary>
+    private static ProviderRecord Delete(string reference) =>
+        new(reference, null, new Dictionary<string, string?>(), RecordAction.Delete);
+
+    private async Task<ApplyOutcome> ApplyAsync(params ProviderRecord[] records)
+    {
+        await using var scope = await OpenScopeAsync();
+
+        var sink = new CustomerRecordSink(
+            scope.Services.GetRequiredService<ICustomers>(), new FixedClock(Start));
+
+        var outcome = await sink.ApplyAsync(_rooftop, records, CancellationToken.None);
+        outcome.IsSuccess.Should().BeTrue(because: outcome.IsFailure ? outcome.Error.Code : "");
+
+        return outcome.Value;
+    }
+
+    private static async Task<Customer?> FindAsync(string reference)
+    {
+        await using var db = NewContext();
+
+        return await db.Customers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(c => c.ExternalReference == reference, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// What the customer LIST returns — the thing a tombstone must not remove a
+    /// record from. Read through the service rather than the table, because the
+    /// list query is where a filter would be added by somebody tidying up.
+    /// </summary>
+    private async Task<List<string>> ListedReferencesAsync()
+    {
+        await using var scope = await OpenScopeAsync();
+        var customers = scope.Services.GetRequiredService<ICustomers>();
+
+        var page = await customers.SearchAsync(_prefix, 200, 0, CancellationToken.None);
+
+        page.IsSuccess.Should().BeTrue();
+
+        var found = new List<string>();
+        foreach (var row in page.Value.Rows)
+        {
+            var detail = await customers.GetAsync(row.Id, CancellationToken.None);
+            if (detail.IsSuccess && detail.Value.ExternalReference is { } reference)
+            {
+                found.Add(reference);
+            }
+        }
+
+        return found;
+    }
+
     // --- Plumbing -----------------------------------------------------------
 
     private async Task<ConnectorRun> RunAsync(
@@ -289,7 +518,8 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
 
         var runtime = new ConnectorRuntime(
             scope.Services.GetRequiredService<TenantDb>(),
-            [new CustomerRecordSink(scope.Services.GetRequiredService<ICustomers>())],
+            [new CustomerRecordSink(
+                scope.Services.GetRequiredService<ICustomers>(), new FixedClock(Start))],
             scope.Services.GetRequiredService<ICurrentUser>(),
             new FixedClock(at ?? Start));
 

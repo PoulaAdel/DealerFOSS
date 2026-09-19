@@ -29,6 +29,14 @@
 //   nobody has made it. Silently overwriting a person's correction with
 //   stale provider data would be worse than doing nothing, so an existing
 //   record is reported Unchanged and left alone.
+//
+//   A DELETE IS A MARK, NOT A REMOVAL. See ADR-026. The provider is making a
+//   statement about its own database; a dealership's record of somebody it
+//   has three repair orders with is not theirs to take away. Nothing is
+//   hidden and nothing is deleted — the customer is marked, stays listed and
+//   searchable, still resolves from everything that names them, and is barred
+//   only from being chosen for new work. Hiding a record stays the
+//   dealership's own decision, through archiving.
 
 using DealerFOSS.Core;
 using DealerFOSS.Integrations;
@@ -36,7 +44,7 @@ using DealerFOSS.Integrations;
 namespace DealerFOSS.Customers;
 
 /// <summary>Applies <c>Customers</c> v1 records from any connector.</summary>
-public sealed class CustomerRecordSink(ICustomers customers) : IRecordSink
+public sealed class CustomerRecordSink(ICustomers customers, IClock clock) : IRecordSink
 {
     /// <summary>Longest value we will accept for a name, matching the column.</summary>
     private const int NameLength = 120;
@@ -44,6 +52,8 @@ public sealed class CustomerRecordSink(ICustomers customers) : IRecordSink
     private const int AddressLength = 200;
 
     private readonly ICustomers _customers = customers;
+
+    private readonly IClock _clock = clock;
 
     public string Contract => CustomerFields.Contract;
 
@@ -77,8 +87,69 @@ public sealed class CustomerRecordSink(ICustomers customers) : IRecordSink
                 return Result.Failure<ApplyOutcome>(existing.Error);
             }
 
+            if (record.Action == RecordAction.Delete)
+            {
+                // A DELETE IS A MARK, NOT A REMOVAL (ADR-026). The provider is
+                // telling us about its own database; a dealership's record of
+                // somebody it has three repair orders with is not theirs to
+                // take away. The customer stays listed, stays searchable, still
+                // resolves from everything that names them, and is barred only
+                // from being chosen for new work.
+                if (existing.Value is null)
+                {
+                    // Deleted something we never had. Not a rejection: a delta
+                    // feed routinely reports deletions of records this
+                    // dealership never received, and quarantining them would
+                    // bury the real refusals under noise.
+                    unchanged++;
+                    continue;
+                }
+
+                var marked = await _customers
+                    .SetRemovedAtProviderAsync(existing.Value.Id, _clock.UtcNow, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (marked.IsFailure)
+                {
+                    return Result.Failure<ApplyOutcome>(marked.Error);
+                }
+
+                // Counted as applied only the first time. SetRemovedAtProvider
+                // is idempotent, so a replayed window reports the second night
+                // as unchanged — which is what makes "3 applied, 497 unchanged"
+                // mean something.
+                if (existing.Value.RemovedAtProviderOn is null)
+                {
+                    applied++;
+                }
+                else
+                {
+                    unchanged++;
+                }
+
+                continue;
+            }
+
             if (existing.Value is not null)
             {
+                // The provider is serving it again. An undelete has to be as
+                // ordinary as the delete was — feeds restore records that were
+                // removed in error, or moved between systems and put back.
+                if (existing.Value.RemovedAtProviderOn is not null)
+                {
+                    var restored = await _customers
+                        .SetRemovedAtProviderAsync(existing.Value.Id, null, cancellationToken)
+                        .ConfigureAwait(false);
+
+                    if (restored.IsFailure)
+                    {
+                        return Result.Failure<ApplyOutcome>(restored.Error);
+                    }
+
+                    applied++;
+                    continue;
+                }
+
                 unchanged++;
                 continue;
             }

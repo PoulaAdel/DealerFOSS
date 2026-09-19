@@ -422,6 +422,9 @@ export const de: Catalogue = {
   'customers.noMatches': 'Dazu passt niemand.',
   'customers.colName': 'Name',
   'customers.colKind': 'Art',
+  'customers.removedAtProvider': 'Beim Anbieter entfernt',
+  'customers.removedAtProviderOn':
+    'Das System, aus dem dieser Datensatz stammt, führt diesen Kunden seit dem {when} nicht mehr. Er bleibt hier erhalten und alles, was bereits mit ihm verknüpft ist, funktioniert weiterhin — für neue Vorgänge kann er jedoch nicht mehr ausgewählt werden.',
   'customers.colEmail': 'E-Mail',
   'customers.colPhone': 'Telefon',
   'customers.count': { one: '{count} Kunde', other: '{count} Kunden' },

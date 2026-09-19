@@ -337,6 +337,59 @@ public sealed class CustomerService(
             : Result.Success(customer.CreditLimit);
     }
 
+    public async Task<Result> SetRemovedAtProviderAsync(
+        Guid customerId,
+        DateTimeOffset? removedOn,
+        CancellationToken cancellationToken)
+    {
+        // Manage, not Create: this changes an existing record. The sink runs as
+        // whoever the integration runs as, and that caller must hold the same
+        // right a person would need to alter a customer.
+        if (!await IsAllowedAsync(ManagePermission, cancellationToken))
+        {
+            return Result.Failure(CustomerErrors.Forbidden);
+        }
+
+        var customer = await _db.Customers
+            .SingleOrDefaultAsync(c => c.Id == customerId, cancellationToken);
+
+        if (customer is null)
+        {
+            return Result.Failure(CustomerErrors.NotFound);
+        }
+
+        // Idempotent on purpose — a held cursor replays the same deletion every
+        // night, so "already marked" has to be a success rather than a conflict.
+        // Compared before writing so an unchanged record is not touched at all,
+        // which keeps the audit trail to real events.
+        if (customer.RemovedAtProviderOn == removedOn)
+        {
+            return Result.Success();
+        }
+
+        if (removedOn is { } when)
+        {
+            customer.MarkRemovedAtProvider(when);
+        }
+        else
+        {
+            customer.RestoreAtProvider();
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, ManagePermission, AuditOutcome.Allowed,
+                "Customer", customerId.ToString(), null,
+                removedOn is null
+                    ? "The provider is serving this customer again"
+                    : "The provider no longer has this customer",
+                null, null),
+            cancellationToken);
+
+        return Result.Success();
+    }
+
     /// <summary>
     /// A customer is organization-wide, so holding the permission anywhere is
     /// enough. Denials are audited by the access directory.
@@ -352,7 +405,8 @@ public sealed class CustomerService(
             c.DisplayName,
             c.Kind.ToString(),
             Primary(c, ContactKind.Email),
-            Primary(c, ContactKind.Phone) ?? Primary(c, ContactKind.Mobile));
+            Primary(c, ContactKind.Phone) ?? Primary(c, ContactKind.Mobile),
+            c.RemovedAtProviderOn);
 
     private static CustomerDetail Describe(Customer c) =>
         new(c.Id,
@@ -372,7 +426,8 @@ public sealed class CustomerService(
                 .Select(p => new ContactPointView(p.Id, p.Kind.ToString(), p.Value, p.IsPrimary))
                 .ToList(),
             c.ExternalReference,
-            c.CreditLimit);
+            c.CreditLimit,
+            c.RemovedAtProviderOn);
 
     private static string? Primary(Customer c, ContactKind kind) =>
         c.ContactPoints.FirstOrDefault(p => p.Kind == kind && p.IsPrimary)?.Value;

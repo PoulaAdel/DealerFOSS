@@ -345,6 +345,9 @@ function NewCustomer({
         kind: created.kind,
         primaryEmail: null,
         primaryPhone: phone.trim() === '' ? null : phone.trim(),
+
+        // Just created here, so no provider has had a chance to withdraw it.
+        removedAtProviderOn: null,
       });
     } catch (failure) {
       setError(describe(failure));

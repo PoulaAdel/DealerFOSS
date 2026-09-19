@@ -36,6 +36,7 @@ const ada: CustomerSummary = {
   kind: 'Person',
   primaryEmail: 'ada@example.test',
   primaryPhone: '5550102030',
+  removedAtProviderOn: null,
 };
 
 const garage: CustomerSummary = {
@@ -44,6 +45,7 @@ const garage: CustomerSummary = {
   kind: 'Business',
   primaryEmail: null,
   primaryPhone: null,
+  removedAtProviderOn: null,
 };
 
 async function fillNewCustomer(lastName: string) {
@@ -508,5 +510,60 @@ describe('a customer’s address', () => {
     const sent = apiCalls().find((call) => call.path === `/customers/${ada.id}/address`);
     const body = JSON.parse(sent!.init!.body as string) as { address: unknown };
     expect(body.address).toBeNull();
+  });
+});
+
+/**
+ * A customer the provider no longer has (2026-09-19, ADR-026).
+ *
+ * The whole decision is that a tombstone MARKS and never hides. These are what
+ * stop a later "tidy up the removed ones" change from quietly filtering the
+ * list — which would reintroduce exactly the failure the ADR was written to
+ * prevent: a customer disappearing from search while an advisor is on the
+ * telephone to them.
+ */
+describe('a customer the provider no longer has', () => {
+  const withdrawn = { ...ada, removedAtProviderOn: '2026-09-19T09:00:00Z' };
+
+  it('is still in the list, and says so', async () => {
+    mockApi({ '/customers': { ok: true, body: page([withdrawn]) } });
+    renderCustomers();
+
+    expect(await screen.findByText('Ada Lovelace')).toBeVisible();
+    expect(screen.getByText('Removed at the provider')).toBeVisible();
+  });
+
+  it('explains on the record that it is kept and still works', async () => {
+    const detail = {
+      id: ada.id,
+      displayName: 'Ada Lovelace',
+      kind: 'Person' as const,
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      homeRooftopId: null,
+      address: null,
+      contactPoints: [],
+      externalReference: 'PROV-1',
+      creditLimit: null,
+      removedAtProviderOn: '2026-09-19T09:00:00Z',
+    };
+
+    mockApi({
+      '/customers': { ok: true, body: page([withdrawn]) },
+      [`/customers/${ada.id}`]: { ok: true, body: detail },
+    });
+    renderCustomers(`/customers/${ada.id}`);
+
+    const band = await screen.findByRole('region', { name: 'Ada Lovelace' });
+    expect(within(band).getByText(/no longer has this customer/)).toBeVisible();
+    expect(within(band).getByText(/everything already attached to them still works/)).toBeVisible();
+  });
+
+  it('says nothing at all about a customer nobody has withdrawn', async () => {
+    mockApi({ '/customers': { ok: true, body: page([ada]) } });
+    renderCustomers();
+
+    await screen.findByText('Ada Lovelace');
+    expect(screen.queryByText('Removed at the provider')).not.toBeInTheDocument();
   });
 });

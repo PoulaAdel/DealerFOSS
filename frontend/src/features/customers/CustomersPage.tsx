@@ -256,6 +256,16 @@ export function CustomersPage() {
               <button type="button" className="cell-open" onClick={() => record.open(customer.id)}>
                 {customer.displayName}
               </button>
+              {/* The row stays; it says so instead of disappearing. A customer
+                  who vanished from search while an advisor was on the telephone
+                  to them would be worse than never modelling deletes at all —
+                  see ADR-026. */}
+              {!customer.removedAtProviderOn ? null : (
+                <>
+                  {' '}
+                  <span className="chip chip--warn">{t('customers.removedAtProvider')}</span>
+                </>
+              )}
             </td>
             <td>
               <span className={`chip chip--${customer.kind.toLowerCase()}`}>
@@ -327,6 +337,17 @@ function CustomerPanel({
   return (
     <section className="panel panel--detail" aria-label={customer.displayName}>
       <h2>{customer.displayName}</h2>
+
+      {/* Said in a sentence, not only as a chip: the reader needs to know the
+          record is still theirs and still usable for everything already
+          attached to it. See ADR-026. */}
+      {!customer.removedAtProviderOn ? null : (
+        <p className="notice" role="status">
+          {t('customers.removedAtProviderOn', {
+            when: format.date(customer.removedAtProviderOn),
+          })}
+        </p>
+      )}
 
       <dl className="facts">
         <dt>{t('customers.colKind')}</dt>

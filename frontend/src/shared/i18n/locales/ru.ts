@@ -425,6 +425,9 @@ export const ru: Catalogue = {
   'customers.noMatches': 'Никто не найден.',
   'customers.colName': 'Имя',
   'customers.colKind': 'Тип',
+  'customers.removedAtProvider': 'Удалён у поставщика',
+  'customers.removedAtProviderOn':
+    'В системе, из которой поступила эта запись, клиента больше нет — с {when}. Запись сохранена здесь, и всё, что уже к ней привязано, продолжает работать, но выбрать её для новой работы нельзя.',
   'customers.colEmail': 'Почта',
   'customers.colPhone': 'Телефон',
   'customers.count': {

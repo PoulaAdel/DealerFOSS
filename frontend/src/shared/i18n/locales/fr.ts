@@ -421,6 +421,9 @@ export const fr: Catalogue = {
   'customers.noMatches': 'Personne ne correspond.',
   'customers.colName': 'Nom',
   'customers.colKind': 'Type',
+  'customers.removedAtProvider': 'Supprimé chez le fournisseur',
+  'customers.removedAtProviderOn':
+    'Le système d’origine de cette fiche n’a plus ce client, depuis le {when}. Elle est conservée ici et tout ce qui y est déjà rattaché fonctionne toujours, mais elle ne peut plus être choisie pour un nouveau travail.',
   'customers.colEmail': 'E-mail',
   'customers.colPhone': 'Téléphone',
   'customers.count': { one: '{count} client', other: '{count} clients' },

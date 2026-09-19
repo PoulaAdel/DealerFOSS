@@ -71,6 +71,17 @@ export interface CustomerSummary {
   kind: 'Person' | 'Business';
   primaryEmail: string | null;
   primaryPhone: string | null;
+
+  /**
+   * When the system this customer came from stopped having them, or null.
+   *
+   * A MARK, NOT A REMOVAL. The row stays listed and searchable and keeps every
+   * reference to it intact; what it loses is the right to be picked for new
+   * work. A customer who vanished from search while an advisor was on the
+   * telephone to them would be worse than never modelling deletes at all. See
+   * ADR-026.
+   */
+  removedAtProviderOn: string | null;
 }
 
 /** One customer in full, as the detail band below the results shows them. */
@@ -87,7 +98,11 @@ export interface CustomerDetail {
   externalReference: string | null;
   /** The most this customer may owe across every open bill. Null is no cap. */
   creditLimit: number | null;
+
+  /** See `CustomerSummary.removedAtProviderOn`. */
+  removedAtProviderOn: string | null;
 }
+
 
 export type ContactKind = 'Email' | 'Phone' | 'Mobile';
 
