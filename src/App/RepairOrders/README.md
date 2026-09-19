@@ -11,9 +11,15 @@ capability owns the `service` schema and nothing else.
   stock. A customer's car is not on anybody's lot, and modelling service against
   inventory would make the capability unusable the day after the warranty runs
   out.
-- **Records the work** as lines: labour (hours × rate), parts, and sublet.
+- **Records the work** as lines: labour (hours × rate), parts, and sublet. The
+  hours and rate can come from a catalogued op code at a posted rate, or be
+  typed by hand — the catalogue fills blanks and never overrules a person.
 - **Records what the customer said** about work found mid-job.
-- **Invoices**, which posts to the ledger in the same transaction.
+- **Clocks a technician** on and off a job, which is what makes productivity
+  (hours billed over hours clocked) a real figure rather than a guess.
+- **Invoices**, which posts to the ledger in the same transaction, and gives a
+  warranty-pay line its own life afterwards — submitted, approved or denied,
+  paid — as internal tracking, not a claim actually sent anywhere.
 
 Every job belongs to one rooftop, and that is a permission boundary
 (doc 04 §1). The customer and the car are shared across the organization; the
@@ -113,18 +119,40 @@ is worse than one that says where it stops:
   gross-profit figure**. A line with no `partId` is still legitimate — a one-off
   item bought for a single job never enters the catalogue — and that line simply
   carries no cost.
+- ~~No labour operation catalogue, no flat-rate times, no technician clocking,
+  and therefore no efficiency or productivity reporting~~ — built 2026-09-16,
+  and struck through rather than deleted for the same reason as the line above.
+  `ServiceCatalogue.cs` holds `OpCode` (organization-wide, like a part number —
+  "front brakes, 1.4 hours" means the same job everywhere) and `LabourRate` (per
+  rooftop per pay type, because what an hour sells for is local and warranty is
+  reimbursed at the manufacturer's figure). `Service.Configure` sets rates and
+  is deliberately not `Service.Write`. `TechnicianClocking.cs` adds the other
+  half: one open clocking per technician, closed automatically — and the reason
+  recorded — when they clock onto something else. **Productivity**, hours
+  billed over hours clocked, is now on the labour report. **Efficiency**, hours
+  produced over hours *available*, still is not: it needs a roster, and a
+  roster is payroll, which this capability does not have and should not grow.
+- ~~No warranty claims~~ — internal tracking built 2026-09-19
+  (`WarrantyClaim.cs`), struck through with the same caveat as the entries
+  above it. Open → Submitted → Approved/Denied → Paid, with `AmountPaid` free
+  to differ from `Amount` because a manufacturer that disputes a line pays less
+  than was billed. **This is bookkeeping, not an OEM integration** — nothing
+  here talks to a manufacturer's system, and *Submitted* means a person said
+  they sent it, not that a portal confirmed receipt. Real claim submission
+  stays blocked on an OEM relationship (doc 11 §3.1). Split-pay across
+  customer, warranty and internal on the same job was already built before this
+  file was last corrected — see the segregation-of-duties section above.
 - **No estimate versus actual.** One set of numbers, which is what is billed.
-- **No labour operation catalogue**, no flat-rate times, no technician clocking,
-  and therefore no efficiency or productivity reporting.
-- **No warranty claims**, no internal jobs, and no split-pay across customer,
-  warranty, and internal on the same job.
 - **No technician-level scheduling.** The diary loads a *workshop*, not a person
-  or a ramp. "Which technician is free at eleven" is a different model and is not
-  answered here.
+  or a ramp. "Which technician is free at eleven" is a different model and is
+  not answered here. Technician load balancing needs a decision first, not just
+  build time.
 - **No reminders.** The diary knows who is expected tomorrow and sends nobody a
   message about it; there is no communications channel yet (roadmap I5 lists one
   as provider-neutral, and none is built).
-- **No multi-line invoice document**, and no printing.
+- ~~No multi-line invoice document, and no printing~~ — built. `GET
+  /api/v1/documents/repair-orders/{id}` prints the job sheet before it is
+  invoiced and the invoice after, the same document either way.
 
 ## Files
 
@@ -144,3 +172,11 @@ is worse than one that says where it stops:
 | `RepairOrderService.cs` | scope, permissions, and the ledger posting |
 | `RepairOrderTables.cs` | how it is stored |
 | `RepairOrderEndpoints.cs` | the HTTP surface |
+| `ServiceCatalogue.cs` | `OpCode` (organization-wide) and `LabourRate` (per rooftop per pay type) |
+| `IServiceCatalogue.cs` | what other capabilities may call |
+| `ServiceCatalogueService.cs` | scope, and `Service.Configure` — separate from `Service.Write` |
+| `ServiceCatalogueTables.cs` | how the catalogue is stored; also owns `TechnicianClocking`'s mapping |
+| `ServiceCatalogueEndpoints.cs` | the HTTP surface for rates, jobs, and the technician clock |
+| `TechnicianClocking.cs` | one technician on one job, from start to stop; one open clocking per technician |
+| `WarrantyClaim.cs` | what a job billed the manufacturer, and where that stands — internal tracking only |
+| `WarrantyClaimTables.cs` | how a claim is stored |

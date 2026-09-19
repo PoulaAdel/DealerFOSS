@@ -87,7 +87,9 @@ number that was approved rather than whatever the total says today.
 - This capability owns the `deals` schema and reads no other's tables.
 - Deals may use `ICustomers` and `IInventory`, but not `Customer`, `Vehicle`, or
   `InventoryUnit`.
-- Nothing else depends on Deals yet. Finance and Accounting will.
+- Deals depends on `IAccounting` (delivering a deal posts the sale) and
+  `IFinanceProducts` (the F&I catalogue). `Documents` depends on `IDeals`, for
+  the printed order — the direction this used to say would run the other way.
 
 ## Not built yet, and deliberately
 
@@ -95,7 +97,20 @@ number that was approved rather than whatever the total says today.
 permission split is the control today; a same-person check needs a policy decision
 about single-person rooftops before it can be enforced.
 
-Also absent: lender submission and decisions, F&I products and menus, tax and fee
-rule packs, deal versions for desking iterations, paperwork and signatures,
-accounting postings, and commission. One trade-in per deal, which covers the
-overwhelming majority.
+Also absent: **lender submission and decisions** (no application is ever sent
+to a lender and no decision is ever recorded — a lender exists here only as a
+payment method on a receivable), **tax and fee rule packs** (a person still
+types the tax; there is no rate table and no SST pack, so nothing computes
+ADR-024's basis-times-rate automatically), **deal versions
+for desking iterations** (one live set of terms, not a negotiation history),
+**signatures** (the order prints — `GET /api/v1/documents/deals/{id}` — but
+nothing captures a signature on it), and **commission**. One trade-in per deal,
+which covers the overwhelming majority.
+
+~~F&I products and menus~~ and ~~accounting postings~~ are both built and are
+struck through here rather than removed, for the same reason RepairOrders keeps
+its own corrections visible: a product is sold on a deal as its own
+`DealProduct`, at a price and cost negotiated for that deal, through
+`IFinanceProducts`'s catalogue; delivering a deal posts the sale to the ledger
+through `IAccounting` in the same transaction as the inventory hold being
+released.
