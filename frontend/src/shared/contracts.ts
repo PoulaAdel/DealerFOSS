@@ -1454,3 +1454,59 @@ export interface Page<T> {
  * exactly the rows it existed for. The order has to be part of the query.
  */
 export type LeadOrder = 'newest' | 'longestWaiting';
+
+/**
+ * One connector this build ships, and how far it has actually been proven.
+ *
+ * `certification` is the raw enum name so the screen translates it rather than
+ * the server picking English. Until 2026-09-19 `CertificationStatus` had four
+ * levels and no route by which a reader could ever see one — a status nobody
+ * can read cannot be read honestly.
+ */
+export interface ConnectorSummary {
+  provider: string;
+  version: string;
+  certification:
+    | 'FixtureTested'
+    | 'SandboxCertified'
+    | 'ProductionCertified'
+    | 'Experimental';
+  capabilities: string[];
+
+  /**
+   * The connector's own declared limitations, shown whatever the certification
+   * says. The shipped fixture's first one — "Serves fabricated records. Never
+   * certify anything against this." — is the most important sentence on the
+   * screen.
+   */
+  knownLimitations: string[];
+}
+
+/**
+ * One record held back from applying.
+ *
+ * Deliberately carries NO payload. The held fields are a customer's name,
+ * address and telephone number exactly as a provider sent them (ADR-022); a
+ * review queue that listed those would be a personal-data export with a queue
+ * painted on it. Replay reads the payload server-side and it stays there.
+ */
+export interface QuarantineEntry {
+  id: string;
+  connector: string;
+  rooftopId: string;
+  contract: string;
+  version: number;
+  externalId: string;
+  reasonCode: string;
+  reasonDetail: string;
+  quarantinedAt: string;
+  expiresAt: string;
+}
+
+/** What happened when a held record was run again. */
+export interface ReplayOutcome {
+  /** False means it was refused a second time and is still held. */
+  applied: boolean;
+  reasonCode: string | null;
+  reasonDetail: string | null;
+}

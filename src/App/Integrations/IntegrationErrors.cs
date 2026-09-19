@@ -114,4 +114,39 @@ public static class IntegrationErrors
     public static readonly Error NoRunAsUser = Error.Conflict(
         "integration.no_run_as_user",
         "An integration run must be made on behalf of a named user.");
+
+    /// <summary>
+    /// Reading or replaying the edge, refused. Unknown and unauthorized answer
+    /// identically so a caller cannot probe for another rooftop's held records.
+    /// </summary>
+    public static readonly Error Forbidden = Error.Forbidden(
+        "integration.forbidden",
+        "You do not have access to this dealership's integrations.");
+
+    /// <summary>Same shape as NoSinkRegistered, for a replay rather than a run.</summary>
+    public static Error NoSink(string contract, int version) => Error.Conflict(
+        "integration.no_sink",
+        $"Nothing is registered to apply '{contract}' v{version} records.");
+
+    public static readonly Error AlreadyResolved = Error.Conflict(
+        "integration.already_resolved",
+        "That record has already been dealt with.");
+
+    /// <summary>
+    /// Its retention ran out (ADR-022). The payload may still be on disk —
+    /// nothing purges physically yet — but it has stopped being ours to use, and
+    /// replaying it would write a customer's details back into the dealership
+    /// after the day we said we would stop holding them.
+    /// </summary>
+    public static readonly Error QuarantineExpired = Error.Conflict(
+        "integration.quarantine_expired",
+        "That record has been held past its retention and can no longer be replayed.");
+
+    /// <summary>
+    /// Dismissing without replaying needs a reason in writing. "Resolved" with
+    /// no note is how a queue gets cleared by somebody who did not read it.
+    /// </summary>
+    public static readonly Error DismissalNeedsAReason = Error.Validation(
+        "integration.dismissal_needs_a_reason",
+        "Say why this record will never apply.");
 }

@@ -117,7 +117,42 @@ public sealed class QuarantinedRecord : AuditableEntity
     /// </summary>
     public bool HasExpiredAt(DateTimeOffset now) => now >= ExpiresAt;
 
-    /// <summary>Mark it dealt with. Does not replay it — nothing replays yet.</summary>
+    /// <summary>How many times somebody has run this record again.</summary>
+    public int ReplayAttempts { get; private set; }
+
+    /// <summary>When it was last run again, or null if it never has been.</summary>
+    public DateTimeOffset? LastReplayedAt { get; private set; }
+
+    /// <summary>
+    /// Records that a replay was refused again, with the reason it was refused
+    /// THIS time.
+    /// </summary>
+    /// <remarks>
+    /// The new reason replaces the old deliberately. Fixing one mapping
+    /// routinely reveals the next problem behind it, and a screen still showing
+    /// the original refusal would send somebody to look in a place that is
+    /// already correct. The attempt count is what preserves the history that
+    /// this has been tried before.
+    /// </remarks>
+    public void Refuse(Error reason, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(reason);
+
+        if (ResolvedAt is not null)
+        {
+            throw new InvalidOperationException("This record has already been resolved.");
+        }
+
+        ReasonCode = reason.Code;
+        ReasonDetail = reason.Message;
+        ReplayAttempts++;
+        LastReplayedAt = now;
+    }
+
+    /// <summary>
+    /// Mark it dealt with — because a replay applied it, or because somebody
+    /// decided in writing that it never will.
+    /// </summary>
     public void Resolve(DateTimeOffset now, string note)
     {
         if (ResolvedAt is not null)

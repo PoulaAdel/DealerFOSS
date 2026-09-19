@@ -41,6 +41,7 @@ import { InventoryPage } from '../features/inventory/InventoryPage';
 import { TrialBalancePage } from '../features/accounting/TrialBalancePage';
 import { SecondFactorSetup } from '../features/auth/SecondFactorSetup';
 import { RecordsPage } from '../features/migration/RecordsPage';
+import { ConnectorsPage } from '../features/integrations/ConnectorsPage';
 import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
 import { DealsPage } from '../features/deals/DealsPage';
@@ -176,6 +177,7 @@ function AppRoutes() {
         <Route path="/receivables/ageing" element={<AgeingPage />} />
         <Route path="/receivables/statements" element={<StatementPage />} />
         <Route path="/records" element={<RecordsPage />} />
+        <Route path="/integrations" element={<ConnectorsPage />} />
 
         {/* Areas, not records: a different question over a different period.
             They are listed BEFORE the job route for a reader's benefit only —
@@ -321,7 +323,12 @@ function MainNavigation({ pathname }: { pathname: string }) {
         );
       })}
 
-      {canReachRecords ? <NavLink to="/records">{t('nav.records')}</NavLink> : null}
+      {canReachRecords ? (
+        <>
+          <NavLink to="/records">{t('nav.records')}</NavLink>
+          <NavLink to="/integrations">{t('nav.connectors')}</NavLink>
+        </>
+      ) : null}
     </nav>
   );
 }

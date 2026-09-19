@@ -31,6 +31,8 @@ using DealerFOSS.Customers;
 using DealerFOSS.Data;
 using DealerFOSS.Integrations;
 using DealerFOSS.Integrations.Connectors.Fixture;
+using System.Text.Json;
+using DealerFOSS.Identity;
 using DealerFOSS.Tenancy;
 
 namespace DealerFOSS.IntegrationTests;
@@ -502,6 +504,223 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
         }
 
         return found;
+    }
+
+    // --- Replaying what was held back -----------------------------------------
+    //
+    // "Quarantined records are inspectable and replayable" was half true: a
+    // rejected record was kept with its payload and could be marked resolved,
+    // and QuarantinedRecord.Resolve carried the comment "Does not replay it —
+    // nothing replays yet". Marking a bad record dealt-with without re-running
+    // it empties the queue without fixing anything.
+    //
+    // These hold the shape of the answer. Replay runs the REAL sink; a replay
+    // that fails again leaves the row where it was with the new reason.
+
+    [Fact]
+    public async Task A_held_record_that_now_applies_is_applied_and_resolved()
+    {
+        var reference = $"{_prefix}-HELD";
+        var id = await HoldAsync(reference, Payload(reference, lastName: "Mapped"));
+
+        await using var scope = await OpenScopeAsync();
+        var integrations = scope.Services.GetRequiredService<IIntegrations>();
+
+        var replayed = await integrations.ReplayAsync(id, CancellationToken.None);
+
+        replayed.IsSuccess.Should().BeTrue(because: replayed.IsFailure ? replayed.Error.Code : "");
+        replayed.Value.Applied.Should().BeTrue();
+
+        // The record actually went in. Without this the test would pass on a
+        // replay that reported success and wrote nothing.
+        (await FindAsync(reference)).Should().NotBeNull();
+
+        var row = await HeldRowAsync(id);
+        row.ResolvedAt.Should().NotBeNull();
+        row.ResolutionNote.Should().Contain("applied");
+    }
+
+    [Fact]
+    public async Task A_replay_that_is_refused_again_stays_in_the_queue()
+    {
+        // The case that matters most. Resolving on attempt rather than on
+        // success would clear the list while the record was still wrong.
+        var reference = $"{_prefix}-STILLBAD";
+        var id = await HoldAsync(reference, Payload(reference, lastName: null));
+
+        await using var scope = await OpenScopeAsync();
+        var integrations = scope.Services.GetRequiredService<IIntegrations>();
+
+        var replayed = await integrations.ReplayAsync(id, CancellationToken.None);
+
+        replayed.IsSuccess.Should().BeTrue(because: "running it again is not itself a failure");
+        replayed.Value.Applied.Should().BeFalse();
+        replayed.Value.ReasonCode.Should().NotBeNullOrWhiteSpace();
+
+        var row = await HeldRowAsync(id);
+        row.ResolvedAt.Should().BeNull(because: "it still does not apply, so it is still held");
+        row.ReplayAttempts.Should().Be(1, because: "the row remembers it has been tried");
+        row.LastReplayedAt.Should().NotBeNull();
+
+        (await FindAsync(reference)).Should().BeNull(
+            because: "a refused replay must leave nothing behind");
+    }
+
+    [Fact]
+    public async Task A_held_record_is_listed_without_its_payload()
+    {
+        // ADR-022: the payload is a customer's name, address and telephone
+        // number exactly as a provider sent them. A review queue that lists
+        // those is a personal-data export with a queue painted on it.
+        var reference = $"{_prefix}-PRIVATE";
+        var id = await HoldAsync(reference, Payload(reference, lastName: "Sensitive"));
+
+        await using var scope = await OpenScopeAsync();
+        var integrations = scope.Services.GetRequiredService<IIntegrations>();
+
+        var listed = await integrations.QuarantineAsync(_rooftop, CancellationToken.None);
+
+        listed.IsSuccess.Should().BeTrue();
+        var entry = listed.Value.Should().ContainSingle(e => e.Id == id).Subject;
+
+        entry.ExternalId.Should().Be(reference);
+        entry.ReasonCode.Should().NotBeNullOrWhiteSpace();
+
+        // The shape itself carries no payload field, so this is a statement
+        // about the contract rather than about one response.
+        typeof(QuarantineEntry).GetProperty("Payload").Should().BeNull(
+            because: "the held fields must not be reachable through the list at all");
+    }
+
+    [Fact]
+    public async Task A_record_already_dealt_with_cannot_be_replayed()
+    {
+        var reference = $"{_prefix}-DONE";
+        var id = await HoldAsync(reference, Payload(reference, lastName: "Done"));
+
+        await using var scope = await OpenScopeAsync();
+        var integrations = scope.Services.GetRequiredService<IIntegrations>();
+
+        await integrations.DismissAsync(id, "The provider sends this row by mistake.", CancellationToken.None);
+        var again = await integrations.ReplayAsync(id, CancellationToken.None);
+
+        again.IsFailure.Should().BeTrue();
+        again.Error.Code.Should().Be("integration.already_resolved");
+    }
+
+    [Fact]
+    public async Task Dismissing_without_a_reason_is_refused()
+    {
+        // "Resolved" with no note is how a queue gets cleared by somebody who
+        // did not read it.
+        var reference = $"{_prefix}-NOREASON";
+        var id = await HoldAsync(reference, Payload(reference, lastName: "Whoever"));
+
+        await using var scope = await OpenScopeAsync();
+        var integrations = scope.Services.GetRequiredService<IIntegrations>();
+
+        var refused = await integrations.DismissAsync(id, "   ", CancellationToken.None);
+
+        refused.IsFailure.Should().BeTrue();
+        refused.Error.Code.Should().Be("integration.dismissal_needs_a_reason");
+        (await HeldRowAsync(id)).ResolvedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task A_record_held_past_its_retention_cannot_be_replayed()
+    {
+        // The payload may still be on disk — nothing purges physically yet — but
+        // it has stopped being ours to use. Replaying it would write a
+        // customer's details back into the dealership after the day we said we
+        // would stop holding them.
+        var reference = $"{_prefix}-EXPIRED";
+        var id = await HoldAsync(reference, Payload(reference, lastName: "Stale"));
+
+        await using var scope = await OpenScopeAsync();
+
+        var expired = new IntegrationService(
+            scope.Services.GetRequiredService<TenantDb>(),
+            [],
+            [new CustomerRecordSink(
+                scope.Services.GetRequiredService<ICustomers>(), new FixedClock(Start))],
+            scope.Services.GetRequiredService<IAccessDirectory>(),
+            scope.Services.GetRequiredService<ICurrentUser>(),
+            scope.Services.GetRequiredService<IAuditSink>(),
+            new FixedClock(Start + QuarantinedRecord.Retention + TimeSpan.FromDays(1)));
+
+        var refused = await expired.ReplayAsync(id, CancellationToken.None);
+
+        refused.IsFailure.Should().BeTrue();
+        refused.Error.Code.Should().Be("integration.quarantine_expired");
+        (await FindAsync(reference)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task The_shipped_connector_says_how_far_it_has_been_proven()
+    {
+        // CertificationStatus had four levels and no reader. The fixture is a
+        // real shipped connector that serves fabricated records and says so in
+        // its own manifest; hiding it would make the screen claim the product
+        // has no connectors, which is less honest than the truth.
+        await using var scope = await OpenScopeAsync();
+        var integrations = scope.Services.GetRequiredService<IIntegrations>();
+
+        var listed = await integrations.ConnectorsAsync(CancellationToken.None);
+
+        listed.IsSuccess.Should().BeTrue();
+        var fixture = listed.Value.Should().ContainSingle(c => c.Provider == "Fixture").Subject;
+
+        fixture.Certification.Should().Be("FixtureTested");
+        fixture.KnownLimitations.Should().Contain(l => l.Contains("Never certify anything against this"),
+            because: "the limitation is the most important sentence on the screen");
+    }
+
+    // --- Plumbing for replay --------------------------------------------------
+
+    /// <summary>The same options the runtime serialises a held payload with.</summary>
+    private static readonly JsonSerializerOptions PayloadFormat = new(JsonSerializerDefaults.Web);
+
+    private static string Payload(string reference, string? lastName) =>
+        JsonSerializer.Serialize(new Dictionary<string, string?>
+        {
+            [CustomerFields.Kind] = "Person",
+            [CustomerFields.LastName] = lastName is null ? null : lastName + reference,
+            [CustomerFields.FirstName] = "Held",
+        }, PayloadFormat);
+
+    /// <summary>
+    /// A held row shaped exactly as the runtime writes one, so a replay test is
+    /// exercising the real thing rather than a convenient stand-in.
+    /// </summary>
+    private async Task<Guid> HoldAsync(string reference, string payload)
+    {
+        await using var db = NewContext();
+
+        var held = new QuarantinedRecord(
+            Guid.NewGuid(),
+            "Fixture",
+            _rooftop,
+            new ConnectorCapability(CustomerFields.Contract, CustomerFields.Version,
+                SyncDirection.Read, FixtureConnector.HistoryWindow),
+            reference,
+            null,
+            payload,
+            Error.Validation("customer.missing_name", "A surname is required."),
+            Start);
+
+        db.Add(held);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        return held.Id;
+    }
+
+    private static async Task<QuarantinedRecord> HeldRowAsync(Guid id)
+    {
+        await using var db = NewContext();
+
+        return await db.Set<QuarantinedRecord>()
+            .AsNoTracking()
+            .SingleAsync(q => q.Id == id, CancellationToken.None);
     }
 
     // --- Plumbing -----------------------------------------------------------

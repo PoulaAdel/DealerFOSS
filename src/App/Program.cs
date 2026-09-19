@@ -34,6 +34,7 @@ using DealerFOSS.Receivables;
 using DealerFOSS.Reporting;
 using DealerFOSS.Identity;
 using DealerFOSS.Integrations;
+using DealerFOSS.Integrations.Connectors.Fixture;
 using DealerFOSS.Inventory;
 using DealerFOSS.Leads;
 using DealerFOSS.Organization;
@@ -164,6 +165,15 @@ if (tenancyEnabled)
     // before the provider is called.
     builder.Services.AddScoped<ConnectorRuntime>();
     builder.Services.AddScoped<IRecordSink, CustomerRecordSink>();
+    builder.Services.AddScoped<IIntegrations, IntegrationService>();
+
+    // Registered so the connectors screen can say what this build actually
+    // ships and how far it has been proven. The fixture is a real shipped
+    // connector that serves fabricated records, and its own manifest says so:
+    // "Serves fabricated records. Never certify anything against this."
+    // Hiding it would make the screen claim the product has no connectors,
+    // which is a different and less honest statement than the truth.
+    builder.Services.AddScoped<IConnector, FixtureConnector>();
 
     // Work that is not a request. It names the dealership it is working on
     // rather than inheriting one, because outside a request there is no
@@ -424,6 +434,7 @@ if (tenancyEnabled)
     app.MapSecurity();
     app.MapAdministration();
     app.MapMigration();
+    app.MapIntegrations();
     app.MapOrganization();
     app.MapCustomers();
     app.MapVehicles();
