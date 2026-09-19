@@ -273,7 +273,7 @@ export const ar: Catalogue = {
     other: '{count} سيارة في المخزون',
   },
   'stock.detailFor': 'رقم المخزون {stock}',
-  'stock.cost': 'التكلفة',
+  'stock.cost': 'تكلفة الاقتناء',
   'stock.costUnknown': 'غير مسجَّلة',
   'stock.acquired': 'تاريخ الإدخال',
   'stock.historyTitle': 'ما جرى لها',

@@ -262,7 +262,7 @@ export const ru: Catalogue = {
     other: '{count} машины в наличии',
   },
   'stock.detailFor': 'Складской номер {stock}',
-  'stock.cost': 'Себестоимость',
+  'stock.cost': 'Стоимость приобретения',
   'stock.costUnknown': 'не указана',
   'stock.acquired': 'Принят на склад',
   'stock.historyTitle': 'Что с ним происходило',

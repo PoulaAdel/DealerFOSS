@@ -531,9 +531,11 @@ but sends nobody a reminder, because there is no way to send a message yet.
 - **Warranty money is shown as owed, not as taken.** A claim has to be submitted
   and accepted before any of it arrives, and some never is. Treating it as cash
   on the day the car leaves shows money you have not got
-- **Reconditioning your own stock goes onto that car's cost**, so a used car that
-  needed nine hundred pounds of work really did cost nine hundred pounds more.
-  Without that, used-car profit reads better than it is by exactly the recon bill
+- **Reconditioning your own stock goes to the inventory ledger account.**
+  Correction checked 19 Sep: it does not yet increase the individual car's cost,
+  so per-car recon attribution and its relief on sale remain open. The stock
+  list now shows each car's **acquisition cost**, with missing costs named and
+  currencies preserved; it does not present that figure as including recon
 - **Work the customer is not paying for does not wait for their permission.**
   Asking somebody to authorise a repair they are not funding would be a question
   with no meaning — and an unanswered line stops the invoice, so it would have

@@ -165,12 +165,13 @@ export interface InventoryUnitSummary {
   vehicleId: string;
   vin: string;
   vehicleDisplayName: string;
+  /** Recorded acquisition cost; excludes reconditioning posted only to the ledger. */
+  costAmount: number | null;
+  costCurrency: string | null;
 }
 
 /** One unit in full, as the detail band below the stock list shows it. */
 export interface InventoryUnitDetail extends InventoryUnitSummary {
-  costAmount: number | null;
-  costCurrency: string | null;
   /** ISO date. Null for a unit taken in before the field was recorded. */
   acquiredOn: string | null;
   history: InventoryStatusEntry[];

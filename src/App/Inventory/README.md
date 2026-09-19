@@ -57,7 +57,23 @@ a real assertion in the tests.
 - Inventory may depend on Vehicles — a unit is a vehicle on a lot — but not on
   Organization or Customers.
 
-## Not built yet
+## Acquisition cost on the stock list
 
-Aging analytics, transfers between rooftops, floor-plan financing, and reservation
-against a deal. Those arrive with reporting and Sales.
+The paged summary and the detail both carry `CostAmount` and `CostCurrency`.
+The stock screen labels this **Acquisition cost**, formats each car in its recorded
+currency, and shows an unrecorded cost as unknown rather than zero. The list does
+not fetch each detail to find its cost, or add a page of mixed currencies into a
+figure that looks like the value of the whole lot.
+
+This is not a per-car ledger balance. Checked 2026-09-19: internal reconditioning
+debits account 1300, but does not update the unit's cost or retain its stock-unit
+id on that posting. Attributing recon to each stay in stock, including correction
+and sale, remains open in the scope register. The old claim that the unit's cost
+already included recon was broader than the implementation.
+
+## What is still missing
+
+Transfers between rooftops and recon-inclusive carrying cost per car. The old
+remainder also named aging, floorplan financing and reservation: aging now exists
+through `AgingAsync`, a financed acquisition credits floorplan payable, and the
+deal workflow holds a car. Those are no longer wholly unbuilt capabilities.

@@ -128,7 +128,15 @@ public sealed record InventoryUnitSummary(
     string Status,
     Guid VehicleId,
     string Vin,
-    string VehicleDisplayName);
+    string VehicleDisplayName,
+
+    /// <summary>
+    /// Recorded acquisition cost, not a market appraisal or a per-car ledger
+    /// balance. Reconditioning currently posts to the ledger without changing
+    /// this amount. Null means unrecorded; zero means a recorded zero cost.
+    /// </summary>
+    decimal? CostAmount,
+    string? CostCurrency);
 
 /// <summary>One unit in full, with the moves it has made.</summary>
 public sealed record InventoryUnitDetail(

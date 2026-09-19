@@ -533,7 +533,8 @@ public sealed class InventoryService(
     private sealed record UnitRow(InventoryUnit Unit, Vehicle Vehicle);
 
     private static InventoryUnitSummary Summarize(InventoryUnit u, Vehicle v) =>
-        new(u.Id, u.StockNumber, u.RooftopId, u.Status.ToString(), v.Id, v.Vin, v.DisplayName);
+        new(u.Id, u.StockNumber, u.RooftopId, u.Status.ToString(), v.Id, v.Vin, v.DisplayName,
+            u.CostAmount, u.CostCurrency);
 
     private static InventoryUnitDetail Describe(
         InventoryUnit u,

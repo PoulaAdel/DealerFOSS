@@ -275,7 +275,7 @@ export const en = {
   'stock.colStatus': 'Status',
   'stock.count': { one: '{count} car in stock', other: '{count} cars in stock' },
   'stock.detailFor': 'Stock number {stock}',
-  'stock.cost': 'Cost',
+  'stock.cost': 'Acquisition cost',
   'stock.costUnknown': 'not recorded',
   'stock.acquired': 'Taken in',
   'stock.historyTitle': 'What has happened to it',

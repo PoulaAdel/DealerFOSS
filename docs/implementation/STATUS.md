@@ -3,23 +3,25 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **changing page no longer means tabbing through every record**.
-One shared list layout puts the pager before the table on Customers, Enquiries,
-Deals, Stock and Workshop. The customer screen took **116 real Tab presses to
-Next before, 16 after**, with 100 rows and the manager's menus closed. Signal
-and context still come first, and detail still follows the list (ADR-020).
+Current milestone: **the stock list shows what each car cost to acquire**.
+Each scoped row carries acquisition cost and its currency without a detail
+request per car. Missing cost is visibly unrecorded; a recorded zero stays zero.
+The same label and figure appear in list and detail across all six languages.
+Verification also found that recon is capitalised to 1300 only at ledger level:
+it does not update a stock unit's cost. Per-car recon attribution and relief on
+sale are now explicitly open in the register rather than claimed as built.
 What is next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
 §12 — but see the re-review of 2026-09-16 below before choosing from it, and
 the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no cross-module actions and the arrival-motion work recorded in
 the device-only motion audit. The pager finding closed on 2026-09-19; the token
 migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 824/824,
+Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 828/828,
 `verify-e2e.ps1` PASS against the configured SQL container (the canonical LocalDB
 catalogue is detached with its MDF still on disk; see the milestone below),
 frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 456/456, and `npm run build` all pass
+`npm run typecheck`, `npm test` 460/460, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -760,6 +762,11 @@ to come.
 
 - **2026-08-15 — Reconditioning lands on the car, and D4 is settled.** Internal work on a vehicle the rooftop owns is now capitalised onto that vehicle (1300) instead of charged to 5400. It was the deliberately-unfinished half of the pay-type change, and while it stood a used car's recorded cost missed the money spent making it saleable — **used-vehicle gross flattered itself by exactly the recon bill**, which is the classic way a used department looks profitable and is not.
 
+  **Correction, checked 2026-09-19:** the posting goes to 1300, but the stock
+  unit's recorded cost is unchanged. The test below asserts the account debit,
+  not a per-car cost increase or its relief on delivery. Those claims were too
+  broad; recon attribution and sale handling remain open in the scope register.
+
   **The workshop asks rather than guesses.** `IInventory.FindOwnedAsync` answers whether this rooftop owns this vehicle, excluding sold and removed units — a car that has left is not somewhere to put more cost. Work on anything not in stock (a courtesy car, a director's vehicle, a customer's car the dealership decided to cover) still lands on 5400, because there is no unit to put it on. The only difference between the two paths is whether that answer is null.
 
   It returns a `Guid?` rather than a summary: the caller needs to know *whether*, not *what*, and the fuller shape would have dragged a vehicle lookup into Inventory to populate fields nobody reads.
@@ -1373,3 +1380,43 @@ to come.
   Evidence: unchanged baseline `dotnet build` **0 warnings/0 errors**, `dotnet test` **824/824**; final `dotnet build` **0/0**, `dotnet test` **824/824**, `verify-e2e.ps1` **PASS against the SQL container**, `npm audit` clean at high (the same two moderate findings), `npm run typecheck`, `npm test` **456/456** (was 451), `npm run build`. The first final typecheck caught an unsupported `exact` option in the new Testing Library assertions; it was removed and all four frontend gates rerun. Existing React `act`/jsdom test diagnostics and Vite's large-chunk warning remain; they were present in the unchanged frontend run too.
 
   Left alone: customer cross-module actions, arrival motion, and the number of actions in the signal and context bands. Next engineering work remains the stage 2 remainder named in the September 16 re-review; this keyboard fix changes neither its exit criteria nor its stage share.
+
+- **2026-09-19 — Stock shows what each car cost to acquire.** The stock list
+  previously showed identity and status while cost required opening every car.
+  Its scoped summary now carries the recorded amount and currency; one shared
+  renderer displays that figure in the list and detail. An unrecorded cost says
+  so, a recorded zero is money rather than missing, and each currency stays with
+  its car. All six labels say **Acquisition cost**. No extra request per row,
+  page subtotal, schema change or new authorization rule is involved.
+
+  **The label is a limit on the claim.** Checking the source exposed an older
+  overstatement: reconditioning debits 1300 but does not update a stock unit's
+  cost or retain the owned unit id on the posting. Delivery still uses that
+  recorded cost. The register now separately names per-car recon attribution
+  and relief on sale; the earlier status entry, product progress and Inventory
+  README are corrected. This display must not imply a recon-inclusive carrying
+  value or market appraisal.
+
+  **Walked against the local application:** 221 cars with costs on page one and
+  page two; D0048 reads $23,500 in both list and detail, and closing keeps page
+  two. Reconditioning filters to 44 cars and retains their costs. At 320 px,
+  English/light and Arabic/dark both keep page `scrollX` at zero after real
+  horizontal scrolling; the table itself scrolls to the cost column. Desktop
+  Arabic mirrors the column and keeps the currency readable.
+
+  **A failing gate caught a test-fixture mistake.** The first API theory received
+  a positive EUR car into the shared USD ledger; six existing report tests then
+  correctly refused mixed currencies with HTTP 400. Restoring the committed
+  Inventory fixture made the affected Inventory/Ledger group pass **60/60**.
+  The final API case uses a recorded zero in EUR to prove currency preservation
+  without adding another posted currency, while the UI test covers a positive
+  EUR amount. No report rule or gate was weakened.
+
+  Evidence: `dotnet build` **0 warnings/0 errors**, `dotnet test` **828/828**
+  (was 824), `verify-e2e.ps1` **PASS against the configured SQL container** on
+  port 5081, `npm audit --audit-level=high` passes with the same two moderate
+  findings, `npm run typecheck`, `npm test` **460/460** (was 456), and
+  `npm run build` pass. Existing React `act`/jsdom diagnostics and Vite's
+  large-chunk warning remain. The first sandboxed build could not read the
+  existing NuGet configuration; the authorized rerun passed without changing
+  configuration. No phase exit criterion or hand-set stage share changed.

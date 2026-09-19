@@ -259,7 +259,7 @@ export const de: Catalogue = {
   'stock.colStatus': 'Status',
   'stock.count': { one: '{count} Fahrzeug im Bestand', other: '{count} Fahrzeuge im Bestand' },
   'stock.detailFor': 'Bestandsnummer {stock}',
-  'stock.cost': 'Kosten',
+  'stock.cost': 'Anschaffungskosten',
   'stock.costUnknown': 'nicht erfasst',
   'stock.acquired': 'Aufgenommen am',
   'stock.historyTitle': 'Was damit geschehen ist',

@@ -27,6 +27,8 @@ const unit: InventoryUnitSummary = {
   vehicleId: '33333333-3333-3333-3333-333333333333',
   vin: '1HGCM82633A004352',
   vehicleDisplayName: '2021 Toyota RAV4',
+  costAmount: 24500,
+  costCurrency: 'USD',
 };
 
 /**
@@ -64,6 +66,20 @@ describe('the stock list', () => {
       await screen.findByText(/Nothing here yet\. Cars appear once they are taken into stock\./),
     ).toBeVisible();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [24500, 'USD', '$24,500.00'],
+    [18000, 'EUR', '€18,000.00'],
+    [0, 'USD', '$0.00'],
+    [null, null, 'not recorded'],
+  ])('shows acquisition cost %s %s without opening each car', async (costAmount, costCurrency, shown) => {
+    mockApi({ '/inventory': { ok: true, body: page([{ ...unit, costAmount, costCurrency }]) } });
+    renderStock();
+
+    expect(await screen.findByRole('cell', { name: shown })).toBeVisible();
+    expect(screen.getByRole('columnheader', { name: 'Acquisition cost' })).toBeVisible();
+    expect(apiCalls().filter((call) => call.path.startsWith(`/inventory/${unit.id}`))).toHaveLength(0);
   });
 
   it('explains a refusal in words a salesperson can act on', async () => {

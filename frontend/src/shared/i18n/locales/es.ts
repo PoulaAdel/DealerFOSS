@@ -264,7 +264,7 @@ export const es: Catalogue = {
   'stock.colStatus': 'Estado',
   'stock.count': { one: '{count} vehículo en stock', other: '{count} vehículos en stock' },
   'stock.detailFor': 'N.º de stock {stock}',
-  'stock.cost': 'Coste',
+  'stock.cost': 'Coste de adquisición',
   'stock.costUnknown': 'sin registrar',
   'stock.acquired': 'Dado de alta',
   'stock.historyTitle': 'Qué le ha pasado',

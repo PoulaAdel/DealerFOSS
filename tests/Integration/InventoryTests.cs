@@ -148,6 +148,47 @@ public sealed class InventoryTests(HostFixture fixture)
         listed.Should().ContainSingle().Which.Should().Be(stock);
     }
 
+    [Theory]
+    [InlineData(24500, "USD")]
+    [InlineData(0, "EUR")]
+    [InlineData(0, "USD")]
+    [InlineData(null, null)]
+    public async Task The_stock_list_carries_the_recorded_cost_without_turning_missing_into_zero(
+        int? amount, string? currency)
+    {
+        // A zero-cost EUR unit proves currency preservation without introducing
+        // a second posted currency into the shared ledger fixture. A positive
+        // EUR purchase made six unrelated reports correctly refuse to combine
+        // currencies; the display's positive EUR case lives in the UI test.
+        var stock = UniqueStock();
+        using var received = await PostAsync(Inventory, Manager, new
+        {
+            vehicleId = await AddVehicleAsync(UniqueVin()),
+            rooftopId = await RooftopIdAsync("NAG-01"),
+            stockNumber = stock,
+            costAmount = amount,
+            costCurrency = currency,
+        });
+        received.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // The scoped reader already sees cost on detail. Listing must carry the
+        // same nullable pair without fetching every detail or inventing a zero.
+        var page = await PageAsync($"{Inventory}?stock={stock}", Advisor);
+        var row = page.Rows().Should().ContainSingle().Subject;
+        if (amount is null)
+        {
+            row.GetProperty("costAmount").ValueKind.Should().Be(JsonValueKind.Null);
+        }
+        else
+        {
+            row.GetProperty("costAmount").GetDecimal().Should().Be(amount.Value);
+        }
+
+        row.GetProperty("costCurrency").GetString().Should().Be(currency);
+        (await PageAsync($"{Inventory}?stock={stock}&rooftopId={await RooftopIdAsync("NAG-02")}", Manager))
+            .Rows().Should().BeEmpty();
+    }
+
     [Fact]
     public async Task The_cars_past_the_first_page_can_actually_be_reached()
     {

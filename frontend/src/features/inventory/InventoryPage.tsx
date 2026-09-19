@@ -234,11 +234,7 @@ function UnitDetail({
 
         <dt>{t('stock.cost')}</dt>
         <dd>
-          {/* A cost of zero is a real figure and must not read as "unknown",
-              so the check is for null rather than falsy. */}
-          {unit.costAmount === null || unit.costCurrency === null
-            ? <span className="muted">{t('stock.costUnknown')}</span>
-            : format.money(unit.costAmount, unit.costCurrency)}
+          <AcquisitionCost unit={unit} />
         </dd>
 
         <dt>{t('stock.acquired')}</dt>
@@ -448,6 +444,20 @@ function Body({
   }
 }
 
+/**
+ * The same recorded figure in the list and detail, without a request per row.
+ * Missing is not free, and a currency belongs to the car, not the UI language.
+ * This is acquisition cost: recon is posted to the ledger but is not added to
+ * the unit, so calling it book value would promise a reconciliation it lacks.
+ */
+function AcquisitionCost({ unit }: { unit: InventoryUnitSummary }) {
+  const { t, format } = useI18n();
+
+  return unit.costAmount === null || unit.costCurrency === null
+    ? <span className="muted">{t('stock.costUnknown')}</span>
+    : <bdi>{format.money(unit.costAmount, unit.costCurrency)}</bdi>;
+}
+
 function UnitTable({
   page, selectedId, onOpen, onPage,
 }: {
@@ -469,6 +479,7 @@ function UnitTable({
           <th scope="col">{t('stock.colVehicle')}</th>
           <th scope="col">{t('stock.colVin')}</th>
           <th scope="col">{t('stock.colStatus')}</th>
+          <th scope="col" className="num">{t('stock.cost')}</th>
         </>
       }
       row={(unit) => (
@@ -499,6 +510,7 @@ function UnitTable({
               {label('inventoryStatus', unit.status)}
             </span>
           </td>
+          <td className="num"><AcquisitionCost unit={unit} /></td>
         </tr>
       )}
     />
