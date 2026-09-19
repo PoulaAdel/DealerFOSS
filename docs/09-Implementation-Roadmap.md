@@ -85,7 +85,7 @@ During implementation:
 - Every write must define validation, authorization scope, audit behavior, concurrency behavior, and idempotency where retried.
 - Every external message must define source identity/version, provenance, deletion behavior, mapping warnings, and replay behavior.
 - Never log secrets, tokens, credit data, government identifiers, or document content.
-- Apply SPDX licence metadata once, at assembly level in `Directory.Build.props`. Do not add per-file licence headers; they create large diffs without improving provenance.
+- Apply SPDX licence metadata in every source header and at assembly level in `Directory.Build.props`, as required by doc 08 §5 and `SourceHeaderTests`. The old prohibition on per-file headers here was stale (corrected 2026-09-19).
 - Never weaken security, tests, tenant isolation, migration safety, or error handling to make a test pass.
 - Do not create fixture-only connector code and describe it as certified.
 - Do not invent vendor credentials, legal approval, pilot acceptance, penetration-test results, or production evidence.

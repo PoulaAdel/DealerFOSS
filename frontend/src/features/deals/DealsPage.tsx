@@ -38,7 +38,7 @@ import type { DealDetail, DealStatus, DealSummary, Page } from '../../shared/con
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
-import { Pager, usePageCaption } from '../../shared/Pager';
+import { ListTable } from '../../shared/ListScreen';
 
 const PageSize = 50;
 
@@ -671,53 +671,44 @@ function DealTable({
 }) {
   const { t, format } = useI18n();
   const label = useEnumLabel();
-  const caption = usePageCaption();
-  const deals = page.rows;
 
   return (
-    <div className="scroll">
-      <table>
-        <caption className="visually-hidden">
-          {caption(page)}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">{t('deals.colCustomer')}</th>
-            <th scope="col">{t('deals.colVehicle')}</th>
-            <th scope="col">{t('deals.colStock')}</th>
-            <th scope="col" className="num">
-              {t('deals.colDue')}
-            </th>
-            <th scope="col">{t('deals.colStage')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {deals.map((deal) => (
-            <tr key={deal.id}>
-              <td>
-                {/* A button, not a link: opening a deal changes what this page
-                    shows rather than navigating anywhere, and a link that does
-                    not navigate breaks middle-click and "open in new tab". */}
-                <button type="button" className="link" onClick={() => onOpen(deal.id)}>
-                  {deal.customerName}
-                </button>
-              </td>
-              <td>{deal.vehicle}</td>
-              <td className="mono" dir="ltr">
-                {deal.stockNumber}
-              </td>
-              <td className="num">{format.money(deal.amountDue, deal.currency)}</td>
-              <td>
-                <span className={`chip chip--${deal.status.toLowerCase()}`}>
-                  {label('dealStatus', deal.status)}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <Pager page={page} onPage={onPage} />
-    </div>
+    <ListTable
+      page={page}
+      onPage={onPage}
+      columns={
+        <>
+          <th scope="col">{t('deals.colCustomer')}</th>
+          <th scope="col">{t('deals.colVehicle')}</th>
+          <th scope="col">{t('deals.colStock')}</th>
+          <th scope="col" className="num">
+            {t('deals.colDue')}
+          </th>
+          <th scope="col">{t('deals.colStage')}</th>
+        </>
+      }
+      row={(deal) => (
+        <tr key={deal.id}>
+          <td>
+            {/* A button, not a link: opening a deal changes what this page
+                shows rather than navigating anywhere, and a link that does
+                not navigate breaks middle-click and "open in new tab". */}
+            <button type="button" className="link" onClick={() => onOpen(deal.id)}>
+              {deal.customerName}
+            </button>
+          </td>
+          <td>{deal.vehicle}</td>
+          <td className="mono" dir="ltr">
+            {deal.stockNumber}
+          </td>
+          <td className="num">{format.money(deal.amountDue, deal.currency)}</td>
+          <td>
+            <span className={`chip chip--${deal.status.toLowerCase()}`}>
+              {label('dealStatus', deal.status)}
+            </span>
+          </td>
+        </tr>
+      )}
+    />
   );
 }

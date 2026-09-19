@@ -42,6 +42,12 @@
 //   balance, a statement, the labour report) is a different shape — no rows,
 //   no pager — and forcing it through this component would need as many
 //   escape hatches as it saved lines.
+//
+//   PAGING COMES BEFORE THE ROWS, in both the DOM and the picture. The
+//   September 2026 keyboard walk took 116 Tabs to reach Next on /customers:
+//   100 of them were records the reader wanted to skip. A positive tabIndex
+//   would disagree with the picture; a second pager would add another stop.
+//   ListTable owns this order even for screens with their own load states.
 
 import type { ReactNode } from 'react';
 import { Pager, usePageCaption } from './Pager';
@@ -76,7 +82,6 @@ export function ListScreen<T>({
   row: (item: T) => ReactNode;
 }) {
   const { t } = useI18n();
-  const caption = usePageCaption();
 
   if (load.kind === 'loading') {
     return (
@@ -110,16 +115,42 @@ export function ListScreen<T>({
   }
 
   return (
-    <div className="scroll">
-      <table className={tableClassName}>
-        <caption className="visually-hidden">{caption(load.page)}</caption>
-        <thead>
-          <tr>{columns}</tr>
-        </thead>
-        <tbody>{load.page.rows.map(row)}</tbody>
-      </table>
+    <ListTable
+      page={load.page}
+      onPage={onPage}
+      tableClassName={tableClassName}
+      columns={columns}
+      row={row}
+    />
+  );
+}
 
-      <Pager page={load.page} onPage={onPage} />
-    </div>
+/**
+ * The ready part of the list band. Keep the pager outside the horizontal
+ * scroll box: reaching another page must not require finding the table's edge
+ * on a narrow screen. Signal and context still precede this band, detail follows.
+ */
+export function ListTable<T>({ page, onPage, tableClassName, columns, row }: {
+  page: Page<T>;
+  onPage: (offset: number) => void;
+  tableClassName?: string;
+  columns: ReactNode;
+  row: (item: T) => ReactNode;
+}) {
+  const caption = usePageCaption();
+
+  return (
+    <>
+      <Pager page={page} onPage={onPage} />
+      <div className="scroll">
+        <table className={tableClassName}>
+          <caption className="visually-hidden">{caption(page)}</caption>
+          <thead>
+            <tr>{columns}</tr>
+          </thead>
+          <tbody>{page.rows.map(row)}</tbody>
+        </table>
+      </div>
+    </>
   );
 }

@@ -52,6 +52,27 @@ async function fillNewCustomer(lastName: string) {
 }
 
 describe('finding customers', () => {
+  it('reaches Next in three Tab stops with a full page of 100 customers', async () => {
+    const user = userEvent.setup();
+    const rows = Array.from({ length: 100 }, (_, index) => ({
+      ...ada, id: String(index), displayName: `Customer ${index + 1}`,
+    }));
+    mockApi({ '/customers': { ok: true, body: { rows, total: 200, offset: 0, limit: 100 } } });
+    renderCustomers();
+    const next = await screen.findByRole('button', { name: 'Next' });
+
+    // Search, Add, Next. Count the route's controls, not the shell's changing
+    // navigation; the real browser walk records the whole-page number too.
+    let stops = 0;
+    while (document.activeElement !== next && stops < 110) {
+      await user.tab();
+      stops += 1;
+    }
+    expect(stops).toBe(3);
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Customer 1' })).toHaveFocus();
+  });
+
   it('lists who is already here', async () => {
     mockApi({ '/customers': { ok: true, body: page([ada, garage]) } });
     renderCustomers();

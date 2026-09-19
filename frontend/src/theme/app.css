@@ -1215,6 +1215,23 @@ tfoot td {
   flex-wrap: wrap;
 }
 
+/* The range and directions belong together above the shared list, outside its
+   horizontal scroll box. Wrapping keeps both reachable at phone width and in
+   Arabic; DOM order, visual order and keyboard order stay the same. */
+.paging {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  padding-block: var(--s-2);
+}
+
+.paging .note,
+.paging .actions {
+  margin: 0;
+}
+
 /* Sits under a table rather than beside a field, so it needs its own spacing. */
 .note--footer {
   margin: 0;

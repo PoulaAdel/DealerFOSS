@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Overview: Purpose, File Design, and Engineering
-//   Pager — the footer under every list: which rows these are, how many there
+//   Pager — the controls for a list: which rows these are, how many there
 //   are altogether, and the two buttons that reach the rest.
 //
 //   It was written inside the enquiry screen first, because that was the only
@@ -29,6 +29,10 @@
 //   The count is in the table's caption as well as here, because a screen reader
 //   reaching a table announces the caption and should not have to hunt for the
 //   size of what it has just entered.
+//
+//   ListTable places one pager BEFORE its rows so changing page does not cost
+//   one Tab per record. Keep native disabled buttons: an unavailable direction
+//   must not consume a stop, and every available direction must remain reachable.
 
 import { useI18n } from './i18n';
 import type { Page } from './contracts';
@@ -46,7 +50,7 @@ export function Pager<T>({ page, onPage }: { page: Page<T>; onPage: (offset: num
 
   return (
     <div className="paging">
-      <p className="note note--footer">
+      <p className="note">
         {t('paging.showingRange', { first, last, total: page.total })}
       </p>
 

@@ -50,7 +50,14 @@ npm audit --audit-level=high && npm run typecheck && npm test && npm run build
 
 ## The database
 
-Both paths work. Pick either.
+Two SQL engines are supported. Check the machine-specific note before choosing.
+
+**Checked 2026-09-19:** the SQL container passes the end-to-end verifier. LocalDB
+passes the integration suite in its per-run catalogues, but this machine's
+`DealerFOSS_Host` is not attached while its MDF still exists, so the default
+end-to-end command fails trying to create it. Use the configured SQL container
+connection until the maintainer repairs the LocalDB attachment; do not delete
+the existing files to make the gate pass.
 
 **LocalDB** is the lightest, and is what the verification script defaults to:
 
@@ -128,7 +135,9 @@ with the same class name — a compile error, not a silent one.
   was three names short by the time anyone noticed. Read the test: every entry
   carries a comment saying why exporting it was a security decision. Making
   another type public fails that test, which is the point.
-- **SPDX is applied once** at assembly level in `Directory.Build.props`. Do not add
-  per-file licence headers.
+- **SPDX belongs both in every source header and at assembly level** in
+  `Directory.Build.props`. The old instruction here forbidding per-file headers
+  was stale; [Governance §5](08-Governance-and-Standards.md#5-coding-standards)
+  and `SourceHeaderTests` govern the rule (corrected 2026-09-19).
 - **Never commit secrets.** `appsettings.Development.json` is git-ignored; the
   committed example is `appsettings.Development.json.example`.

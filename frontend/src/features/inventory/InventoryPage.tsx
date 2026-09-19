@@ -33,7 +33,7 @@ import {
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
-import { Pager, usePageCaption } from '../../shared/Pager';
+import { ListTable } from '../../shared/ListScreen';
 import { RecallCheck } from '../vehicles/RecallCheck';
 import { TakeIntoStock } from './TakeIntoStock';
 
@@ -458,59 +458,49 @@ function UnitTable({
 }) {
   const { t } = useI18n();
   const label = useEnumLabel();
-  const caption = usePageCaption();
-  const units = page.rows;
 
   return (
-    <div className="scroll">
-      <table>
-        {/* A real range and a real total, replacing "200 vehicles in stock",
-            which was a false statement to anybody with 400 cars — the screen
-            could not tell a full page from the end of the list. */}
-        <caption className="visually-hidden">{caption(page)}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{t('stock.colStock')}</th>
-            <th scope="col">{t('stock.colVehicle')}</th>
-            <th scope="col">{t('stock.colVin')}</th>
-            <th scope="col">{t('stock.colStatus')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {units.map((unit) => (
-            <tr key={unit.id} aria-selected={unit.id === selectedId}>
-              {/* Stock numbers and VINs are codes, not prose: they read left to
-                  right whatever the page does, or the bidi algorithm reorders
-                  the groups and somebody reads out the wrong VIN. */}
-              <td className="mono" dir="ltr">
-                {/* A button and not a row-level onClick. A clickable <tr> is
-                    invisible to a keyboard and announces nothing; this is
-                    reachable by Tab and reads as "open stock number X". */}
-                <button
-                  type="button"
-                  className="cell-open mono"
-                  onClick={() => onOpen(unit.id)}
-                >
-                  {unit.stockNumber}
-                </button>
-              </td>
-              <td>{unit.vehicleDisplayName}</td>
-              <td className="mono vin" dir="ltr">
-                {unit.vin}
-              </td>
-              <td>
-                {/* The class still keys off the raw API value, so the colour
-                    does not depend on what language the page is in. */}
-                <span className={`chip chip--${unit.status.toLowerCase()}`}>
-                  {label('inventoryStatus', unit.status)}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <Pager page={page} onPage={onPage} />
-    </div>
+    <ListTable
+      page={page}
+      onPage={onPage}
+      columns={
+        <>
+          <th scope="col">{t('stock.colStock')}</th>
+          <th scope="col">{t('stock.colVehicle')}</th>
+          <th scope="col">{t('stock.colVin')}</th>
+          <th scope="col">{t('stock.colStatus')}</th>
+        </>
+      }
+      row={(unit) => (
+        <tr key={unit.id} aria-selected={unit.id === selectedId}>
+          {/* Stock numbers and VINs are codes, not prose: they read left to
+              right whatever the page does, or the bidi algorithm reorders
+              the groups and somebody reads out the wrong VIN. */}
+          <td className="mono" dir="ltr">
+            {/* A button and not a row-level onClick. A clickable <tr> is
+                invisible to a keyboard and announces nothing; this is
+                reachable by Tab and reads as "open stock number X". */}
+            <button
+              type="button"
+              className="cell-open mono"
+              onClick={() => onOpen(unit.id)}
+            >
+              {unit.stockNumber}
+            </button>
+          </td>
+          <td>{unit.vehicleDisplayName}</td>
+          <td className="mono vin" dir="ltr">
+            {unit.vin}
+          </td>
+          <td>
+            {/* The class still keys off the raw API value, so the colour
+                does not depend on what language the page is in. */}
+            <span className={`chip chip--${unit.status.toLowerCase()}`}>
+              {label('inventoryStatus', unit.status)}
+            </span>
+          </td>
+        </tr>
+      )}
+    />
   );
 }

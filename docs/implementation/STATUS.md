@@ -3,23 +3,23 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the navigation reflects the job**. The session now tells
-the browser what the caller holds, so a technician sees four destinations
-instead of six and the two they could never use are simply absent. It is a
-**hint and not a control**: every endpoint enforces exactly as before, typing
-the hidden address still reaches the screen and still gets the server's
-refusal, and a test named `Permissions_are_a_hint_not_a_control` fails the day
-somebody decides the browser already filters it. See
-[ADR-025](../adr/0025-the-session-carries-permissions-as-a-hint.md). What is
-next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
+Current milestone: **changing page no longer means tabbing through every record**.
+One shared list layout puts the pager before the table on Customers, Enquiries,
+Deals, Stock and Workshop. The customer screen took **116 real Tab presses to
+Next before, 16 after**, with 100 rows and the manager's menus closed. Signal
+and context still come first, and detail still follows the list (ADR-020).
+What is next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
 §12 — but see the re-review of 2026-09-16 below before choosing from it, and
 the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
-record having no contextual actions, 124 Tab stops to reach a pager, and a
-token migration that is defined but only a third applied.
-Last verified: 2026-09-18 · `dotnet build` 0 warnings/0 errors, `dotnet test` 824/824,
-`verify-e2e.ps1` PASS against LocalDB, frontend `npm audit` clean at high (two
+record having no cross-module actions and the arrival-motion work recorded in
+the device-only motion audit. The pager finding closed on 2026-09-19; the token
+migration closed on 2026-09-18, although this header still called it unfinished.
+Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 824/824,
+`verify-e2e.ps1` PASS against the configured SQL container (the canonical LocalDB
+catalogue is detached with its MDF still on disk; see the milestone below),
+frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 451/451, and `npm run build` all pass
+`npm run typecheck`, `npm test` 456/456, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1357,3 +1357,19 @@ to come.
   Measured after, across ten screens in both themes: **contrast failures 85 → 0 in dark and 65 → 0 in light** (2,112 text elements), **targets under 24px 24 → 0**, sideways scroll 0 at 320px. Walked in both themes at desktop width.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **824/824**, `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **451/451**, `npm run build`.
+
+- **2026-09-19 — Changing page no longer means walking every record first.** Customers, Enquiries, Deals, Stock and Workshop now put one pager before the table, in the picture and in the tab order. The pager remains part of the list band: signal and context keep their place ahead of it, and detail still follows the records. ADR-020 did not need narrowing for this.
+
+  **The old number was a finding, not a baseline.** The September 17 audit recorded Next as stop 124. Repeating the walk on the unchanged checkout, signed in as the seeded manager with menus closed and 100 customer rows, measured **116** from a fresh load, counting the skip link as stop one. After: **16**. Exactly 100 record buttons came out of the path to paging; none came out of the keyboard's reach. Enter loaded rows 101–200 of 486, and the following Tab reached Previous.
+
+  **One pager, before the rows, rather than a special keyboard order.** A positive tab index would make focus disagree with the picture, and duplicating the pager would add controls for the same operation. The shared `ListTable` inside `ListScreen.tsx` owns the order and keeps the controls outside the table's horizontal scroll box. Only Customers and Workshop actually used `ListScreen`; the other three still had their own tables. Those now use its ready-table component, keeping their existing load states and row contents instead of implementing the fix three more times.
+
+  **Count stops, and then keep walking.** The regression tests reach the first-page direction in one Tab within the shared list, the middle-page Next in two, and last-page Previous in one, then walk every one of the 100 record buttons. A one-page list skips both disabled directions. The customer-route test measures three stops — Search, Add, Next — so the shell's navigation can change without moving the test's target. Removing row buttons from the tab order would fail these tests rather than look like an improvement.
+
+  Walked all five screens with real Tabs. Stock reaches Next at **16**; Enquiries at **67**, because its 50 unassigned-enquiry signal actions deliberately still precede the list; Deals with Everything selected at **24**, including eight signal actions; Workshop at **28**, including nine diary-row controls. No main-list record precedes its pager. The default deal filter fits on one page and both directions are disabled. At **320 px**, English and Arabic controls wrap within the viewport; light and dark both show the keyboard focus ring. Opening a customer by keyboard and going back preserves the list and its 100 rows.
+
+  **The machine facts needed correcting too.** The default LocalDB E2E command failed with `Cannot create file 'C:\Users\poula\DealerFOSS_Host.mdf' because it already exists.` The catalogue is absent from `sys.databases` while the file remains. No file was removed or attached: the same verifier passed against the application's configured, already-running SQL container on port 5082. Repairing the LocalDB attachment belongs to the maintainer. The status header still called the completed token migration unfinished, and two onboarding instructions still forbade the per-file SPDX line that `SourceHeaderTests` requires; both contradictions are corrected here.
+
+  Evidence: unchanged baseline `dotnet build` **0 warnings/0 errors**, `dotnet test` **824/824**; final `dotnet build` **0/0**, `dotnet test` **824/824**, `verify-e2e.ps1` **PASS against the SQL container**, `npm audit` clean at high (the same two moderate findings), `npm run typecheck`, `npm test` **456/456** (was 451), `npm run build`. The first final typecheck caught an unsupported `exact` option in the new Testing Library assertions; it was removed and all four frontend gates rerun. Existing React `act`/jsdom test diagnostics and Vite's large-chunk warning remain; they were present in the unchanged frontend run too.
+
+  Left alone: customer cross-module actions, arrival motion, and the number of actions in the signal and context bands. Next engineering work remains the stage 2 remainder named in the September 16 re-review; this keyboard fix changes neither its exit criteria nor its stage share.

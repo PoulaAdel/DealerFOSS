@@ -41,7 +41,7 @@ import type {
 } from '../../shared/contracts';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
-import { Pager, usePageCaption } from '../../shared/Pager';
+import { ListTable } from '../../shared/ListScreen';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 
 const PageSize = 50;
@@ -589,59 +589,47 @@ function LeadTable({
 }) {
   const { t, format } = useI18n();
   const label = useEnumLabel();
-  const caption = usePageCaption();
-  const leads = page.rows;
 
   return (
-    <div className="scroll">
-      <table>
-        <caption className="visually-hidden">
-          {caption(page)}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">{t('leads.colCustomer')}</th>
-            <th scope="col">{t('leads.colAskedAbout')}</th>
-            <th scope="col">{t('leads.colCameFrom')}</th>
-            <th scope="col" className="num">
-              {t('leads.colDays')}
-            </th>
-            <th scope="col">{t('leads.colChasedBy')}</th>
-            <th scope="col">{t('leads.colStage')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leads.map((lead) => (
-            <tr key={lead.id}>
-              <td>
-                <button type="button" className="link" onClick={() => onOpen(lead.id)}>
-                  {lead.customerName}
-                </button>
-              </td>
-              <td>{lead.vehicleOfInterest ?? t('leads.nothingSpecific')}</td>
-              <td>{label('leadSource', lead.source)}</td>
-              <td className="num">{format.number(lead.daysOpen)}</td>
-              <td>
-                {lead.assignedToUserId === null
-                  ? t('leads.nobodyYet')
-                  : me !== null && lead.assignedToUserId === me
-                    ? t('leads.you')
-                    : (lead.assignedTo ?? t('leads.somebodyElse'))}
-              </td>
-              <td>
-                <span className={`chip chip--${lead.status.toLowerCase()}`}>
-                  {label('leadStatus', lead.status)}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* The rows past this page, reachable at last. Before 2026-09-11 the
-          screen said "the first 50, there may be more" and offered no way to
-          see them, so a dealership past the cap simply could not. */}
-      <Pager page={page} onPage={onPage} />
-    </div>
+    <ListTable
+      page={page}
+      onPage={onPage}
+      columns={
+        <>
+          <th scope="col">{t('leads.colCustomer')}</th>
+          <th scope="col">{t('leads.colAskedAbout')}</th>
+          <th scope="col">{t('leads.colCameFrom')}</th>
+          <th scope="col" className="num">
+            {t('leads.colDays')}
+          </th>
+          <th scope="col">{t('leads.colChasedBy')}</th>
+          <th scope="col">{t('leads.colStage')}</th>
+        </>
+      }
+      row={(lead) => (
+        <tr key={lead.id}>
+          <td>
+            <button type="button" className="link" onClick={() => onOpen(lead.id)}>
+              {lead.customerName}
+            </button>
+          </td>
+          <td>{lead.vehicleOfInterest ?? t('leads.nothingSpecific')}</td>
+          <td>{label('leadSource', lead.source)}</td>
+          <td className="num">{format.number(lead.daysOpen)}</td>
+          <td>
+            {lead.assignedToUserId === null
+              ? t('leads.nobodyYet')
+              : me !== null && lead.assignedToUserId === me
+                ? t('leads.you')
+                : (lead.assignedTo ?? t('leads.somebodyElse'))}
+          </td>
+          <td>
+            <span className={`chip chip--${lead.status.toLowerCase()}`}>
+              {label('leadStatus', lead.status)}
+            </span>
+          </td>
+        </tr>
+      )}
+    />
   );
 }
