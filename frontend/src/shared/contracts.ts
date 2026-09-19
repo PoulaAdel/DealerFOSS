@@ -968,10 +968,30 @@ export interface LeadDetail {
 
 export type DealStatus = 'Draft' | 'Submitted' | 'Approved' | 'Delivered' | 'Lost';
 
-/** Exactly one VehiclePrice per deal; Discount is always negative. */
-export type ChargeKind = 'VehiclePrice' | 'Fee' | 'Discount' | 'Accessory';
+/**
+ * Exactly one VehiclePrice per deal; Discount is always negative.
+ *
+ * `DocumentationFee` is its own kind rather than a Fee because tax treats it
+ * differently: it is part of the taxable price in most US states while
+ * registration and title fees are not, and several states cap what may be
+ * charged for it (ADR-024). The domain has drawn that distinction since
+ * 2026-09-09 and this file did not learn it until 2026-09-19, so the one charge
+ * a dealership adds to nearly every deal could not be entered on any screen.
+ */
+export type ChargeKind =
+  | 'VehiclePrice'
+  | 'Fee'
+  | 'Discount'
+  | 'Accessory'
+  | 'DocumentationFee';
 
-export const chargeKinds: ChargeKind[] = ['VehiclePrice', 'Fee', 'Discount', 'Accessory'];
+export const chargeKinds: ChargeKind[] = [
+  'VehiclePrice',
+  'Fee',
+  'DocumentationFee',
+  'Discount',
+  'Accessory',
+];
 
 export interface DealSummary {
   id: string;

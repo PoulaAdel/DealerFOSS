@@ -45,7 +45,50 @@ type Row = {
   basis: string;
   ratePercent: string;
   amount: string;
+
+  /**
+   * Whether somebody typed over the computed figure. Tracked per row so the
+   * arithmetic stops following the moment a person takes charge of it, rather
+   * than overwriting what they just entered on the next keystroke elsewhere.
+   */
+  amountEdited: boolean;
 };
+
+/**
+ * Basis times rate, to the cent, or null when either box is empty.
+ *
+ * Rounded here rather than left to float noise. A cent of drift in a tax figure
+ * is a cent the invoice and the ledger will disagree about forever.
+ */
+function worksOutTo(row: { basis: string; ratePercent: string }): string | null {
+  if (row.basis.trim() === '' || row.ratePercent.trim() === '') {
+    return null;
+  }
+
+  const basis = Number(row.basis);
+  const percent = Number(row.ratePercent);
+
+  if (!Number.isFinite(basis) || !Number.isFinite(percent)) {
+    return null;
+  }
+
+  return (Math.round(basis * percent) / 100).toFixed(2);
+}
+
+/**
+ * Whether this row's amount contradicts its own basis and rate.
+ *
+ * A cent of tolerance, because the boxes hold what somebody typed and
+ * "2062.50" against a computed "2062.5" is agreement, not a discrepancy.
+ */
+function disagrees(row: Row): boolean {
+  const expected = worksOutTo(row);
+  if (expected === null || row.amount.trim() === '') {
+    return false;
+  }
+
+  return Math.abs(Number(row.amount) - Number(expected)) > 0.005;
+}
 
 function rowsFrom(lines: readonly TaxLineView[]): Row[] {
   return lines.map((line, index) => ({
@@ -56,6 +99,10 @@ function rowsFrom(lines: readonly TaxLineView[]): Row[] {
     // Back to a percentage for the box it is read in.
     ratePercent: line.rate === 0 ? '' : String(line.rate * 100),
     amount: String(line.amount),
+
+    // A saved line is somebody's settled figure. Treating it as untouched would
+    // let a later edit to the basis silently rewrite it.
+    amountEdited: true,
   }));
 }
 
@@ -67,6 +114,7 @@ function blankRow(): Row {
     basis: '',
     ratePercent: '',
     amount: '',
+    amountEdited: false,
   };
 }
 
@@ -92,7 +140,31 @@ export function DealTax({
   const total = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 
   function update(key: string, change: Partial<Row>) {
-    setRows((current) => current.map((r) => (r.key === key ? { ...r, ...change } : r)));
+    setRows((current) =>
+      current.map((r) => {
+        if (r.key !== key) {
+          return r;
+        }
+
+        const next = { ...r, ...change };
+
+        // THE AMOUNT FOLLOWS THE ARITHMETIC. A person used to type basis, rate
+        // AND the answer, with nothing checking the three agreed — so a deal
+        // could carry a tax figure that its own basis and rate contradict, and
+        // the figure is the one that goes on the invoice and into the ledger.
+        //
+        // Still overridable, deliberately. EnteredByPerson exists so an
+        // unsupported jurisdiction is a label rather than a blocker, and a
+        // capped or tiered tax is not basis times rate. What ends here is the
+        // SILENT disagreement: override it and the row says what the
+        // arithmetic gives instead.
+        if (!next.amountEdited && (change.basis !== undefined || change.ratePercent !== undefined)) {
+          next.amount = worksOutTo(next) ?? next.amount;
+        }
+
+        return next;
+      }),
+    );
   }
 
   async function save() {
@@ -247,8 +319,23 @@ export function DealTax({
                       aria-label={t('tax.amountOfLine', { line: index + 1 })}
                       value={row.amount}
                       disabled={busy}
-                      onChange={(event) => update(row.key, { amount: event.target.value })}
+                      onChange={(event) =>
+                        update(row.key, { amount: event.target.value, amountEdited: true })
+                      }
                     />
+
+                    {/* Said only when the three actually disagree. A note under
+                        every row would be read as decoration within a week, and
+                        the one row that matters would be invisible among them. */}
+                    {disagrees(row) ? (
+                      <span className="error" role="status">
+                        {t('deals.taxDisagrees', {
+                          basis: money(Number(row.basis)),
+                          rate: `${row.ratePercent}%`,
+                          expected: money(Number(worksOutTo(row))),
+                        })}
+                      </span>
+                    ) : null}
                   </td>
                 </tr>
               ))

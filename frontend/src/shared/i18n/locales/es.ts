@@ -212,6 +212,7 @@ export const es: Catalogue = {
   'enum.chargeKind.Fee': 'Gasto',
   'enum.chargeKind.Discount': 'Descuento',
   'enum.chargeKind.Accessory': 'Accesorio',
+  'enum.chargeKind.DocumentationFee': 'Gastos de gestión',
 
   'enum.repairOrderStatus.Booked': 'Con cita',
   'enum.repairOrderStatus.InProgress': 'En curso',
@@ -706,6 +707,9 @@ export const es: Catalogue = {
   'deals.colAmount': 'Importe',
   'deals.lineProduct': 'Producto',
   'deals.lineTradeIn': 'Vehículo a cambio',
+  'deals.lineTax': 'Impuesto',
+  'deals.taxWorkedOut': '{basis} al {rate}',
+  'deals.taxDisagrees': 'No coincide con {basis} al {rate}, que da {expected}.',
   'deals.owesMore': 'debe más de lo que vale',
   'deals.dueFromCustomer': 'A pagar por el cliente',
   'deals.frozen':

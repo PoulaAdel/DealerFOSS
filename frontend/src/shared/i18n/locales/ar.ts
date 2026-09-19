@@ -213,6 +213,7 @@ export const ar: Catalogue = {
   'enum.chargeKind.Fee': 'رسوم',
   'enum.chargeKind.Discount': 'خصم',
   'enum.chargeKind.Accessory': 'إكسسوار',
+  'enum.chargeKind.DocumentationFee': 'رسوم المعاملات',
 
   'enum.repairOrderStatus.Booked': 'محجوز',
   'enum.repairOrderStatus.InProgress': 'قيد التنفيذ',
@@ -748,6 +749,9 @@ export const ar: Catalogue = {
   'deals.colAmount': 'المبلغ',
   'deals.lineProduct': 'منتج',
   'deals.lineTradeIn': 'سيارة مقايضة',
+  'deals.lineTax': 'الضريبة',
+  'deals.taxWorkedOut': '{basis} بنسبة {rate}',
+  'deals.taxDisagrees': 'لا يطابق {basis} بنسبة {rate}، وهو ما يساوي {expected}.',
   'deals.owesMore': 'المديونية تفوق قيمة السيارة',
   'deals.dueFromCustomer': 'المستحق على العميل',
   'deals.frozen':

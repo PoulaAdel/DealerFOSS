@@ -205,6 +205,7 @@ export const ru: Catalogue = {
   'enum.chargeKind.Fee': 'Сбор',
   'enum.chargeKind.Discount': 'Скидка',
   'enum.chargeKind.Accessory': 'Аксессуар',
+  'enum.chargeKind.DocumentationFee': 'Сбор за оформление',
 
   'enum.repairOrderStatus.Booked': 'Записан',
   'enum.repairOrderStatus.InProgress': 'В работе',
@@ -727,6 +728,9 @@ export const ru: Catalogue = {
   'deals.colAmount': 'Сумма',
   'deals.lineProduct': 'Продукт',
   'deals.lineTradeIn': 'Трейд-ин',
+  'deals.lineTax': 'Налог',
+  'deals.taxWorkedOut': '{basis} по ставке {rate}',
+  'deals.taxDisagrees': 'Не сходится с {basis} по ставке {rate}, что даёт {expected}.',
   'deals.owesMore': 'долг превышает стоимость автомобиля',
   'deals.dueFromCustomer': 'К оплате клиентом',
   'deals.frozen':

@@ -614,3 +614,107 @@ describe('a deal reached by its own address', () => {
     expect(await screen.findByText(/That record cannot be opened/)).toBeVisible();
   });
 });
+
+/**
+ * The column has to add up to the total (2026-09-19).
+ *
+ * This table has now had the SAME defect three times: the trade-in was missing
+ * from the column, then the products were, then the tax was — each found by a
+ * person reading down the column in a browser and getting a different number
+ * from the one printed at the bottom, and each fixed in isolation.
+ *
+ * So this block does not test "is tax shown". It reads every amount in the
+ * column, adds them up, and asserts the sum reaches the printed total. That
+ * property is what was actually wanted all three times, and it cannot be
+ * satisfied by a fourth thing being quietly left out.
+ */
+describe('the numbers on a deal add up', () => {
+  /** Every amount in the right-hand column, as numbers. */
+  function columnAmounts(): number[] {
+    const table = screen.getByRole('table', { name: /numbers on this deal/i });
+    return within(table)
+      .getAllByRole('row')
+      .slice(1) // the header
+      .map((row) => row.querySelector('td.num')?.textContent ?? '')
+      .filter((text) => text.trim() !== '')
+      .map((text) => Number(text.replace(/[^0-9.-]/g, '')));
+  }
+
+  async function show(over: Partial<DealDetail>) {
+    mockApi({
+      '/deals': { ok: true, body: page([summary]) },
+      '/deals/d1': { ok: true, body: detail(over) },
+    });
+    renderDeals('/deals/d1');
+    await screen.findByRole('table', { name: /numbers on this deal/i });
+  }
+
+  it('reaches the total with a car, a fee, a trade-in, a product and tax', async () => {
+    // Every kind of line at once, which is the case none of the three previous
+    // fixes covered.
+    await show({
+      charges: [
+        { kind: 'VehiclePrice', description: 'The car', amount: 33000 },
+        { kind: 'DocumentationFee', description: 'Documentation', amount: 499 },
+        { kind: 'Discount', description: 'Goodwill', amount: -500 },
+      ],
+      products: [
+        {
+          id: 'p1', financeProductId: 'fp1', name: 'Paint protection', provider: null,
+          price: 800, cost: 300, gross: 500, termMonths: null, termMiles: null,
+          isCancelled: false, cancelledAt: null, refundAmount: null, cancellationReason: null,
+        },
+      ],
+      tradeIn: {
+        description: 'Old Focus', allowance: 4000, payoff: 1500,
+        equity: 2500, isNegativeEquity: false,
+      },
+      taxLines: [
+        {
+          id: 't1', description: 'State tax', jurisdiction: 'IL',
+          basis: 33799, rate: 0.0625, amount: 2112.44,
+          provenance: 'EnteredByPerson', packId: null, packVersion: null,
+        },
+      ],
+      // 33000 + 499 - 500 + 800 - 2500 + 2112.44
+      amountDue: 33411.44,
+    });
+
+    const amounts = columnAmounts();
+    const summed = amounts.reduce((a, b) => a + b, 0);
+
+    // The last row of the table is the footer total.
+    expect(Math.abs(summed - 2 * 33411.44)).toBeLessThan(0.02);
+    expect(amounts).toContain(2112.44);
+  });
+
+  it('shows the tax line with the arithmetic behind it', async () => {
+    await show({
+      charges: [{ kind: 'VehiclePrice', description: 'The car', amount: 33000 }],
+      taxLines: [
+        {
+          id: 't1', description: 'State tax', jurisdiction: 'IL',
+          basis: 33000, rate: 0.0625, amount: 2062.5,
+          provenance: 'EnteredByPerson', packId: null, packVersion: null,
+        },
+      ],
+      amountDue: 35062.5,
+    });
+
+    const table = screen.getByRole('table', { name: /numbers on this deal/i });
+    expect(within(table).getByText('State tax')).toBeVisible();
+
+    // Not just the figure: where it came from, on the row.
+    expect(within(table).getByText(/\$33,000\.00 at 6\.25%/)).toBeVisible();
+  });
+
+  it('offers a documentation fee, which the domain has had all along', async () => {
+    // ChargeKind.DocumentationFee has existed since 2026-09-09 and is its own
+    // kind because tax treats it differently from a registration fee. Until
+    // 2026-09-19 no screen could enter one.
+    await show({ charges: [{ kind: 'DocumentationFee', description: 'Doc fee', amount: 499 }] });
+
+    const table = screen.getByRole('table', { name: /numbers on this deal/i });
+    expect(within(table).getByText('Documentation fee')).toBeVisible();
+  });
+});

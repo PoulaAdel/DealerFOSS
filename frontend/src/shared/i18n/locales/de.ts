@@ -207,6 +207,7 @@ export const de: Catalogue = {
   'enum.chargeKind.Fee': 'Gebühr',
   'enum.chargeKind.Discount': 'Nachlass',
   'enum.chargeKind.Accessory': 'Zubehör',
+  'enum.chargeKind.DocumentationFee': 'Bearbeitungsgebühr',
 
   'enum.repairOrderStatus.Booked': 'Terminiert',
   'enum.repairOrderStatus.InProgress': 'In Arbeit',
@@ -701,6 +702,9 @@ export const de: Catalogue = {
   'deals.colAmount': 'Betrag',
   'deals.lineProduct': 'Produkt',
   'deals.lineTradeIn': 'Inzahlungnahme',
+  'deals.lineTax': 'Steuer',
+  'deals.taxWorkedOut': '{basis} zu {rate}',
+  'deals.taxDisagrees': 'Das passt nicht zu {basis} zu {rate}, was {expected} ergibt.',
   'deals.owesMore': 'schuldet mehr, als das Fahrzeug wert ist',
   'deals.dueFromCustomer': 'Vom Kunden zu zahlen',
   'deals.frozen':

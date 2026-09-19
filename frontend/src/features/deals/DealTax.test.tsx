@@ -180,3 +180,95 @@ describe('the tax once the deal is frozen', () => {
     expect(screen.getByText('sst-il v3')).toBeVisible();
   });
 });
+
+/**
+ * The three numbers have to agree (2026-09-19).
+ *
+ * A person used to type the basis, the rate AND the answer, and nothing checked
+ * the three against each other — so a deal could carry a tax figure its own
+ * basis and rate contradict. That figure is the one that reaches the invoice
+ * and the ledger.
+ *
+ * The escape hatch stays: `EnteredByPerson` exists so an unsupported
+ * jurisdiction is a label rather than a blocker, and a capped or tiered tax is
+ * not basis times rate. What ends is the SILENT disagreement.
+ */
+describe('the tax arithmetic', () => {
+  it('works the amount out from the basis and the rate', async () => {
+    renderTax();
+    await userEvent.click(screen.getByRole('button', { name: 'Add a tax line' }));
+
+    await userEvent.type(screen.getByLabelText('Amount taxed on line 1'), '33000');
+    await userEvent.type(screen.getByLabelText('Rate on line 1, as a percentage'), '6.25');
+
+    expect(screen.getByLabelText('Tax charged on line 1')).toHaveValue('2062.50');
+  });
+
+  it('follows the basis when it changes, rather than leaving a stale figure', async () => {
+    renderTax();
+    await userEvent.click(screen.getByRole('button', { name: 'Add a tax line' }));
+
+    await userEvent.type(screen.getByLabelText('Amount taxed on line 1'), '1000');
+    await userEvent.type(screen.getByLabelText('Rate on line 1, as a percentage'), '10');
+    expect(screen.getByLabelText('Tax charged on line 1')).toHaveValue('100.00');
+
+    await userEvent.type(screen.getByLabelText('Amount taxed on line 1'), '0');
+    expect(screen.getByLabelText('Tax charged on line 1')).toHaveValue('1000.00');
+  });
+
+  it('still lets a person type their own figure, for a tax that is not a multiplication', async () => {
+    renderTax();
+    await userEvent.click(screen.getByRole('button', { name: 'Add a tax line' }));
+
+    await userEvent.type(screen.getByLabelText('Amount taxed on line 1'), '33000');
+    await userEvent.type(screen.getByLabelText('Rate on line 1, as a percentage'), '6.25');
+
+    const amount = screen.getByLabelText('Tax charged on line 1');
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '500');
+
+    expect(amount).toHaveValue('500');
+  });
+
+  it('says so when an overridden figure contradicts its own basis and rate', async () => {
+    // The point. A capped tax is legitimate; a silent contradiction is not.
+    renderTax();
+    await userEvent.click(screen.getByRole('button', { name: 'Add a tax line' }));
+
+    await userEvent.type(screen.getByLabelText('Amount taxed on line 1'), '33000');
+    await userEvent.type(screen.getByLabelText('Rate on line 1, as a percentage'), '6.25');
+
+    const amount = screen.getByLabelText('Tax charged on line 1');
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '500');
+
+    expect(screen.getByText(/does not match .* which comes to .*2,062\.50/)).toBeVisible();
+  });
+
+  it('says nothing when the three agree', async () => {
+    // A note under every row would be read as decoration within a week.
+    renderTax();
+    await userEvent.click(screen.getByRole('button', { name: 'Add a tax line' }));
+
+    await userEvent.type(screen.getByLabelText('Amount taxed on line 1'), '33000');
+    await userEvent.type(screen.getByLabelText('Rate on line 1, as a percentage'), '6.25');
+
+    expect(screen.queryByText(/does not match/)).not.toBeInTheDocument();
+  });
+
+  it('does not rewrite a figure already saved on the deal', async () => {
+    // A saved line is somebody's settled figure — often a capped one. Editing
+    // the basis must not silently overwrite it.
+    renderTax({
+      taxLines: [{
+        id: 't1', description: 'Capped tax', jurisdiction: 'IL',
+        basis: 33000, rate: 0.0625, amount: 300,
+        provenance: 'EnteredByPerson', packId: null, packVersion: null,
+      }],
+    });
+
+    await userEvent.type(screen.getByLabelText('Amount taxed on line 1'), '0');
+
+    expect(screen.getByLabelText('Tax charged on line 1')).toHaveValue('300');
+  });
+});

@@ -25,7 +25,7 @@ Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 8
 catalogue is detached with its MDF still on disk; see the milestone below),
 frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 483/483, and `npm run build` all pass
+`npm run typecheck`, `npm test` 492/492, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1539,3 +1539,15 @@ to come.
   The fixture connector is registered rather than hidden. It is a real shipped connector that serves fabricated records and says so in its own manifest; hiding it would make the screen claim the product has no connectors, which is a different and less honest statement than the truth.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **852/852** (was 845 — seven new), `verify-e2e.ps1` PASS against the SQL container, `npm audit` clean at high, `npm run typecheck`, `npm test` **483/483** (was 476), `npm run build`.
+
+- **2026-09-19 — The numbers on a deal add up, and the column proves it.** Three register rows, all walked on 2026-09-10 and open since, all one complaint: the deal summary's figures did not agree with each other.
+
+  **Tax was in `AmountDue` on the server and missing from the column that adds up to it**, so a deal showed $33,000 above a total of $36,331.25 with nothing to explain the gap. That is the **third** time this table has lost a line — the trade-in first, then the products, each found the same way, by a person reading down the column in a browser, and each fixed in isolation. So the fix is not a third patch. `the numbers on a deal add up` reads every amount in the column, sums them, and asserts the sum reaches the printed total, with a car, a fee, a discount, a trade-in, a product and tax all present at once. It was checked against the bug: removing the tax rows makes it fail with *"expected 2112.44 to be less than 0.02"*. A fourth thing cannot be quietly left out.
+
+  **A person typed the basis, the rate and the answer, and nothing checked the three agreed** — so a deal could carry a tax figure its own basis and rate contradict, and that figure is the one that reaches the invoice and the ledger. The amount now follows basis × rate as either is typed, rounded to the cent because a cent of float drift is a cent the invoice and the ledger will disagree about forever. **It stays overridable on purpose**: `EnteredByPerson` exists so an unsupported jurisdiction is a label rather than a blocker, and a capped or tiered tax is not a multiplication. What ends is the *silent* disagreement — an override that contradicts its own basis and rate says so on the row, with the figure the arithmetic gives. A line already saved is never rewritten by a later edit to the basis, because a saved figure is somebody's settled decision.
+
+  **`ChargeKind.DocumentationFee` had existed since 2026-09-09** — its own kind rather than a Fee because it is part of the taxable price in most US states while registration fees are not (ADR-024) — and `contracts.ts` and the six locales had never learned it, so the one charge a dealership adds to nearly every deal could not be entered on any screen.
+
+  Walked: a seeded deal now reads Discount −$650.00, Documentation fee $499.00, Vehicle price $16,520.00, Fee $145.00, Trade-in −$3,500.00, Tax $624.15 — summing to **$13,638.15** against a printed **$13,638.15**, with the tax row reading *"Sales tax $12,869.00 at 4.85%"*.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **852/852**, `verify-e2e.ps1` PASS against the SQL container, `npm audit` clean at high, `npm run typecheck`, `npm test` **492/492** (was 483 — nine new), `npm run build`.

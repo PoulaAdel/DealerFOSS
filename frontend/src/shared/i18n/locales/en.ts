@@ -219,6 +219,7 @@ export const en = {
   'enum.chargeKind.Fee': 'Fee',
   'enum.chargeKind.Discount': 'Discount',
   'enum.chargeKind.Accessory': 'Accessory',
+  'enum.chargeKind.DocumentationFee': 'Documentation fee',
 
   'enum.repairOrderStatus.Booked': 'Booked',
   'enum.repairOrderStatus.InProgress': 'In progress',
@@ -723,6 +724,9 @@ export const en = {
   'deals.colAmount': 'Amount',
   'deals.lineProduct': 'Product',
   'deals.lineTradeIn': 'Trade-in',
+  'deals.lineTax': 'Tax',
+  'deals.taxWorkedOut': '{basis} at {rate}',
+  'deals.taxDisagrees': 'This does not match {basis} at {rate}, which comes to {expected}.',
   'deals.owesMore': 'owes more than it is worth',
   'deals.dueFromCustomer': 'Due from the customer',
   'deals.frozen':

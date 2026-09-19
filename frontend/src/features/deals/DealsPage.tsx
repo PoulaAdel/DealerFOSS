@@ -336,6 +336,34 @@ function DealPanel({
                 <td className="num">{money(-deal.tradeIn.equity)}</td>
               </tr>
             )}
+
+            {/* Tax is in AmountDue on the server, so it has to be in the column
+                that adds up to it. Leaving it out made the summary show 33,000
+                above a total of 36,331.25 with nothing to explain the gap —
+                the THIRD time this exact defect has appeared on this table,
+                after the trade-in and then the products. The test below the
+                component now reads the column and asserts it reaches the total,
+                so there cannot be a fourth. */}
+            {deal.taxLines.map((line, index) => (
+              <tr key={`tax-${index}`}>
+                <td>{t('deals.lineTax')}</td>
+                <td>
+                  {line.description}
+                  {line.basis === 0 || line.rate === 0 ? null : (
+                    <>
+                      {' '}
+                      <span className="muted">
+                        {t('deals.taxWorkedOut', {
+                          basis: money(line.basis),
+                          rate: `${(line.rate * 100).toFixed(3).replace(/\.?0+$/, '')}%`,
+                        })}
+                      </span>
+                    </>
+                  )}
+                </td>
+                <td className="num">{money(line.amount)}</td>
+              </tr>
+            ))}
           </tbody>
           <tfoot>
             <tr>
