@@ -79,6 +79,32 @@ public interface IInventory
         Guid vehicleId,
         RooftopId rooftopId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Puts work the dealership paid for onto the car that absorbed it, so the
+    /// car's book value is what it actually cost to get saleable.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The other half of <see cref="FindOwnedAsync"/>. That method answers "is
+    /// this our car"; until 2026-09-19 its answer was used as a yes/no and the
+    /// unit id thrown away, so recon was debited to 1300 and never attributed —
+    /// which meant delivery relieved acquisition cost only, used-vehicle gross
+    /// was overstated by the recon spend, and 1300 never came back down. See
+    /// <see cref="ReconditioningCharge"/> for the whole story.
+    /// </para>
+    /// <para>
+    /// Called inside the invoicing transaction, so a car cannot end up carrying
+    /// a charge for a posting that rolled back. <paramref name="amount"/> may be
+    /// negative to correct an earlier charge; it may not be zero, and it must be
+    /// the unit's own currency.
+    /// </para>
+    /// </remarks>
+    Task<Result> CapitaliseReconditioningAsync(
+        Guid unitId,
+        Money amount,
+        Guid sourceRepairOrderId,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Which stock to age, and as at when.</summary>
@@ -131,12 +157,33 @@ public sealed record InventoryUnitSummary(
     string VehicleDisplayName,
 
     /// <summary>
-    /// Recorded acquisition cost, not a market appraisal or a per-car ledger
-    /// balance. Reconditioning currently posts to the ledger without changing
-    /// this amount. Null means unrecorded; zero means a recorded zero cost.
+    /// What the dealership paid to acquire the car, and nothing else. Null means
+    /// unrecorded; zero means a recorded zero cost. This is NOT what the car is
+    /// carried at — see <see cref="BookValueAmount"/>.
     /// </summary>
     decimal? CostAmount,
-    string? CostCurrency);
+    string? CostCurrency,
+
+    /// <summary>
+    /// Work capitalised onto this car since it came into stock, summed from
+    /// <see cref="ReconditioningCharge"/>. Zero, never null: a car with no recon
+    /// has absorbed nothing, which is a known amount.
+    /// </summary>
+    decimal ReconditioningAmount,
+
+    /// <summary>
+    /// Acquisition plus reconditioning — what the car is actually carried at and
+    /// what delivery relieves from 1300.
+    ///
+    /// <para>
+    /// Null exactly when <see cref="CostAmount"/> is null, because a book value
+    /// built on an unknown acquisition cost would be a smaller number presented
+    /// with the confidence of a complete one. A screen showing this must say
+    /// which of the two it is showing; calling acquisition cost a book value is
+    /// the mistake this field exists to end.
+    /// </para>
+    /// </summary>
+    decimal? BookValueAmount);
 
 /// <summary>One unit in full, with the moves it has made.</summary>
 public sealed record InventoryUnitDetail(
@@ -150,7 +197,27 @@ public sealed record InventoryUnitDetail(
     decimal? CostAmount,
     string? CostCurrency,
     DateOnly? AcquiredOn,
-    IReadOnlyList<InventoryStatusEntry> History);
+    IReadOnlyList<InventoryStatusEntry> History,
+
+    /// <summary>See <see cref="InventoryUnitSummary.ReconditioningAmount"/>.</summary>
+    decimal ReconditioningAmount,
+
+    /// <summary>See <see cref="InventoryUnitSummary.BookValueAmount"/>.</summary>
+    decimal? BookValueAmount,
+
+    /// <summary>
+    /// Every charge that makes up the reconditioning above, newest last, so
+    /// "where did this come from" has an answer on the screen rather than only
+    /// in the database.
+    /// </summary>
+    IReadOnlyList<ReconditioningEntry> Reconditioning);
+
+/// <summary>One capitalised posting, as a screen shows it.</summary>
+public sealed record ReconditioningEntry(
+    decimal Amount,
+    string Currency,
+    Guid SourceRepairOrderId,
+    DateTimeOffset OccurredAt);
 
 public sealed record InventoryStatusEntry(
     string? FromStatus,

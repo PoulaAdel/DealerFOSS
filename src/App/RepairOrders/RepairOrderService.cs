@@ -908,9 +908,28 @@ public sealed class RepairOrderService(
                     return Result.Failure<RepairOrderDetail>(owned.Error);
                 }
 
-                if (owned.Value is not null)
+                if (owned.Value is { } ownedUnitId)
                 {
                     capitalised = order.InternalTotal.Amount;
+
+                    // Put it ON the car, not merely into 1300. Until 2026-09-19
+                    // this branch used `owned` as a yes/no and threw the unit id
+                    // away, so the debit below had nothing to relieve it: a
+                    // delivered car credited its acquisition cost only, used
+                    // gross was overstated by exactly the recon spend, and 1300
+                    // climbed forever. Inside this transaction, so a rolled-back
+                    // invoice leaves no charge behind.
+                    var onto = await _inventory.CapitaliseReconditioningAsync(
+                        ownedUnitId,
+                        new Money(capitalised, order.Currency),
+                        order.Id,
+                        cancellationToken);
+
+                    if (onto.IsFailure)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return Result.Failure<RepairOrderDetail>(onto.Error);
+                    }
                 }
             }
 

@@ -315,6 +315,133 @@ public sealed class LedgerTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task A_reconditioned_car_leaves_nothing_behind_on_inventory_either()
+    {
+        // The same arithmetic as the test above, with a workshop visit in the
+        // middle — and until 2026-09-19 it did not hold.
+        //
+        // Invoicing internal work debited 1300 by the recon spend, correctly.
+        // Delivery credited 1300 by the unit's ACQUISITION cost, because nothing
+        // had recorded which car absorbed the recon. So the recon stayed in
+        // vehicle inventory after the car had gone, and used-vehicle gross was
+        // overstated by exactly that amount — the failure the posting's own
+        // comment in AccountingService says it exists to prevent.
+        //
+        // Neither balancing check could see it: every entry balanced on its own.
+        // It was an account that never came back to zero.
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var suffix = $"{Guid.NewGuid():N}"[..8].ToUpperInvariant();
+        var stockNumber = $"C{suffix}";
+        const decimal Cost = 14_500m;
+        const decimal Recon = 3m * 60m;
+        const decimal Price = 21_000m;
+
+        var customerId = await CreatedIdAsync("/api/v1/customers", new
+        {
+            kind = "Person", firstName = "Recon", lastName = $"Trip{suffix}",
+        });
+
+        var vehicleId = await CreatedIdAsync("/api/v1/vehicles", new
+        {
+            vin = $"RCNTRP{suffix}"[..13], modelYear = 2023, make = "Toyota", model = "RAV4",
+            vinExceptionReason = "Synthetic VIN for a ledger test.",
+        });
+
+        var unitId = await CreatedIdAsync("/api/v1/inventory", new
+        {
+            vehicleId, rooftopId, stockNumber, costAmount = Cost, costCurrency = "USD",
+        });
+
+        // Through the workshop on the dealership's own money, which is what
+        // makes the work capitalise rather than become a charge.
+        var jobId = await CreatedIdAsync("/api/v1/repair-orders", new
+        {
+            rooftopId, customerId, vehicleId, currency = "USD",
+            complaint = "Make it saleable.", odometerReading = 40_000,
+        });
+
+        using (var line = await PostAsync($"/api/v1/repair-orders/{jobId}/lines", Manager, new
+        {
+            kind = "Labour", description = "Recon before it goes on the lot",
+            hours = 3m, rate = 60m, payType = "Internal",
+        }))
+        {
+            line.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        foreach (var status in new[] { "InProgress", "Completed", "Invoiced" })
+        {
+            using var moved = await PostAsync($"/api/v1/repair-orders/{jobId}/status", Manager, new { status });
+            moved.StatusCode.Should().Be(HttpStatusCode.OK, because: await moved.Content.ReadAsStringAsync());
+        }
+
+        // The car now says what it is carried at, rather than only what it cost.
+        using (var carried = await SendAsync(HttpMethod.Get, $"/api/v1/inventory/{unitId}", Manager))
+        {
+            var unit = await carried.Content.ReadFromJsonAsync<JsonElement>();
+
+            unit.GetProperty("reconditioningAmount").GetDecimal().Should().Be(Recon,
+                because: "the work went onto this car, not merely into account 1300");
+            unit.GetProperty("bookValueAmount").GetDecimal().Should().Be(Cost + Recon);
+            unit.GetProperty("costAmount").GetDecimal().Should().Be(Cost,
+                because: "acquisition cost is still acquisition cost; the book value is the sum");
+
+            // And where it came from, which a running total could not answer.
+            var charges = unit.GetProperty("reconditioning").EnumerateArray().ToList();
+            charges.Should().ContainSingle();
+            charges[0].GetProperty("sourceRepairOrderId").GetString().Should().Be(jobId);
+        }
+
+        using (var available = await PostAsync($"/api/v1/inventory/{unitId}/status", Manager,
+            new { status = "Available" }))
+        {
+            available.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        var dealId = await CreatedIdAsync(Deals, new
+        {
+            rooftopId, customerId, inventoryUnitId = unitId, currency = "USD",
+            salespersonUserId = DevelopmentSeeder.DevUsers.Salesperson,
+        });
+
+        using (var terms = await PostAsync($"{Deals}/{dealId}/terms", Manager, new
+        {
+            charges = new object[]
+            {
+                new { kind = "VehiclePrice", description = "The car", amount = Price },
+            },
+        }))
+        {
+            terms.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        foreach (var status in new[] { "Submitted", "Approved", "Delivered" })
+        {
+            using var moved = await PostAsync($"{Deals}/{dealId}/status", Manager, new { status });
+            moved.StatusCode.Should().Be(HttpStatusCode.OK, because: await moved.Content.ReadAsStringAsync());
+        }
+
+        var purchase = await EntryForReferenceAsync(stockNumber);
+        var recon = await EntryForReferenceAsync(jobId);
+        var delivery = await EntryForAsync(dealId);
+
+        var onto = SumFor(purchase, "1300", "debit") + SumFor(recon, "1300", "debit");
+        var off = SumFor(delivery, "1300", "credit");
+
+        onto.Should().Be(Cost + Recon, because: "both the purchase and the recon went onto the car");
+        off.Should().Be(Cost + Recon,
+            because: "delivery relieves what the car is CARRIED at, not what it was bought for");
+        (onto - off).Should().Be(0m,
+            because: "a reconditioned car that came and went must leave inventory exactly as it "
+                + "found it. Before 2026-09-19 this was short by the recon, every time, forever");
+
+        // The number a manager is actually looking at.
+        SumFor(delivery, "5000", "debit").Should().Be(Cost + Recon);
+        (Price - SumFor(delivery, "5000", "debit")).Should().Be(Price - Cost - Recon,
+            because: "gross is the price less everything the car cost to make saleable");
+    }
+
+    [Fact]
     public async Task A_delivery_is_never_posted_twice()
     {
         var sale = await DeliverAsync();

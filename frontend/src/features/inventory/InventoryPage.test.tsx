@@ -12,7 +12,7 @@
 //   happy path is not finished, and this file is what stops that claim being
 //   taken on trust.
 
-import { renderAtRecordRoute, screen } from '../../test/render';
+import { renderAtRecordRoute, screen, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { InventoryPage } from './InventoryPage';
@@ -29,6 +29,8 @@ const unit: InventoryUnitSummary = {
   vehicleDisplayName: '2021 Toyota RAV4',
   costAmount: 24500,
   costCurrency: 'USD',
+  reconditioningAmount: 0,
+  bookValueAmount: 24500,
 };
 
 /**
@@ -508,5 +510,84 @@ describe('a car reached by its own address', () => {
 
     await screen.findByText(/That record cannot be opened/);
     expect(screen.getByRole('button', { name: /NAG-1042/ })).toBeVisible();
+  });
+});
+
+/**
+ * What a car is carried at (2026-09-19).
+ *
+ * The band used to show one money figure — acquisition cost — while the
+ * workshop posted reconditioning to the ledger with nothing recording which car
+ * absorbed it. Delivery then relieved the purchase price alone, so used-vehicle
+ * gross was overstated by exactly the recon spend and account 1300 never came
+ * back down. These assert the screen now separates the three figures, because
+ * conflating them is how that survived.
+ */
+describe('what is in the car', () => {
+  const reconditioned = {
+    ...unit,
+    costAmount: 14500,
+    costCurrency: 'USD',
+    reconditioningAmount: 180,
+    bookValueAmount: 14680,
+    acquiredOn: null,
+    history: [],
+    reconditioning: [
+      {
+        amount: 180,
+        currency: 'USD',
+        sourceRepairOrderId: '77777777-7777-7777-7777-777777777777',
+        occurredAt: '2026-09-19T09:00:00Z',
+      },
+    ],
+  };
+
+  it('shows what was paid, what was spent, and the two added up', async () => {
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: { ok: true, body: reconditioned },
+    });
+    renderStock(`/inventory/${unit.id}`);
+
+    const band = await screen.findByRole('region', { name: /NAG-1042/ });
+
+    // Three separate numbers, not one that quietly means two things.
+    expect(within(band).getByText('$14,500.00')).toBeVisible();
+    expect(within(band).getByText('$180.00')).toBeVisible();
+    expect(within(band).getByText('$14,680.00')).toBeVisible();
+    expect(within(band).getByText('Total in the car')).toBeVisible();
+  });
+
+  it('says a car has absorbed nothing rather than showing it as zero money', async () => {
+    // "none yet" and "$0.00" read differently: one is a car nobody has spent on,
+    // the other looks like a figure somebody computed.
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: {
+        ok: true,
+        body: { ...reconditioned, reconditioningAmount: 0, bookValueAmount: 14500, reconditioning: [] },
+      },
+    });
+    renderStock(`/inventory/${unit.id}`);
+
+    const band = await screen.findByRole('region', { name: /NAG-1042/ });
+    expect(within(band).getByText('none yet')).toBeVisible();
+    expect(within(band).queryByText('$0.00')).not.toBeInTheDocument();
+  });
+
+  it('will not invent a book value for a car whose purchase price nobody entered', async () => {
+    // A smaller number wearing the confidence of a complete one is worse than
+    // saying the figure is not known.
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: {
+        ok: true,
+        body: { ...reconditioned, costAmount: null, costCurrency: null, bookValueAmount: null },
+      },
+    });
+    renderStock(`/inventory/${unit.id}`);
+
+    const band = await screen.findByRole('region', { name: /NAG-1042/ });
+    expect(within(band).getAllByText('not recorded').length).toBeGreaterThan(0);
   });
 });

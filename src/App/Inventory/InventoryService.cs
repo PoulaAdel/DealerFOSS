@@ -141,9 +141,13 @@ public sealed class InventoryService(
         var rows = await Join(units.OrderBy(u => u.StockNumber).Skip(skip).Take(take))
             .ToListAsync(cancellationToken);
 
+        var recon = await ReconditioningForAsync(
+            rows.Select(r => r.Unit.Id).ToList(), cancellationToken);
+
         return Result.Success(new Page<InventoryUnitSummary>(
             rows.OrderBy(row => row.Unit.StockNumber, StringComparer.Ordinal)
-                .Select(row => Summarize(row.Unit, row.Vehicle))
+                .Select(row => Summarize(
+                    row.Unit, row.Vehicle, recon.GetValueOrDefault(row.Unit.Id)))
                 .ToList(),
             total,
             skip,
@@ -174,7 +178,8 @@ public sealed class InventoryService(
             .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
-        return Result.Success(Describe(row.Unit, row.Vehicle, history));
+        return Result.Success(Describe(
+            row.Unit, row.Vehicle, history, await ChargesForAsync(unitId, cancellationToken)));
     }
 
     public async Task<Result<IReadOnlyList<InventoryUnitSummary>>> GetManyAsync(
@@ -207,8 +212,12 @@ public sealed class InventoryService(
 
         var rows = await Join(units).ToListAsync(cancellationToken);
 
+        var recon = await ReconditioningForAsync(
+            rows.Select(r => r.Unit.Id).ToList(), cancellationToken);
+
         return Result.Success<IReadOnlyList<InventoryUnitSummary>>(
-            rows.Select(row => Summarize(row.Unit, row.Vehicle)).ToList());
+            rows.Select(row => Summarize(
+                row.Unit, row.Vehicle, recon.GetValueOrDefault(row.Unit.Id))).ToList());
     }
 
     public async Task<Result<InventoryUnitDetail>> ReceiveAsync(
@@ -323,7 +332,8 @@ public sealed class InventoryService(
                 "InventoryUnit", received.Id.ToString(), unit.RooftopId.Value, "Received", null, null),
             cancellationToken);
 
-        return Result.Success(Describe(received, vehicle, received.StatusHistory));
+        // A car just taken in has absorbed nothing yet, which is a known amount.
+        return Result.Success(Describe(received, vehicle, received.StatusHistory, []));
     }
 
     public async Task<Result<InventoryUnitDetail>> ChangeStatusAsync(
@@ -388,7 +398,8 @@ public sealed class InventoryService(
             .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
-        return Result.Success(Describe(unit, vehicle, history));
+        return Result.Success(Describe(
+            unit, vehicle, history, await ChargesForAsync(unitId, cancellationToken)));
     }
 
     public async Task<Result<Guid?>> FindOwnedAsync(
@@ -416,6 +427,66 @@ public sealed class InventoryService(
             .FirstOrDefaultAsync(cancellationToken);
 
         return Result.Success(unitId);
+    }
+
+    public async Task<Result> CapitaliseReconditioningAsync(
+        Guid unitId,
+        Money amount,
+        Guid sourceRepairOrderId,
+        CancellationToken cancellationToken)
+    {
+        var unit = await _db.InventoryUnits
+            .AsNoTracking()
+            .SingleOrDefaultAsync(u => u.Id == unitId, cancellationToken);
+
+        if (unit is null)
+        {
+            return Result.Failure(InventoryErrors.UnitNotFound);
+        }
+
+        // Manage, not Read. Changing what a car is carried at moves a number on
+        // the balance sheet, so it is the same right as moving the car itself —
+        // and the workshop caller already holds it for the rooftop it is
+        // invoicing at.
+        if (!await _access.IsAuthorizedAsync(
+            _currentUser.Id, ManagePermission, unit.RooftopId, cancellationToken))
+        {
+            return Result.Failure(InventoryErrors.Forbidden);
+        }
+
+        // A car costed in one currency cannot absorb a charge in another without
+        // somebody inventing a rate, and a rate invented at posting time is a
+        // guess buried in the balance sheet. Refuse instead. A unit with no
+        // recorded cost has no currency to disagree with, so it is allowed —
+        // the charge is still attributed, and the book value stays null until a
+        // purchase price is entered.
+        if (unit.CostCurrency is { } costCurrency
+            && !string.Equals(costCurrency, amount.Currency, StringComparison.Ordinal))
+        {
+            return Result.Failure(InventoryErrors.ReconditioningCurrencyMismatch);
+        }
+
+        var charge = ReconditioningCharge.Record(
+            unitId, unit.RooftopId, amount, sourceRepairOrderId, _clock.UtcNow);
+
+        if (charge.IsFailure)
+        {
+            return Result.Failure(charge.Error);
+        }
+
+        _db.Set<ReconditioningCharge>().Add(charge.Value);
+
+        // Saved by the caller's transaction, not here: this runs inside the
+        // invoicing transaction so a car cannot end up carrying a charge for a
+        // posting that rolled back.
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, ManagePermission, AuditOutcome.Allowed,
+                "InventoryUnit", unitId.ToString(), unit.RooftopId.Value,
+                $"Reconditioning of {amount} capitalised from repair order {sourceRepairOrderId}",
+                null, null),
+            cancellationToken);
+
+        return Result.Success();
     }
 
     public async Task<Result<StockAging>> AgingAsync(
@@ -532,14 +603,69 @@ public sealed class InventoryService(
 
     private sealed record UnitRow(InventoryUnit Unit, Vehicle Vehicle);
 
-    private static InventoryUnitSummary Summarize(InventoryUnit u, Vehicle v) =>
+    /// <summary>
+    /// Reconditioning per unit, for a page of units, in one query.
+    ///
+    /// <para>
+    /// Summed rather than stored, like every other balance here — see
+    /// <see cref="ReconditioningCharge"/> for why a running total on the unit
+    /// would not be able to answer "where did this come from". Grouped in one
+    /// round trip rather than per row, because the stock list is fifty cars and
+    /// this would otherwise be fifty queries to draw one table.
+    /// </para>
+    /// </summary>
+    /// <summary>Every charge on one unit, oldest first.</summary>
+    private async Task<IReadOnlyList<ReconditioningCharge>> ChargesForAsync(
+        Guid unitId,
+        CancellationToken cancellationToken) =>
+        await _db.Set<ReconditioningCharge>()
+            .AsNoTracking()
+            .Where(c => c.InventoryUnitId == unitId)
+            .OrderBy(c => c.OccurredAt)
+            .ToListAsync(cancellationToken);
+
+    private async Task<Dictionary<Guid, decimal>> ReconditioningForAsync(
+        List<Guid> unitIds,
+        CancellationToken cancellationToken)
+    {
+        if (unitIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await _db.Set<ReconditioningCharge>()
+            .AsNoTracking()
+            .Where(c => unitIds.Contains(c.InventoryUnitId))
+            .GroupBy(c => c.InventoryUnitId)
+            .Select(g => new { UnitId = g.Key, Total = g.Sum(c => c.Amount) })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(r => r.UnitId, r => r.Total);
+    }
+
+    /// <summary>
+    /// Acquisition plus reconditioning, or null when acquisition is unknown.
+    ///
+    /// <para>
+    /// Null rather than treating an unrecorded cost as zero: a car whose
+    /// purchase price nobody entered has an unknown book value, and answering
+    /// "the recon so far" would be a smaller number wearing the confidence of a
+    /// complete one. The ledger is relieved by what is known; a car with no
+    /// recorded cost relieves nothing, exactly as before.
+    /// </para>
+    /// </summary>
+    private static decimal? BookValue(decimal? cost, decimal reconditioning) =>
+        cost is null ? null : cost.Value + reconditioning;
+
+    private static InventoryUnitSummary Summarize(InventoryUnit u, Vehicle v, decimal recon) =>
         new(u.Id, u.StockNumber, u.RooftopId, u.Status.ToString(), v.Id, v.Vin, v.DisplayName,
-            u.CostAmount, u.CostCurrency);
+            u.CostAmount, u.CostCurrency, recon, BookValue(u.CostAmount, recon));
 
     private static InventoryUnitDetail Describe(
         InventoryUnit u,
         Vehicle v,
-        IReadOnlyList<InventoryStatusChange> history) =>
+        IReadOnlyList<InventoryStatusChange> history,
+        IReadOnlyList<ReconditioningCharge> reconditioning) =>
         new(u.Id,
             u.StockNumber,
             u.RooftopId,
@@ -555,6 +681,13 @@ public sealed class InventoryService(
                 .ThenBy(h => h.Sequence)
                 .Select(h => new InventoryStatusEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt, h.Note))
+                .ToList(),
+            reconditioning.Sum(c => c.Amount),
+            BookValue(u.CostAmount, reconditioning.Sum(c => c.Amount)),
+            reconditioning
+                .OrderBy(c => c.OccurredAt)
+                .Select(c => new ReconditioningEntry(
+                    c.Amount, c.Currency, c.SourceRepairOrderId, c.OccurredAt))
                 .ToList());
 }
 
@@ -580,4 +713,21 @@ internal static class InventoryErrors
     public static Error StockNumberTaken(string stockNumber) => Error.Conflict(
         "inventory.stock_number_taken",
         $"Stock number {stockNumber} is already in use at this rooftop.");
+
+    public static Error UnitNotFound { get; } = Error.NotFound(
+        "inventory.unit_not_found",
+        "That car is not in stock here.");
+
+    public static Error ReconditioningIsNothing { get; } = Error.Validation(
+        "inventory.reconditioning_is_nothing",
+        "Reconditioning of nothing is not a charge worth recording.");
+
+    /// <summary>
+    /// Refused rather than converted. A car costed in one currency carrying a
+    /// charge in another has a book value that is not a number, and inventing a
+    /// rate at the moment of posting would bury that in the balance sheet.
+    /// </summary>
+    public static Error ReconditioningCurrencyMismatch { get; } = Error.Validation(
+        "inventory.reconditioning_currency_mismatch",
+        "Reconditioning must be in the same currency as the car it goes onto.");
 }

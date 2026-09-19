@@ -77,6 +77,8 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, I
 
     public DbSet<InventoryStatusChange> InventoryStatusHistory => Set<InventoryStatusChange>();
 
+    public DbSet<ReconditioningCharge> ReconditioningCharges => Set<ReconditioningCharge>();
+
     public DbSet<Lead> Leads => Set<Lead>();
 
     public DbSet<LeadStatusChange> LeadHistory => Set<LeadStatusChange>();

@@ -20,12 +20,12 @@ the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no cross-module actions and the arrival-motion work recorded in
 the device-only motion audit. The pager finding closed on 2026-09-19; the token
 migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 836/836,
+Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 837/837,
 `verify-e2e.ps1` PASS against the configured SQL container (the canonical LocalDB
 catalogue is detached with its MDF still on disk; see the milestone below),
 frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 470/470, and `npm run build` all pass
+`npm run typecheck`, `npm test` 473/473, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1491,3 +1491,21 @@ to come.
   already existed. No phase exit criterion or hand-set stage share changed —
   this closes an explicitly named gap in ADR-024's own consequences, not a
   roadmap item.
+
+- **2026-09-19 — A reconditioned car costs what it cost, and inventory comes back to zero.** The workshop has capitalised internal work to 1300 Vehicle inventory since the day it was built, correctly and with a comment saying why. Nothing recorded **which car** absorbed it: `FindOwnedAsync` returned the unit id and the caller used it as a yes/no. So delivery relieved 1300 by the unit's acquisition cost alone, and two things followed.
+
+  **Used-vehicle gross was overstated by exactly the recon spend** — the precise failure the posting's own comment in `AccountingService` says it exists to prevent. And **1300 grew forever**: every reconditioned car left its recon behind, so vehicle inventory on the balance sheet drifted permanently upward and stopped tying to the cars on the lot. Neither was catchable by the balancing checks, because every entry balanced on its own. It was an account that never returned to zero, not an entry that failed to add up.
+
+  **`ReconditioningCharge`**, one row per capitalised posting, naming the car, the amount and the repair order. A running total on the unit would have fixed the arithmetic and lost the answer to "where did this $180 come from" — the same reasoning that made `CustomerCredit` a row drawn down by uses rather than a balance. **Append-only**, so a correction is a negative row and never an edit: a carrying value that can be quietly rewritten is one nobody can audit. Written inside the invoicing transaction, so a rolled-back invoice leaves no charge behind.
+
+  **One stay in stock is one unit**, so no separate "stock stay" is modelled. `FindOwnedAsync` excludes Sold and Removed, so a car that leaves and comes back is received as a new unit with a new stock number and starts from nothing. The `ReconditioningCharge` header names itself as the file that breaks first if that ever stops being true.
+
+  **What was deliberately not done.** The register row also asked for the unit id stamped on the ledger line. `JournalLine` has no subject column, and adding one touches an `IAppendOnly` entity and every posting path. The trail exists without it and runs both ways: the invoice's journal entry carries the repair order id in its `Reference`, and the charge names the same repair order — so 1300 walks back to a car, and a car walks forward to its postings. A subject column on the ledger remains a reasonable thing to want; it is not needed for this.
+
+  Also: currency is refused rather than converted, because a rate invented at posting time is a guess buried in the balance sheet. A car with no recorded purchase price keeps a **null** book value rather than reporting its recon as though it were the whole figure, and relieves nothing on sale — exactly as before.
+
+  **The test was checked against the bug, not just against the fix.** `A_reconditioned_car_leaves_nothing_behind_on_inventory_either` passes now; reverting the one line in `DealService` to the old `CostAmount` makes it fail with *"Expected off to be 14680M … but found 14500.00M (difference of -180.00)"*. A test that passes on the broken code proves nothing, and the sibling test that has guarded the no-recon round trip since 2026-09-10 is exactly why this needed its own.
+
+  The stock detail band now shows acquisition, reconditioning and the total separately, with the postings behind it. The list column still reads "Acquisition cost" — which is what it is, and honest, so it was left alone.
+
+  Evidence: `dotnet build` 0/0, `dotnet test` **837/837** (was 828 — nine new), `verify-e2e.ps1` PASS against the SQL container, `npm audit` clean at high, `npm run typecheck`, `npm test` **473/473** (was 460), `npm run build`.

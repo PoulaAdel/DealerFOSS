@@ -306,6 +306,11 @@ public sealed class ReportingCompositionTests
             Guid vehicleId, RooftopId rooftopId, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        /// <summary>Nor this: the dashboard reads stock, it does not recondition it.</summary>
+        public Task<Result> CapitaliseReconditioningAsync(
+            Guid unitId, Money amount, Guid sourceRepairOrderId, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task<Result<StockAging>> AgingAsync(
             StockAgingQuery query,
             CancellationToken cancellationToken)

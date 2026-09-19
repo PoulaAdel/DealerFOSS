@@ -165,9 +165,23 @@ export interface InventoryUnitSummary {
   vehicleId: string;
   vin: string;
   vehicleDisplayName: string;
-  /** Recorded acquisition cost; excludes reconditioning posted only to the ledger. */
+  /** What the dealership paid to acquire the car, and nothing else. */
   costAmount: number | null;
   costCurrency: string | null;
+
+  /**
+   * Work capitalised onto this car since it came into stock. Zero, never null:
+   * a car with no recon has absorbed nothing, which is a known amount.
+   */
+  reconditioningAmount: number;
+
+  /**
+   * Acquisition plus reconditioning — what the car is carried at, and what
+   * delivery relieves from the ledger. Null exactly when `costAmount` is,
+   * because a book value built on an unknown purchase price would be a smaller
+   * number wearing the confidence of a complete one.
+   */
+  bookValueAmount: number | null;
 }
 
 /** One unit in full, as the detail band below the stock list shows it. */
@@ -175,6 +189,16 @@ export interface InventoryUnitDetail extends InventoryUnitSummary {
   /** ISO date. Null for a unit taken in before the field was recorded. */
   acquiredOn: string | null;
   history: InventoryStatusEntry[];
+
+  /** Every posting behind `reconditioningAmount`, oldest first. */
+  reconditioning: ReconditioningEntry[];
+}
+
+export interface ReconditioningEntry {
+  amount: number;
+  currency: string;
+  sourceRepairOrderId: string;
+  occurredAt: string;
 }
 
 export interface InventoryStatusEntry {

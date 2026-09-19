@@ -237,6 +237,31 @@ function UnitDetail({
           <AcquisitionCost unit={unit} />
         </dd>
 
+        {/* The three figures separately, because conflating them is the defect
+            this band was extended to close on 2026-09-19: recon used to post to
+            the ledger with nothing recording which car absorbed it, so a
+            delivered car relieved its purchase price alone and used-vehicle
+            gross was overstated by exactly the recon spend. Acquisition cost is
+            still shown, because "what did we pay" and "what is in it" are
+            different questions a manager asks on the same screen. */}
+        <dt>{t('stock.reconditioning')}</dt>
+        <dd>
+          {unit.reconditioningAmount === 0 || unit.costCurrency === null ? (
+            <span className="muted">{t('stock.reconditioningNone')}</span>
+          ) : (
+            <bdi>{format.money(unit.reconditioningAmount, unit.costCurrency)}</bdi>
+          )}
+        </dd>
+
+        <dt>{t('stock.bookValue')}</dt>
+        <dd>
+          {unit.bookValueAmount === null || unit.costCurrency === null ? (
+            <span className="muted">{t('stock.costUnknown')}</span>
+          ) : (
+            <bdi>{format.money(unit.bookValueAmount, unit.costCurrency)}</bdi>
+          )}
+        </dd>
+
         <dt>{t('stock.acquired')}</dt>
         <dd>
           {unit.acquiredOn === null

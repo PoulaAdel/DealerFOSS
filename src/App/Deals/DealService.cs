@@ -638,6 +638,14 @@ public sealed class DealService(
 
         // Read the cost before the car moves — a delivered unit still has to
         // report what it cost, and the ledger needs it to show gross profit.
+        //
+        // BOOK VALUE, NOT ACQUISITION COST. Until 2026-09-19 this read
+        // CostAmount, so a car that had been through the workshop was relieved
+        // from 1300 for less than went in: used-vehicle gross was overstated by
+        // exactly the reconditioning spend — the failure the posting comment in
+        // AccountingService says it exists to prevent — and the recon stayed in
+        // vehicle inventory after the car had gone. BookValueAmount is
+        // acquisition plus everything capitalised onto this stay in stock.
         decimal vehicleCost = 0m;
         if (next == DealStatus.Delivered)
         {
@@ -647,7 +655,10 @@ public sealed class DealService(
                 return Result.Failure<DealDetail>(unit.Error);
             }
 
-            vehicleCost = unit.Value.CostAmount ?? 0m;
+            // Null when nobody recorded a purchase price. Relieving nothing is
+            // what happened before and stays right: inventing a cost at the
+            // moment of sale would put a made-up gross on the books.
+            vehicleCost = unit.Value.BookValueAmount ?? 0m;
         }
 
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);

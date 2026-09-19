@@ -77,3 +77,36 @@ internal sealed class InventoryStatusChangeConfiguration : IEntityTypeConfigurat
         builder.HasIndex(x => new { x.InventoryUnitId, x.OccurredAt, x.Sequence });
     }
 }
+
+/// <summary>
+/// See <see cref="ReconditioningCharge"/>. No cascade from the unit: these are
+/// the evidence behind a number on the balance sheet, and a row that can be
+/// swept away by deleting its parent is not evidence.
+/// </summary>
+internal sealed class ReconditioningChargeConfiguration
+    : IEntityTypeConfiguration<ReconditioningCharge>
+{
+    public void Configure(EntityTypeBuilder<ReconditioningCharge> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ToTable("ReconditioningCharges", VehicleSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+        builder.Property(x => x.RooftopId)
+            .HasConversion(id => id.Value, value => new RooftopId(value));
+
+        // Every read of these is "what has this car absorbed", in order.
+        builder.HasIndex(x => new { x.InventoryUnitId, x.OccurredAt });
+
+        // And the other direction: which car did this repair order pay for.
+        builder.HasIndex(x => x.SourceRepairOrderId);
+
+        builder.HasOne<InventoryUnit>()
+            .WithMany()
+            .HasForeignKey(x => x.InventoryUnitId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
