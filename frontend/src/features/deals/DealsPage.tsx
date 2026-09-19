@@ -32,6 +32,7 @@ import { useRecordRoute } from '../../shared/useRecordRoute';
 import { DealTerms } from './DealTerms';
 import { DealProducts } from './DealProducts';
 import { DealTax, SoldTax } from './DealTax';
+import { DealRegistrationAddress, SoldRegistrationAddress } from './DealRegistrationAddress';
 import { TakePayment } from '../receivables/TakePayment';
 import { StartDeal } from './StartDeal';
 import type { DealDetail, DealStatus, DealSummary, Page } from '../../shared/contracts';
@@ -353,12 +354,14 @@ function DealPanel({
           <DealTerms deal={deal} onSaved={onChanged} />
           <DealProducts deal={deal} onChanged={onChanged} />
           <DealTax deal={deal} onChanged={onChanged} />
+          <DealRegistrationAddress deal={deal} onChanged={onChanged} />
         </>
       ) : (
         <>
           <p className="note">{t('deals.frozen')}</p>
           {deal.products.length === 0 ? null : <SoldProducts deal={deal} onChanged={onChanged} />}
           {deal.taxLines.length === 0 ? null : <SoldTax deal={deal} />}
+          <SoldRegistrationAddress deal={deal} />
 
           {/* Renders nothing until the car is delivered, because nothing is
               owed until then. A deal being worked is not a debt. */}

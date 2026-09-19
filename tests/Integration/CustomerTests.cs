@@ -213,6 +213,54 @@ public sealed class CustomerTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task A_manager_can_set_and_clear_a_customers_address()
+    {
+        var id = await AddPersonAsync(UniqueSurname());
+
+        using var set = await PutAsync($"{Endpoint}/{id}/address", DevelopmentSeeder.DevUsers.OrganizationWideEmail,
+            new
+            {
+                address = new
+                {
+                    line1 = "18 Kestrel Way",
+                    line2 = (string?)null,
+                    city = "Springfield",
+                    administrativeArea = "IL",
+                    county = "Sangamon",
+                    postalCode = "62704",
+                    country = "US",
+                },
+            });
+
+        set.StatusCode.Should().Be(HttpStatusCode.OK);
+        var withAddress = await set.Content.ReadFromJsonAsync<JsonElement>();
+        withAddress.GetProperty("address").GetProperty("city").GetString().Should().Be("Springfield");
+        withAddress.GetProperty("address").GetProperty("county").GetString().Should().Be("Sangamon");
+
+        using var cleared = await PutAsync($"{Endpoint}/{id}/address", DevelopmentSeeder.DevUsers.OrganizationWideEmail,
+            new { address = (object?)null });
+
+        cleared.StatusCode.Should().Be(HttpStatusCode.OK);
+        var withoutAddress = await cleared.Content.ReadFromJsonAsync<JsonElement>();
+        withoutAddress.GetProperty("address").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task An_advisor_cannot_set_a_customers_address()
+    {
+        // Reading a customer and changing their address are different acts, the
+        // same split as the credit limit — an advisor holds Customers.Read, not
+        // Customers.Manage.
+        var id = await AddPersonAsync(UniqueSurname());
+
+        using var response = await PutAsync(
+            $"{Endpoint}/{id}/address", DevelopmentSeeder.DevUsers.FirstRooftopOnlyEmail,
+            new { address = new { line1 = "1 High St", city = "Boston", country = "US" } });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     // --- helpers -----------------------------------------------------------
 
     /// <summary>Surnames unique per run, so tests do not collide on shared data.</summary>
@@ -270,6 +318,22 @@ public sealed class CustomerTests(HostFixture fixture)
         var session = await _fixture.SignInAsync(email, Tenant);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(Endpoint, UriKind.Relative))
+        {
+            Content = JsonContent.Create(body),
+        };
+        request.Headers.Add("X-Tenant", Tenant);
+        request.Headers.Add("Cookie", $"dfoss_session={session.SessionToken}");
+        request.Headers.Add("X-CSRF-Token", session.AntiForgeryToken);
+
+        return await client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> PutAsync(string path, string email, object body)
+    {
+        using var client = _fixture.CreateClient();
+        var session = await _fixture.SignInAsync(email, Tenant);
+
+        using var request = new HttpRequestMessage(HttpMethod.Put, new Uri(path, UriKind.Relative))
         {
             Content = JsonContent.Create(body),
         };

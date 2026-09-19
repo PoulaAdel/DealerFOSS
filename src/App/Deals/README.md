@@ -15,6 +15,8 @@ the organization; the deal is not.
 | `DealStatus.cs` | the statuses, the legal moves, and the kinds of charge |
 | `DealCharge.cs` | one line on the deal, with the sign rules |
 | `TradeIn.cs` | the old car: allowance, payoff, equity |
+| `RegistrationAddress.cs` | where the car will be registered or garaged (ADR-024) |
+| `DealTaxLine.cs` | one tax charged, with `TaxAddress`, the narrower snapshot it was resolved from |
 | `DealStatusChange.cs` | one line of history; append-only |
 | `DealService.cs` | the workflows — **rooftop scope, approval split, inventory hold** |
 | `DealEndpoints.cs` | HTTP surface under `/api/v1/deals` |
@@ -58,6 +60,17 @@ single most common source of an argument at the desk, so it is named rather than
 hidden.
 
 Every amount on a deal shares the deal's currency, so a total can never mix two.
+
+## The registration address
+
+`Deal.RegistrationAddress`, set through `POST /{id}/registration-address`, is
+where the buyer will register or garage the car — the fact ADR-024 traces tax
+to, not the customer's own mailing address and not the dealer's location. It is
+a deal field on purpose: a customer who moves house afterwards must not
+retroactively change what a past sale was taxed at. It freezes with the rest of
+the deal's terms once submitted, the same rule as the charges and the tax lines.
+`TaxAddress` next to it in `DealTaxLine.cs` is a different, narrower thing — the
+four fields a rate needs, snapshotted onto the tax lines once resolved.
 
 ## Statuses
 

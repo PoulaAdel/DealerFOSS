@@ -461,6 +461,16 @@ export const ar: Catalogue = {
   'customers.primary': 'الأساسي',
   'customers.address': 'العنوان',
   'customers.noAddress': 'لا يوجد عنوان مسجَّل.',
+  'customers.addAddress': 'إضافة عنوان',
+  'customers.editAddress': 'تعديل',
+  'customers.removeAddress': 'إزالة العنوان',
+  'customers.addressLine1': 'العنوان، السطر 1',
+  'customers.addressLine2': 'العنوان، السطر 2',
+  'customers.addressCity': 'المدينة',
+  'customers.addressArea': 'الولاية أو المنطقة',
+  'customers.addressCounty': 'المقاطعة',
+  'customers.addressPostalCode': 'الرمز البريدي',
+  'customers.addressCountry': 'الدولة',
   'customers.oneOfTheseIsThem': 'أحد هؤلاء هو المقصود',
   'customers.addAnyway': 'لا أحد منهم — أضِف على أي حال',
 
@@ -806,6 +816,20 @@ export const ar: Catalogue = {
   'tax.from.Pack': 'جدول نسب',
   'tax.from.Vendor': 'مزوّد ضرائب',
   'tax.fromPack': '{pack} v{version}',
+
+  // --- Registration address on a deal (ADR-024) ------------------------------
+  'deals.registrationAddress': 'عنوان التسجيل',
+  'deals.registrationAddressLede':
+    'أين ستُسجَّل هذه السيارة أو تُركَن. ليس دائمًا نفس عنوان العميل.',
+  'deals.regLine1': 'العنوان، السطر 1',
+  'deals.regLine2': 'العنوان، السطر 2',
+  'deals.regCity': 'المدينة',
+  'deals.regArea': 'الولاية أو المنطقة',
+  'deals.regCounty': 'المقاطعة',
+  'deals.regPostalCode': 'الرمز البريدي',
+  'deals.regCountry': 'الدولة',
+  'deals.regSave': 'حفظ العنوان',
+  'deals.regClear': 'مسح العنوان',
 
   'startDeal.title': 'إنشاء صفقة',
   'startDeal.findBuyer': 'ابحث عن المشتري',

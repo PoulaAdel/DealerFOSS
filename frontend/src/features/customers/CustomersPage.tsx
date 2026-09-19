@@ -33,7 +33,7 @@ import { RecordBandStatus } from '../../shared/RecordBand';
 import { InlineEdit } from '../../shared/InlineEdit';
 import { useRecordRoute } from '../../shared/useRecordRoute';
 import { useDebounced } from '../../shared/useDebounced';
-import type { CustomerDetail, CustomerSummary, NewCustomer, Page } from '../../shared/contracts';
+import type { AddressView, CustomerDetail, CustomerSummary, NewCustomer, Page } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
@@ -278,7 +278,7 @@ export function CustomersPage() {
         <CustomerPanel
           customer={record.state.record}
           onClose={record.close}
-          onCreditLimitChanged={record.refresh}
+          onChanged={record.refresh}
         />
       )}
     </>
@@ -300,18 +300,16 @@ export function CustomersPage() {
  * you the link" instead of "search for Okonkwo, no, the other one".
  */
 function CustomerPanel({
-  customer, onClose, onCreditLimitChanged,
+  customer, onClose, onChanged,
 }: {
   customer: CustomerDetail;
   onClose: () => void;
 
-  /** The record changed in place after a credit-limit save — see useRecordRoute.refresh. */
-  onCreditLimitChanged: (customer: CustomerDetail) => void;
+  /** The record changed in place after a save — see useRecordRoute.refresh. */
+  onChanged: (customer: CustomerDetail) => void;
 }) {
   const { t, format } = useI18n();
   const label = useEnumLabel();
-
-  const address = customer.address;
 
   async function saveCreditLimit(next: string) {
     const trimmed = next.trim();
@@ -321,7 +319,7 @@ function CustomerPanel({
       throw new Error('A credit limit is a number of zero or more, or left blank for no limit.');
     }
 
-    onCreditLimitChanged(
+    onChanged(
       await put<CustomerDetail>(`/customers/${customer.id}/credit-limit`, { limit }),
     );
   }
@@ -382,24 +380,7 @@ function CustomerPanel({
         </ul>
       )}
 
-      <h3>{t('customers.address')}</h3>
-      {address === null ? (
-        <p className="note">{t('customers.noAddress')}</p>
-      ) : (
-        <p className="note">
-          {[
-            address.line1,
-            address.line2,
-            address.city,
-            address.administrativeArea,
-            address.county,
-            address.postalCode,
-            address.country,
-          ]
-            .filter((part) => part !== null && part !== '')
-            .join(', ')}
-        </p>
-      )}
+      <CustomerAddress customer={customer} onChanged={onChanged} />
 
       <div className="actions">
         <button type="button" onClick={onClose}>
@@ -407,6 +388,203 @@ function CustomerPanel({
         </button>
       </div>
     </section>
+  );
+}
+
+/** The address editor's own draft shape — everything a string until it is saved. */
+type AddressDraft = {
+  line1: string;
+  line2: string;
+  city: string;
+  administrativeArea: string;
+  county: string;
+  postalCode: string;
+  country: string;
+};
+
+function draftFrom(address: AddressView | null): AddressDraft {
+  return {
+    line1: address?.line1 ?? '',
+    line2: address?.line2 ?? '',
+    city: address?.city ?? '',
+    administrativeArea: address?.administrativeArea ?? '',
+    county: address?.county ?? '',
+    postalCode: address?.postalCode ?? '',
+    country: address?.country ?? '',
+  };
+}
+
+/**
+ * The customer's own mailing address — not the registration address a sale is
+ * taxed at, which lives on the deal instead and is frozen with it (ADR-024).
+ * Idle shows what is on file, or that nothing is; editing replaces it with the
+ * seven fields, saved as one call the same way the deal's tax address is.
+ */
+function CustomerAddress({
+  customer, onChanged,
+}: {
+  customer: CustomerDetail;
+  onChanged: (customer: CustomerDetail) => void;
+}) {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<AddressDraft>(() => draftFrom(customer.address));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function startEditing() {
+    setDraft(draftFrom(customer.address));
+    setError(null);
+    setEditing(true);
+  }
+
+  async function save(address: AddressView | null) {
+    setError(null);
+    setBusy(true);
+
+    try {
+      onChanged(await put<CustomerDetail>(`/customers/${customer.id}/address`, { address }));
+      setEditing(false);
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const address = customer.address;
+
+  if (!editing) {
+    return (
+      <>
+        <h3>{t('customers.address')}</h3>
+        {address === null ? (
+          <p className="note">{t('customers.noAddress')}</p>
+        ) : (
+          <p className="note">
+            {[
+              address.line1,
+              address.line2,
+              address.city,
+              address.administrativeArea,
+              address.county,
+              address.postalCode,
+              address.country,
+            ]
+              .filter((part) => part !== null && part !== '')
+              .join(', ')}
+          </p>
+        )}
+        <div className="actions">
+          <button type="button" onClick={startEditing}>
+            {address === null ? t('customers.addAddress') : t('customers.editAddress')}
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <h3>{t('customers.address')}</h3>
+      <fieldset>
+        <legend className="visually-hidden">{t('customers.address')}</legend>
+
+        <label htmlFor="address-line1">{t('customers.addressLine1')}</label>
+        <input
+          id="address-line1"
+          value={draft.line1}
+          disabled={busy}
+          onChange={(e) => setDraft({ ...draft, line1: e.target.value })}
+        />
+
+        <label htmlFor="address-line2">{t('customers.addressLine2')}</label>
+        <input
+          id="address-line2"
+          value={draft.line2}
+          disabled={busy}
+          onChange={(e) => setDraft({ ...draft, line2: e.target.value })}
+        />
+
+        <label htmlFor="address-city">{t('customers.addressCity')}</label>
+        <input
+          id="address-city"
+          value={draft.city}
+          disabled={busy}
+          onChange={(e) => setDraft({ ...draft, city: e.target.value })}
+        />
+
+        <label htmlFor="address-area">{t('customers.addressArea')}</label>
+        <input
+          id="address-area"
+          value={draft.administrativeArea}
+          disabled={busy}
+          onChange={(e) => setDraft({ ...draft, administrativeArea: e.target.value })}
+        />
+
+        {/* Its own field, not folded into the state: US sales tax varies by
+            county too, and this is what feeds the deal's registration address. */}
+        <label htmlFor="address-county">{t('customers.addressCounty')}</label>
+        <input
+          id="address-county"
+          value={draft.county}
+          disabled={busy}
+          onChange={(e) => setDraft({ ...draft, county: e.target.value })}
+        />
+
+        <label htmlFor="address-postal">{t('customers.addressPostalCode')}</label>
+        <input
+          id="address-postal"
+          value={draft.postalCode}
+          disabled={busy}
+          onChange={(e) => setDraft({ ...draft, postalCode: e.target.value })}
+        />
+
+        <label htmlFor="address-country">{t('customers.addressCountry')}</label>
+        <input
+          id="address-country"
+          value={draft.country}
+          disabled={busy}
+          maxLength={2}
+          onChange={(e) => setDraft({ ...draft, country: e.target.value })}
+        />
+      </fieldset>
+
+      <p className="error" aria-live="polite">
+        {error ?? ''}
+      </p>
+
+      <div className="actions">
+        <button
+          type="button"
+          className="primary"
+          disabled={busy}
+          onClick={() =>
+            void save({
+              line1: draft.line1.trim(),
+              line2: draft.line2.trim() === '' ? null : draft.line2.trim(),
+              city: draft.city.trim(),
+              administrativeArea: draft.administrativeArea.trim() === '' ? null : draft.administrativeArea.trim(),
+              county: draft.county.trim() === '' ? null : draft.county.trim(),
+              postalCode: draft.postalCode.trim() === '' ? null : draft.postalCode.trim(),
+              country: draft.country.trim().toUpperCase(),
+            })
+          }
+        >
+          {busy ? t('common.saving') : t('common.save')}
+        </button>
+        <button type="button" disabled={busy} onClick={() => setEditing(false)}>
+          {t('common.cancel')}
+        </button>
+        {address === null ? null : (
+          <button type="button" disabled={busy} onClick={() => void save(null)}>
+            {t('customers.removeAddress')}
+          </button>
+        )}
+      </div>
+    </>
   );
 }
 

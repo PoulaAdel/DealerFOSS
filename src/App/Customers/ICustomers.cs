@@ -80,6 +80,17 @@ public interface ICustomers
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Replaces this customer's mailing address, or clears it with null. This is
+    /// the customer's own address for correspondence — not the registration or
+    /// garaging address that decides tax on a sale, which is recorded on the
+    /// deal instead and frozen with it (ADR-024).
+    /// </summary>
+    Task<Result<CustomerDetail>> SetAddressAsync(
+        Guid customerId,
+        AddressView? address,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// The credit limit alone, or null if there is no cap.
     /// </summary>
     /// <remarks>

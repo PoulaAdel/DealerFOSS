@@ -591,6 +591,26 @@ can do all of it.
   blank the whole workshop for a moment and rebuild it, losing anything half
   typed. It does not any more
 
+### An address can be recorded on a customer, and a car's own registration address — 19 Sep
+
+- **A customer's address can now be typed in and changed.** The field existed —
+  an address brought in by an import showed up on the customer's own screen —
+  but there was no way to add one by hand, or fix one that was wrong. There now
+  is: open the customer, press **Edit**, and it saves as one thing
+- **A deal now records where the car will actually be registered**, separately
+  from anybody's address book. This is not a second copy of the customer's
+  address — a company car is often registered at the business rather than
+  whoever is buying it, and a gift is registered at whoever is receiving it. The
+  two addresses are kept apart on purpose, so the screen does not quietly guess
+  which one you meant
+- **It freezes with the rest of the deal.** Once a deal is sent to a manager,
+  this address stops being editable, the same as the price and the trade-in —
+  because it is meant to be the fact an approval was actually based on, not
+  something that can drift after the fact
+- **This does not calculate tax.** Recording the registration address is a
+  step toward working out tax and fees automatically by jurisdiction, which is
+  still on the list below — today somebody still types the tax in themselves
+
 ## What does not exist
 
 - **A full set of books.** The month closes and locks, but there is no year-end,

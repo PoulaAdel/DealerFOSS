@@ -13,7 +13,7 @@ first met and is for reporting — never for permissions.
 | File | Role |
 |---|---|
 | `Customer.cs`, `ContactPoint.cs`, `Address.cs` | entities and rules; no EF or ASP.NET dependency |
-| `CustomerService.cs` | search, read, and add, with the permission checks |
+| `CustomerService.cs` | search, read, add, and the two post-creation edits (credit limit, address), with the permission checks |
 | `CustomerEndpoints.cs` | HTTP surface under `/api/v1/customers` |
 | `CustomerTables.cs` | EF configuration; owns the `customers` schema |
 | `ICustomers.cs` | what other capabilities may call, and the read models |
@@ -46,7 +46,13 @@ but cannot add one" a real assertion in the tests rather than an assumption.
 
 ## Not built yet
 
-Editing an existing customer, merging duplicates, consent records, relationships
-between customers, and identity matching against an incoming feed. The staging and
-duplicate-review workflow arrives with migration
-([doc 05](../../../docs/05-Integration-Framework.md)).
+Renaming an existing customer or editing their contact points, merging
+duplicates, consent records, relationships between customers, and identity
+matching against an incoming feed. The staging and duplicate-review workflow
+arrives with migration ([doc 05](../../../docs/05-Integration-Framework.md)).
+
+**The mailing address is the exception** — `PUT /{id}/address` replaces or
+clears it after creation, the same shape as the credit limit. It is this
+customer's own address for correspondence. It is deliberately not the address a
+sale is taxed at: that is the buyer's *registration* address, a fact about the
+deal rather than the customer, frozen with the sale (ADR-024, `Deal.RegistrationAddress`).

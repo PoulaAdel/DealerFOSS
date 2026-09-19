@@ -99,6 +99,20 @@ internal sealed class DealConfiguration : IEntityTypeConfiguration<Deal>
             at.Property(a => a.Country).HasColumnName("TaxedAtCountry").HasMaxLength(2);
         });
 
+        // Where the car will be registered or garaged — the full postal shape,
+        // unlike TaxedAt above, because this one ends up on registration
+        // paperwork rather than only deciding a rate.
+        builder.OwnsOne(x => x.RegistrationAddress, address =>
+        {
+            address.Property(a => a.Line1).HasColumnName("RegistrationAddressLine1").HasMaxLength(200);
+            address.Property(a => a.Line2).HasColumnName("RegistrationAddressLine2").HasMaxLength(200);
+            address.Property(a => a.City).HasColumnName("RegistrationCity").HasMaxLength(120);
+            address.Property(a => a.AdministrativeArea).HasColumnName("RegistrationArea").HasMaxLength(120);
+            address.Property(a => a.County).HasColumnName("RegistrationCounty").HasMaxLength(120);
+            address.Property(a => a.PostalCode).HasColumnName("RegistrationPostalCode").HasMaxLength(20);
+            address.Property(a => a.Country).HasColumnName("RegistrationCountry").HasMaxLength(2);
+        });
+
         // Auto-included for the same reason as charges and products: every read
         // of a deal needs its total, and the total includes tax.
         builder.HasMany(x => x.TaxLines)

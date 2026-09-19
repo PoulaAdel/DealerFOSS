@@ -42,6 +42,7 @@ internal static class DealEndpoints
         group.MapPost("/{dealId:guid}/products", SetProductsAsync);
         group.MapPost("/{dealId:guid}/products/{dealProductId:guid}/cancel", CancelProductAsync);
         group.MapPost("/{dealId:guid}/tax", SetTaxAsync);
+        group.MapPost("/{dealId:guid}/registration-address", SetRegistrationAddressAsync);
         group.MapPost("/{dealId:guid}/status", ChangeStatusAsync);
     }
 
@@ -139,6 +140,18 @@ internal static class DealEndpoints
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
+    private static async Task<IResult> SetRegistrationAddressAsync(
+        Guid dealId,
+        SetRegistrationAddressRequest request,
+        IDeals deals,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await deals.SetRegistrationAddressAsync(dealId, request.Address, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
     private static async Task<IResult> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest request,
@@ -162,3 +175,6 @@ internal sealed record SetProductsRequest(IReadOnlyList<SoldProduct>? Products);
 /// address with no tax attached is a leftover rather than a record.
 /// </summary>
 internal sealed record SetTaxRequest(IReadOnlyList<NewTaxLine>? Lines, TaxAddressView? TaxedAt);
+
+/// <summary>What a caller supplies to set or clear the deal's registration address.</summary>
+internal sealed record SetRegistrationAddressRequest(RegistrationAddressView? Address);

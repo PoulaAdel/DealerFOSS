@@ -419,3 +419,94 @@ describe('a customer reached by their own address', () => {
     expect(await screen.findByText(/That record cannot be opened/)).toBeVisible();
   });
 });
+
+describe('a customer’s address', () => {
+  const withoutAddress = {
+    id: ada.id,
+    displayName: 'Ada Lovelace',
+    kind: 'Person' as const,
+    firstName: 'Ada',
+    lastName: 'Lovelace',
+    homeRooftopId: null,
+    address: null,
+    contactPoints: [],
+    externalReference: null,
+    creditLimit: null,
+  };
+
+  const withAddress = {
+    ...withoutAddress,
+    address: {
+      line1: '18 Kestrel Way',
+      line2: null,
+      city: 'Springfield',
+      administrativeArea: 'IL',
+      county: 'Sangamon',
+      postalCode: '62704',
+      country: 'US',
+    },
+  };
+
+  it('shows nothing recorded before anybody has typed one in', async () => {
+    mockApi({
+      '/customers': { ok: true, body: page([ada]) },
+      [`/customers/${ada.id}`]: { ok: true, body: withoutAddress },
+    });
+    renderCustomers(`/customers/${ada.id}`);
+
+    expect(await screen.findByText('No address recorded.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add address' })).toBeVisible();
+  });
+
+  it('shows the address on file, joined into one line', async () => {
+    mockApi({
+      '/customers': { ok: true, body: page([ada]) },
+      [`/customers/${ada.id}`]: { ok: true, body: withAddress },
+    });
+    renderCustomers(`/customers/${ada.id}`);
+
+    expect(await screen.findByText(/18 Kestrel Way, Springfield, IL, Sangamon, 62704, US/))
+      .toBeVisible();
+  });
+
+  it('sends the address as one call, distinct from the customer’s other fields', async () => {
+    mockApi({
+      '/customers': { ok: true, body: page([ada]) },
+      [`/customers/${ada.id}`]: { ok: true, body: withoutAddress },
+      [`/customers/${ada.id}/address`]: { ok: true, body: withAddress },
+    });
+    renderCustomers(`/customers/${ada.id}`);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Add address' }));
+    await userEvent.type(screen.getByLabelText('Address line 1'), '18 Kestrel Way');
+    await userEvent.type(screen.getByLabelText('City'), 'Springfield');
+    await userEvent.type(screen.getByLabelText('State or region'), 'IL');
+    await userEvent.type(screen.getByLabelText('Country'), 'US');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    const sent = apiCalls().find((call) => call.path === `/customers/${ada.id}/address`);
+    expect(sent).toBeDefined();
+
+    const body = JSON.parse(sent!.init!.body as string) as {
+      address: { line1: string; city: string; country: string };
+    };
+    expect(body.address.line1).toBe('18 Kestrel Way');
+    expect(body.address.country).toBe('US');
+  });
+
+  it('clears the address by sending null rather than a set of blank fields', async () => {
+    mockApi({
+      '/customers': { ok: true, body: page([ada]) },
+      [`/customers/${ada.id}`]: { ok: true, body: withAddress },
+      [`/customers/${ada.id}/address`]: { ok: true, body: withoutAddress },
+    });
+    renderCustomers(`/customers/${ada.id}`);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove address' }));
+
+    const sent = apiCalls().find((call) => call.path === `/customers/${ada.id}/address`);
+    const body = JSON.parse(sent!.init!.body as string) as { address: unknown };
+    expect(body.address).toBeNull();
+  });
+});

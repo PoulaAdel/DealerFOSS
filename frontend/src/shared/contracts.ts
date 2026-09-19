@@ -995,6 +995,13 @@ export interface DealDetail extends DealSummary {
   taxTotal: number;
   /** The address the tax was worked out from. Null when there is no tax. */
   taxedAt: TaxAddressView | null;
+  /**
+   * Where the car will be registered or garaged. Distinct from the customer's
+   * own mailing address, and from `taxedAt` — this is the fact tax is traced to
+   * (ADR-024); `taxedAt` is the narrower snapshot copied onto the tax lines once
+   * it has been worked out.
+   */
+  registrationAddress: RegistrationAddressView | null;
   history: DealHistoryEntry[];
 }
 
@@ -1023,6 +1030,20 @@ export interface TaxLineView {
 
 /** State and county separately, because a US rate depends on both. */
 export interface TaxAddressView {
+  administrativeArea: string | null;
+  county: string | null;
+  postalCode: string | null;
+  country: string;
+}
+
+/**
+ * The full postal shape, because this address ends up on registration
+ * paperwork and not only on a rate lookup — unlike TaxAddressView.
+ */
+export interface RegistrationAddressView {
+  line1: string;
+  line2: string | null;
+  city: string;
   administrativeArea: string | null;
   county: string | null;
   postalCode: string | null;

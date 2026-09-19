@@ -51,6 +51,16 @@ public interface IDeals
         DealTaxEntry tax,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Replaces the address the car will be registered or garaged at, or clears
+    /// it with null. Distinct from the customer's own mailing address — this is
+    /// the fact ADR-024 traces tax to, frozen with the deal once it leaves Draft.
+    /// </summary>
+    Task<Result<DealDetail>> SetRegistrationAddressAsync(
+        Guid dealId,
+        RegistrationAddressView? address,
+        CancellationToken cancellationToken);
+
     Task<Result<DealDetail>> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest change,
@@ -124,6 +134,14 @@ public sealed record DealDetail(
 
     /// <summary>The address the tax was worked out from. Null when there is no tax.</summary>
     TaxAddressView? TaxedAt,
+
+    /// <summary>
+    /// Where the car will be registered or garaged. Distinct from the customer's
+    /// own mailing address, and from <see cref="TaxedAt"/> — this is the fact
+    /// tax is traced to (ADR-024); TaxedAt is the narrower snapshot copied onto
+    /// the tax lines once it has been worked out. Null until somebody sets it.
+    /// </summary>
+    RegistrationAddressView? RegistrationAddress,
 
     IReadOnlyList<DealHistoryEntry> History);
 
@@ -255,6 +273,19 @@ public sealed record TaxLineView(
 
 /// <summary>State and county separately, because a US rate depends on both.</summary>
 public sealed record TaxAddressView(
+    string? AdministrativeArea,
+    string? County,
+    string? PostalCode,
+    string Country);
+
+/// <summary>
+/// The full postal shape, because this address ends up on registration
+/// paperwork and not only on a rate lookup — unlike <see cref="TaxAddressView"/>.
+/// </summary>
+public sealed record RegistrationAddressView(
+    string Line1,
+    string? Line2,
+    string City,
     string? AdministrativeArea,
     string? County,
     string? PostalCode,

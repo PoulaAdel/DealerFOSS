@@ -399,6 +399,65 @@ public sealed class DealTests(HostFixture fixture)
             because: "the figures a manager approved are what the customer was told");
     }
 
+    // --- registration address (ADR-024) --------------------------------------
+
+    [Fact]
+    public async Task A_registration_address_can_be_set_and_cleared_while_open()
+    {
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Manager, rooftopId);
+
+        using var set = await PostAsync($"{Deals}/{dealId}/registration-address", Manager, new
+        {
+            address = new
+            {
+                line1 = "18 Kestrel Way",
+                city = "Springfield",
+                administrativeArea = "IL",
+                county = "Sangamon",
+                postalCode = "62704",
+                country = "US",
+            },
+        });
+
+        set.StatusCode.Should().Be(HttpStatusCode.OK, because: await set.Content.ReadAsStringAsync());
+        var withAddress = await set.Content.ReadFromJsonAsync<JsonElement>();
+        withAddress.GetProperty("registrationAddress").GetProperty("city").GetString()
+            .Should().Be("Springfield");
+        withAddress.GetProperty("registrationAddress").GetProperty("county").GetString()
+            .Should().Be("Sangamon");
+
+        using var cleared = await PostAsync(
+            $"{Deals}/{dealId}/registration-address", Manager, new { address = (object?)null });
+
+        cleared.StatusCode.Should().Be(HttpStatusCode.OK);
+        var withoutAddress = await cleared.Content.ReadFromJsonAsync<JsonElement>();
+        withoutAddress.GetProperty("registrationAddress").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task The_registration_address_is_frozen_once_the_deal_leaves_draft()
+    {
+        var rooftopId = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Manager, rooftopId);
+        await PriceAsync(dealId, Manager);
+
+        object address(string city) => new
+        {
+            address = new { line1 = "18 Kestrel Way", city, administrativeArea = "IL", country = "US" },
+        };
+
+        (await PostAsync($"{Deals}/{dealId}/registration-address", Manager, address("Springfield")))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        (await MoveAsync(dealId, Manager, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        using var late = await PostAsync($"{Deals}/{dealId}/registration-address", Manager, address("Chicago"));
+
+        late.StatusCode.Should().Be(HttpStatusCode.Conflict,
+            because: "the address a manager approved is what the tax on the deal was defended by");
+    }
+
     private async Task<string> StartDealAsync(string email, string rooftopId, string? unitId = null)
     {
         var inventoryUnitId = unitId ?? await ReceiveAvailableUnitAsync(rooftopId);

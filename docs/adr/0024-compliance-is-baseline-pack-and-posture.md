@@ -286,10 +286,21 @@ the switches the dealership owns.
   version bump — doc 05 §2 makes an added optional field compatible, and the
   claim in `ContractFields`'s header that any added field forces a bump was
   wrong and has been corrected.
-- **A garaging or registration address becomes a real field**, distinct from the
-  customer's mailing address — the second gap ADR-023 named. Not built, and it
-  belongs on the **deal** rather than the customer: it is the address the tax
-  was resolved from, frozen with the sale by R3 above.
+- ~~**A garaging or registration address becomes a real field**, distinct from
+  the customer's mailing address — the second gap ADR-023 named. Not built, and
+  it belongs on the **deal** rather than the customer.~~ **Done 2026-09-19.**
+  `Deal.RegistrationAddress`, set through `POST /deals/{id}/registration-address`
+  and shown on `/deals/:id` beside the tax band, frozen with the rest of the
+  deal's terms once submitted (R3). It is deliberately its own type
+  (`RegistrationAddress`, in `DealerFOSS.Deals`) rather than a reference to
+  `Customers.Address` — Deals may not depend on another feature's entities
+  (`FeatureBoundaryTests`), and more importantly this is a record of what was
+  used *at the time*, which a foreign key to an editable customer row cannot be.
+  The customer's own mailing address is a separate, ordinary fact about them
+  (`Customer.Address`, `PUT /customers/{id}/address`) with no bearing on this
+  one. Nothing resolves tax from it automatically yet — a person still enters
+  the tax lines and the address they were worked out from (`TaxedAt`)
+  separately; wiring the resolver to read this address is future work.
 - **A pack needs an owner and a review date, or it rots**, and a rotted pack is
   worse than none because it is trusted. `Supported` status is a claim about a
   human review, not about the file parsing.

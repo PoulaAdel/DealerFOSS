@@ -458,6 +458,16 @@ export const en = {
   'customers.primary': 'main one',
   'customers.address': 'Address',
   'customers.noAddress': 'No address recorded.',
+  'customers.addAddress': 'Add address',
+  'customers.editAddress': 'Edit',
+  'customers.removeAddress': 'Remove address',
+  'customers.addressLine1': 'Address line 1',
+  'customers.addressLine2': 'Address line 2',
+  'customers.addressCity': 'City',
+  'customers.addressArea': 'State or region',
+  'customers.addressCounty': 'County',
+  'customers.addressPostalCode': 'Postal code',
+  'customers.addressCountry': 'Country',
   'customers.oneOfTheseIsThem': 'One of these is them',
   'customers.addAnyway': 'None of these — add anyway',
 
@@ -779,6 +789,22 @@ export const en = {
   'tax.from.Pack': 'a rate table',
   'tax.from.Vendor': 'a tax provider',
   'tax.fromPack': '{pack} v{version}',
+
+  // --- Registration address on a deal (ADR-024) ------------------------------
+  // Not the customer's own address — where the car will actually be
+  // registered or garaged, which is the fact tax is traced to.
+  'deals.registrationAddress': 'Registration address',
+  'deals.registrationAddressLede':
+    'Where this car will be registered or garaged. Not always the same as where the customer lives.',
+  'deals.regLine1': 'Address line 1',
+  'deals.regLine2': 'Address line 2',
+  'deals.regCity': 'City',
+  'deals.regArea': 'State or region',
+  'deals.regCounty': 'County',
+  'deals.regPostalCode': 'Postcode',
+  'deals.regCountry': 'Country',
+  'deals.regSave': 'Save the address',
+  'deals.regClear': 'Clear the address',
 
   // --- Starting a deal ------------------------------------------------------
   'startDeal.title': 'Start a deal',

@@ -51,6 +51,7 @@ const deal: DealDetail = {
   taxLines: [],
   taxTotal: 0,
   taxedAt: null,
+  registrationAddress: null,
   history: [],
   isApproved: false,
 };

@@ -283,6 +283,48 @@ public sealed class CustomerService(
         return Result.Success(Describe(customer));
     }
 
+    public async Task<Result<CustomerDetail>> SetAddressAsync(
+        Guid customerId,
+        AddressView? address,
+        CancellationToken cancellationToken)
+    {
+        if (!await IsAllowedAsync(ManagePermission, cancellationToken))
+        {
+            return Result.Failure<CustomerDetail>(CustomerErrors.Forbidden);
+        }
+
+        var customer = await _db.Customers
+            .SingleOrDefaultAsync(c => c.Id == customerId, cancellationToken);
+
+        if (customer is null)
+        {
+            return Result.Failure<CustomerDetail>(CustomerErrors.NotFound);
+        }
+
+        try
+        {
+            customer.SetAddress(address is null
+                ? null
+                : Address.Create(
+                    address.Line1, address.Line2, address.City,
+                    address.AdministrativeArea, address.County, address.PostalCode, address.Country));
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<CustomerDetail>(Error.Validation("customer.invalid", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, ManagePermission, AuditOutcome.Allowed,
+                "Customer", customer.Id.ToString(), customer.HomeRooftopId?.Value,
+                address is null ? "Address cleared" : "Address set", null, null),
+            cancellationToken);
+
+        return Result.Success(Describe(customer));
+    }
+
     /// <summary>No permission check — see the remarks on ICustomers.GetCreditLimitAsync.</summary>
     public async Task<Result<decimal?>> GetCreditLimitAsync(Guid customerId, CancellationToken cancellationToken)
     {

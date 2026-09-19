@@ -254,4 +254,23 @@ public sealed class CustomerTests
 
         customer.CreditLimit.Should().Be(0m);
     }
+
+    [Fact]
+    public void A_new_customer_has_no_address()
+    {
+        Customer.Person(Guid.NewGuid(), "Marisol", "Alvarez").Address.Should().BeNull();
+    }
+
+    [Fact]
+    public void An_address_can_be_set_and_cleared()
+    {
+        var customer = Customer.Person(Guid.NewGuid(), "Marisol", "Alvarez");
+        var address = Address.Create("18 Kestrel Way", null, "Springfield", "IL", "Sangamon", "62704", "US");
+
+        customer.SetAddress(address);
+        customer.Address.Should().Be(address);
+
+        customer.SetAddress(null);
+        customer.Address.Should().BeNull();
+    }
 }

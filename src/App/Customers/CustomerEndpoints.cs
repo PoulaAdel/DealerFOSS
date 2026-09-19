@@ -32,6 +32,7 @@ internal static class CustomerEndpoints
         group.MapGet("/{customerId:guid}", GetAsync);
         group.MapPost("", AddAsync);
         group.MapPut("/{customerId:guid}/credit-limit", SetCreditLimitAsync);
+        group.MapPut("/{customerId:guid}/address", SetAddressAsync);
     }
 
     private static async Task<IResult> SearchAsync(
@@ -75,7 +76,20 @@ internal static class CustomerEndpoints
         var result = await customers.SetCreditLimitAsync(customerId, request.Limit, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
+
+    private static async Task<IResult> SetAddressAsync(
+        Guid customerId,
+        SetAddressRequest request,
+        ICustomers customers,
+        CancellationToken cancellationToken)
+    {
+        var result = await customers.SetAddressAsync(customerId, request.Address, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
 }
 
 /// <summary>What a caller supplies to set or clear a customer's credit limit.</summary>
 public sealed record SetCreditLimitRequest(decimal? Limit);
+
+/// <summary>What a caller supplies to set or clear a customer's mailing address.</summary>
+public sealed record SetAddressRequest(AddressView? Address);

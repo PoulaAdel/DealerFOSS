@@ -557,6 +557,43 @@ public sealed class DealService(
         return await DescribeAsync(deal, cancellationToken);
     }
 
+    public async Task<Result<DealDetail>> SetRegistrationAddressAsync(
+        Guid dealId,
+        RegistrationAddressView? address,
+        CancellationToken cancellationToken)
+    {
+        var deal = await LoadAsync(dealId, tracked: true, cancellationToken);
+        if (deal is null)
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        try
+        {
+            deal.SetRegistrationAddress(address is null
+                ? null
+                : RegistrationAddress.Create(
+                    address.Line1, address.Line2, address.City,
+                    address.AdministrativeArea, address.County, address.PostalCode, address.Country));
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<DealDetail>(Error.Validation("deals.invalid_registration_address", ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Failure<DealDetail>(Error.Conflict("deals.terms_frozen", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        return await DescribeAsync(deal, cancellationToken);
+    }
+
     public async Task<Result<DealDetail>> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest change,
@@ -891,6 +928,12 @@ public sealed class DealService(
                 : new TaxAddressView(
                     deal.TaxedAt.AdministrativeArea, deal.TaxedAt.County,
                     deal.TaxedAt.PostalCode, deal.TaxedAt.Country),
+            deal.RegistrationAddress is null
+                ? null
+                : new RegistrationAddressView(
+                    deal.RegistrationAddress.Line1, deal.RegistrationAddress.Line2, deal.RegistrationAddress.City,
+                    deal.RegistrationAddress.AdministrativeArea, deal.RegistrationAddress.County,
+                    deal.RegistrationAddress.PostalCode, deal.RegistrationAddress.Country),
             history
                 .OrderBy(h => h.OccurredAt)
                 .ThenBy(h => h.Sequence)

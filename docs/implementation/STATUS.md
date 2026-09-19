@@ -3,25 +3,29 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the stock list shows what each car cost to acquire**.
-Each scoped row carries acquisition cost and its currency without a detail
-request per car. Missing cost is visibly unrecorded; a recorded zero stays zero.
-The same label and figure appear in list and detail across all six languages.
-Verification also found that recon is capitalised to 1300 only at ledger level:
-it does not update a stock unit's cost. Per-car recon attribution and relief on
-sale are now explicitly open in the register rather than claimed as built.
+Current milestone: **a customer can carry an address, and a deal carries its
+own registration address.** `PUT /customers/{id}/address` lets an existing
+customer's mailing address be set or cleared — the domain type and the database
+column already existed (import populated them); there was no way for a person
+to type one in or change it. `Deal.RegistrationAddress`, set through
+`POST /deals/{id}/registration-address`, is the field ADR-024 named as not built:
+where the car will actually be registered or garaged, distinct from the
+customer's own address and from `TaxedAt` (the narrower four-field snapshot a
+tax line was resolved from). It freezes with the rest of the deal's terms once
+submitted, the same rule as the charges and the tax lines. Both are on screen —
+`/customers/:id` and `/deals/:id` — in all six languages.
 What is next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
 §12 — but see the re-review of 2026-09-16 below before choosing from it, and
 the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no cross-module actions and the arrival-motion work recorded in
 the device-only motion audit. The pager finding closed on 2026-09-19; the token
 migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 828/828,
+Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 836/836,
 `verify-e2e.ps1` PASS against the configured SQL container (the canonical LocalDB
 catalogue is detached with its MDF still on disk; see the milestone below),
 frontend `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 460/460, and `npm run build` all pass
+`npm run typecheck`, `npm test` 470/470, and `npm run build` all pass
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1420,3 +1424,70 @@ to come.
   large-chunk warning remain. The first sandboxed build could not read the
   existing NuGet configuration; the authorized rerun passed without changing
   configuration. No phase exit criterion or hand-set stage share changed.
+
+- **2026-09-19 — A customer can carry an address, and a deal carries its own
+  registration address.** Two separate gaps, closed together because the second
+  explains why the first stayed narrow.
+
+  **The customer side was a database column with no door to it.** `Customer.Address`,
+  `Address.Create` and the `customers.Customers` columns already existed —
+  populated by import, read by the detail screen, and otherwise untouched since
+  ADR-023/024 landed on 2026-09-05. Nobody could type one in or fix a typo.
+  `PUT /customers/{id}/address` (`Customers.Manage`, the same permission as the
+  credit limit) fills that gap; the screen's read-only paragraph became a small
+  editor — seven fields, Save or Remove address, seeded from whatever is on file.
+
+  **The deal side is the field ADR-024 named and explicitly left undone: "A
+  garaging or registration address becomes a real field... Not built."** Reading
+  `Address.cs`'s own header confirmed why it could not simply be added to the
+  customer: "the registration or garaging address that drives tax is a fact
+  about a DEAL, frozen with it (ADR-024 R3), so it belongs there rather than as
+  a second customer field nothing would populate." `Deal.RegistrationAddress`
+  is a new, Deals-owned value type — not a reference to `Customers.Address`,
+  which would have coupled a frozen historical fact to a row somebody can edit
+  next week, and which the feature-boundary rule (Deals may not depend on
+  another capability's entities) exists to catch structurally rather than by
+  convention. It freezes the moment the deal leaves Draft, the same rule
+  `SetTerms` and `SetTax` already enforce.
+
+  **This is not the same field as `TaxedAt`, and the two now sit side by side
+  on purpose.** `TaxedAt`/`TaxAddress` is the narrower four-field snapshot
+  (state, county, postcode, country) copied onto the tax lines once a figure
+  has actually been worked out — evidence, per R3, of what a rate was defended
+  by. `RegistrationAddress` is the full postal shape, entered before any tax
+  exists, because it is also what ends up on registration paperwork. Nothing
+  wires one to the other yet: a person still enters both separately, and
+  resolving tax automatically from the registration address is future work,
+  not this milestone.
+
+  **The customer's own address and the deal's registration address are
+  deliberately never linked.** The registration form is not pre-filled from
+  the customer record — a company car registered at the business rather than
+  the buyer's home, or a gift registered at the recipient's address, are
+  ordinary cases where the two addresses differ, and seeding one from the other
+  would make them look connected when the whole point of keeping them apart is
+  that they are not.
+
+  Walked in a browser, signed in as the seeded manager. Opening Marisol
+  Alvarez's customer record showed her existing seeded address
+  ("18 Kestrel Way, Springfield, IL, 62704, US") with an **Edit** button;
+  adding a county and saving produced
+  "18 Kestrel Way, Springfield, IL, Sangamon, 62704, US" in place, no reload.
+  Opening a Draft deal (D0108, Marisol Halvorsen) showed **Registration
+  address** as its own band directly under the tax editor, with the lede
+  explaining it is not necessarily the customer's own address; filling it in
+  and saving showed a **Clear the address** button appear, confirming the save
+  took. A Submitted deal with no registration address on file showed nothing
+  in its place — no empty heading, no error — between "Sold with the car" and
+  the approval buttons.
+
+  Evidence: `dotnet build` **0 warnings/0 errors**, `dotnet test` **836/836**
+  (was 828 — 4 unit, 4 integration), `verify-e2e.ps1` **PASS against the
+  configured SQL container**, `npm audit --audit-level=high` passes with the
+  same two moderate findings, `npm run typecheck`, `npm test` **470/470** (was
+  460 — 10 new: 4 for the customer address editor, 6 for the deal registration
+  address), and `npm run build` pass. One EF migration
+  (`AddDealRegistrationAddress`); the customer side needed none, the columns
+  already existed. No phase exit criterion or hand-set stage share changed —
+  this closes an explicitly named gap in ADR-024's own consequences, not a
+  roadmap item.

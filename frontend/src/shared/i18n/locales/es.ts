@@ -447,6 +447,16 @@ export const es: Catalogue = {
   'customers.primary': 'principal',
   'customers.address': 'Dirección',
   'customers.noAddress': 'No hay ninguna dirección registrada.',
+  'customers.addAddress': 'Añadir dirección',
+  'customers.editAddress': 'Editar',
+  'customers.removeAddress': 'Quitar la dirección',
+  'customers.addressLine1': 'Dirección, línea 1',
+  'customers.addressLine2': 'Dirección, línea 2',
+  'customers.addressCity': 'Ciudad',
+  'customers.addressArea': 'Estado o región',
+  'customers.addressCounty': 'Condado',
+  'customers.addressPostalCode': 'Código postal',
+  'customers.addressCountry': 'País',
   'customers.oneOfTheseIsThem': 'Es uno de estos',
   'customers.addAnyway': 'Ninguno: añadir de todas formas',
 
@@ -762,6 +772,20 @@ export const es: Catalogue = {
   'tax.from.Pack': 'una tabla de tipos',
   'tax.from.Vendor': 'un proveedor fiscal',
   'tax.fromPack': '{pack} v{version}',
+
+  // --- Registration address on a deal (ADR-024) ------------------------------
+  'deals.registrationAddress': 'Dirección de matriculación',
+  'deals.registrationAddressLede':
+    'Dónde se matriculará o guardará este coche. No siempre coincide con el domicilio del cliente.',
+  'deals.regLine1': 'Dirección, línea 1',
+  'deals.regLine2': 'Dirección, línea 2',
+  'deals.regCity': 'Ciudad',
+  'deals.regArea': 'Estado o región',
+  'deals.regCounty': 'Condado',
+  'deals.regPostalCode': 'Código postal',
+  'deals.regCountry': 'País',
+  'deals.regSave': 'Guardar la dirección',
+  'deals.regClear': 'Borrar la dirección',
 
   'startDeal.title': 'Empezar una operación',
   'startDeal.findBuyer': 'Buscar al comprador',

@@ -442,6 +442,16 @@ export const de: Catalogue = {
   'customers.primary': 'Haupt',
   'customers.address': 'Adresse',
   'customers.noAddress': 'Keine Adresse erfasst.',
+  'customers.addAddress': 'Adresse hinzufügen',
+  'customers.editAddress': 'Bearbeiten',
+  'customers.removeAddress': 'Adresse entfernen',
+  'customers.addressLine1': 'Adresse, Zeile 1',
+  'customers.addressLine2': 'Adresse, Zeile 2',
+  'customers.addressCity': 'Stadt',
+  'customers.addressArea': 'Bundesland oder Region',
+  'customers.addressCounty': 'Landkreis',
+  'customers.addressPostalCode': 'Postleitzahl',
+  'customers.addressCountry': 'Land',
   'customers.oneOfTheseIsThem': 'Eine davon ist es',
   'customers.addAnyway': 'Keine davon — trotzdem anlegen',
 
@@ -754,6 +764,20 @@ export const de: Catalogue = {
   'tax.from.Pack': 'eine Steuersatztabelle',
   'tax.from.Vendor': 'ein Steuerdienstleister',
   'tax.fromPack': '{pack} v{version}',
+
+  // --- Registration address on a deal (ADR-024) ------------------------------
+  'deals.registrationAddress': 'Zulassungsadresse',
+  'deals.registrationAddressLede':
+    'Wo dieses Fahrzeug zugelassen oder untergestellt wird. Nicht immer dieselbe Adresse wie beim Kunden.',
+  'deals.regLine1': 'Adresse, Zeile 1',
+  'deals.regLine2': 'Adresse, Zeile 2',
+  'deals.regCity': 'Stadt',
+  'deals.regArea': 'Bundesland oder Region',
+  'deals.regCounty': 'Landkreis',
+  'deals.regPostalCode': 'Postleitzahl',
+  'deals.regCountry': 'Land',
+  'deals.regSave': 'Adresse speichern',
+  'deals.regClear': 'Adresse löschen',
 
   'startDeal.title': 'Verkauf anlegen',
   'startDeal.findBuyer': 'Käufer suchen',

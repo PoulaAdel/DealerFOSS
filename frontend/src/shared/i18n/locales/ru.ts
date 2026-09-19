@@ -450,6 +450,16 @@ export const ru: Catalogue = {
   'customers.primary': 'основной',
   'customers.address': 'Адрес',
   'customers.noAddress': 'Адрес не указан.',
+  'customers.addAddress': 'Добавить адрес',
+  'customers.editAddress': 'Изменить',
+  'customers.removeAddress': 'Удалить адрес',
+  'customers.addressLine1': 'Адрес, строка 1',
+  'customers.addressLine2': 'Адрес, строка 2',
+  'customers.addressCity': 'Город',
+  'customers.addressArea': 'Штат или регион',
+  'customers.addressCounty': 'Округ',
+  'customers.addressPostalCode': 'Почтовый индекс',
+  'customers.addressCountry': 'Страна',
   'customers.oneOfTheseIsThem': 'Это кто-то из них',
   'customers.addAnyway': 'Никто из них — всё равно добавить',
 
@@ -785,6 +795,20 @@ export const ru: Catalogue = {
   'tax.from.Pack': 'таблица ставок',
   'tax.from.Vendor': 'налоговый провайдер',
   'tax.fromPack': '{pack} v{version}',
+
+  // --- Registration address on a deal (ADR-024) ------------------------------
+  'deals.registrationAddress': 'Адрес регистрации',
+  'deals.registrationAddressLede':
+    'Где этот автомобиль будет зарегистрирован или храниться. Не всегда совпадает с адресом клиента.',
+  'deals.regLine1': 'Адрес, строка 1',
+  'deals.regLine2': 'Адрес, строка 2',
+  'deals.regCity': 'Город',
+  'deals.regArea': 'Штат или регион',
+  'deals.regCounty': 'Округ',
+  'deals.regPostalCode': 'Почтовый индекс',
+  'deals.regCountry': 'Страна',
+  'deals.regSave': 'Сохранить адрес',
+  'deals.regClear': 'Очистить адрес',
 
   'startDeal.title': 'Создать сделку',
   'startDeal.findBuyer': 'Найти покупателя',

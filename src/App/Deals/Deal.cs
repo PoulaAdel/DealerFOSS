@@ -59,6 +59,15 @@ public sealed class Deal : AuditableEntity
 
     public TradeIn? Trade { get; private set; }
 
+    /// <summary>
+    /// Where the buyer will register or garage the car — not necessarily where
+    /// they get their post, and not the customer's own address. This is the
+    /// governing fact for tax (ADR-024): "current location" is never the input,
+    /// and a customer who moves house afterwards must not retroactively change
+    /// what a past sale was taxed at. Null until somebody sets it.
+    /// </summary>
+    public RegistrationAddress? RegistrationAddress { get; private set; }
+
     public IReadOnlyList<DealCharge> Charges => _charges;
 
     public IReadOnlyList<DealProduct> Products => _products;
@@ -344,6 +353,23 @@ public sealed class Deal : AuditableEntity
         _taxLines.Clear();
         _taxLines.AddRange(replacement);
         TaxedAt = replacement.Count == 0 ? null : taxedAt;
+    }
+
+    /// <summary>
+    /// Replaces the address the car will be registered or garaged at, or clears
+    /// it. Only while the deal is open — after that it is what a manager saw
+    /// when the tax on the deal was approved, and changing it silently would
+    /// leave the approved tax defended by an address nobody agreed to.
+    /// </summary>
+    public void SetRegistrationAddress(RegistrationAddress? address)
+    {
+        if (!TermsAreOpen)
+        {
+            throw new InvalidOperationException(
+                $"A {Status} deal is frozen. Move it back to Draft to change the registration address.");
+        }
+
+        RegistrationAddress = address;
     }
 
     /// <summary>

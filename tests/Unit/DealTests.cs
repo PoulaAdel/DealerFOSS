@@ -143,6 +143,31 @@ public sealed class DealTests
     }
 
     [Fact]
+    public void A_registration_address_can_be_set_and_cleared_while_open()
+    {
+        var deal = Start();
+        var address = RegistrationAddress.Create(
+            "18 Kestrel Way", null, "Springfield", "IL", "Sangamon", "62704", "US");
+
+        deal.SetRegistrationAddress(address);
+        deal.RegistrationAddress.Should().Be(address);
+
+        deal.SetRegistrationAddress(null);
+        deal.RegistrationAddress.Should().BeNull();
+    }
+
+    [Fact]
+    public void The_registration_address_freezes_once_the_deal_leaves_draft()
+    {
+        var deal = Submitted();
+
+        var change = () => deal.SetRegistrationAddress(
+            RegistrationAddress.Create("18 Kestrel Way", null, "Springfield", "IL", "Sangamon", "62704", "US"));
+
+        change.Should().Throw<InvalidOperationException>().WithMessage("*Draft*");
+    }
+
+    [Fact]
     public void A_deal_cannot_be_delivered_without_being_approved()
     {
         var deal = Submitted();
