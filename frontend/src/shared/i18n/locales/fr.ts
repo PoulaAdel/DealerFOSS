@@ -518,6 +518,22 @@ export const fr: Catalogue = {
   'records.downloadCustomers': 'Télécharger les clients',
   'records.downloadVehicles': 'Télécharger les véhicules',
 
+  'records.moveALot': 'Déplacer tout un site',
+  'records.moveALotLede':
+    'Prend le stock, les ventes et les travaux d’atelier d’un site — ainsi que les personnes et les voitures qu’ils désignent — dans un seul fichier, et réintroduit ce même fichier ailleurs. Les enregistrements gardent leurs références : une vente désigne toujours la bonne voiture et le bon client. Pour passer d’une installation DealerFOSS à une autre ; pour le reste, utilisez les CSV ci-dessus.',
+  'records.noLots': 'Vous ne voyez aucun site, il n’y a donc rien à déplacer ici.',
+  'records.whichLot': 'Quel site',
+  'records.packageFile': 'Un fichier venant d’une autre installation',
+  'records.takeLotOut': 'Télécharger ce site',
+  'records.preparing': 'Préparation…',
+  'records.bringLotIn': 'Intégrer ces enregistrements',
+  'records.bringingIn': 'Intégration…',
+  'records.packageSummary':
+    '{applied} écrits, {reused} déjà présents, {refused} non intégrés.',
+  'records.colKind': 'Quoi',
+  'records.colRecord': 'Enregistrement',
+  'records.colWhyNot': 'Pourquoi il n’a pas été intégré',
+
   'records.couldNotRun': 'Cet import n’a pas pu être exécuté.',
   'records.whatWouldHappen': 'Ce qui se passerait',
   'records.whatHappened': 'Ce qui s’est passé',

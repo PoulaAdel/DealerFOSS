@@ -30,6 +30,29 @@ public interface IRepairOrders
     Task<Result<RepairOrderDetail>> OpenAsync(NewRepairOrder order, CancellationToken cancellationToken);
 
     /// <summary>
+    /// A job arriving from another DealerFOSS installation, as it was left,
+    /// keeping its id.
+    /// </summary>
+    /// <remarks>
+    /// <b>Nothing is posted, no parts leave the shelf and no receivable is
+    /// raised.</b> Invoicing a job here does all three, because those things
+    /// happen when work is billed. A job arriving in a records package was
+    /// billed somewhere else and its money is inside the receiving dealership's
+    /// opening balances. See ADR-027.
+    ///
+    /// Part lines arrive as their description and amount, with no link to this
+    /// installation's parts catalogue. That is deliberate: the receiving
+    /// dealership's shelf never held these parts, so taking them off it would be
+    /// a stock movement that did not happen.
+    ///
+    /// The caller passes what the source system said the customer owed, and the
+    /// record is refused if the lines written here do not reach it.
+    /// </remarks>
+    Task<Result<ImportOutcome>> ImportAsync(
+        ImportedRepairOrder order,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Adds a piece of work. Added before the job starts, it is what the customer
     /// asked for; added once work is under way, it needs their answer first.
     /// </summary>
@@ -436,6 +459,39 @@ public static class UnmeasurableLabourFigure
     /// </summary>
     public const string Productivity = "Productivity";
 }
+
+/// <summary>
+/// A job as another installation left it. Everything the service invoice prints
+/// is here, because the round trip is judged on whether the paperwork comes out
+/// the same.
+/// </summary>
+/// <param name="AmountDue">
+/// What the source system said the customer owed. Evidence, not data — compared
+/// with the figure this side computes and never stored.
+/// </param>
+public sealed record ImportedRepairOrder(
+    Guid Id,
+    RooftopId RooftopId,
+    Guid CustomerId,
+    Guid VehicleId,
+    string Number,
+    string Complaint,
+    string Status,
+    string Currency,
+    int? OdometerReading,
+    DateTimeOffset OpenedAt,
+    DateTimeOffset? InvoicedAt,
+    IReadOnlyList<ImportedServiceLine> Lines,
+    decimal AmountDue);
+
+public sealed record ImportedServiceLine(
+    string Kind,
+    string Description,
+    decimal? Hours,
+    decimal? Rate,
+    decimal Amount,
+    string PayType,
+    string Authorization);
 
 public sealed record ServiceLineView(
     Guid Id,

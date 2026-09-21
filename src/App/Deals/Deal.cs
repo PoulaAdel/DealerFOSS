@@ -214,6 +214,59 @@ public sealed class Deal : AuditableEntity
     }
 
     /// <summary>
+    /// A deal arriving from another DealerFOSS installation, settled, keeping
+    /// its id.
+    /// </summary>
+    /// <remarks>
+    /// Built on <see cref="Start"/> and the ordinary setters — the numbers go
+    /// through exactly the rules they went through the first time, including
+    /// "one vehicle price" and "tax needs an address" — and then the status is
+    /// placed rather than walked to.
+    ///
+    /// <b>The status is placed, not walked.</b> Replaying Draft → Submitted →
+    /// Approved → Delivered would write a history claiming this deal was
+    /// approved today, by whoever ran the import, and refused by
+    /// EnsureApproverIsNotTheSalesperson for any deal whose salesperson also
+    /// ran it. Neither is true and neither is useful. One entry saying the
+    /// record arrived is the honest trail. The original approver and approval
+    /// date are carried across as facts, because they are.
+    /// </remarks>
+    public static Deal Import(
+        Guid id,
+        RooftopId rooftopId,
+        Guid customerId,
+        Guid inventoryUnitId,
+        string currency,
+        DealStatus status,
+        IEnumerable<(ChargeKind Kind, string Description, decimal Amount)> charges,
+        TradeIn? trade,
+        IEnumerable<(Guid ProductId, string Name, decimal Price, decimal Cost, int? TermMonths, int? TermMiles)> products,
+        IEnumerable<(string Description, string Jurisdiction, decimal Basis, decimal Rate, decimal Amount,
+            TaxProvenance Provenance, string? PackId, int? PackVersion)> taxLines,
+        TaxAddress? taxedAt,
+        DateTimeOffset importedAt,
+        Guid? importedByUserId = null)
+    {
+        var deal = Start(id, rooftopId, customerId, inventoryUnitId, currency, importedAt);
+
+        deal.SetTerms(charges, trade);
+        deal.SetProducts(products);
+        deal.SetTax(taxLines, taxedAt);
+
+        // Start wrote the Draft entry; this one replaces it, so the history is
+        // one line about arriving rather than a fiction about being sold here.
+        deal._history.Clear();
+        deal._history.Add(new DealStatusChange(
+            Guid.NewGuid(), id, null, status, importedAt, importedByUserId,
+            "Arrived in a records package from another installation.",
+            deal.AmountDue.Amount));
+
+        deal.Status = status;
+
+        return deal;
+    }
+
+    /// <summary>
     /// Replaces the numbers on the deal. Only while it is Draft: after that the
     /// figures are what a manager saw, and changing them means going back.
     /// </summary>

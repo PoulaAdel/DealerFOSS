@@ -27,6 +27,25 @@ public interface IDeals
 
     Task<Result<DealDetail>> StartAsync(NewDeal deal, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// A settled deal arriving from another DealerFOSS installation, keeping
+    /// its id.
+    /// </summary>
+    /// <remarks>
+    /// <b>Nothing is posted and no stock is held.</b> Delivering a deal here
+    /// posts the sale, relieves the car's book value and raises a receivable,
+    /// because those things happen when a car is sold. A deal arriving in a
+    /// records package was sold somewhere else, and its money is already inside
+    /// the opening balances the receiving dealership entered. Posting it again
+    /// would sell the same car twice. See ADR-027.
+    ///
+    /// The caller passes the amount the source system said this deal came to.
+    /// It is recomputed from the lines written here and the record is refused
+    /// if the two differ — so a package that lost a charge on the way through
+    /// says so rather than arriving quietly short.
+    /// </remarks>
+    Task<Result<ImportOutcome>> ImportAsync(ImportedDeal deal, CancellationToken cancellationToken);
+
     Task<Result<DealDetail>> SetTermsAsync(Guid dealId, DealTerms terms, CancellationToken cancellationToken);
 
     /// <summary>
@@ -146,6 +165,43 @@ public sealed record DealDetail(
     IReadOnlyList<DealHistoryEntry> History);
 
 public sealed record ChargeView(string Kind, string Description, decimal Amount);
+
+/// <summary>
+/// A deal as another installation settled it. Everything the printed order
+/// reads is here, because the round trip is judged on whether the paperwork
+/// comes out the same.
+/// </summary>
+/// <param name="AmountDue">
+/// What the source system said it came to. Evidence, not data — it is compared
+/// with the figure this side computes and never stored.
+/// </param>
+public sealed record ImportedDeal(
+    Guid Id,
+    RooftopId RooftopId,
+    Guid CustomerId,
+    Guid InventoryUnitId,
+    string Currency,
+    string Status,
+    IReadOnlyList<ChargeView> Charges,
+    IReadOnlyList<ImportedDealProduct> Products,
+    IReadOnlyList<NewTaxLine> TaxLines,
+    TaxAddressView? TaxedAt,
+    TradeInView? TradeIn,
+    decimal AmountDue);
+
+/// <summary>
+/// A product as it was sold on that deal, at that deal's price and cost —
+/// deliberately not a reference to this installation's F&amp;I catalogue, which
+/// may price the same cover differently or not carry it at all.
+/// </summary>
+public sealed record ImportedDealProduct(
+    Guid FinanceProductId,
+    string Name,
+    string? Provider,
+    decimal Price,
+    decimal Cost,
+    int? TermMonths,
+    int? TermMiles);
 
 /// <summary>
 /// One product sold on this deal. <c>Cost</c> and <c>Gross</c> are the

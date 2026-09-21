@@ -49,6 +49,14 @@ public interface IVehicles
     Task<Result<VehicleDetail>> AddAsync(NewVehicle vehicle, CancellationToken cancellationToken);
 
     /// <summary>
+    /// A vehicle arriving from another DealerFOSS installation, keeping the id
+    /// it already had. See <see cref="ImportedVehicle"/> for the three cases.
+    /// </summary>
+    Task<Result<ImportOutcome>> ImportAsync(
+        ImportedVehicle vehicle,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// The vehicle with exactly this VIN, or null.
     /// </summary>
     /// <remarks>
@@ -89,6 +97,29 @@ public sealed record VehicleDetail(
     Guid Id,
     string Vin,
     string DisplayName,
+    int ModelYear,
+    string Make,
+    string Model,
+    string? Trim,
+    string? BodyStyle,
+    string? ExteriorColor,
+    string? VinExceptionReason);
+
+/// <summary>
+/// A vehicle as another installation holds it, id and all.
+/// </summary>
+/// <remarks>
+/// A VIN is unique in this database, so there are three cases and they are not
+/// the same. The same id is a re-import and answers
+/// <see cref="ImportOutcome.AlreadyPresent"/>. A different id carrying a VIN
+/// already here is refused by name — the receiving dealership already knows
+/// that car under another key, and quietly using their copy would attach the
+/// incoming deals to a record whose history is not theirs. Everything else is
+/// created with the id it arrived with.
+/// </remarks>
+public sealed record ImportedVehicle(
+    Guid Id,
+    string? Vin,
     int ModelYear,
     string Make,
     string Model,

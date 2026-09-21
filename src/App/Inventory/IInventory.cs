@@ -41,6 +41,23 @@ public interface IInventory
         IReadOnlyCollection<Guid> unitIds,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// A stock unit arriving from another DealerFOSS installation, in the state
+    /// it was already in, keeping its id.
+    /// </summary>
+    /// <remarks>
+    /// <b>This posts nothing to the ledger, and that is deliberate.</b>
+    /// <see cref="ReceiveAsync"/> posts because a car being taken in is an event
+    /// that happened here and changes what the business owns. A car arriving in
+    /// a records package is not that event — it happened at the other
+    /// installation, months ago, and its money is already inside the opening
+    /// balances the receiving dealership entered when they were set up. Posting
+    /// it again would count the same car twice. See ADR-027.
+    /// </remarks>
+    Task<Result<ImportOutcome>> ImportAsync(
+        ImportedInventoryUnit unit,
+        CancellationToken cancellationToken);
+
     Task<Result<InventoryUnitDetail>> ReceiveAsync(
         NewInventoryUnit unit,
         CancellationToken cancellationToken);
@@ -246,6 +263,21 @@ public sealed record InventoryQuery(
     bool StillGettable = false,
     int Limit = 50,
     int Offset = 0);
+
+/// <summary>
+/// A stock unit as another installation holds it. The rooftop is this
+/// installation's, supplied by the caller — a rooftop id from somewhere else
+/// names nothing here.
+/// </summary>
+public sealed record ImportedInventoryUnit(
+    Guid Id,
+    Guid VehicleId,
+    RooftopId RooftopId,
+    string StockNumber,
+    string Status,
+    decimal? CostAmount,
+    string? CostCurrency,
+    DateOnly? AcquiredOn);
 
 /// <summary>What a caller supplies to take a vehicle into stock.</summary>
 public sealed record NewInventoryUnit(

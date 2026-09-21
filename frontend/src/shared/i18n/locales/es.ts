@@ -525,6 +525,22 @@ export const es: Catalogue = {
   'records.downloadCustomers': 'Descargar clientes',
   'records.downloadVehicles': 'Descargar vehículos',
 
+  'records.moveALot': 'Mover una sede entera',
+  'records.moveALotLede':
+    'Toma el stock, las ventas y los trabajos de taller de una sede — y las personas y los coches que nombran — en un solo archivo, y vuelve a introducir ese mismo archivo en otro sitio. Los registros conservan sus referencias, así que una venta sigue apuntando al coche y al cliente correctos. Sirve para moverse entre instalaciones de DealerFOSS; para todo lo demás, use los CSV de arriba.',
+  'records.noLots': 'No puede ver ninguna sede, así que aquí no hay nada que mover.',
+  'records.whichLot': 'Qué sede',
+  'records.packageFile': 'Un archivo de otra instalación',
+  'records.takeLotOut': 'Descargar esta sede',
+  'records.preparing': 'Preparando…',
+  'records.bringLotIn': 'Incorporar estos registros',
+  'records.bringingIn': 'Incorporándolos…',
+  'records.packageSummary':
+    '{applied} escritos, {reused} ya estaban aquí, {refused} no incorporados.',
+  'records.colKind': 'Qué',
+  'records.colRecord': 'Registro',
+  'records.colWhyNot': 'Por qué no se incorporó',
+
   'records.couldNotRun': 'No se ha podido ejecutar esa importación.',
   'records.whatWouldHappen': 'Qué pasaría',
   'records.whatHappened': 'Qué ha pasado',

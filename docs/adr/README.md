@@ -47,6 +47,7 @@ Two carry one today: [ADR-007](0007-integration-platform-edge.md) and
 | [ADR-024](0024-compliance-is-baseline-pack-and-posture.md) | Compliance splits three ways: product baseline, jurisdiction pack, deployment posture | Accepted |
 | [ADR-025](0025-the-session-carries-permissions-as-a-hint.md) | The session carries the caller's permissions, and they are a hint, never a control | Accepted |
 | [ADR-026](0026-a-deleted-record-is-marked-not-removed.md) | A record deleted at the provider is marked, never removed | Accepted |
+| [ADR-027](0027-a-package-carries-records-not-transactions.md) | A records package carries records, not transactions, and its documents are re-rendered rather than copied | Accepted |
 
 ## ADR file template
 

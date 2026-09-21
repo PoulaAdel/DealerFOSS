@@ -36,6 +36,60 @@ internal static class MigrationEndpoints
         group.MapGet("/imports/{id:guid}/rows", GetRowsAsync);
 
         group.MapGet("/exports/{kind}", ExportAsync);
+
+        // One rooftop, named in the path rather than in a body, because an
+        // export is a GET a person can bookmark and a browser can download.
+        group.MapGet("/packages/{rooftopId:guid}", ExportPackageAsync);
+        group.MapPost("/packages/{rooftopId:guid}", ImportPackageAsync);
+    }
+
+    /// <summary>
+    /// The package as a downloadable file, for the same reasons as the CSV
+    /// above: a browser saves it and <c>curl -O</c> works.
+    /// </summary>
+    private static async Task<IResult> ExportPackageAsync(
+        Guid rooftopId,
+        HttpContext context,
+        IMigration migration,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var result = await migration.ExportPackageAsync(new RooftopId(rooftopId), cancellationToken);
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblem();
+        }
+
+        var file = result.Value;
+        context.Response.Headers["X-Content-SHA256"] = file.Checksum;
+        context.Response.Headers["X-Row-Count"] =
+            file.RowCount.ToString(CultureInfo.InvariantCulture);
+
+        return Results.File(
+            Encoding.UTF8.GetBytes(file.Content),
+            "application/json; charset=utf-8",
+            file.FileName);
+    }
+
+    /// <summary>
+    /// 200 and not 202: unlike a CSV import this finishes inside the request,
+    /// and the report in the body is the whole answer. A refusal list is part of
+    /// a successful response — the request did what was asked, and what it found
+    /// is the point.
+    /// </summary>
+    private static async Task<IResult> ImportPackageAsync(
+        Guid rooftopId,
+        ImportPackageRequest request,
+        IMigration migration,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await migration.ImportPackageAsync(
+            new RooftopId(rooftopId), request.Content, cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
     /// <summary>
@@ -120,6 +174,13 @@ internal static class MigrationEndpoints
 /// exactly as given, because the migration workflow forbids fixing an exception
 /// by editing what the dealership sent (doc 05 §6).
 /// </summary>
+/// <summary>
+/// A package to apply. The rooftop it lands in is in the path, not here: it is
+/// this installation's rooftop, chosen by the person importing, and the one
+/// named inside the file belongs to somebody else's installation.
+/// </summary>
+internal sealed record ImportPackageRequest(string Content);
+
 internal sealed record SubmitImportRequest(
     string Kind,
     string Mode,

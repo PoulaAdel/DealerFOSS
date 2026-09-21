@@ -79,7 +79,8 @@ exists.
 | Month in review, stock aging | API · Screen | `App/Reporting` |
 | Printable paperwork (HTML, print stylesheet) | API · Screen | `App/Documents` |
 | Import from a file; export a dealership's records | API · Screen | `App/DataMigration` |
-| Connector runtime: cursors, runs, quarantine | **API only** — corrected 2026-09-09, this row claimed a Screen and there is none: no connectors feature in the frontend, no route, so the certification status reaches no reader | `App/Integrations` |
+| **Move one lot to another installation, ids and all** | API · Screen — added 2026-09-21, `/records`. A JSON package keeping every id, every reference and the paperwork they render (ADR-027). Not a backup: no ledger, no receivables, no parts stock | `App/DataMigration` |
+| Connector runtime: cursors, runs, quarantine | API · Screen — **this row said "API only" until 2026-09-21 and had been wrong since the 19th**, when `/integrations` landed and the certification finally reached a reader | `App/Integrations` |
 | Six languages, RTL for Arabic | Screen | `shared/i18n` |
 | A live connector to any real DMS | **Spec** — needs a provider agreement | doc 05 |
 | OIDC / SAML federation | **Spec** — needs an identity provider to test against | doc 06 §2 |
@@ -155,26 +156,42 @@ Frontend shell is **not** an I0 item; it moved to I1, where the session it depen
 reading the code. This phase was never given a scorecard, while a good deal of
 I2-shaped work landed out of order — [doc 09](../09-Implementation-Roadmap.md)
 §4 requires that state be recorded here, and it had not been. Two of the seven
-criteria are met, three are part-met, and two are not met.
+criteria were met, three part-met and two not met.
+
+**All seven are met as of 2026-09-21.** Three closed on 2026-09-19 (deletes,
+replay, and the certification screen) and the last — the export round trip —
+closed today. **I2 has no unmet criterion left.** Across the whole project one
+remains open, `I1`'s OIDC federation, and it needs an identity provider to test
+against. Re-read each of the seven before trusting this paragraph: it is a claim
+about the code, and a claim nobody has re-checked since the last commit is a
+guess.
 
 - [x] **Killing and restarting a sync cannot lose committed records or advance an unsafe checkpoint.** Proven by five tests in `ConnectorRuntimeTests`: a provider that skips the start of a window **does not get the cursor moved past the hole**; a held window is asked for again next run rather than skipped; a provider that returns nothing still leaves a cursor a later run can use; a run that never finished leaves the evidence that it started; and two cursors for one feed are refused by the database. What is *not* tested is a literal process kill — the checkpoint safety is what is proven, and that is the substance of the criterion *(automated)*
 - [x] **Duplicate, reordered, delete and partial-page tests pass** — all four, as of 2026-09-19. **Duplicate** holds three ways over: the same batch delivered twice produces one set of customers, importing the same file twice creates no second copy, and a record repeated *inside* one batch is applied once. **Partial page** is the cursor-hole test. **Reordered** is now two tests, because the criterion hides two different properties: independent records reach the same state in any order, and records about the *same* thing are applied in the order the provider sent them — "created then deleted" and "deleted then created" describe different days, and a sink that sorted its batch would turn one into the other. **Deletes are modelled** as a mark and never a removal (ADR-026)
 - [x] **Quarantined records are inspectable and replayable** — both, as of 2026-09-19. Replay re-runs the stored payload through the **real sink** inside a transaction; there is no simulation mode and there must not be one. A replay that is refused again **leaves the row in the queue** with the *new* reason — fixing one mapping routinely reveals the next problem behind it, and resolving on attempt rather than on success would empty the queue without fixing anything. The row counts its attempts. Dismissing without replaying needs a reason in writing, because "Resolved" with no note is how a queue gets cleared by somebody who never read it. The payload is never returned by a read (ADR-022)
 - [x] **A trial import is repeatable with stable counts and explicit exceptions.** A trial and the real run agree about an unusual VIN — the case where only the write would otherwise notice; the file is hashed so a trial and its run are provably about the same data; a bad row is reported by the line number a person sees in their spreadsheet and does not stop the others; and the counts add up to the row total *(automated)*
-- [ ] **Export round-trip tests preserve IDs, relationships and documents** — IDs yes, the other two no. Records survive a round trip into another dealership, a hand-typed customer with no external reference still exports and imports, and exporting twice unchanged produces the same checksum. But **export covers customer and vehicle columns only**: there is no relationship manifest, and documents are not exported at all even though a Documents capability exists
+- [x] **Export round-trip tests preserve IDs, relationships and documents** — all three, as of 2026-09-21, through a **records package** (ADR-027) that sits beside the two CSVs rather than replacing them. **IDs are kept, not translated**: every record carries its own id, every reference is that id, and the receiving installation stores the same keys — which is only possible because all five aggregates already took an explicit id in their factories. **Relationships** are asserted one hop out, where a flat export cannot reach: the deal names the customer and the unit, and the unit names the same car the job does. **Documents** are the interesting third, because this system stores none — `IDocuments` owns no data and there is no file storage anywhere in `src`, so "preserving a document" has to mean the renderer produces the same page on the far side. `The_paperwork_comes_out_the_same_on_the_other_side` renders the vehicle order and the service invoice on both sides and compares the money tables character for character, which is a stronger claim than shipping HTML would have been: it fails if any field behind the page was lost, including ones nobody thought to assert. Also proven: re-running is a no-op, the array order in the file does not matter, a record whose reference did not arrive is refused by name while the rest land, and a deal whose lines no longer reach the total it claims is refused rather than stored quietly wrong *(automated, 11 tests)*
 - [x] **Fixture-tested status is displayed honestly** — displayed, as of 2026-09-19, at `/integrations`. The certification is the headline rather than a footnote, and it is shown beside **what that level actually promises** — "automated tests only; not a promise that it works against a real provider" — because the level alone means nothing to a reader. The connector's own declared limitations sit beside it whatever the level says, so the fixture's "Serves fabricated records. Never certify anything against this." is on the screen. Fixture-tested and experimental wear the same warning colour deliberately: a dealership running its month-end on either is taking the same kind of risk
 - [x] **Production certification remains incomplete until external evidence exists.** Nothing anywhere claims `SandboxCertified` or `ProductionCertified`; the only connector declares `FixtureTested` and is a test double. Trivially met, and worth recording because it is the criterion most easily broken by an optimistic edit *(automated)*
 
-**Named and not built**, from the phase's own build list: a durable **inbox**, an
-**outbox**, **leases**, **replay**, a generic **SFTP** path, **profiling**,
-**versioned mappings**, and the **duplicate-candidate workflow**. None of these
-exist — checked by name across `src`, not inferred. Field ownership is a named
-concern in a comment in `CustomerRecordSink` and not a rule anything enforces.
+**Named and not built**, from the phase's own build list, re-checked by name
+across `src` on 2026-09-21: a durable **inbox**, an **outbox**, **leases**, a
+generic **SFTP** path, **profiling**, **versioned mappings**, and the
+**duplicate-candidate workflow**. **Replay came off this list on 2026-09-19** and
+the sentence saying it had not been written was left standing for two days; it is
+struck now. Field ownership is still a named concern in a comment in
+`CustomerRecordSink` and not a rule anything enforces.
+
+The one that matters most of those left is the **unattended trigger** — an inbox
+or a webhook that starts a run with nobody at a keyboard. Every run today is
+asked for by a person, which is fine for a migration and useless for keeping in
+step with a live system overnight. It is the whole of stage 2's remainder.
 
 What *does* exist is the seam they would hang from: compiled connector
 discovery, a versioned contract envelope, per-feed cursors with hold counting,
-quarantine with retention, run history, and a CSV import/export path with
-control totals and checksums.
+quarantine with retention and replay, run history, a CSV import/export path with
+control totals and checksums, and a records package that moves a lot between
+installations with its ids and references intact.
 ## Completed milestones
 
 - **2026-07-25 — Engineering baseline.** Solution, Core kernel, architecture tests, CI, health endpoints, telemetry. Evidence: `dotnet build` 0/0, `dotnet test` 5/5.
@@ -1563,3 +1580,21 @@ to come.
   The service invoice was checked for the same defect and does not have it: five invoiced jobs sampled through the running application, Labour + Parts + Sent out equal to the printed total in every one. What is *not* covered by that sample is a job split across pay types, since all five were wholly customer-pay.
 
   Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **853/853** (was 852 — one new), `verify-e2e.ps1` PASS against the SQL container. No frontend change, so the four `npm` gates were not required and were not run.
+
+- **2026-09-21 — A whole lot moves to another installation with its identities, its references and its paperwork intact.** The last exit criterion anybody here could close on their own. I2 asked that an export round trip preserve **IDs, relationships and documents**; on 2026-09-09 that scored as IDs yes, the other two no, and export was two flat CSVs of customer and vehicle columns.
+
+  **Three questions had to be settled before anything could be built**, and the code answered all three (ADR-027).
+
+  *What is a document?* Generated, never stored. `IDocuments` owns no data, `DocumentService` renders a deal or a job into HTML when somebody asks, and a search across `src` for `IFormFile`, `BlobClient`, `FileStream` and `Attachment` returns **nothing** — there is no file storage in this product. So "preserve documents" cannot mean copying files, and shipping the rendered HTML would freeze a copy the far side would immediately contradict. It means **the renderer, pointed at the far side, produces the same page**. That is a strictly stronger claim, because it fails if any field behind the page was lost, including ones nobody thought to assert.
+
+  *What does preserving an ID require?* Keeping it, not carrying it. Every record travels with its own id and every reference is that id, so the receiving installation stores the same keys. Nothing had to be opened up for this: all five aggregates already took an explicit id in their factories.
+
+  *What happens to the money?* Nothing, deliberately. `IInventory.ImportAsync`, `IDeals.ImportAsync` and `IRepairOrders.ImportAsync` write the aggregate in its final state and post nothing. A deal in a package was sold at the other installation and its money is already inside the opening balances the receiving dealership entered when they were set up; posting it again would sell the same car twice. **Opening balances are how the money arrives; a package is how the records arrive.**
+
+  **The paperwork test found two defects nobody was looking for.** A deal's charges, its products, its tax lines and a job's service lines had **no defined print order** — the far side, where those rows carry fresh ids, printed them in a different sequence. Two copies of one document that disagree about their own row order are not the same document, and nothing had ever needed them to be stable, so a reprint *here* was not reproducible either. Both services now order them explicitly.
+
+  **A conflict found by running it rather than by reasoning:** both demo dealerships were seeded from the same generator, so 571 of 886 records carried an external reference already in use on the other side. That is refused by name — the two records may be the same person and merging them is not the importer's decision — and it cascades, because a deal whose customer was refused has nowhere to hang. The report says so, record by record, which is the answer.
+
+  **Walked across two tenant databases**, `citymotors/CM-01` into `northgroup/NAG-02`, through the screen: **"5 written, 315 already here, 571 not brought in"**, every refusal named in a table. The deal's vehicle order and the job's service invoice came out **byte-identical** on the far side, at `$19,400.00` and `$270.00`; the deal still names its customer and its car, the car still names its vehicle, and all of it landed in the lot the person chose rather than the one written in the file.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **864/864** (was 853 — eleven new), `verify-e2e.ps1` PASS against the SQL container, `npm audit` clean at high, `npm run typecheck`, `npm test` **498/498** (was 492 — six new), `npm run build`.

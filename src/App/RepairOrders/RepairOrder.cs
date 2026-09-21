@@ -187,6 +187,80 @@ public sealed class RepairOrder : AuditableEntity
     }
 
     /// <summary>
+    /// A job arriving from another DealerFOSS installation, as it was left,
+    /// keeping its id.
+    /// </summary>
+    /// <remarks>
+    /// The lines are built with the authorization they already carried rather
+    /// than through <see cref="AddLine"/>, which decides authorization from the
+    /// job's current status. Work a customer declined in March has to arrive
+    /// declined: it is the reason the invoice prints it at nothing, and it is
+    /// the record that protects the dealership when the same fault comes back.
+    ///
+    /// The status is placed, not walked, for the reason given on
+    /// <see cref="Deals.Deal"/>'s equivalent — a replayed life cycle writes a
+    /// history that never happened.
+    /// </remarks>
+    public static RepairOrder Import(
+        Guid id,
+        RooftopId rooftopId,
+        Guid customerId,
+        Guid vehicleId,
+        string number,
+        string complaint,
+        string currency,
+        RepairOrderStatus status,
+        DateTimeOffset openedAt,
+        DateTimeOffset? invoicedAt,
+        int? odometerReading,
+        IEnumerable<(ServiceLineKind Kind, string Description, decimal? Hours, decimal? Rate, decimal Amount,
+            ServicePayType PayType, LineAuthorization Authorization)> lines,
+        DateTimeOffset importedAt,
+        Guid? importedByUserId = null)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+
+        var order = Open(id, rooftopId, customerId, vehicleId, number, complaint, currency, openedAt,
+            odometerReading);
+
+        foreach (var line in lines)
+        {
+            order._lines.Add(new ServiceLine(
+                Guid.NewGuid(),
+                id,
+                line.Kind,
+                line.Description,
+                line.Hours,
+                line.Rate,
+                line.Amount,
+                line.Authorization,
+
+                // A line that was authorized carries when, and the only honest
+                // answer available here is the date the job was opened — the
+                // package does not carry per-line timestamps and inventing one
+                // would be worse than a coarse one. Nothing is attributed to a
+                // person, because nobody here answered anything.
+                line.Authorization == LineAuthorization.Pending ? null : openedAt,
+                null,
+                null,
+                null,
+                line.PayType,
+                null));
+        }
+
+        order._history.Clear();
+        order._history.Add(new RepairOrderStatusChange(
+            Guid.NewGuid(), id, null, status, importedAt, importedByUserId,
+            "Arrived in a records package from another installation.",
+            order.AmountDue.Amount));
+
+        order.Status = status;
+        order.InvoicedAt = invoicedAt;
+
+        return order;
+    }
+
+    /// <summary>
     /// Adds a piece of work. Anything added while the car is still Booked is what
     /// the customer came in for and is authorized on arrival; anything found once
     /// work has started has to be put to them, so it starts Pending.

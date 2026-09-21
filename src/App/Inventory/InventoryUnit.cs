@@ -94,6 +94,51 @@ public sealed class InventoryUnit : AuditableEntity
     }
 
     /// <summary>
+    /// A unit arriving from another DealerFOSS installation, in the state it was
+    /// already in, keeping its id.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="Receive"/> and not built on it, because
+    /// replaying Incoming → Reconditioning → Available would write a status
+    /// history that never happened, dated today, attributed to whoever ran the
+    /// import. One entry saying the record arrived is the truth; a fabricated
+    /// trail that looks like the real thing is worse than a short one.
+    ///
+    /// The status is taken as given rather than checked against the life-cycle
+    /// rules on purpose: those rules govern moves, and this is not a move. A
+    /// Sold car has to be able to arrive Sold.
+    /// </remarks>
+    public static InventoryUnit Import(
+        Guid id,
+        Guid vehicleId,
+        RooftopId rooftopId,
+        string stockNumber,
+        InventoryStatus status,
+        DateTimeOffset importedAt,
+        Guid? importedByUserId = null,
+        Money? cost = null,
+        DateOnly? acquiredOn = null)
+    {
+        var unit = new InventoryUnit
+        {
+            Id = id,
+            VehicleId = vehicleId,
+            RooftopId = rooftopId,
+            StockNumber = NormalizeStockNumber(stockNumber),
+            Status = status,
+            CostAmount = cost?.Amount,
+            CostCurrency = cost?.Currency,
+            AcquiredOn = acquiredOn,
+        };
+
+        unit._statusHistory.Add(new InventoryStatusChange(
+            Guid.NewGuid(), id, null, status, importedAt, importedByUserId,
+            "Arrived in a records package from another installation."));
+
+        return unit;
+    }
+
+    /// <summary>
     /// Moves the unit to another status and records the move. Refuses a move the
     /// life cycle does not allow, so a unit cannot leave a terminal state or
     /// change to the status it is already in.

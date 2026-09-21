@@ -220,6 +220,109 @@ public sealed class CustomerService(
         return Result.Success(customer is null ? null : Describe(customer));
     }
 
+    public async Task<Result<ImportOutcome>> ImportAsync(
+        ImportedCustomer customer,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(customer);
+
+        if (!await IsAllowedAsync(CreatePermission, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(CustomerErrors.Forbidden);
+        }
+
+        if (!Enum.TryParse<CustomerKind>(customer.Kind, ignoreCase: true, out var kind))
+        {
+            return Result.Failure<ImportOutcome>(CustomerErrors.UnknownKind);
+        }
+
+        // Asked by id, not by external reference. Two different people can
+        // legitimately share a reference across two systems; an id is the thing
+        // the rest of the package points at, so it is the thing that decides
+        // whether this record is already here.
+        var already = await _db.Customers
+            .AsNoTracking()
+            .AnyAsync(c => c.Id == customer.Id, cancellationToken);
+
+        if (already)
+        {
+            return Result.Success(ImportOutcome.AlreadyPresent);
+        }
+
+        // An external reference is unique here, and two installations that both
+        // loaded from the same legacy system genuinely share them — found on
+        // 2026-09-21 when a package from one seeded dealership met DEMO-C0376 in
+        // the other. Refused by name rather than imported with the reference
+        // quietly dropped: the reference is how anybody ever matches this person
+        // up again, and losing it silently is worse than not importing them.
+        if (!string.IsNullOrWhiteSpace(customer.ExternalReference)
+            && await _db.Customers
+                .AsNoTracking()
+                .AnyAsync(c => c.ExternalReference == customer.ExternalReference, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(
+                CustomerErrors.ExternalReferenceTaken(customer.ExternalReference));
+        }
+
+        Customer arriving;
+        try
+        {
+            arriving = kind == CustomerKind.Business
+                ? Customer.Business(customer.Id, customer.LastName)
+                : Customer.Person(customer.Id, customer.FirstName, customer.LastName);
+
+            foreach (var point in customer.ContactPoints)
+            {
+                if (!Enum.TryParse<ContactKind>(point.Kind, ignoreCase: true, out var contactKind))
+                {
+                    return Result.Failure<ImportOutcome>(CustomerErrors.UnknownContactKind);
+                }
+
+                arriving.AddContactPoint(Guid.NewGuid(), contactKind, point.Value, point.IsPrimary);
+            }
+
+            if (customer.Address is { } address)
+            {
+                arriving.SetAddress(Address.Create(
+                    address.Line1, address.Line2, address.City,
+                    address.AdministrativeArea, address.County, address.PostalCode, address.Country));
+            }
+
+            arriving.SetExternalReference(customer.ExternalReference);
+            arriving.SetCreditLimit(customer.CreditLimit);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<ImportOutcome>(
+                Error.Validation("customer.invalid", ex.Message));
+        }
+
+        // The home rooftop is deliberately not carried. It is a rooftop id from
+        // the other installation and means nothing here; a customer without one
+        // is visible across the organization, which is the safe way to be wrong.
+        _db.Customers.Add(arriving);
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            // A constraint nobody predicted. One record must not take the rest of
+            // the package down with it, and a failed insert left Added would be
+            // retried on the next record's save.
+            _db.ForgetPendingWrites();
+            return Result.Failure<ImportOutcome>(CustomerErrors.CouldNotBeWritten(ex));
+        }
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, CreatePermission, AuditOutcome.Allowed,
+                "Customer", arriving.Id.ToString(), null, "Imported from a package", null, null),
+            cancellationToken);
+
+        return Result.Success(ImportOutcome.Created);
+    }
+
     public async Task<Result<IReadOnlyList<CustomerDetail>>> PageForExportAsync(
         Guid? after,
         int take,
@@ -447,6 +550,33 @@ internal static class CustomerErrors
     public static Error UnknownKind { get; } = Error.Validation(
         "customers.unknown_kind",
         "A customer must be either a Person or a Business.");
+
+    /// <summary>
+    /// An arriving contact point names something this system has no kind for.
+    /// Dropping it silently would lose the telephone number the invoice prints,
+    /// so the record is refused and named instead.
+    /// </summary>
+    public static Error UnknownContactKind { get; } = Error.Validation(
+        "customers.unknown_contact_kind",
+        "That is not a way of contacting somebody this system knows.");
+
+    /// <summary>
+    /// Somebody else here already carries the arriving customer's reference from
+    /// the system they were both loaded out of.
+    /// </summary>
+    public static Error ExternalReferenceTaken(string reference) => Error.Conflict(
+        "customers.external_reference_taken",
+        $"Another customer here is already recorded as {reference} in the system they came from.");
+
+    /// <summary>
+    /// The database refused the write for a reason nothing checked for. Named so
+    /// one record's problem is one line in an import report rather than a failed
+    /// request, and carrying the database's own words because a guess at what it
+    /// meant would be worse than the sentence it actually said.
+    /// </summary>
+    public static Error CouldNotBeWritten(Exception cause) => Error.Conflict(
+        "customers.could_not_be_written",
+        $"That customer could not be written: {cause?.InnerException?.Message ?? cause?.Message}");
 
     /// <summary>
     /// Used by <see cref="CustomerRecordSink"/> when an arriving record has no

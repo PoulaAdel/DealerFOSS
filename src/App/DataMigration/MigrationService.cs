@@ -19,12 +19,17 @@
 
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.Data;
 using DealerFOSS.Identity;
+using DealerFOSS.Deals;
+using DealerFOSS.Inventory;
+using DealerFOSS.Organization;
+using DealerFOSS.RepairOrders;
 using DealerFOSS.Vehicles;
 
 namespace DealerFOSS.DataMigration;
@@ -36,9 +41,24 @@ public sealed class MigrationService(
     IClock clock,
     IAuditSink audit,
     ICustomers customers,
-    IVehicles vehicles)
+    IVehicles vehicles,
+    IOrganization organization,
+    IInventory inventory,
+    IDeals deals,
+    IRepairOrders repairOrders)
     : IMigration
 {
+    // The two halves of the records package. Built here from the same
+    // capability contracts rather than injected, because they are this
+    // service's own workings: nothing else may have them, and registering them
+    // would make them part of the container's vocabulary and therefore
+    // reachable from anywhere.
+    private readonly PackageExporter _packageExporter =
+        new(organization, customers, vehicles, inventory, deals, repairOrders);
+
+    private readonly PackageImporter _packageImporter =
+        new(customers, vehicles, inventory, deals, repairOrders);
+
     /// <summary>
     /// Importing writes records in bulk on behalf of a whole dealer organization,
     /// so it is its own permission and is granted organization-wide or not at all.
@@ -280,6 +300,115 @@ public sealed class MigrationService(
             HashOf(content),
             rows.Value));
     }
+
+    public async Task<Result<ExportedFile>> ExportPackageAsync(
+        RooftopId rooftopId,
+        CancellationToken cancellationToken)
+    {
+        // The same permission as the CSV export, and organization-wide for the
+        // same reason: this is bulk personal data leaving the building. The
+        // rooftop scope inside the package is applied on top of it, by the
+        // capability reads the exporter goes through — a caller who may export
+        // but cannot see this lot gets nothing.
+        var scope = await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, Permissions.MigrationExport, cancellationToken);
+
+        if (!scope.IsOrganizationWide)
+        {
+            return Result.Failure<ExportedFile>(MigrationErrors.ForbiddenExport);
+        }
+
+        var built = await _packageExporter.BuildAsync(rooftopId, _clock.UtcNow, cancellationToken);
+        if (built.IsFailure)
+        {
+            return Result.Failure<ExportedFile>(built.Error);
+        }
+
+        var content = JsonSerializer.Serialize(built.Value, RecordPackage.Json);
+
+        var records = built.Value.Customers.Count
+            + built.Value.Vehicles.Count
+            + built.Value.InventoryUnits.Count
+            + built.Value.Deals.Count
+            + built.Value.RepairOrders.Count;
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, "Migration.Export", AuditOutcome.Allowed,
+                "Package", rooftopId.Value.ToString(), rooftopId.Value,
+                $"Exported a package of {records} record(s).", null, null),
+            cancellationToken);
+
+        return Result.Success(new ExportedFile(
+            "Package",
+
+            // The lot's code, not its id: this file ends up in somebody's
+            // downloads folder beside four others and a Guid tells them nothing.
+            $"{Slug(built.Value.Source.RooftopCode)}-records.json",
+            content,
+            HashOf(content),
+            records));
+    }
+
+    public async Task<Result<PackageImportReport>> ImportPackageAsync(
+        RooftopId rooftopId,
+        string content,
+        CancellationToken cancellationToken)
+    {
+        // Importing, not exporting: writing a lot's records in bulk is the
+        // import permission, held organization-wide or not at all.
+        if (!await MayImportAsync(cancellationToken))
+        {
+            return Result.Failure<PackageImportReport>(MigrationErrors.Forbidden);
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return Result.Failure<PackageImportReport>(MigrationErrors.Empty);
+        }
+
+        RecordPackage? package;
+        try
+        {
+            package = JsonSerializer.Deserialize<RecordPackage>(content, RecordPackage.Json);
+        }
+        catch (JsonException)
+        {
+            // The exception's own message names a byte offset, which is true and
+            // useless to the person holding the file.
+            return Result.Failure<PackageImportReport>(MigrationErrors.Unreadable);
+        }
+
+        if (package is null)
+        {
+            return Result.Failure<PackageImportReport>(MigrationErrors.Unreadable);
+        }
+
+        var applied = await _packageImporter.ApplyAsync(package, rooftopId, cancellationToken);
+        if (applied.IsFailure)
+        {
+            return applied;
+        }
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, "Migration.Import", AuditOutcome.Allowed,
+                "Package", rooftopId.Value.ToString(), rooftopId.Value,
+                $"Applied a package: {applied.Value.Applied} written, {applied.Value.Reused} already here, "
+                + $"{applied.Value.Refused.Count} refused.",
+                null, null),
+            cancellationToken);
+
+        return applied;
+    }
+
+    /// <summary>
+    /// A rooftop code as a file name. Codes are short and already tame, but a
+    /// download whose name carries a slash is a download that does not save.
+    /// </summary>
+    private static string Slug(string code) =>
+        string.IsNullOrWhiteSpace(code)
+            ? "rooftop"
+            : new string([.. code.Where(c => char.IsLetterOrDigit(c) || c == '-')])
+                .ToLower(CultureInfo.InvariantCulture);
 
     private async Task<Result<int>> WriteCustomersAsync(
         StringBuilder file,

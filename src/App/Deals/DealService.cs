@@ -188,6 +188,141 @@ public sealed class DealService(
         return await DescribeAsync(deal, cancellationToken);
     }
 
+    /// <summary>
+    /// The order a person reads a deal in: the car, then what was added to it,
+    /// then the fees, then what came off.
+    /// </summary>
+    /// <remarks>
+    /// Written out rather than left to the enum's numbering, which is storage
+    /// order and happens to put the discount above the documentation fee.
+    ///
+    /// It exists at all because charges came back in a DIFFERENT order after a
+    /// round trip through a records package — the rows carry fresh ids on the
+    /// far side and nothing had ever said what order they print in, so the
+    /// database's was used. A printed order whose lines rearrange themselves
+    /// between two copies of the same deal is not the same document, and the
+    /// package's paperwork test found it on 2026-09-21.
+    /// </remarks>
+    private static int PrintOrder(ChargeKind kind) => kind switch
+    {
+        ChargeKind.VehiclePrice => 0,
+        ChargeKind.Accessory => 1,
+        ChargeKind.Fee => 2,
+        ChargeKind.DocumentationFee => 3,
+        ChargeKind.Discount => 4,
+        _ => 5,
+    };
+
+    public async Task<Result<ImportOutcome>> ImportAsync(
+        ImportedDeal deal,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(deal);
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(DealErrors.Forbidden);
+        }
+
+        if (await _db.Deals.AsNoTracking().AnyAsync(d => d.Id == deal.Id, cancellationToken))
+        {
+            return Result.Success(ImportOutcome.AlreadyPresent);
+        }
+
+        if (!Enum.TryParse<DealStatus>(deal.Status, ignoreCase: true, out var status))
+        {
+            return Result.Failure<ImportOutcome>(DealErrors.UnknownStatus);
+        }
+
+        // Both references are checked before the write, so a deal whose customer
+        // or car did not survive the package is named as that rather than as a
+        // constraint violation. Through the contracts, not the tables: Deals may
+        // ask ICustomers and IInventory questions and may not touch their rows,
+        // which FeatureBoundaryTests enforces — it caught a first draft of this
+        // method querying _db.Customers directly.
+        if ((await _customers.GetAsync(deal.CustomerId, cancellationToken)).IsFailure)
+        {
+            return Result.Failure<ImportOutcome>(DealErrors.CustomerNotFound);
+        }
+
+        if ((await _inventory.GetAsync(deal.InventoryUnitId, cancellationToken)).IsFailure)
+        {
+            return Result.Failure<ImportOutcome>(DealErrors.UnitNotAvailable);
+        }
+
+        Deal arriving;
+        try
+        {
+            arriving = Deal.Import(
+                deal.Id,
+                deal.RooftopId,
+                deal.CustomerId,
+                deal.InventoryUnitId,
+                deal.Currency,
+                status,
+                deal.Charges.Select(c => (
+                    Kind: Enum.Parse<ChargeKind>(c.Kind, ignoreCase: true),
+                    c.Description,
+                    c.Amount)),
+                deal.TradeIn is { } trade
+                    ? new TradeIn(trade.Description, trade.Allowance, trade.Payoff)
+                    : null,
+                deal.Products.Select(p => (
+                    ProductId: p.FinanceProductId, p.Name, p.Price, p.Cost, p.TermMonths, p.TermMiles)),
+                deal.TaxLines.Select(t => (
+                    t.Description,
+                    t.Jurisdiction,
+                    t.Basis,
+                    t.Rate,
+                    t.Amount,
+                    Provenance: Enum.Parse<TaxProvenance>(t.Provenance, ignoreCase: true),
+                    t.PackId,
+                    t.PackVersion)),
+                deal.TaxedAt is { } at
+                    ? TaxAddress.Create(at.AdministrativeArea, at.County, at.PostalCode, at.Country)
+                    : null,
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or FormatException)
+        {
+            // Domain invariants speak in plain sentences, and an unparsed kind or
+            // provenance is the same class of problem: the file said something
+            // this system has no word for.
+            return Result.Failure<ImportOutcome>(Error.Validation("deals.invalid", ex.Message));
+        }
+
+        // The check that makes the whole package trustworthy. The source system
+        // said what this deal came to; if the lines just written do not reach
+        // the same figure, something was lost in the middle and the right answer
+        // is to refuse this record by name rather than store a quietly wrong one.
+        if (arriving.AmountDue.Amount != deal.AmountDue)
+        {
+            return Result.Failure<ImportOutcome>(
+                DealErrors.TotalDisagrees(deal.AmountDue, arriving.AmountDue.Amount));
+        }
+
+        _db.Deals.Add(arriving);
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            _db.ForgetPendingWrites();
+            return Result.Failure<ImportOutcome>(DealErrors.CouldNotBeWritten(ex));
+        }
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, WritePermission, AuditOutcome.Allowed,
+                "Deal", arriving.Id.ToString(), deal.RooftopId.Value,
+                "Imported from a package", null, null),
+            cancellationToken);
+
+        return Result.Success(ImportOutcome.Created);
+    }
+
     public async Task<Result<DealDetail>> StartAsync(NewDeal deal, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(deal);
@@ -902,9 +1037,12 @@ public sealed class DealService(
                     deal.Trade.Description, deal.Trade.Allowance, deal.Trade.Payoff,
                     deal.Trade.Equity, deal.Trade.IsNegativeEquity),
             deal.Charges
+                .OrderBy(c => PrintOrder(c.Kind))
+                .ThenBy(c => c.Description, StringComparer.Ordinal)
                 .Select(c => new ChargeView(c.Kind.ToString(), c.Description, c.Amount))
                 .ToList(),
             deal.Products
+                .OrderBy(p => p.Name, StringComparer.Ordinal)
                 .Select(p => new DealProductView(
                     p.Id,
                     p.FinanceProductId,
@@ -929,6 +1067,8 @@ public sealed class DealService(
             deal.ApprovedAt,
             deal.TermsAreOpen,
             deal.TaxLines
+                .OrderBy(t => t.Jurisdiction, StringComparer.Ordinal)
+                .ThenBy(t => t.Description, StringComparer.Ordinal)
                 .Select(t => new TaxLineView(
                     t.Id, t.Description, t.Jurisdiction, t.Basis, t.Rate, t.Amount,
                     t.Provenance.ToString(), t.PackId, t.PackVersion))
@@ -998,6 +1138,25 @@ internal static class DealErrors
     public static Error UnitNotAvailable { get; } = Error.Conflict(
         "deals.unit_not_available",
         "That car is not available. It may already be on another deal.");
+
+    /// <summary>
+    /// An arriving deal does not come to what the system it left said it came
+    /// to. Both figures are named, because "the totals disagree" without them
+    /// sends somebody diffing two files by hand.
+    /// </summary>
+    /// <summary>
+    /// The database refused an arriving deal for a reason nothing checked for.
+    /// One record's problem is one line in an import report rather than a failed
+    /// request.
+    /// </summary>
+    public static Error CouldNotBeWritten(Exception cause) => Error.Conflict(
+        "deals.could_not_be_written",
+        $"That deal could not be written: {cause?.InnerException?.Message ?? cause?.Message}");
+
+    public static Error TotalDisagrees(decimal claimed, decimal computed) => Error.Validation(
+        "deals.total_disagrees",
+        $"This deal says it comes to {claimed} and its own lines come to {computed}. "
+        + "Something was lost between the two systems, so it has not been written.");
 
     public static Error UnitAtAnotherRooftop { get; } = Error.Conflict(
         "deals.unit_at_another_rooftop",

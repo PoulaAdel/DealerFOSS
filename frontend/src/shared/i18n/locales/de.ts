@@ -519,6 +519,22 @@ export const de: Catalogue = {
   'records.downloadCustomers': 'Kunden herunterladen',
   'records.downloadVehicles': 'Fahrzeuge herunterladen',
 
+  'records.moveALot': 'Einen ganzen Standort umziehen',
+  'records.moveALotLede':
+    'Nimmt Bestand, Verkäufe und Werkstattaufträge eines Standorts — samt der Personen und Fahrzeuge, auf die sie verweisen — in eine einzige Datei und bringt dieselbe Datei anderswo wieder ein. Die Datensätze behalten ihre Verweise, ein Verkauf zeigt also weiterhin auf das richtige Fahrzeug und den richtigen Kunden. Gedacht für den Wechsel zwischen DealerFOSS-Installationen; für alles andere die CSV-Dateien oben.',
+  'records.noLots': 'Sie sehen keine Standorte, hier gibt es also nichts umzuziehen.',
+  'records.whichLot': 'Welcher Standort',
+  'records.packageFile': 'Eine Datei aus einer anderen Installation',
+  'records.takeLotOut': 'Diesen Standort herunterladen',
+  'records.preparing': 'Wird vorbereitet…',
+  'records.bringLotIn': 'Diese Datensätze einbringen',
+  'records.bringingIn': 'Wird eingebracht…',
+  'records.packageSummary':
+    '{applied} geschrieben, {reused} bereits vorhanden, {refused} nicht eingebracht.',
+  'records.colKind': 'Was',
+  'records.colRecord': 'Datensatz',
+  'records.colWhyNot': 'Warum nicht eingebracht',
+
   'records.couldNotRun': 'Dieser Import konnte nicht ausgeführt werden.',
   'records.whatWouldHappen': 'Was passieren würde',
   'records.whatHappened': 'Was passiert ist',

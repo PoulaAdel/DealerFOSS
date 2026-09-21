@@ -538,6 +538,22 @@ export const ar: Catalogue = {
   'records.downloadCustomers': 'تنزيل العملاء',
   'records.downloadVehicles': 'تنزيل السيارات',
 
+  'records.moveALot': 'نقل فرع كامل',
+  'records.moveALotLede':
+    'يأخذ مخزون فرع واحد ومبيعاته وأعمال ورشته — ومعها الأشخاص والسيارات التي تشير إليها — في ملف واحد، ثم يعيد الملف نفسه في مكان آخر. تحتفظ السجلات بمراجعها، فالبيعة تظل تشير إلى السيارة الصحيحة والعميل الصحيح. للانتقال بين تركيبات DealerFOSS؛ ولما عدا ذلك استخدم ملفات CSV في الأعلى.',
+  'records.noLots': 'لا ترى أي فرع، فلا يوجد هنا ما يُنقل.',
+  'records.whichLot': 'أي فرع',
+  'records.packageFile': 'ملف من تركيب آخر',
+  'records.takeLotOut': 'تنزيل هذا الفرع',
+  'records.preparing': 'جارٍ التجهيز…',
+  'records.bringLotIn': 'إدخال هذه السجلات',
+  'records.bringingIn': 'جارٍ الإدخال…',
+  'records.packageSummary':
+    '{applied} مكتوبة، {reused} موجودة من قبل، {refused} لم تُدخل.',
+  'records.colKind': 'ماذا',
+  'records.colRecord': 'السجل',
+  'records.colWhyNot': 'سبب عدم الإدخال',
+
   'records.couldNotRun': 'تعذَّر تنفيذ عملية الإدخال هذه.',
   'records.whatWouldHappen': 'ما الذي سيحدث',
   'records.whatHappened': 'ما الذي حدث',

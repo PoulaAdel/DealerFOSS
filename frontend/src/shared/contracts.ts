@@ -1142,6 +1142,34 @@ export interface ImportRowView {
   message: string | null;
 }
 
+/**
+ * What applying a records package did. `reused` is not a failure: it is a
+ * record whose id was already here, which is what makes running the same
+ * package twice safe rather than a decision.
+ */
+export interface PackageImportReport {
+  rooftopId: string;
+  applied: number;
+  reused: number;
+  byKind: PackageCount[];
+  refused: PackageRefusal[];
+}
+
+export interface PackageCount {
+  kind: string;
+  applied: number;
+  reused: number;
+  refused: number;
+}
+
+/** One record that was not written, and why in words a person can act on. */
+export interface PackageRefusal {
+  kind: string;
+  id: string;
+  reasonCode: string;
+  reason: string;
+}
+
 // --- the control plane ---
 //
 // Note what a tenant row does not carry: no connection string, no counts, and

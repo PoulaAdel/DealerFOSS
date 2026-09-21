@@ -16,9 +16,15 @@
 
 import { render, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RecordsPage } from './RecordsPage';
 import { apiCalls, mockApi } from '../../test/setup';
+
+// The download test replaces the global URL with a plain object so it can watch
+// createObjectURL. Left in place it breaks every later test in this file with
+// "URL is not a constructor", from inside jsdom's cookie jar rather than from
+// anything the test did — which cost an afternoon the first time.
+afterEach(() => vi.unstubAllGlobals());
 
 const job = (over: Record<string, unknown> = {}) => ({
   id: 'j1', kind: 'Customers', mode: 'Trial', status: 'Completed',
@@ -219,5 +225,129 @@ describe('taking records out', () => {
 
     const call = apiCalls().find((c) => c.path.startsWith('/migration/exports'));
     expect((call?.init?.headers as Record<string, string>)['X-Tenant']).toBeDefined();
+  });
+});
+
+describe('moving a whole lot', () => {
+  const organization = {
+    id: 'o1',
+    name: 'North Auto Group',
+    slug: 'northgroup',
+    legalEntities: [
+      {
+        id: 'e1',
+        name: 'North Auto Inc',
+        rooftops: [
+          { id: 'r1', name: 'North Auto Downtown', code: 'NAG-01', timeZone: 'UTC', legalEntityId: 'e1' },
+          { id: 'r2', name: 'North Auto Uptown', code: 'NAG-02', timeZone: 'UTC', legalEntityId: 'e1' },
+        ],
+      },
+    ],
+  };
+
+  function packageFile(contents = '{"format":"dealerfoss.package","version":1}') {
+    return new File([contents], 'nag-01-records.json', { type: 'application/json' });
+  }
+
+  it('asks for the lot by the name a person calls it, not by its id', async () => {
+    mockApi({ '/organization': { ok: true, body: organization } });
+    render(<RecordsPage />);
+
+    const lots = await screen.findByLabelText('Which location');
+    expect(within(lots).getByRole('option', { name: 'North Auto Uptown (NAG-02)' })).toBeInTheDocument();
+  });
+
+  it('sends the package to the lot the person chose, not the one inside the file', async () => {
+    // The rooftop in the file belongs to the installation it came from and names
+    // nothing here. If this ever starts reading it, records land in a lot that
+    // does not exist.
+    mockApi({
+      '/organization': { ok: true, body: organization },
+      '/migration/packages/r2': {
+        ok: true,
+        body: { rooftopId: 'r2', applied: 4, reused: 0, byKind: [], refused: [] },
+      },
+    });
+
+    render(<RecordsPage />);
+    await userEvent.selectOptions(await screen.findByLabelText('Which location'), 'r2');
+    await userEvent.upload(screen.getByLabelText('A file from another installation'), packageFile());
+    await userEvent.click(screen.getByRole('button', { name: 'Bring these records in' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('4 written, 0 already here, 0 not brought in.');
+
+    const call = apiCalls().find((c) => c.init?.method === 'POST');
+    expect(call?.path).toBe('/migration/packages/r2');
+  });
+
+  it('names every record it would not bring in, and why', async () => {
+    // A count sends somebody to logs they do not have. The reason is the whole
+    // value of the report.
+    mockApi({
+      '/organization': { ok: true, body: organization },
+      '/migration/packages/r1': {
+        ok: true,
+        body: {
+          rooftopId: 'r1',
+          applied: 6,
+          reused: 2,
+          byKind: [],
+          refused: [
+            {
+              kind: 'Deals',
+              id: '8c888d54-0000-0000-0000-000000000000',
+              reasonCode: 'deals.customer_not_found',
+              reason: 'Record the customer before starting their deal.',
+            },
+          ],
+        },
+      },
+    });
+
+    render(<RecordsPage />);
+    await userEvent.upload(
+      await screen.findByLabelText('A file from another installation'),
+      packageFile(),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Bring these records in' }));
+
+    const table = await screen.findByRole('table');
+    expect(within(table).getByText('Record the customer before starting their deal.')).toBeVisible();
+    expect(within(table).getByText('Deals')).toBeVisible();
+  });
+
+  it('will not send anything until a file has been chosen', async () => {
+    mockApi({ '/organization': { ok: true, body: organization } });
+    render(<RecordsPage />);
+
+    expect(await screen.findByRole('button', { name: 'Bring these records in' })).toBeDisabled();
+  });
+
+  it('says plainly when the caller can see no lots at all', async () => {
+    mockApi({ '/organization': { ok: false, status: 403, code: 'org.forbidden', detail: 'No.' } });
+    render(<RecordsPage />);
+
+    expect(await screen.findByText(/nothing here to move/i)).toBeVisible();
+  });
+
+  it('shows the server’s refusal rather than a generic failure', async () => {
+    mockApi({
+      '/organization': { ok: true, body: organization },
+      '/migration/packages/r1': {
+        ok: false,
+        status: 400,
+        code: 'migration.package_is_newer',
+        detail: 'That package is version 99 and this installation reads up to 1. Upgrade before importing it.',
+      },
+    });
+
+    render(<RecordsPage />);
+    await userEvent.upload(
+      await screen.findByLabelText('A file from another installation'),
+      packageFile(),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Bring these records in' }));
+
+    expect(await screen.findByText(/version 99/)).toBeVisible();
   });
 });

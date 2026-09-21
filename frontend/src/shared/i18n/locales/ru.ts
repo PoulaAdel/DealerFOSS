@@ -527,6 +527,22 @@ export const ru: Catalogue = {
   'records.downloadCustomers': 'Скачать клиентов',
   'records.downloadVehicles': 'Скачать автомобили',
 
+  'records.moveALot': 'Перенести целую площадку',
+  'records.moveALotLede':
+    'Собирает склад, продажи и работы сервиса одной площадки — вместе с людьми и автомобилями, на которые они ссылаются — в один файл и возвращает его в другом месте. Записи сохраняют свои связи: продажа по-прежнему указывает на нужный автомобиль и нужного клиента. Для перехода между установками DealerFOSS; для всего остального — CSV выше.',
+  'records.noLots': 'Вам не видна ни одна площадка, поэтому переносить нечего.',
+  'records.whichLot': 'Какая площадка',
+  'records.packageFile': 'Файл из другой установки',
+  'records.takeLotOut': 'Скачать эту площадку',
+  'records.preparing': 'Подготовка…',
+  'records.bringLotIn': 'Загрузить эти записи',
+  'records.bringingIn': 'Загрузка…',
+  'records.packageSummary':
+    'Записано: {applied}, уже было: {reused}, не загружено: {refused}.',
+  'records.colKind': 'Что',
+  'records.colRecord': 'Запись',
+  'records.colWhyNot': 'Почему не загружено',
+
   'records.couldNotRun': 'Эту загрузку не удалось выполнить.',
   'records.whatWouldHappen': 'Что произошло бы',
   'records.whatHappened': 'Что произошло',

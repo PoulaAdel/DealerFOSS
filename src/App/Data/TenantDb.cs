@@ -154,6 +154,32 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, I
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(TenantDb).Assembly);
     }
 
+    /// <summary>
+    /// Forgets everything waiting to be written, so a save that the database
+    /// refused does not follow the context around and be retried on the next
+    /// one.
+    /// </summary>
+    /// <remarks>
+    /// This exists for one caller shape: importing a records package, where one
+    /// refused record has to leave the other several hundred able to land. EF
+    /// keeps a failed insert Added, so without this the next SaveChanges in the
+    /// same request would re-send it and fail for a reason that has nothing to
+    /// do with the record being written — which is a genuinely baffling
+    /// afternoon.
+    ///
+    /// Safe there and nowhere obvious else: every read on that path is
+    /// AsNoTracking, so Added is the only state anything is in. Do not reach for
+    /// it to make an ordinary write behave; a write that failed for a reason you
+    /// have not named is a bug rather than something to tidy up after.
+    /// </remarks>
+    public void ForgetPendingWrites()
+    {
+        foreach (var entry in ChangeTracker.Entries().Where(e => e.State != EntityState.Unchanged).ToList())
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         GuardAppendOnlyHistory();

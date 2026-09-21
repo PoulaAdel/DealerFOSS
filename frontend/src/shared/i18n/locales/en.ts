@@ -536,6 +536,22 @@ export const en = {
   'records.downloadCustomers': 'Download customers',
   'records.downloadVehicles': 'Download vehicles',
 
+  'records.moveALot': 'Move a whole lot',
+  'records.moveALotLede':
+    'Takes one location’s stock, sales and workshop jobs — and the people and cars they name — as one file, and brings the same file back in somewhere else. Records keep the references they had, so a sale still points at the right car and the right customer. For moving between DealerFOSS installations; the CSVs above are what to use for anything else.',
+  'records.noLots': 'You cannot see any locations, so there is nothing here to move.',
+  'records.whichLot': 'Which location',
+  'records.packageFile': 'A file from another installation',
+  'records.takeLotOut': 'Download this location',
+  'records.preparing': 'Preparing…',
+  'records.bringLotIn': 'Bring these records in',
+  'records.bringingIn': 'Bringing them in…',
+  'records.packageSummary':
+    '{applied} written, {reused} already here, {refused} not brought in.',
+  'records.colKind': 'What',
+  'records.colRecord': 'Record',
+  'records.colWhyNot': 'Why it was not brought in',
+
   'records.couldNotRun': 'That import could not be run.',
   'records.whatWouldHappen': 'What would happen',
   'records.whatHappened': 'What happened',

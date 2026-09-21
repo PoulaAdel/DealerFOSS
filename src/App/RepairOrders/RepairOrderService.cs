@@ -434,6 +434,107 @@ public sealed class RepairOrderService(
         return await DescribeAsync(order, cancellationToken);
     }
 
+    public async Task<Result<ImportOutcome>> ImportAsync(
+        ImportedRepairOrder order,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(ServiceErrors.Forbidden);
+        }
+
+        if (await _db.RepairOrders.AsNoTracking().AnyAsync(r => r.Id == order.Id, cancellationToken))
+        {
+            return Result.Success(ImportOutcome.AlreadyPresent);
+        }
+
+        if (!Enum.TryParse<RepairOrderStatus>(order.Status, ignoreCase: true, out var status))
+        {
+            return Result.Failure<ImportOutcome>(ServiceErrors.UnknownStatus);
+        }
+
+        // Through the contracts, not the tables: RepairOrders may ask ICustomers
+        // and IVehicles questions and may not touch their rows, which
+        // FeatureBoundaryTests enforces.
+        if ((await _customers.GetAsync(order.CustomerId, cancellationToken)).IsFailure)
+        {
+            return Result.Failure<ImportOutcome>(ServiceErrors.CustomerNotFound);
+        }
+
+        if ((await _vehicles.GetAsync(order.VehicleId, cancellationToken)).IsFailure)
+        {
+            return Result.Failure<ImportOutcome>(ServiceErrors.VehicleNotFound);
+        }
+
+        // A job number is what a customer quotes on the telephone, so two jobs
+        // sharing one at a rooftop is refused rather than renumbered.
+        if (await _db.RepairOrders
+            .AsNoTracking()
+            .AnyAsync(r => r.RooftopId == order.RooftopId && r.Number == order.Number, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(ServiceErrors.NumberTaken);
+        }
+
+        RepairOrder arriving;
+        try
+        {
+            arriving = RepairOrder.Import(
+                order.Id,
+                order.RooftopId,
+                order.CustomerId,
+                order.VehicleId,
+                order.Number,
+                order.Complaint,
+                order.Currency,
+                status,
+                order.OpenedAt,
+                order.InvoicedAt,
+                order.OdometerReading,
+                order.Lines.Select(l => (
+                    Kind: Enum.Parse<ServiceLineKind>(l.Kind, ignoreCase: true),
+                    l.Description,
+                    l.Hours,
+                    l.Rate,
+                    l.Amount,
+                    PayType: Enum.Parse<ServicePayType>(l.PayType, ignoreCase: true),
+                    Authorization: Enum.Parse<LineAuthorization>(l.Authorization, ignoreCase: true))),
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or FormatException)
+        {
+            return Result.Failure<ImportOutcome>(Error.Validation("service.invalid", ex.Message));
+        }
+
+        if (arriving.AmountDue.Amount != order.AmountDue)
+        {
+            return Result.Failure<ImportOutcome>(
+                ServiceErrors.TotalDisagrees(order.AmountDue, arriving.AmountDue.Amount));
+        }
+
+        _db.RepairOrders.Add(arriving);
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            _db.ForgetPendingWrites();
+            return Result.Failure<ImportOutcome>(ServiceErrors.CouldNotBeWritten(ex));
+        }
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, WritePermission, AuditOutcome.Allowed,
+                "RepairOrder", arriving.Id.ToString(), order.RooftopId.Value,
+                "Imported from a package", null, null),
+            cancellationToken);
+
+        return Result.Success(ImportOutcome.Created);
+    }
+
     public async Task<Result<RepairOrderDetail>> OpenAsync(
         NewRepairOrder order,
         CancellationToken cancellationToken)
@@ -1404,6 +1505,13 @@ public sealed class RepairOrderService(
             order.LinesAreOpen,
             RepairOrderStatusRules.MovesFrom(order.Status).Select(s => s.ToString()).ToList(),
             order.Lines
+                // A defined order rather than the database's. Service lines carry no
+                // sequence column, so before this an invoice could print its work in
+                // one order here and another after a records package rebuilt the rows
+                // with fresh ids - two documents for one job. Labour, then parts, then
+                // what was sent out, which is how a bill reads anyway.
+                .OrderBy(l => l.Kind)
+                .ThenBy(l => l.Description, StringComparer.Ordinal)
                 .Select(l => new ServiceLineView(
                     l.Id,
                     l.Kind.ToString(),
@@ -1525,6 +1633,25 @@ internal static class ServiceErrors
     public static Error NumberTaken { get; } = Error.Conflict(
         "service.number_taken",
         "Another job took that number just now. Try again.");
+
+    /// <summary>
+    /// An arriving job does not come to what the system it left said it came to.
+    /// Both figures are named, because a bare "the totals disagree" sends
+    /// somebody diffing two files by hand.
+    /// </summary>
+    /// <summary>
+    /// The database refused an arriving job for a reason nothing checked for.
+    /// One record's problem is one line in an import report rather than a failed
+    /// request.
+    /// </summary>
+    public static Error CouldNotBeWritten(Exception cause) => Error.Conflict(
+        "service.could_not_be_written",
+        $"That job could not be written: {cause?.InnerException?.Message ?? cause?.Message}");
+
+    public static Error TotalDisagrees(decimal claimed, decimal computed) => Error.Validation(
+        "service.total_disagrees",
+        $"This job says the customer owes {claimed} and its own lines come to {computed}. "
+        + "Something was lost between the two systems, so it has not been written.");
 
     public static Error ChangedElsewhere { get; } = Error.Conflict(
         "service.changed_elsewhere",

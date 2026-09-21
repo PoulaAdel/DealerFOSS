@@ -61,6 +61,40 @@ public interface IMigration
     /// nothing to be gained by making somebody poll for it.
     /// </remarks>
     Task<Result<ExportedFile>> ExportAsync(string kind, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// One rooftop's records — its stock, its deals, its jobs, and the customers
+    /// and cars they name — as a package this same API accepts back, with every
+    /// id and every reference intact.
+    /// </summary>
+    /// <remarks>
+    /// The two CSVs above and this are not alternatives and neither replaces the
+    /// other. A CSV is what a dealership wants when they are taking their
+    /// customer list somewhere that is not DealerFOSS; a package is what moves a
+    /// lot between two DealerFOSS installations without losing what points at
+    /// what. Documents are absent from both because this system stores no files
+    /// — see ADR-027.
+    /// </remarks>
+    Task<Result<ExportedFile>> ExportPackageAsync(
+        RooftopId rooftopId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Applies a package to one rooftop of this installation and reports what
+    /// landed, what was already here, and what was refused.
+    /// </summary>
+    /// <remarks>
+    /// Synchronous where a CSV import is queued, and for the opposite reason to
+    /// the one in <see cref="ExportAsync"/>: a package is one lot rather than a
+    /// whole group's history, so it fits in a request — and a person applying
+    /// one is standing there waiting to find out whether it worked. Running the
+    /// same package again is safe and is the recovery path, so there is nothing
+    /// to poll for.
+    /// </remarks>
+    Task<Result<PackageImportReport>> ImportPackageAsync(
+        RooftopId rooftopId,
+        string content,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -140,4 +174,26 @@ internal static class MigrationErrors
     public static Error MissingColumns { get; } = Error.Validation(
         "migration.missing_columns",
         "That file is missing columns this import needs.");
+
+    /// <summary>
+    /// The file is not one of ours. Named rather than left to a deserialization
+    /// error, because "unexpected token" tells somebody holding the wrong file
+    /// nothing about which file they should be holding.
+    /// </summary>
+    public static Error NotAPackage { get; } = Error.Validation(
+        "migration.not_a_package",
+        "That is not a DealerFOSS records package.");
+
+    public static Error Unreadable { get; } = Error.Validation(
+        "migration.package_unreadable",
+        "That package could not be read. It may be truncated or it may not be JSON at all.");
+
+    /// <summary>
+    /// A package from a newer build. Refused rather than read on a best-effort
+    /// basis: a partial import nobody was told about is the worst outcome
+    /// available here, and upgrading is a thing a person can actually do.
+    /// </summary>
+    public static Error PackageIsNewer(int found, int supported) => Error.Validation(
+        "migration.package_is_newer",
+        $"That package is version {found} and this installation reads up to {supported}. Upgrade before importing it.");
 }

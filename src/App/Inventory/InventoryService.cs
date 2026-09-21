@@ -220,6 +220,89 @@ public sealed class InventoryService(
                 row.Unit, row.Vehicle, recon.GetValueOrDefault(row.Unit.Id))).ToList());
     }
 
+    public async Task<Result<ImportOutcome>> ImportAsync(
+        ImportedInventoryUnit unit,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(unit);
+
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ManagePermission, unit.RooftopId, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(InventoryErrors.Forbidden);
+        }
+
+        if (await _db.InventoryUnits.AsNoTracking().AnyAsync(u => u.Id == unit.Id, cancellationToken))
+        {
+            return Result.Success(ImportOutcome.AlreadyPresent);
+        }
+
+        if (!Enum.TryParse<InventoryStatus>(unit.Status, ignoreCase: true, out var status))
+        {
+            return Result.Failure<ImportOutcome>(InventoryErrors.UnknownStatus);
+        }
+
+        if (!await _db.Vehicles.AsNoTracking().AnyAsync(v => v.Id == unit.VehicleId, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(InventoryErrors.VehicleNotFound);
+        }
+
+        Money? cost;
+        string stockNumber;
+        try
+        {
+            cost = unit.CostAmount is null
+                ? null
+                : new Money(unit.CostAmount.Value, unit.CostCurrency ?? string.Empty);
+            stockNumber = InventoryUnit.NormalizeStockNumber(unit.StockNumber);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<ImportOutcome>(Error.Validation("inventory.invalid", ex.Message));
+        }
+
+        // The receiving lot may already number a different car the same way.
+        // Refused by name rather than renumbered: a stock number is printed on
+        // paperwork and spoken aloud on the lot, and two cars quietly sharing
+        // one is worse than one car that did not arrive.
+        if (await _db.InventoryUnits
+            .AsNoTracking()
+            .AnyAsync(u => u.RooftopId == unit.RooftopId && u.StockNumber == stockNumber, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(InventoryErrors.StockNumberTaken(stockNumber));
+        }
+
+        // No transaction and no posting. There is exactly one write here, and
+        // the ledger is not part of it — see the note on IInventory.ImportAsync.
+        _db.InventoryUnits.Add(InventoryUnit.Import(
+            unit.Id,
+            unit.VehicleId,
+            unit.RooftopId,
+            stockNumber,
+            status,
+            _clock.UtcNow,
+            _currentUser.Id,
+            cost,
+            unit.AcquiredOn));
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            _db.ForgetPendingWrites();
+            return Result.Failure<ImportOutcome>(InventoryErrors.CouldNotBeWritten(ex));
+        }
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, ManagePermission, AuditOutcome.Allowed,
+                "InventoryUnit", unit.Id.ToString(), unit.RooftopId.Value,
+                "Imported from a package", null, null),
+            cancellationToken);
+
+        return Result.Success(ImportOutcome.Created);
+    }
+
     public async Task<Result<InventoryUnitDetail>> ReceiveAsync(
         NewInventoryUnit unit,
         CancellationToken cancellationToken)
@@ -717,6 +800,15 @@ internal static class InventoryErrors
     public static Error UnitNotFound { get; } = Error.NotFound(
         "inventory.unit_not_found",
         "That car is not in stock here.");
+
+    /// <summary>
+    /// The database refused an arriving stock record for a reason nothing
+    /// checked for. One record's problem is one line in an import report rather
+    /// than a failed request.
+    /// </summary>
+    public static Error CouldNotBeWritten(Exception cause) => Error.Conflict(
+        "inventory.could_not_be_written",
+        $"That stock record could not be written: {cause?.InnerException?.Message ?? cause?.Message}");
 
     public static Error ReconditioningIsNothing { get; } = Error.Validation(
         "inventory.reconditioning_is_nothing",

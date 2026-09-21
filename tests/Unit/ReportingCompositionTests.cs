@@ -311,6 +311,11 @@ public sealed class ReportingCompositionTests
             Guid unitId, Money amount, Guid sourceRepairOrderId, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
+        /// <summary>Nor this: nothing arrives from another installation by way of a report.</summary>
+        public Task<Result<ImportOutcome>> ImportAsync(
+            ImportedInventoryUnit unit, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
         public Task<Result<StockAging>> AgingAsync(
             StockAgingQuery query,
             CancellationToken cancellationToken)

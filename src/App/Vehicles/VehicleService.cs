@@ -178,6 +178,72 @@ public sealed class VehicleService(
         return Result.Success(Describe(recorded));
     }
 
+    public async Task<Result<ImportOutcome>> ImportAsync(
+        ImportedVehicle vehicle,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(vehicle);
+
+        if (!await IsAllowedAnywhereAsync(CreatePermission, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(VehicleErrors.Forbidden);
+        }
+
+        if (await _db.Vehicles.AsNoTracking().AnyAsync(v => v.Id == vehicle.Id, cancellationToken))
+        {
+            return Result.Success(ImportOutcome.AlreadyPresent);
+        }
+
+        // Checked before the insert rather than left to the unique index,
+        // because a DbUpdateException here would abort the whole package and
+        // this is a refusal about one car that the rest can survive.
+        if (!string.IsNullOrWhiteSpace(vehicle.Vin)
+            && await _db.Vehicles.AsNoTracking().AnyAsync(v => v.Vin == vehicle.Vin, cancellationToken))
+        {
+            return Result.Failure<ImportOutcome>(VehicleErrors.VinAlreadyHereUnderAnotherId);
+        }
+
+        Vehicle arriving;
+        try
+        {
+            arriving = Vehicle.Record(
+                vehicle.Id,
+                vehicle.Vin,
+                vehicle.ModelYear,
+                vehicle.Make,
+                vehicle.Model,
+                vehicle.Trim,
+                vehicle.VinExceptionReason,
+                vehicle.BodyStyle,
+                vehicle.ExteriorColor);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<ImportOutcome>(Error.Validation("vehicles.invalid", ex.Message));
+        }
+
+        _db.Vehicles.Add(arriving);
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            // One record must not take the rest of the package down with it, and
+            // a failed insert left Added would be retried on the next save.
+            _db.ForgetPendingWrites();
+            return Result.Failure<ImportOutcome>(VehicleErrors.CouldNotBeWritten(ex));
+        }
+
+        await _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, CreatePermission, AuditOutcome.Allowed,
+                "Vehicle", arriving.Id.ToString(), null, "Imported from a package", null, null),
+            cancellationToken);
+
+        return Result.Success(ImportOutcome.Created);
+    }
+
     public async Task<Result<VehicleDetail?>> FindByVinAsync(
         string vin,
         CancellationToken cancellationToken)
@@ -255,4 +321,18 @@ internal static class VehicleErrors
     public static Error NotFound { get; } = Error.NotFound(
         "vehicles.not_found",
         "No such vehicle.");
+
+    /// <summary>
+    /// An arriving car's VIN is already recorded here against a different id.
+    /// Refused rather than merged: the two records have different histories and
+    /// picking one would silently give the incoming deals the wrong car.
+    /// </summary>
+    public static Error VinAlreadyHereUnderAnotherId { get; } = Error.Conflict(
+        "vehicles.vin_already_here",
+        "That VIN is already recorded here against a different record.");
+
+    /// <summary>See the note on the customer equivalent.</summary>
+    public static Error CouldNotBeWritten(Exception cause) => Error.Conflict(
+        "vehicles.could_not_be_written",
+        $"That vehicle could not be written: {cause?.InnerException?.Message ?? cause?.Message}");
 }

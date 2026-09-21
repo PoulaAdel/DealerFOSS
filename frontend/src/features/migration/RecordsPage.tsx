@@ -21,13 +21,16 @@
 //   person needs is the twelve that did not work — by the line number they
 //   can see in their own spreadsheet, with the row quoted back to them.
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api, download, post } from '../../shared/api';
 import type {
   ImportJobView,
   ImportKind,
   ImportMode,
   ImportRowView,
+  OrganizationSummary,
+  PackageImportReport,
+  RooftopSummary,
 } from '../../shared/contracts';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
@@ -206,6 +209,193 @@ export function RecordsPage() {
           </button>
         </div>
       </section>
+
+      <MoveALot />
+    </>
+  );
+}
+
+/**
+ * Moving one lot to or from another DealerFOSS installation.
+ *
+ * A separate section rather than a third and fourth button beside the CSVs,
+ * because it answers a different question. The CSVs are "give me my customers
+ * in a spreadsheet"; this is "move this lot", and the two must not be confused
+ * by somebody in a hurry — a package is not a spreadsheet and will not open in
+ * one.
+ */
+function MoveALot() {
+  const { t } = useI18n();
+  const describe = useApiMessage();
+
+  const [rooftops, setRooftops] = useState<RooftopSummary[]>([]);
+  const [rooftop, setRooftop] = useState('');
+  const [file, setFile] = useState<Loaded | null>(null);
+  const [report, setReport] = useState<PackageImportReport | null>(null);
+  const [busy, setBusy] = useState<'out' | 'in' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const organization = await api<OrganizationSummary>('/organization');
+        const lots = organization.legalEntities.flatMap((entity) => entity.rooftops);
+
+        setRooftops(lots);
+        setRooftop(lots[0]?.id ?? '');
+      } catch {
+        // Not an error worth shouting about: the section simply has nothing to
+        // offer somebody who cannot read the organization, and says so below.
+        setRooftops([]);
+      }
+    })();
+  }, []);
+
+  async function takeOut() {
+    setError(null);
+    setBusy('out');
+
+    try {
+      await download(`/migration/packages/${rooftop}`, 'records.json');
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function bringIn() {
+    if (file === null) {
+      return;
+    }
+
+    setError(null);
+    setReport(null);
+    setBusy('in');
+
+    try {
+      setReport(
+        await post<PackageImportReport>(`/migration/packages/${rooftop}`, { content: file.content }),
+      );
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <section className="panel">
+      <h2>{t('records.moveALot')}</h2>
+      <p>{t('records.moveALotLede')}</p>
+
+      {rooftops.length === 0 ? (
+        <p className="note">{t('records.noLots')}</p>
+      ) : (
+        <>
+          <label htmlFor="lot">{t('records.whichLot')}</label>
+          <select id="lot" value={rooftop} onChange={(e) => setRooftop(e.target.value)}>
+            {rooftops.map((lot) => (
+              <option key={lot.id} value={lot.id}>
+                {lot.name} ({lot.code})
+              </option>
+            ))}
+          </select>
+
+          <label htmlFor="package">{t('records.packageFile')}</label>
+          <input
+            id="package"
+            type="file"
+            accept=".json,application/json"
+            onChange={(e) => {
+              setReport(null);
+              setError(null);
+              const chosen = e.target.files?.[0] ?? null;
+
+              if (chosen === null) {
+                setFile(null);
+                return;
+              }
+
+              // readText rather than File.text(), which the test DOM does not
+              // implement — and the section above has always used it, so there
+              // is no reason for two ways of reading a file on one screen.
+              void readText(chosen)
+                .then((content) => setFile({ name: chosen.name, content }))
+                .catch(() => {
+                  setFile(null);
+                  setError(t('records.unreadableFile'));
+                });
+            }}
+          />
+
+          <p className="error" aria-live="polite">
+            {error ?? ''}
+          </p>
+
+          <div className="actions">
+            <button type="button" disabled={rooftop === '' || busy !== null} onClick={() => void takeOut()}>
+              {busy === 'out' ? t('records.preparing') : t('records.takeLotOut')}
+            </button>
+
+            <button
+              type="button"
+              className="primary"
+              disabled={file === null || rooftop === '' || busy !== null}
+              onClick={() => void bringIn()}
+            >
+              {busy === 'in' ? t('records.bringingIn') : t('records.bringLotIn')}
+            </button>
+          </div>
+        </>
+      )}
+
+      {report === null ? null : <PackageReport report={report} />}
+    </section>
+  );
+}
+
+/**
+ * What landed and what did not. The refusals are the part worth reading, so
+ * they are a table and not a count — "3 refused" sends somebody to the logs,
+ * and there are no logs on their side of this.
+ */
+function PackageReport({ report }: { report: PackageImportReport }) {
+  const { t } = useI18n();
+
+  return (
+    <>
+      <p
+        className={`verdict ${report.refused.length > 0 ? 'verdict--bad' : 'verdict--ok'}`}
+        role="status"
+      >
+        {t('records.packageSummary', {
+          applied: report.applied,
+          reused: report.reused,
+          refused: report.refused.length,
+        })}
+      </p>
+
+      {report.refused.length === 0 ? null : (
+        <table>
+          <thead>
+            <tr>
+              <th>{t('records.colKind')}</th>
+              <th>{t('records.colRecord')}</th>
+              <th>{t('records.colWhyNot')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {report.refused.map((refusal) => (
+              <tr key={`${refusal.kind}-${refusal.id}`}>
+                <td>{refusal.kind}</td>
+                <td className="mono">{refusal.id}</td>
+                <td>{refusal.reason}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </>
   );
 }

@@ -44,6 +44,23 @@ public interface ICustomers
     Task<Result<CustomerDetail>> AddAsync(NewCustomer customer, CancellationToken cancellationToken);
 
     /// <summary>
+    /// A customer arriving from another DealerFOSS installation, keeping the id
+    /// they already had.
+    /// </summary>
+    /// <remarks>
+    /// Distinct from <see cref="AddAsync"/> because the id is the caller's
+    /// rather than ours, and that is the entire point: the deals and jobs in
+    /// the same package refer to this person by that id, so minting a new one
+    /// would break every relationship in the file.
+    ///
+    /// An id already here answers <see cref="ImportOutcome.AlreadyPresent"/>
+    /// and nothing is written — see the type for why there is no update.
+    /// </remarks>
+    Task<Result<ImportOutcome>> ImportAsync(
+        ImportedCustomer customer,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Finds the customer imported from a given record in another system, or null.
     /// </summary>
     /// <remarks>
@@ -162,6 +179,23 @@ public sealed record CustomerDetail(
     DateTimeOffset? RemovedAtProviderOn = null);
 
 public sealed record ContactPointView(Guid Id, string Kind, string Value, bool IsPrimary);
+
+/// <summary>
+/// A customer as another installation holds them, id and all. Everything a
+/// document prints about a buyer is here, because the round trip is judged on
+/// whether the paperwork comes out the same.
+/// </summary>
+public sealed record ImportedCustomer(
+    Guid Id,
+    string Kind,
+    string FirstName,
+    string LastName,
+    string? ExternalReference,
+    decimal? CreditLimit,
+    IReadOnlyList<ImportedContact> ContactPoints,
+    AddressView? Address);
+
+public sealed record ImportedContact(string Kind, string Value, bool IsPrimary);
 
 /// <summary>
 /// An address as the API speaks it. <see cref="County"/> is separate from
