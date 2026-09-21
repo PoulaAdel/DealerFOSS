@@ -1,0 +1,19 @@
+# Copyright (c) 2026 The DealerFOSS contributors.
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Overview: Purpose, File Design, and Engineering
+#   Tells GitHub which funding platforms to show on the Sponsor button and the
+#   repository's Fund tab. GitHub reads this file by its exact name and path;
+#   nothing in the codebase references it directly.
+#
+# Usage:
+#   Add a platform once its account exists and its handle is known. An entry
+#   for a platform nobody has signed up for yet does nothing harmful, but also
+#   nothing useful — GitHub just links to a page that is not there.
+#
+# Coding Instructions:
+#   One key per platform GitHub supports (github, open_collective, ko_fi,
+#   buy_me_a_coffee, patreon, liberapay, custom, ...). `github` takes a list of
+#   GitHub usernames/orgs that have Sponsors enabled — it is inert, not wrong,
+#   for a username listed here before that person finishes enrolling.
+github: [PoulaAdel]
