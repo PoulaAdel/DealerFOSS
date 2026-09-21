@@ -15,9 +15,11 @@
 //   only catch fields somebody remembered to declare. Keep it looking at the
 //   wire.
 
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using DealerFOSS.App;
 
@@ -106,6 +108,36 @@ public sealed class DocumentTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task The_printed_order_adds_up_to_its_own_total()
+    {
+        // The one test in this file that is not about a particular row, and the
+        // reason it exists: FOUR separate lines have been inside AmountDue and
+        // missing from the column printed above it — the trade-in, the F&I
+        // products, the tax on the deal desk, and the tax on this document,
+        // which was found on 2026-09-21 by reading a real order in a browser
+        // and adding it up by hand. Each of the first three was fixed by
+        // printing that one line. This asserts the property instead, so the
+        // fifth cannot be quiet.
+        //
+        // Every component at once, because the defect has always been one
+        // component among several rather than an empty document.
+        var deal = await DealWithCoverAsync(tradeAllowance: 3000m, tax: 1650m);
+        var html = await DocumentAsync($"/api/v1/documents/deals/{deal}");
+
+        var (amounts, total) = ColumnOf(html);
+
+        amounts.Should().HaveCountGreaterThanOrEqualTo(4,
+            because: "a car, a warranty, a trade-in and tax were all recorded on this deal");
+
+        amounts.Sum().Should().Be(total,
+            because: "a customer reads the column down and expects to arrive at the figure they are asked to pay");
+
+        // And the row says what the tax was worked out on, since an amount with
+        // no basis and no rate cannot be queried by the person paying it.
+        html.Should().Contain("$20,000.00 at 8.25%");
+    }
+
+    [Fact]
     public async Task Somebody_who_cannot_read_the_deal_cannot_print_it()
     {
         // No permission is checked in the document endpoint — it reads through
@@ -182,7 +214,46 @@ public sealed class DocumentTests(HostFixture fixture)
         return await response.Content.ReadAsStringAsync();
     }
 
-    private async Task<Guid> DealWithCoverAsync(Guid? customerId = null, decimal tradeAllowance = 0m)
+    /// <summary>
+    /// Every amount in the body of a money table, and the total printed under
+    /// it. Read out of the rendered HTML rather than a model on purpose: the
+    /// defect this guards against is a figure that exists server-side and never
+    /// reaches the page, which a typed assertion cannot see.
+    /// </summary>
+    private static (IReadOnlyList<decimal> Amounts, decimal Total) ColumnOf(string html)
+    {
+        // The total carries both classes, so it is matched first and removed —
+        // otherwise it would be counted as one of the lines as well and every
+        // document would appear to be exactly double.
+        var totalMatch = Regex.Match(html, "<td class=\"num total\">([^<]*)</td>");
+        totalMatch.Success.Should().BeTrue(because: "a money document prints a total");
+
+        var body = html.Replace(totalMatch.Value, string.Empty, StringComparison.Ordinal);
+
+        var amounts = Regex.Matches(body, "<td class=\"num\">([^<]*)</td>")
+            .Select(m => Money(m.Groups[1].Value))
+            .Where(v => v is not null)
+            .Select(v => v!.Value)
+            .ToList();
+
+        return (amounts, Money(totalMatch.Groups[1].Value) ?? 0m);
+
+        // "declined" is printed where an amount would go, and is not one.
+        static decimal? Money(string text) =>
+            decimal.TryParse(
+                text.Replace("$", string.Empty, StringComparison.Ordinal)
+                    .Replace(",", string.Empty, StringComparison.Ordinal),
+                NumberStyles.Currency,
+                CultureInfo.InvariantCulture,
+                out var value)
+                ? value
+                : null;
+    }
+
+    private async Task<Guid> DealWithCoverAsync(
+        Guid? customerId = null,
+        decimal tradeAllowance = 0m,
+        decimal tax = 0m)
     {
         var rooftop = await RooftopIdAsync();
         var customer = customerId ?? await FirstAsync("/api/v1/customers?query=a&limit=1", "id");
@@ -222,6 +293,29 @@ public sealed class DocumentTests(HostFixture fixture)
                 new { financeProductId = product.GetProperty("id").GetGuid(), price = 900m, cost = 700m },
             },
         }, HttpStatusCode.OK);
+
+        if (tax != 0m)
+        {
+            // A rate against the car's price, so the row can be checked twice
+            // over: the amount itself, and that the basis and rate printed
+            // beside it are the ones the deal actually carries.
+            await PostAsync<JsonElement>($"/api/v1/deals/{dealId}/tax", Manager, new
+            {
+                lines = new[]
+                {
+                    new
+                    {
+                        description = "Sales tax",
+                        jurisdiction = "WA / King / Seattle",
+                        basis = 20000m,
+                        rate = tax / 20000m,
+                        amount = tax,
+                        provenance = "EnteredByPerson",
+                    },
+                },
+                taxedAt = new { administrativeArea = "WA", county = "King", postalCode = "98101", country = "US" },
+            }, HttpStatusCode.OK);
+        }
 
         return dealId;
     }

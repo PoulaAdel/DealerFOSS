@@ -1551,3 +1551,15 @@ to come.
   Walked: a seeded deal now reads Discount −$650.00, Documentation fee $499.00, Vehicle price $16,520.00, Fee $145.00, Trade-in −$3,500.00, Tax $624.15 — summing to **$13,638.15** against a printed **$13,638.15**, with the tax row reading *"Sales tax $12,869.00 at 4.85%"*.
 
   Evidence: `dotnet build` 0/0, `dotnet test` **852/852**, `verify-e2e.ps1` PASS against the SQL container, `npm audit` clean at high, `npm run typecheck`, `npm test` **492/492** (was 483 — nine new), `npm run build`.
+
+- **2026-09-21 — The paperwork the customer is handed adds up.** A readiness review traced the three journeys a dealership actually runs, and the sale ended somewhere nobody had looked: the **printed vehicle order**. Deal `0e24786d` renders 2025 Toyota RAV4 XLE $32,500.00 and GAP cover $500.00 above **Due from the customer $36,331.25**. The missing $3,331.25 is the sales tax, which `Deal.AmountDue` includes and `DocumentService` never printed. The word "tax" did not occur on the page outside the disclaimer.
+
+  This is the **fourth** time a line inside that total has been missing from the column above it — the trade-in, then the F&I products, then the tax on the deal desk, and now the same tax on the document — and the **second copy of the same column**. The deal desk was answered on 2026-09-19 with a test that reads every amount and sums it; the document had no such test, which is exactly why the fix landed on one side and not the other. It has one now: `The_printed_order_adds_up_to_its_own_total` parses the rendered HTML, pulls every `<td class="num">` out of the table body, sums them, and asserts the sum equals the figure in `<td class="num total">` — with a car, a warranty, a trade-in and tax all present at once.
+
+  **Checked against the bug rather than assumed:** on the committed `DocumentService` the new test fails with *"Expected amounts to contain at least 4 item(s) … but found 3: {20000.00M, 900.00M, -3000.00M}"*, naming the absent line. With the fix it passes at 20000 + 900 − 3000 + 1650 = 19550 against a printed 19550.
+
+  The tax row prints its basis and rate beside the amount — *"Sales tax WA / King / Seattle — $20,000.00 at 8.25%"* — because a buyer querying a tax figure is asking on what and at what rate, and a document that cannot answer sends them back to the desk. A line a person typed outright carries no rate and shows its jurisdiction alone, rather than "at 0%", which would be a false claim about the law.
+
+  The service invoice was checked for the same defect and does not have it: five invoiced jobs sampled through the running application, Labour + Parts + Sent out equal to the printed total in every one. What is *not* covered by that sample is a job split across pay types, since all five were wholly customer-pay.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **853/853** (was 852 — one new), `verify-e2e.ps1` PASS against the SQL container. No frontend change, so the four `npm` gates were not required and were not run.

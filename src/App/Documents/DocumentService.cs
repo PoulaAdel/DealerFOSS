@@ -17,6 +17,15 @@
 //   the raw HTML to prove it. If a future field arrives on either detail, it
 //   does not reach paper unless somebody comes here and writes it out.
 //
+//   A COLUMN A PERSON READS DOWN MUST REACH THE TOTAL PRINTED UNDER IT.
+//   Every component of AmountDue is itemised above the total, and
+//   DocumentTests.The_printed_order_adds_up_to_its_own_total reads every
+//   amount out of the rendered HTML and sums it rather than checking for a
+//   particular row. Four different lines have gone missing from a summary
+//   column in this product; the tax on this document was the fourth, found on
+//   2026-09-21 by reading one. If you add anything to AmountDue, that test
+//   fails until it is printed here.
+//
 //   A DOCUMENT IS A SNAPSHOT, and it is one because of where the data comes
 //   from rather than anything done here. A deal's numbers freeze on
 //   submission; a job's lines freeze on completion and its part costs freeze
@@ -105,6 +114,39 @@ public sealed class DocumentService(
                 CultureInfo.InvariantCulture,
                 $"<tr><td>Trade-in — {DocumentHtml.Text(trade.Description)}</td>"
                 + $"<td class=\"num\">{DocumentHtml.Text(DocumentHtml.Money(-trade.Equity, deal.Value.Currency))}</td></tr>");
+        }
+
+        // Tax is inside AmountDue, so it belongs in the column that adds up to
+        // it. It was not there, and the printed order was short by the tax on
+        // every deal that carried any — $33,000.00 of lines under a $36,331.25
+        // total, read off a real document in a browser on 2026-09-21.
+        //
+        // That is the FOURTH time a line inside the total has been missing from
+        // a column in this product: the trade-in, then the F&I products, then
+        // this same tax on the deal desk, and now the paperwork the customer is
+        // actually handed. The desk answered it with a test that reads every
+        // amount and sums it; so does this one now. Add a component to AmountDue
+        // and that test sends you here, which is the only reason there will not
+        // be a fifth.
+        //
+        // The basis and the rate print beside the amount because a buyer
+        // querying a tax figure is asking "on what, and at what rate" — a
+        // document that cannot answer sends them back to the desk. A line a
+        // person typed outright has no rate, so it shows its jurisdiction alone
+        // rather than "at 0%", which would be a false claim about the law.
+        foreach (var tax in deal.Value.TaxLines)
+        {
+            var worked = tax.Rate == 0m
+                ? tax.Jurisdiction
+                : string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"{tax.Jurisdiction} — {DocumentHtml.Money(tax.Basis, deal.Value.Currency)} at {tax.Rate * 100m:0.###}%");
+
+            body.Append(
+                CultureInfo.InvariantCulture,
+                $"<tr><td>{DocumentHtml.Text(tax.Description)} "
+                + $"<span class=\"muted\">{DocumentHtml.Text(worked)}</span></td>"
+                + $"<td class=\"num\">{DocumentHtml.Text(DocumentHtml.Money(tax.Amount, deal.Value.Currency))}</td></tr>");
         }
 
         body.Append("</tbody><tfoot><tr><td class=\"total\">Due from the customer</td>");
