@@ -124,7 +124,7 @@ public sealed class DocumentTests(HostFixture fixture)
         var deal = await DealWithCoverAsync(tradeAllowance: 3000m, tax: 1650m);
         var html = await DocumentAsync($"/api/v1/documents/deals/{deal}");
 
-        var (amounts, total) = ColumnOf(html);
+        var (amounts, total) = ColumnOf(html, "What it comes to");
 
         amounts.Should().HaveCountGreaterThanOrEqualTo(4,
             because: "a car, a warranty, a trade-in and tax were all recorded on this deal");
@@ -191,6 +191,69 @@ public sealed class DocumentTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task The_printed_invoice_adds_up_to_its_own_total()
+    {
+        // The FIFTH time a summary column in this product has failed to reach
+        // the total printed under it, and the first with a different shape. The
+        // other four were missing a line that belonged in the column — the
+        // trade-in, the F&I products, the tax on the desk, the tax on the
+        // order — and each was fixed by printing it.
+        //
+        // Here the total was right and the COLUMN was wrong. LabourTotal,
+        // PartsTotal and SubletTotal are every line of that kind whatever pays
+        // for it, and the work was listed at full value, while "Total due" is
+        // AmountDue, which is customer-pay only. So any job carrying warranty
+        // or internal work showed figures that overshot what was owed — and
+        // overshot it upwards, which is the direction that causes an argument
+        // at the counter.
+        //
+        // Five jobs sampled through the running app on 2026-09-21 all added up,
+        // because all five were wholly customer-pay. This asserts the property
+        // on a job that is not.
+        var job = await InvoicedJobAsync(splitPay: true);
+        var html = await DocumentAsync($"/api/v1/documents/repair-orders/{job}");
+
+        // The job really does carry all three, so a renderer that printed
+        // nothing cannot pass this vacuously. These two are asserted BEFORE the
+        // arithmetic and deliberately name only the descriptions, which the
+        // broken renderer printed too — so what fails on it is the sum, with
+        // the discrepancy in the message, rather than a missing word.
+        html.Should().Contain("Replace the water pump");
+        html.Should().Contain("Wiper blade");
+
+        // BOTH money tables, because a person reads the work down and then
+        // looks at the total, and reads the summary down and does the same.
+        var work = ColumnOf(html, "Work done");
+        var totals = ColumnOf(html, "Totals");
+
+        work.Amounts.Sum().Should().Be(work.Total,
+            because: "a customer reads the work down and expects to arrive at the figure they are asked to pay");
+
+        totals.Amounts.Sum().Should().Be(totals.Total,
+            because: "the summary has to agree with the lines above it");
+
+        // Why each unbilled line is not in that column, said where the amount
+        // would be, rather than the line being dropped from the document.
+        html.Should().Contain("warranty", because: "the manufacturer is paying for that line");
+        html.Should().Contain("no charge", because: "the dealership is carrying that one");
+
+        // And what the customer is not shown: the warranty line is 2 h at 130
+        // and the internal part is 45. Neither figure is their business.
+        html.Should().NotContain("$260.00", because: "what the manufacturer is billed is not on the customer's copy");
+        html.Should().NotContain("$45.00", because: "what the dealership carries itself is not either");
+
+        // Nor either FACTOR of the suppressed amount. Printing "2.00 h at
+        // $130.00" while withholding $260.00 withholds nothing — found by
+        // reading a rendered invoice in a browser, which is the only way it
+        // could have been found, because the assertions above pass either way.
+        html.Should().NotContain("$130.00", because: "the warranty rate is the withheld amount one multiplication away");
+        html.Should().Contain("2.00 h<", because: "how long the car was worked on is still the customer's to know");
+
+        // The customer's own line keeps its rate, which is what they are paying.
+        html.Should().Contain("1.50 h at $120.00");
+    }
+
+    [Fact]
     public async Task A_part_cost_never_reaches_the_service_invoice()
     {
         var job = await InvoicedJobAsync();
@@ -215,20 +278,35 @@ public sealed class DocumentTests(HostFixture fixture)
     }
 
     /// <summary>
-    /// Every amount in the body of a money table, and the total printed under
-    /// it. Read out of the rendered HTML rather than a model on purpose: the
-    /// defect this guards against is a figure that exists server-side and never
-    /// reaches the page, which a typed assertion cannot see.
+    /// Every amount in one money table, and the total this document asks the
+    /// customer to pay. Read out of the rendered HTML rather than a model on
+    /// purpose: the defect this guards against is a figure that exists
+    /// server-side and never reaches the page, which a typed assertion cannot
+    /// see.
     /// </summary>
-    private static (IReadOnlyList<decimal> Amounts, decimal Total) ColumnOf(string html)
+    /// <param name="heading">
+    /// Which table. The service invoice has TWO money tables — the work and
+    /// the totals — and both have to reach the same figure. Scanning the whole
+    /// document would sum them together and report every invoice as exactly
+    /// double.
+    /// </param>
+    private static (IReadOnlyList<decimal> Amounts, decimal Total) ColumnOf(string html, string heading)
     {
         // The total carries both classes, so it is matched first and removed —
-        // otherwise it would be counted as one of the lines as well and every
-        // document would appear to be exactly double.
+        // otherwise it would be counted as one of the lines as well and the
+        // totals table would appear to be exactly double.
         var totalMatch = Regex.Match(html, "<td class=\"num total\">([^<]*)</td>");
         totalMatch.Success.Should().BeTrue(because: "a money document prints a total");
 
-        var body = html.Replace(totalMatch.Value, string.Empty, StringComparison.Ordinal);
+        var start = html.IndexOf($"<h2>{heading}</h2>", StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0,
+            because: $"the document should have a '{heading}' section");
+
+        var end = html.IndexOf("</table>", start, StringComparison.Ordinal);
+        end.Should().BeGreaterThan(start, because: "a money section is a table");
+
+        var body = html[start..end]
+            .Replace(totalMatch.Value, string.Empty, StringComparison.Ordinal);
 
         var amounts = Regex.Matches(body, "<td class=\"num\">([^<]*)</td>")
             .Select(m => Money(m.Groups[1].Value))
@@ -342,12 +420,37 @@ public sealed class DocumentTests(HostFixture fixture)
         return jobId;
     }
 
-    private async Task<Guid> InvoicedJobAsync(bool declineExtra = false)
+    private async Task<Guid> InvoicedJobAsync(bool declineExtra = false, bool splitPay = false)
     {
         var jobId = await OpenJobAsync();
 
         await PostAsync<JsonElement>($"/api/v1/repair-orders/{jobId}/status", Manager,
             new { status = "InProgress", note = (string?)null }, HttpStatusCode.OK);
+
+        if (splitPay)
+        {
+            // One job, three payers — the ordinary case, not a contrived one.
+            // The customer came in for a service, the water pump turned out to
+            // be under warranty, and the workshop put a wiper blade on off its
+            // own stock while the car was up.
+            //
+            // Neither of these needs an answer from the customer: a line
+            // somebody else is paying for is authorized on arrival, which is
+            // also why neither blocks the invoice.
+            await PostAsync<JsonElement>($"/api/v1/repair-orders/{jobId}/lines", Manager, new
+            {
+                kind = "Labour",
+                description = "Replace the water pump",
+                hours = 2m,
+                rate = 130m,
+                payType = "Warranty",
+            }, HttpStatusCode.OK);
+
+            await PostAsync<JsonElement>($"/api/v1/repair-orders/{jobId}/lines", Manager, new
+            {
+                kind = "Part", description = "Wiper blade", unitAmount = 45m, payType = "Internal",
+            }, HttpStatusCode.OK);
+        }
 
         if (declineExtra)
         {

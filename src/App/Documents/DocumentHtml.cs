@@ -69,7 +69,11 @@ internal static class DocumentHtml
         tfoot td { font-weight: 600; border-top: 2px solid #111; border-bottom: none; }
         .total { font-size: 14pt; }
         .note { margin-top: 18px; font-size: 10pt; color: #444; }
-        .declined { color: #666; }
+        /* On the record, not on this bill: work that was declined, and work
+           somebody other than the customer is paying for. Both carry a word
+           where an amount would go, so neither joins the column that adds up
+           to the total. */
+        .declined, .unbilled { color: #666; }
         /* Kept off paper: on screen it explains how to produce the customer's
            copy, and on paper it would be a line of instructions nobody needs. */
         .screen-only {

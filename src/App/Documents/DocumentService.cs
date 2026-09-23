@@ -19,12 +19,21 @@
 //
 //   A COLUMN A PERSON READS DOWN MUST REACH THE TOTAL PRINTED UNDER IT.
 //   Every component of AmountDue is itemised above the total, and
-//   DocumentTests.The_printed_order_adds_up_to_its_own_total reads every
-//   amount out of the rendered HTML and sums it rather than checking for a
-//   particular row. Four different lines have gone missing from a summary
-//   column in this product; the tax on this document was the fourth, found on
-//   2026-09-21 by reading one. If you add anything to AmountDue, that test
-//   fails until it is printed here.
+//   DocumentTests.The_printed_order_adds_up_to_its_own_total and
+//   .The_printed_invoice_adds_up_to_its_own_total read every amount out of the
+//   rendered HTML and sum it rather than checking for a particular row. If you
+//   add anything to either AmountDue, those tests fail until it is printed
+//   here.
+//
+//   FIVE lines have now gone missing from a summary column in this product:
+//   the trade-in, the F&I products, the tax on the deal desk, the same tax on
+//   the printed order (2026-09-21), and the service invoice's warranty and
+//   internal work (2026-09-22). The first four were each fixed by printing the
+//   one missing line. The fifth could not be, and that is the useful part:
+//   here the total was right and the COLUMN was wrong, because it listed work
+//   the customer is not paying for. So the invoice suppresses those figures
+//   rather than adding a row — see the comments in ServiceInvoiceAsync. Read
+//   the shape of the defect before reaching for last time's fix.
 //
 //   A DOCUMENT IS A SNAPSHOT, and it is one because of where the data comes
 //   from rather than anything done here. A deal's numbers freeze on
@@ -214,19 +223,50 @@ public sealed class DocumentService(
         foreach (var line in job.Value.Lines)
         {
             var declined = line.Authorization == "Declined";
+            var billed = !declined && line.PayType == nameof(ServicePayType.CustomerPay);
 
-            var detail = line.Hours is { } hours && line.Rate is { } rate
-                ? $"{hours} h at {DocumentHtml.Money(rate, job.Value.Currency)}"
+            // Hours without the rate on work somebody else is paying for.
+            // Suppressing the amount while printing both of its factors is not
+            // a suppression — "2.00 h at $130.00" is $260.00 one multiplication
+            // away, which is exactly the figure the line above withholds. Found
+            // by reading a rendered invoice in a browser on 2026-09-23; the
+            // tests could not see it, because they assert on the amount.
+            //
+            // A DECLINED line keeps its rate, and the difference is not an
+            // inconsistency: declined work is customer-pay work that was
+            // offered, so the rate is what the customer was quoted and the one
+            // thing that makes "we did offer" checkable a year later.
+            var detail = line.Hours is { } hours
+                ? line.Rate is { } rate && (billed || declined)
+                    ? $"{hours} h at {DocumentHtml.Money(rate, job.Value.Currency)}"
+                    : $"{hours} h"
                 : line.Kind;
 
-            // Declined work stays on the record at nothing. A customer who said no
-            // in March and comes back in September with the same fault should be
-            // able to see they were told — that is the whole reason it is printed.
-            var amount = declined
-                ? "declined"
-                : DocumentHtml.Money(line.Amount, job.Value.Currency);
+            // EVERY line of work done to the car is listed; only the ones the
+            // customer is being asked to pay for carry a figure. The rest say
+            // why they do not, in the place where an amount would go.
+            //
+            // Declined work was already printed this way, and for a reason that
+            // applies just as well to the other two: a customer who said no in
+            // March and comes back in September with the same fault should be
+            // able to see they were told. Somebody whose water pump went under
+            // warranty should likewise be able to see it was done.
+            //
+            // What they must NOT see is the figure. What a manufacturer is
+            // billed is between the dealership and the manufacturer, and
+            // WorkshopPage's totals block already says so in as many words —
+            // "warranty and internal work is money the workshop earns and the
+            // customer never sees". This renderer simply never caught up, and
+            // printed every line at full value under a customer-pay total.
+            var amount = billed
+                ? DocumentHtml.Money(line.Amount, job.Value.Currency)
+                : declined
+                    ? "declined"
+                    : line.PayType == nameof(ServicePayType.Warranty) ? "warranty" : "no charge";
 
-            body.Append(CultureInfo.InvariantCulture, $"<tr class=\"{(declined ? "declined" : string.Empty)}\">");
+            var mark = billed ? string.Empty : declined ? "declined" : "unbilled";
+
+            body.Append(CultureInfo.InvariantCulture, $"<tr class=\"{mark}\">");
             body.Append(CultureInfo.InvariantCulture, $"<td>{DocumentHtml.Text(line.Description)}</td>");
             body.Append(CultureInfo.InvariantCulture, $"<td class=\"muted\">{DocumentHtml.Text(detail)}</td>");
             body.Append(CultureInfo.InvariantCulture, $"<td class=\"num\">{DocumentHtml.Text(amount)}</td></tr>");
@@ -234,15 +274,37 @@ public sealed class DocumentService(
 
         body.Append("</tbody></table>");
 
+        // CUSTOMER-PAY ONLY, the same rule as the column above and for the same
+        // reason. These used to be RepairOrderDetail's LabourTotal, PartsTotal
+        // and SubletTotal, which are every line of that kind whatever pays for
+        // it — so on a job carrying warranty or internal work the summary
+        // overshot the total printed under it, and overshot it UPWARDS, which
+        // is the direction that causes an argument at the counter.
+        //
+        // Summed from the lines rather than taken from a new field on the
+        // detail: these are a property of this document, not of the job, and
+        // the lines here are the same frozen figures the totals are built from,
+        // so nothing is recalculated that a snapshot promised to hold still.
         body.Append("<h2>Totals</h2><table><tbody>");
-        Total("Labour", job.Value.LabourTotal);
-        Total("Parts", job.Value.PartsTotal);
-        Total("Sent out", job.Value.SubletTotal);
+        Total("Labour", BilledTotal(nameof(ServiceLineKind.Labour)));
+        Total("Parts", BilledTotal(nameof(ServiceLineKind.Part)));
+        Total("Sent out", BilledTotal(nameof(ServiceLineKind.Sublet)));
         body.Append("</tbody><tfoot><tr><td class=\"total\">Total due</td>");
         body.Append(
             CultureInfo.InvariantCulture,
             $"<td class=\"num total\">{DocumentHtml.Text(DocumentHtml.Money(job.Value.AmountDue, job.Value.Currency))}</td>");
         body.Append("</tr></tfoot></table>");
+
+        body.Append(
+            "<p class=\"note\">Work shown as warranty or no charge was done to the vehicle and "
+            + "is not billed to you. Work shown as declined was offered and not taken up.</p>");
+
+        decimal BilledTotal(string kind) =>
+            job.Value.Lines
+                .Where(l => l.Kind == kind
+                    && l.PayType == nameof(ServicePayType.CustomerPay)
+                    && l.Authorization != "Declined")
+                .Sum(l => l.Amount);
 
         void Total(string label, decimal amount) =>
             body.Append(
