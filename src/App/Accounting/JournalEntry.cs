@@ -218,4 +218,10 @@ public enum JournalSource
     /// balance only ever grew.
     /// </summary>
     WarrantyClaimPaid = 9,
+
+    /// <summary>
+    /// A year was closed: every revenue and expense account for it zeroed,
+    /// the net carried to RetainedEarnings. See FiscalYear.
+    /// </summary>
+    YearEndClose = 10,
 }

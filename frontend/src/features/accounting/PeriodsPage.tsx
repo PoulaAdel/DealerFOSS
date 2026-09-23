@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, post } from '../../shared/api';
 import { Confirm } from '../../shared/Confirm';
-import type { AccountingPeriodView } from '../../shared/contracts';
+import type { AccountingPeriodView, FiscalYearView } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 
@@ -299,7 +299,234 @@ export function PeriodsPage() {
           </ol>
         </>
       ) : null}
+
+      <FiscalYearsPanel />
     </section>
+  );
+}
+
+/**
+ * The years, one level up from the months. There is no separate "open a year"
+ * act — closing one for the first time opens it implicitly, the same way
+ * FiscalYear does on the server — but closing still needs a year to name,
+ * since a year with nothing ever posted against it has no row here yet to
+ * click. The year field below is that: it names one, the server does the
+ * rest.
+ */
+function FiscalYearsPanel() {
+  const { t, format } = useI18n();
+  const describe = useApiMessage();
+
+  const [load, setLoad] = useState<
+    | { kind: 'loading' }
+    | { kind: 'ready'; years: FiscalYearView[] }
+    | { kind: 'denied' }
+    | { kind: 'failed'; message: string }
+  >({ kind: 'loading' });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [closing, setClosing] = useState<{ year: number } | null>(null);
+  const [reopening, setReopening] = useState<FiscalYearView | null>(null);
+  const [reason, setReason] = useState('');
+  const [closeYearInput, setCloseYearInput] = useState(String(new Date().getUTCFullYear()));
+
+  const find = useCallback(async () => {
+    setLoad({ kind: 'loading' });
+
+    try {
+      setLoad({ kind: 'ready', years: await api<FiscalYearView[]>('/accounting/years') });
+    } catch (failure) {
+      if (failure instanceof ApiError && failure.status === 403) {
+        setLoad({ kind: 'denied' });
+        return;
+      }
+
+      setLoad({ kind: 'failed', message: describe(failure) });
+    }
+  }, [describe]);
+
+  useEffect(() => {
+    void find();
+  }, [find]);
+
+  async function act(work: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+
+    try {
+      await work();
+      await find();
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (load.kind === 'loading' || load.kind === 'denied') {
+    return null;
+  }
+
+  if (load.kind === 'failed') {
+    return <p className="error">{load.message}</p>;
+  }
+
+  return (
+    <>
+      <h2>{t('years.title')}</h2>
+      <p className="note">{t('years.lede')}</p>
+
+      <p className="error" aria-live="polite">
+        {error ?? ''}
+      </p>
+
+      <div className="row">
+        <div className="field">
+          <label htmlFor="close-year">{t('years.colYear')}</label>
+          <input
+            id="close-year"
+            inputMode="numeric"
+            value={closeYearInput}
+            onChange={(event) => setCloseYearInput(event.target.value)}
+          />
+        </div>
+        <div className="actions">
+          <button
+            type="button"
+            className="primary"
+            disabled={busy || closeYearInput.trim() === ''}
+            onClick={() => setClosing({ year: Number(closeYearInput) })}
+          >
+            {t('years.closeIt')}
+          </button>
+        </div>
+      </div>
+
+      {load.years.length === 0 ? (
+        <p className="note">{t('years.none')}</p>
+      ) : (
+        <div className="scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">{t('years.colYear')}</th>
+                <th scope="col">{t('years.colState')}</th>
+                <th scope="col">&nbsp;</th>
+              </tr>
+            </thead>
+            <tbody>
+              {load.years.map((year) => (
+                <tr key={year.id}>
+                  <td>{year.year}</td>
+                  <td>
+                    {year.state === 'Open' ? (
+                      <span className="chip chip--won">{t('enum.periodState.Open')}</span>
+                    ) : (
+                      <span className="chip chip--lost">{t('enum.periodState.Closed')}</span>
+                    )}
+                  </td>
+                  <td>
+                    {year.state === 'Open' ? (
+                      <button type="button" disabled={busy} onClick={() => setClosing({ year: year.year })}>
+                        {t('years.closeIt')}
+                      </button>
+                    ) : (
+                      <button type="button" disabled={busy} onClick={() => setReopening(year)}>
+                        {t('years.reopen')}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {closing === null ? null : (
+        <Confirm
+          title={t('years.closeTitle', { year: String(closing.year) })}
+          body={t('years.confirmClose', { year: String(closing.year) })}
+          confirmLabel={t('years.closeIt')}
+          typeToConfirm={String(closing.year)}
+          busy={busy}
+          onConfirm={() => {
+            const year = closing;
+            setClosing(null);
+            void act(() => post(`/accounting/years/${year.year}/close`, { note: null }));
+          }}
+          onCancel={() => setClosing(null)}
+        />
+      )}
+
+      {reopening === null ? null : (
+        <section className="panel panel--warn">
+          <h2>{t('years.reopenTitle', { year: String(reopening.year) })}</h2>
+          <p className="note">{t('years.reopenLede')}</p>
+
+          <div className="field">
+            <label htmlFor="reopen-year-reason">{t('years.reopenWhy')}</label>
+            <input
+              id="reopen-year-reason"
+              value={reason}
+              placeholder={t('years.reopenPlaceholder')}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </div>
+
+          <div className="actions">
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || reason.trim() === ''}
+              onClick={() =>
+                void act(async () => {
+                  await post(`/accounting/years/${reopening.year}/reopen`, { note: reason.trim() });
+                  setReopening(null);
+                  setReason('');
+                })
+              }
+            >
+              {t('years.reopenIt')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setReopening(null);
+                setReason('');
+              }}
+            >
+              {t('years.leaveClosed')}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {load.years.some((y) => y.history.length > 0) ? (
+        <>
+          <h2>{t('years.historyTitle')}</h2>
+          <ol className="history">
+            {load.years
+              .flatMap((year) => year.history.map((entry) => ({ year, entry })))
+              .sort((a, b) => new Date(b.entry.occurredAt).getTime() - new Date(a.entry.occurredAt).getTime())
+              .slice(0, 20)
+              .map(({ year, entry }, index) => (
+                <li key={`${year.id}-${entry.occurredAt}-${index}`}>
+                  <span className="strong">
+                    {t(entry.toState === 'Closed' ? 'years.wasClosed' : 'years.wasReopened', {
+                      year: String(year.year),
+                    })}
+                  </span>{' '}
+                  <span className="muted">
+                    {format.dateTime(entry.occurredAt)}
+                    {entry.note === null ? '' : ` — ${entry.note}`}
+                  </span>
+                </li>
+              ))}
+          </ol>
+        </>
+      ) : null}
+    </>
   );
 }
 

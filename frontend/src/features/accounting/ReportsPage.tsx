@@ -125,6 +125,7 @@ type Money = (amount: number, currency: string) => string;
 
 function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: Money }) {
   const { t } = useI18n();
+  const priorYear = report.priorYear;
 
   return (
     <section className="panel" aria-label={t('reports.profitTitle')}>
@@ -138,6 +139,9 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
               <th scope="col" className="num">{t('reports.revenue')}</th>
               <th scope="col" className="num">{t('reports.cost')}</th>
               <th scope="col" className="num">{t('reports.gross')}</th>
+              {priorYear === null ? null : (
+                <th scope="col" className="num">{t('reports.lastYear')}</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -147,6 +151,14 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
                 <td className="num">{money(department.revenue, report.currency)}</td>
                 <td className="num">{money(department.cost, report.currency)}</td>
                 <td className="num">{money(department.gross, report.currency)}</td>
+                {priorYear === null ? null : (
+                  <td className="num muted">
+                    {money(
+                      priorYear.departments.find((d) => d.name === department.name)?.gross ?? 0,
+                      report.currency,
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -156,6 +168,9 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
               <td className="num">{money(report.totalRevenue, report.currency)}</td>
               <td className="num">{money(report.totalCost, report.currency)}</td>
               <td className="num strong">{money(report.grossProfit, report.currency)}</td>
+              {priorYear === null ? null : (
+                <td className="num strong muted">{money(priorYear.grossProfit, report.currency)}</td>
+              )}
             </tr>
           </tfoot>
         </table>
@@ -171,6 +186,14 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
               <tr key={expense.code}>
                 <td><span className="mono" dir="ltr">{expense.code}</span> {expense.name}</td>
                 <td className="num">{money(expense.amount, report.currency)}</td>
+                {priorYear === null ? null : (
+                  <td className="num muted">
+                    {money(
+                      priorYear.expenses.find((e) => e.code === expense.code)?.amount ?? 0,
+                      report.currency,
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -178,6 +201,9 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
             <tr>
               <td className="strong">{t('reports.totalOverheads')}</td>
               <td className="num strong">{money(report.totalExpenses, report.currency)}</td>
+              {priorYear === null ? null : (
+                <td className="num strong muted">{money(priorYear.totalExpenses, report.currency)}</td>
+              )}
             </tr>
           </tfoot>
         </table>
@@ -185,6 +211,9 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
 
       <p className={report.netProfit < 0 ? 'error strong' : 'strong'}>
         {t('reports.netProfit')}: {money(report.netProfit, report.currency)}
+        {priorYear === null ? null : (
+          <span className="muted"> ({t('reports.lastYear')}: {money(priorYear.netProfit, report.currency)})</span>
+        )}
       </p>
     </section>
   );

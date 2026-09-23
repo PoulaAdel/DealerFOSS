@@ -303,6 +303,7 @@ export const en = {
   'reports.overheads': 'What it costs to run the place',
   'reports.totalOverheads': 'Total overheads',
   'reports.netProfit': 'Net profit',
+  'reports.lastYear': 'Last year',
   'reports.sheetTitle': 'What the business is worth',
   'reports.sheetBalances': 'It balances: what the business owns equals what it owes plus what it is worth.',
   'reports.sheetDoesNotBalance':
@@ -622,6 +623,30 @@ export const en = {
   'periods.wasOpened': '{month} opened',
   'periods.wasClosed': '{month} closed',
   'periods.wasReopened': '{month} reopened',
+
+  // --- The year --------------------------------------------------------------
+  'years.title': 'Years',
+  'years.lede':
+    'A year closes once every month in it is closed. Closing it carries the year\'s profit or loss into retained earnings and stops anything posting into it until it is reopened.',
+  'years.none': 'No year has ever been closed.',
+  'years.colYear': 'Year',
+  'years.colState': 'State',
+  'years.closeIt': 'Close it',
+  'years.closeTitle': 'Close {year}?',
+  'years.confirmClose':
+    'Every month in {year} must already be closed. Nothing more can be posted into the year until it is reopened.',
+  'years.monthsNotClosed': 'Every month in {year} must be closed first.',
+  'years.reopen': 'Reopen',
+  'years.reopenTitle': 'Reopen {year}?',
+  'years.reopenLede':
+    'This year has been closed, and its figures may already have been reported. Reopening it is recorded against the year with your reason.',
+  'years.reopenWhy': 'Why is it being reopened?',
+  'years.reopenPlaceholder': 'A supplier invoice arrived late',
+  'years.reopenIt': 'Reopen it',
+  'years.leaveClosed': 'Leave it closed',
+  'years.historyTitle': 'What has happened to the years',
+  'years.wasClosed': '{year} closed',
+  'years.wasReopened': '{year} reopened',
 
   // --- Enquiries ------------------------------------------------------------
   'leads.title': 'Enquiries',

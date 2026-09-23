@@ -286,6 +286,7 @@ export const fr: Catalogue = {
   'reports.overheads': 'Ce que coûte le fonctionnement',
   'reports.totalOverheads': 'Total des charges',
   'reports.netProfit': 'Résultat net',
+  'reports.lastYear': "L'an dernier",
   'reports.sheetTitle': 'Ce que vaut l’entreprise',
   'reports.sheetBalances': 'C’est équilibré : ce que l’entreprise possède égale ce qu’elle doit plus ce qu’elle vaut.',
   'reports.sheetDoesNotBalance':
@@ -601,6 +602,30 @@ export const fr: Catalogue = {
   'periods.wasOpened': '{month} ouvert',
   'periods.wasClosed': '{month} clôturé',
   'periods.wasReopened': '{month} rouvert',
+
+  // --- L'année ------------------------------------------------------------
+  'years.title': 'Années',
+  'years.lede':
+    "Une année se clôture une fois que tous ses mois sont clôturés. La clôturer reporte le bénéfice ou la perte de l'année vers les bénéfices non distribués et empêche toute écriture jusqu'à sa réouverture.",
+  'years.none': "Aucune année n'a jamais été clôturée.",
+  'years.colYear': 'Année',
+  'years.colState': 'État',
+  'years.closeIt': 'La clôturer',
+  'years.closeTitle': 'Clôturer {year} ?',
+  'years.confirmClose':
+    "Tous les mois de {year} doivent déjà être clôturés. Plus aucune écriture ne pourra être passée dans l'année tant qu'elle n'est pas rouverte.",
+  'years.monthsNotClosed': "Tous les mois de {year} doivent d'abord être clôturés.",
+  'years.reopen': 'Rouvrir',
+  'years.reopenTitle': 'Rouvrir {year} ?',
+  'years.reopenLede':
+    "Cette année a été clôturée, et ses chiffres ont peut-être déjà été communiqués. La réouverture est enregistrée contre l'année avec votre motif.",
+  'years.reopenWhy': 'Pourquoi la rouvrir ?',
+  'years.reopenPlaceholder': 'Une facture fournisseur est arrivée en retard',
+  'years.reopenIt': 'La rouvrir',
+  'years.leaveClosed': 'La laisser clôturée',
+  'years.historyTitle': 'Ce qui est arrivé aux années',
+  'years.wasClosed': '{year} clôturé',
+  'years.wasReopened': '{year} rouvert',
 
   'leads.title': 'Demandes',
   'leads.show': 'Afficher',

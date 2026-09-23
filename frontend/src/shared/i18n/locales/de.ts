@@ -287,6 +287,7 @@ export const de: Catalogue = {
   'reports.overheads': 'Was der Betrieb kostet',
   'reports.totalOverheads': 'Summe der Kosten',
   'reports.netProfit': 'Ergebnis',
+  'reports.lastYear': 'Vorjahr',
   'reports.sheetTitle': 'Was das Unternehmen wert ist',
   'reports.sheetBalances': 'Es stimmt: Was das Unternehmen besitzt entspricht dem, was es schuldet, plus seinem Wert.',
   'reports.sheetDoesNotBalance':
@@ -603,6 +604,30 @@ export const de: Catalogue = {
   'periods.wasOpened': '{month} eröffnet',
   'periods.wasClosed': '{month} abgeschlossen',
   'periods.wasReopened': '{month} wieder geöffnet',
+
+  // --- Das Geschäftsjahr ------------------------------------------------------------
+  'years.title': 'Jahre',
+  'years.lede':
+    'Ein Jahr wird abgeschlossen, sobald jeder Monat darin abgeschlossen ist. Der Abschluss überträgt den Gewinn oder Verlust des Jahres auf die Gewinnrücklagen und verhindert weitere Buchungen, bis es wieder eröffnet wird.',
+  'years.none': 'Es wurde noch nie ein Jahr abgeschlossen.',
+  'years.colYear': 'Jahr',
+  'years.colState': 'Zustand',
+  'years.closeIt': 'Abschließen',
+  'years.closeTitle': '{year} abschließen?',
+  'years.confirmClose':
+    'Jeder Monat in {year} muss bereits abgeschlossen sein. Es kann nichts mehr in das Jahr gebucht werden, bis es wieder eröffnet wird.',
+  'years.monthsNotClosed': 'Jeder Monat in {year} muss zuerst abgeschlossen werden.',
+  'years.reopen': 'Wieder öffnen',
+  'years.reopenTitle': '{year} wieder öffnen?',
+  'years.reopenLede':
+    'Dieses Jahr wurde abgeschlossen, und seine Zahlen wurden möglicherweise bereits gemeldet. Die Wiedereröffnung wird zusammen mit Ihrer Begründung gegen das Jahr vermerkt.',
+  'years.reopenWhy': 'Warum wird es wieder geöffnet?',
+  'years.reopenPlaceholder': 'Eine Lieferantenrechnung kam verspätet an',
+  'years.reopenIt': 'Wieder öffnen',
+  'years.leaveClosed': 'Geschlossen lassen',
+  'years.historyTitle': 'Was mit den Jahren geschehen ist',
+  'years.wasClosed': '{year} abgeschlossen',
+  'years.wasReopened': '{year} wieder geöffnet',
 
   'leads.title': 'Anfragen',
   'leads.show': 'Anzeigen',

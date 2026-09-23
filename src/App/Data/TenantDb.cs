@@ -137,6 +137,10 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, I
 
     public DbSet<AccountingPeriodChange> AccountingPeriodHistory => Set<AccountingPeriodChange>();
 
+    public DbSet<FiscalYear> FiscalYears => Set<FiscalYear>();
+
+    public DbSet<FiscalYearChange> FiscalYearHistory => Set<FiscalYearChange>();
+
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
 
     public DbSet<JournalLine> JournalLines => Set<JournalLine>();

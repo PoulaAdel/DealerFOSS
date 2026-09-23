@@ -301,6 +301,7 @@ export const ar: Catalogue = {
   'reports.overheads': 'تكلفة تشغيل المكان',
   'reports.totalOverheads': 'إجمالي المصروفات',
   'reports.netProfit': 'صافي الربح',
+  'reports.lastYear': 'العام الماضي',
   'reports.sheetTitle': 'كم يساوي النشاط',
   'reports.sheetBalances': 'متوازنة: ما يملكه النشاط يساوي ما عليه زائد قيمته.',
   'reports.sheetDoesNotBalance':
@@ -632,6 +633,28 @@ export const ar: Catalogue = {
   'periods.wasOpened': 'فُتح {month}',
   'periods.wasClosed': 'أُقفل {month}',
   'periods.wasReopened': 'أُعيد فتح {month}',
+
+  // --- السنة المالية ------------------------------------------------------------
+  'years.title': 'السنوات',
+  'years.lede':
+    'تُقفل السنة بعد إقفال كل شهر فيها. إقفالها ينقل ربح أو خسارة السنة إلى الأرباح المحتجزة ويوقف أي قيد فيها حتى تُعاد فتحها.',
+  'years.none': 'لم تُقفل أي سنة بعد.',
+  'years.colYear': 'السنة',
+  'years.colState': 'الحالة',
+  'years.closeIt': 'أقفلها',
+  'years.closeTitle': 'إقفال {year}؟',
+  'years.confirmClose': 'يجب أن يكون كل شهر في {year} مُقفلاً بالفعل. لن يمكن تسجيل شيء آخر في السنة حتى تُعاد فتحها.',
+  'years.monthsNotClosed': 'يجب إقفال كل شهر في {year} أولاً.',
+  'years.reopen': 'أعد فتحها',
+  'years.reopenTitle': 'إعادة فتح {year}؟',
+  'years.reopenLede': 'أُقفلت هذه السنة، وربما أُبلغ بأرقامها بالفعل. تُسجَّل إعادة الفتح مع سببك مقابل السنة.',
+  'years.reopenWhy': 'لماذا تُعاد فتحها؟',
+  'years.reopenPlaceholder': 'وصلت فاتورة مورد متأخرة',
+  'years.reopenIt': 'أعد فتحها',
+  'years.leaveClosed': 'اتركها مُقفلة',
+  'years.historyTitle': 'ما الذي جرى على السنوات',
+  'years.wasClosed': 'أُقفلت {year}',
+  'years.wasReopened': 'أُعيدت فتح {year}',
 
   'leads.title': 'الاستفسارات',
   'leads.show': 'اعرض',

@@ -203,6 +203,15 @@ public static class AccountCodes
     public const string OwnersCapital = "3000";
 
     /// <summary>
+    /// What every closed year has made, net, added up since the first one.
+    /// Empty until a year is actually closed — see FiscalYear — because before
+    /// that this system has no process to have transferred anything into it,
+    /// and posting a figure here on its own would be a claim about a close
+    /// that never happened.
+    /// </summary>
+    public const string RetainedEarnings = "3100";
+
+    /// <summary>
     /// Money the dealership is holding that belongs to a customer — an
     /// overpayment it has not given back yet. A LIABILITY, and treating it as
     /// anything else is the whole point of the account.
@@ -275,6 +284,7 @@ public static class AccountCodes
         (SalesTaxPayable, "Sales tax payable", AccountKind.Liability),
         (CustomerCredits, "Customer credits", AccountKind.Liability),
         (OwnersCapital, "Owners' capital", AccountKind.Equity),
+        (RetainedEarnings, "Retained earnings", AccountKind.Equity),
         (VehicleSalesRevenue, "Vehicle sales", AccountKind.Revenue),
         (FeeRevenue, "Fee income", AccountKind.Revenue),
         (LabourRevenue, "Labour sales", AccountKind.Revenue),

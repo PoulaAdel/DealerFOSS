@@ -327,8 +327,14 @@ public sealed class AccountingService(
             invoices));
     }
 
-    public async Task<Result<ProfitAndLoss>> ProfitAndLossAsync(
+    public Task<Result<ProfitAndLoss>> ProfitAndLossAsync(
         BalanceQuery query,
+        CancellationToken cancellationToken) =>
+        ProfitAndLossAsync(query, includePriorYear: true, cancellationToken);
+
+    private async Task<Result<ProfitAndLoss>> ProfitAndLossAsync(
+        BalanceQuery query,
+        bool includePriorYear,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -386,6 +392,21 @@ public sealed class AccountingService(
         var totalExpenses = expenses.Sum(e => e.Amount);
         var gross = performance.Value.TotalGross;
 
+        // Only a bounded period has an unambiguous "a year earlier" — an
+        // open-ended report has no single date to shift back from.
+        // includePriorYear: false on the recursive call, or this would try to
+        // fetch the year before THAT one, all the way back through history.
+        ProfitAndLoss? priorYear = null;
+        if (includePriorYear && query.From is { } from && query.To is { } to)
+        {
+            var priorQuery = new BalanceQuery(query.RooftopId, from.AddYears(-1), to.AddYears(-1));
+            var prior = await ProfitAndLossAsync(priorQuery, includePriorYear: false, cancellationToken);
+            if (prior.IsSuccess)
+            {
+                priorYear = prior.Value;
+            }
+        }
+
         return Result.Success(new ProfitAndLoss(
             query.From,
             query.To,
@@ -396,7 +417,8 @@ public sealed class AccountingService(
             gross,
             expenses,
             totalExpenses,
-            gross - totalExpenses));
+            gross - totalExpenses,
+            priorYear));
     }
 
     public async Task<Result<BalanceSheet>> BalanceSheetAsync(
@@ -1517,8 +1539,304 @@ public sealed class AccountingService(
                     + "that month, or post this to an open one.");
         }
 
+        // The year's own gate, independent of the month's. A reopened month
+        // inside a still-closed year must still refuse, or the two gates would
+        // not actually agree with each other — see FiscalYear.
+        var fiscalYear = await _db.FiscalYears
+            .AsNoTracking()
+            .SingleOrDefaultAsync(y => y.Year == date.Year, cancellationToken);
+
+        if (fiscalYear is { State: FiscalYearState.Closed })
+        {
+            return Error.Conflict(
+                "accounting.year_closed",
+                $"{date.Year} is closed. Reopen the year if something genuinely belongs in it, or post "
+                    + "this to an open one.");
+        }
+
         return null;
     }
+
+    public async Task<Result<IReadOnlyList<FiscalYearView>>> ListFiscalYearsAsync(
+        CancellationToken cancellationToken)
+    {
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReadPermission, cancellationToken);
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<IReadOnlyList<FiscalYearView>>(LedgerErrors.Forbidden);
+        }
+
+        var years = await _db.FiscalYears
+            .AsNoTracking()
+            .Include(y => y.History)
+            .OrderByDescending(y => y.Year)
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IReadOnlyList<FiscalYearView>>(years.Select(DescribeYear).ToList());
+    }
+
+    public async Task<Result<FiscalYearView>> CloseYearAsync(
+        int year,
+        string? note,
+        CancellationToken cancellationToken)
+    {
+        // Organization-wide, the same reason ChangePeriodAsync requires it: the
+        // books close as a whole.
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ClosePeriodPermission, cancellationToken);
+        if (!scope.IsOrganizationWide)
+        {
+            await _audit.RecordAsync(
+                AuditEntry.Denied(
+                    _currentUser.Id, ClosePeriodPermission, "FiscalYear", $"{year}", null,
+                    $"Attempted to close {year}."),
+                cancellationToken);
+
+            return Result.Failure<FiscalYearView>(LedgerErrors.PeriodForbidden);
+        }
+
+        var months = await _db.AccountingPeriods
+            .AsNoTracking()
+            .Where(p => p.Year == year)
+            .ToListAsync(cancellationToken);
+
+        var openMonths = Enumerable.Range(1, 12)
+            .Where(month => months.Find(p => p.Month == month) is not { State: AccountingPeriodState.Closed })
+            .ToList();
+
+        if (openMonths.Count > 0)
+        {
+            return Result.Failure<FiscalYearView>(Error.Conflict(
+                "accounting.months_not_closed",
+                $"{year} still has open or never-opened months: "
+                    + string.Join(", ", openMonths.Select(m => $"{year}-{m:00}"))
+                    + ". Close every month before closing the year."));
+        }
+
+        var fiscalYear = await _db.FiscalYears
+            .Include(y => y.History)
+            .SingleOrDefaultAsync(y => y.Year == year, cancellationToken);
+
+        if (fiscalYear is { State: FiscalYearState.Closed })
+        {
+            return Result.Failure<FiscalYearView>(
+                Error.Conflict("accounting.year_already_closed", $"{year} is already closed."));
+        }
+
+        // Every revenue and expense account's balance for the calendar year,
+        // computed the same way BalanceSheetAsync computes EarningsToDate — from
+        // the account's own debit/credit totals, not from a running figure kept
+        // anywhere else.
+        var entries = _db.JournalEntries
+            .AsNoTracking()
+            .Where(e => e.EntryDate.Year == year);
+
+        var totals = await (
+            from line in _db.JournalLines.AsNoTracking()
+            join entry in entries on line.EntryId equals entry.Id
+            group line by line.AccountId into byAccount
+            select new
+            {
+                AccountId = byAccount.Key,
+                Debits = byAccount.Sum(l => l.Debit),
+                Credits = byAccount.Sum(l => l.Credit),
+            }).ToListAsync(cancellationToken);
+
+        var accounts = await _db.Accounts.AsNoTracking().ToListAsync(cancellationToken);
+
+        var retainedEarnings = accounts.Find(a => a.Code == AccountCodes.RetainedEarnings);
+        if (retainedEarnings is null)
+        {
+            return Result.Failure<FiscalYearView>(LedgerErrors.ChartIncomplete([AccountCodes.RetainedEarnings]));
+        }
+
+        var lines = new List<(string AccountCode, Guid AccountId, decimal Debit, decimal Credit, string? Memo)>();
+
+        foreach (var total in totals)
+        {
+            var account = accounts.Find(a => a.Id == total.AccountId);
+            if (account is not { Kind: AccountKind.Revenue or AccountKind.Expense })
+            {
+                continue;
+            }
+
+            var balance = account.IncreasesOnDebit
+                ? total.Debits - total.Credits
+                : total.Credits - total.Debits;
+
+            if (balance == 0m)
+            {
+                continue;
+            }
+
+            // Zeroing means posting the opposite of what the account normally
+            // carries: a debit-normal account with a positive balance clears
+            // with a credit for that amount, and a credit-normal account with a
+            // positive balance clears with a debit. A negative balance — an
+            // account that ended up the "wrong" way round, which is unusual but
+            // not invalid — clears the same way with the sides swapped.
+            var clearingDebit = account.IncreasesOnDebit ? Math.Max(-balance, 0m) : Math.Max(balance, 0m);
+            var clearingCredit = account.IncreasesOnDebit ? Math.Max(balance, 0m) : Math.Max(-balance, 0m);
+
+            lines.Add((account.Code, account.Id, clearingDebit, clearingCredit, $"Closed for {year}"));
+        }
+
+        if (lines.Count == 0)
+        {
+            return Result.Failure<FiscalYearView>(Error.Conflict(
+                "accounting.nothing_to_close",
+                $"{year} has no revenue or expense activity, so there is nothing for a closing entry to carry."));
+        }
+
+        var netProfit = lines.Sum(l => l.Debit) - lines.Sum(l => l.Credit);
+
+        // What clears the revenue and expense accounts must land somewhere, and
+        // that somewhere is RetainedEarnings — a profit credits it, a loss debits
+        // it, the same rule every other equity account already follows.
+        lines.Add(netProfit > 0m
+            ? (retainedEarnings.Code, retainedEarnings.Id, 0m, netProfit, $"Net profit for {year}")
+            : (retainedEarnings.Code, retainedEarnings.Id, -netProfit, 0m, $"Net loss for {year}"));
+
+        // The closing entry needs a rooftop and a legal entity even though the
+        // year itself is organization-wide — the first rooftop on record stands
+        // in, the same arbitrary-but-stable choice a value that cannot be null
+        // needs when nothing about the event is really about one location.
+        // Through IOrganization rather than the Rooftop entity directly — a
+        // sibling module's entity never crosses the boundary (ADR-008).
+        var structure = await _organization.GetStructureAsync(cancellationToken);
+        var rooftop = structure.IsSuccess
+            ? structure.Value.LegalEntities.SelectMany(e => e.Rooftops).FirstOrDefault()
+            : null;
+
+        if (rooftop is null)
+        {
+            return Result.Failure<FiscalYearView>(Error.Conflict(
+                "accounting.no_rooftop", "There is no rooftop yet to post the closing entry against."));
+        }
+
+        // Mixing currencies would produce a closing entry that means nothing,
+        // the same reason CoveredEntriesAsync refuses to total across them.
+        var currencies = await entries.Select(e => e.Currency).Distinct().ToListAsync(cancellationToken);
+        if (currencies.Count > 1)
+        {
+            return Result.Failure<FiscalYearView>(LedgerErrors.MixedCurrencies(currencies));
+        }
+
+        var currency = currencies.Count == 1 ? currencies[0] : "USD";
+
+        JournalEntry closingEntry;
+        try
+        {
+            closingEntry = JournalEntry.Post(
+                Guid.NewGuid(),
+                rooftop.LegalEntityId,
+                rooftop.Id,
+                new DateOnly(year, 12, 31),
+                JournalSource.YearEndClose,
+                $"FY{year}",
+                (note ?? $"Year-end close for {year}").Trim(),
+                currency,
+                lines,
+                _clock.UtcNow,
+                _currentUser.Id);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<FiscalYearView>(Error.Conflict("accounting.will_not_balance", ex.Message));
+        }
+
+        _db.JournalEntries.Add(closingEntry);
+
+        if (fiscalYear is null)
+        {
+            fiscalYear = FiscalYear.Open(Guid.NewGuid(), year, _clock.UtcNow, _currentUser.Id, null);
+            _db.FiscalYears.Add(fiscalYear);
+        }
+
+        fiscalYear.Close(closingEntry.Id, _clock.UtcNow, _currentUser.Id, note);
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(
+                _currentUser.Id, ClosePeriodPermission, AuditOutcome.Allowed,
+                "FiscalYear", fiscalYear.Id.ToString(), null,
+                $"Closed {year}. Net {(netProfit >= 0m ? "profit" : "loss")} {Math.Abs(netProfit):0.00} "
+                    + "carried to retained earnings.",
+                null, null),
+            cancellationToken);
+
+        return Result.Success(DescribeYear(fiscalYear));
+    }
+
+    public async Task<Result<FiscalYearView>> ReopenYearAsync(
+        int year,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        var scope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, ReopenPeriodPermission, cancellationToken);
+        if (!scope.IsOrganizationWide)
+        {
+            await _audit.RecordAsync(
+                AuditEntry.Denied(
+                    _currentUser.Id, ReopenPeriodPermission, "FiscalYear", $"{year}", null,
+                    $"Attempted to reopen {year}."),
+                cancellationToken);
+
+            return Result.Failure<FiscalYearView>(LedgerErrors.PeriodForbidden);
+        }
+
+        var fiscalYear = await _db.FiscalYears
+            .Include(y => y.History)
+            .SingleOrDefaultAsync(y => y.Year == year, cancellationToken);
+
+        if (fiscalYear is null)
+        {
+            return Result.Failure<FiscalYearView>(
+                Error.NotFound("accounting.year_not_closed", $"{year} has never been closed."));
+        }
+
+        try
+        {
+            fiscalYear.Reopen(_clock.UtcNow, _currentUser.Id, reason);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Failure<FiscalYearView>(Error.Conflict("accounting.year_state", ex.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<FiscalYearView>(Error.Validation("accounting.reason_required", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await _audit.RecordAsync(
+            new AuditEntry(
+                _currentUser.Id, ReopenPeriodPermission, AuditOutcome.Allowed,
+                "FiscalYear", fiscalYear.Id.ToString(), null,
+                $"Reopened {year}. Reason: {reason}",
+                null, null),
+            cancellationToken);
+
+        return Result.Success(DescribeYear(fiscalYear));
+    }
+
+    private static FiscalYearView DescribeYear(FiscalYear fiscalYear) =>
+        new(
+            fiscalYear.Id,
+            fiscalYear.Year,
+            fiscalYear.State.ToString(),
+            fiscalYear.StartsOn,
+            fiscalYear.EndsOn,
+            fiscalYear.ClosedAt,
+            fiscalYear.ClosedByUserId,
+            fiscalYear.ClosingEntryId,
+            fiscalYear.History
+                .OrderBy(h => h.OccurredAt)
+                .ThenBy(h => h.Sequence)
+                .Select(h => new FiscalYearChangeView(
+                    h.FromState?.ToString(), h.ToState.ToString(), h.OccurredAt, h.ChangedByUserId, h.Note))
+                .ToList());
 
     private static AccountingPeriodView Describe(AccountingPeriod period, int entries) =>
         new(

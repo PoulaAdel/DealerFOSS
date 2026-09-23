@@ -290,6 +290,7 @@ export const ru: Catalogue = {
   'reports.overheads': 'Во что обходится работа',
   'reports.totalOverheads': 'Итого расходов',
   'reports.netProfit': 'Чистая прибыль',
+  'reports.lastYear': 'Прошлый год',
   'reports.sheetTitle': 'Сколько стоит бизнес',
   'reports.sheetBalances': 'Сходится: то, чем бизнес владеет, равно тому, что он должен, плюс его стоимость.',
   'reports.sheetDoesNotBalance':
@@ -616,6 +617,30 @@ export const ru: Catalogue = {
   'periods.wasOpened': '{month} — открыт',
   'periods.wasClosed': '{month} — закрыт',
   'periods.wasReopened': '{month} — открыт заново',
+
+  // --- Финансовый год ------------------------------------------------------------
+  'years.title': 'Годы',
+  'years.lede':
+    'Год закрывается, когда закрыты все его месяцы. Закрытие переносит прибыль или убыток года в нераспределённую прибыль и останавливает проводки в этот год до его повторного открытия.',
+  'years.none': 'Ни один год ещё не закрывался.',
+  'years.colYear': 'Год',
+  'years.colState': 'Состояние',
+  'years.closeIt': 'Закрыть',
+  'years.closeTitle': 'Закрыть {year}?',
+  'years.confirmClose':
+    'Каждый месяц {year} должен быть уже закрыт. В год больше нельзя ничего провести, пока он не будет открыт заново.',
+  'years.monthsNotClosed': 'Сначала нужно закрыть каждый месяц {year}.',
+  'years.reopen': 'Открыть заново',
+  'years.reopenTitle': 'Открыть {year} заново?',
+  'years.reopenLede':
+    'Этот год был закрыт, и его показатели, возможно, уже были отражены в отчётности. Повторное открытие фиксируется в истории года вместе с вашей причиной.',
+  'years.reopenWhy': 'Почему он открывается заново?',
+  'years.reopenPlaceholder': 'Счёт от поставщика пришёл с опозданием',
+  'years.reopenIt': 'Открыть заново',
+  'years.leaveClosed': 'Оставить закрытым',
+  'years.historyTitle': 'Что происходило с годами',
+  'years.wasClosed': '{year} — закрыт',
+  'years.wasReopened': '{year} — открыт заново',
 
   'leads.title': 'Обращения',
   'leads.show': 'Показывать',

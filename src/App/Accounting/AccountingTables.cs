@@ -74,6 +74,46 @@ internal sealed class AccountingPeriodChangeConfiguration : IEntityTypeConfigura
     }
 }
 
+internal sealed class FiscalYearConfiguration : IEntityTypeConfiguration<FiscalYear>
+{
+    public void Configure(EntityTypeBuilder<FiscalYear> builder)
+    {
+        builder.ToTable("FiscalYears", AccountingSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.State).HasConversion<string>().HasMaxLength(20);
+
+        builder.Ignore(x => x.StartsOn);
+        builder.Ignore(x => x.EndsOn);
+
+        // One row per year, the same reason AccountingPeriod has one per month.
+        builder.HasIndex(x => x.Year).IsUnique();
+
+        builder.HasMany(x => x.History)
+            .WithOne()
+            .HasForeignKey(h => h.FiscalYearId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.ConfigureAudit();
+    }
+}
+
+internal sealed class FiscalYearChangeConfiguration : IEntityTypeConfiguration<FiscalYearChange>
+{
+    public void Configure(EntityTypeBuilder<FiscalYearChange> builder)
+    {
+        builder.ToTable("FiscalYearHistory", AccountingSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.FromState).HasConversion<string>().HasMaxLength(20);
+        builder.Property(x => x.ToState).HasConversion<string>().HasMaxLength(20);
+        builder.Property(x => x.Note).HasMaxLength(1000);
+
+        builder.Property(x => x.Sequence).ValueGeneratedOnAdd().UseIdentityColumn();
+        builder.HasIndex(x => new { x.FiscalYearId, x.OccurredAt, x.Sequence });
+    }
+}
+
 internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 {
     public void Configure(EntityTypeBuilder<Account> builder)

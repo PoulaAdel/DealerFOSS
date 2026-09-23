@@ -41,6 +41,7 @@ const profit: ProfitAndLoss = {
   ],
   totalExpenses: 40000,
   netProfit: 20000,
+  priorYear: null,
 };
 
 const sheet: BalanceSheet = {

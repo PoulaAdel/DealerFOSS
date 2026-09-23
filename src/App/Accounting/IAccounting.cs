@@ -234,6 +234,29 @@ public interface IAccounting
         int month,
         string reason,
         CancellationToken cancellationToken);
+
+    /// <summary>The organization's fiscal years, newest first, with their state.</summary>
+    Task<Result<IReadOnlyList<FiscalYearView>>> ListFiscalYearsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Closes a year: every month in it must already be closed, and its revenue
+    /// and expense accounts are zeroed by one ordinary posting that carries the
+    /// net to RetainedEarnings. See FiscalYear for why this is a posting and not
+    /// a separate mechanism.
+    /// </summary>
+    Task<Result<FiscalYearView>> CloseYearAsync(
+        int year,
+        string? note,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Unlocks a closed year. Its own permission and a written reason, the same
+    /// discipline ReopenPeriodAsync already has.
+    /// </summary>
+    Task<Result<FiscalYearView>> ReopenYearAsync(
+        int year,
+        string reason,
+        CancellationToken cancellationToken);
 }
 
 public sealed record AccountingPeriodView(
@@ -253,6 +276,24 @@ public sealed record AccountingPeriodView(
     IReadOnlyList<AccountingPeriodChangeView> History);
 
 public sealed record AccountingPeriodChangeView(
+    string? FromState,
+    string ToState,
+    DateTimeOffset OccurredAt,
+    Guid? ChangedByUserId,
+    string? Note);
+
+public sealed record FiscalYearView(
+    Guid Id,
+    int Year,
+    string State,
+    DateOnly StartsOn,
+    DateOnly EndsOn,
+    DateTimeOffset? ClosedAt,
+    Guid? ClosedByUserId,
+    Guid? ClosingEntryId,
+    IReadOnlyList<FiscalYearChangeView> History);
+
+public sealed record FiscalYearChangeView(
     string? FromState,
     string ToState,
     DateTimeOffset OccurredAt,
@@ -641,7 +682,15 @@ public sealed record ProfitAndLoss(
     /// Gross less overheads. The figure this system could not produce at all
     /// before 2026-09-11, because it had nowhere to record an overhead.
     /// </summary>
-    decimal NetProfit);
+    decimal NetProfit,
+
+    /// <summary>
+    /// The same report, one year earlier, so a dealer reads this year beside last
+    /// year without pulling a second report. Null when there is nothing a year
+    /// back to compare against. Its own PriorYear is always null — one column of
+    /// comparison, not a chain of them.
+    /// </summary>
+    ProfitAndLoss? PriorYear = null);
 
 /// <summary>One overhead account and what it came to over the period.</summary>
 public sealed record ExpenseLine(string Code, string Name, decimal Amount);
@@ -668,10 +717,10 @@ public sealed record BalanceSheet(
     decimal TotalEquity,
 
     /// <summary>
-    /// Revenue less every expense, for all time. Shown as its own line rather
-    /// than folded into equity, because there is no year-end close in this system
-    /// yet and pretending earnings had been transferred to capital would be a
-    /// claim about a process nobody has run.
+    /// Revenue less every expense, since the last year-end close — or for all
+    /// time, if no year has ever been closed. Shown as its own line rather than
+    /// folded into equity because it is unaudited: RetainedEarnings only grows
+    /// when CloseYearAsync actually runs, and this is what has accumulated since.
     /// </summary>
     decimal EarningsToDate,
 

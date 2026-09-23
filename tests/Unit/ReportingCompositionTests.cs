@@ -292,6 +292,18 @@ public sealed class ReportingCompositionTests
         public Task<Result<AccountingPeriodView>> ReopenPeriodAsync(
             int year, int month, string reason, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
+        public Task<Result<IReadOnlyList<FiscalYearView>>> ListFiscalYearsAsync(
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<Result<FiscalYearView>> CloseYearAsync(
+            int year, string? note, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<Result<FiscalYearView>> ReopenYearAsync(
+            int year, string reason, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 
     private sealed class StubInventory : IInventory

@@ -11,6 +11,9 @@
 //   GET  /api/v1/accounting/journal?rooftopId=&reference=&from=&to=
 //   GET  /api/v1/accounting/journal/{id}
 //   POST /api/v1/accounting/journal/{id}/reverse
+//   GET  /api/v1/accounting/years
+//   POST /api/v1/accounting/years/{year}/close
+//   POST /api/v1/accounting/years/{year}/reopen
 //
 // Coding Instructions:
 //   There is no endpoint that creates an entry. Entries are the consequence
@@ -48,6 +51,12 @@ internal static class AccountingEndpoints
         group.MapPost("/periods", OpenPeriodAsync);
         group.MapPost("/periods/{year:int}/{month:int}/close", ClosePeriodAsync);
         group.MapPost("/periods/{year:int}/{month:int}/reopen", ReopenPeriodAsync);
+
+        // A year, the same shape one level up: no open endpoint, because closing
+        // one for the first time opens it implicitly — see FiscalYear.
+        group.MapGet("/years", ListFiscalYearsAsync);
+        group.MapPost("/years/{year:int}/close", CloseYearAsync);
+        group.MapPost("/years/{year:int}/reopen", ReopenYearAsync);
     }
 
     private static async Task<IResult> ListAccountsAsync(
@@ -102,6 +111,36 @@ internal static class AccountingEndpoints
         var result = await accounting.ReopenPeriodAsync(
             year, month, request.Note ?? string.Empty, cancellationToken);
 
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ListFiscalYearsAsync(
+        IAccounting accounting,
+        CancellationToken cancellationToken)
+    {
+        var result = await accounting.ListFiscalYearsAsync(cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> CloseYearAsync(
+        int year,
+        PeriodNoteRequest? request,
+        IAccounting accounting,
+        CancellationToken cancellationToken)
+    {
+        var result = await accounting.CloseYearAsync(year, request?.Note, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ReopenYearAsync(
+        int year,
+        PeriodNoteRequest request,
+        IAccounting accounting,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await accounting.ReopenYearAsync(year, request.Note ?? string.Empty, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 

@@ -450,6 +450,28 @@ export interface AccountingPeriodChangeView {
   note: string | null;
 }
 
+export type FiscalYearState = 'Open' | 'Closed';
+
+export interface FiscalYearView {
+  id: string;
+  year: number;
+  state: FiscalYearState;
+  startsOn: string;
+  endsOn: string;
+  closedAt: string | null;
+  closedByUserId: string | null;
+  closingEntryId: string | null;
+  history: FiscalYearChangeView[];
+}
+
+export interface FiscalYearChangeView {
+  fromState: FiscalYearState | null;
+  toState: FiscalYearState;
+  occurredAt: string;
+  changedByUserId: string | null;
+  note: string | null;
+}
+
 export type PartsCostingMethod = 'MovingAverage' | 'LastCost' | 'Fifo';
 
 /** The current method and every method available, both from the server. */
@@ -1404,6 +1426,8 @@ export interface ProfitAndLoss {
   expenses: ExpenseLine[];
   totalExpenses: number;
   netProfit: number;
+  /** The same report, one year earlier. Null when there is nothing to compare against. */
+  priorYear: ProfitAndLoss | null;
 }
 
 export interface ExpenseLine {

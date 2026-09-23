@@ -292,6 +292,7 @@ export const es: Catalogue = {
   'reports.overheads': 'Lo que cuesta mantener el negocio',
   'reports.totalOverheads': 'Total de gastos',
   'reports.netProfit': 'Beneficio neto',
+  'reports.lastYear': 'Año pasado',
   'reports.sheetTitle': 'Lo que vale el negocio',
   'reports.sheetBalances': 'Cuadra: lo que el negocio tiene es igual a lo que debe más lo que vale.',
   'reports.sheetDoesNotBalance':
@@ -608,6 +609,30 @@ export const es: Catalogue = {
   'periods.wasOpened': '{month} abierto',
   'periods.wasClosed': '{month} cerrado',
   'periods.wasReopened': '{month} reabierto',
+
+  // --- El año ------------------------------------------------------------
+  'years.title': 'Años',
+  'years.lede':
+    'Un año se cierra cuando todos sus meses están cerrados. Cerrarlo traslada la ganancia o pérdida del año a las ganancias retenidas y detiene cualquier registro en él hasta que se reabra.',
+  'years.none': 'Nunca se ha cerrado un año.',
+  'years.colYear': 'Año',
+  'years.colState': 'Estado',
+  'years.closeIt': 'Cerrarlo',
+  'years.closeTitle': '¿Cerrar {year}?',
+  'years.confirmClose':
+    'Todos los meses de {year} deben estar ya cerrados. No se podrá registrar nada más en el año hasta que se reabra.',
+  'years.monthsNotClosed': 'Todos los meses de {year} deben cerrarse primero.',
+  'years.reopen': 'Reabrir',
+  'years.reopenTitle': '¿Reabrir {year}?',
+  'years.reopenLede':
+    'Este año ha sido cerrado, y sus cifras pueden ya haberse reportado. Reabrirlo queda registrado contra el año junto con su motivo.',
+  'years.reopenWhy': '¿Por qué se reabre?',
+  'years.reopenPlaceholder': 'Llegó tarde una factura de proveedor',
+  'years.reopenIt': 'Reabrirlo',
+  'years.leaveClosed': 'Dejarlo cerrado',
+  'years.historyTitle': 'Qué le ha pasado a los años',
+  'years.wasClosed': '{year} cerrado',
+  'years.wasReopened': '{year} reabierto',
 
   // --- Enquiries ------------------------------------------------------------
   'leads.title': 'Consultas',
