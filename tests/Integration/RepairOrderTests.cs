@@ -21,7 +21,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using DealerFOSS.App;
+using DealerFOSS.Core;
+using DealerFOSS.Data;
+using DealerFOSS.RepairOrders;
 
 namespace DealerFOSS.IntegrationTests;
 
@@ -887,7 +891,79 @@ public sealed class RepairOrderTests(HostFixture fixture)
             .Should().NotBe(second.GetProperty("rooftopId").ToString());
     }
 
+    [Fact]
+    public async Task A_job_number_is_never_reissued_after_a_sparse_import()
+    {
+        // The allocator was a COUNT of a rooftop's jobs, which is correct only
+        // while its numbers are the contiguous block 1001 … 1000+count. That
+        // held until ImportAsync landed on 2026-09-21: it writes the number a
+        // job carried at the OTHER installation, and only for the subset whose
+        // customer and vehicle survived the package, refusing the rest by name.
+        // A rooftop that has received one is therefore sparse — holes below,
+        // and numbers above the top. The count then lands on a number already
+        // in use, the unique index on (RooftopId, Number) refuses the insert,
+        // and the person booking a car in is told the number is taken.
+        //
+        // It is deterministic, not a race. It reached CI rather than a desk
+        // because it is order-dependent: PackageTests imports citymotors/CM-01
+        // into northgroup/NAG-02, and only a run where that happened first left
+        // the two NAG-02 tests in this file opening a job into a hole.
+        //
+        // Reproduced here without the migration capability. One job placed
+        // above the top is the entire precondition, and a numbering test that
+        // had to build a records package first would be testing two things.
+        var rooftop = await RooftopIdAsync("NAG-02");
+
+        await PlaceJobAsync(rooftop, "RO-9000");
+
+        var opened = await GetJobAsync(await OpenJobAsync(Manager, rooftop), Manager);
+
+        // Above everything in use, not merely different from it. That is the
+        // property the count never had, and asserting the collision alone would
+        // pass on an allocator that happened to miss the occupied slots.
+        NumberIn(opened.GetProperty("number").GetString()!).Should().BeGreaterThan(9000,
+            because: "a number already issued at this workshop must never be issued again");
+    }
+
     // --- helpers -------------------------------------------------------------
+
+    /// <summary>The numeric part of "RO-1114", for comparing two of them.</summary>
+    private static int NumberIn(string number) =>
+        int.Parse(number["RO-".Length..], CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Writes a job straight into the tenant database carrying a number of our
+    /// choosing, the way an import does.
+    /// </summary>
+    /// <remarks>
+    /// No API sets a job number. ImportAsync does, but only as part of a whole
+    /// records package, and the numbering property under test is true of any
+    /// row that got there — however it arrived.
+    /// </remarks>
+    private static async Task PlaceJobAsync(string rooftopId, string number)
+    {
+        var writer = new CurrentUser();
+        writer.Set(Guid.NewGuid());
+
+        await using var db = new TenantDb(
+            new DbContextOptionsBuilder<TenantDb>()
+                .UseSqlServer(HostFixture.TenantConnectionString(Tenant))
+                .Options,
+            new FixedClock(DateTimeOffset.UtcNow),
+            writer);
+
+        db.RepairOrders.Add(RepairOrder.Open(
+            Guid.NewGuid(),
+            new RooftopId(Guid.Parse(rooftopId)),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            number,
+            "Arrived in a records package from another installation.",
+            "USD",
+            DateTimeOffset.UtcNow));
+
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
 
     /// <summary>
     /// The labour report over a window wide enough to hold whatever this run has
@@ -1349,5 +1425,10 @@ public sealed class RepairOrderTests(HostFixture fixture)
         }
 
         return await client.SendAsync(request);
+    }
+
+    private sealed class FixedClock(DateTimeOffset now) : IClock
+    {
+        public DateTimeOffset UtcNow { get; } = now;
     }
 }

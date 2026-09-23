@@ -1250,14 +1250,27 @@ public sealed class RepairOrderService(
     /// The next job number for a workshop. Per rooftop, so two lots do not share a
     /// sequence and neither has to explain why its numbering skips.
     /// </summary>
+    /// <remarks>
+    /// A HIGH-WATER MARK, not a count. A count is correct only while a
+    /// rooftop's numbers are one contiguous block, and importing a records
+    /// package punches holes in exactly that assumption — see
+    /// RepairOrderTables for the whole story and for how the mark is derived.
+    ///
+    /// This removes the SYSTEMATIC reissue. It does not remove the genuine race
+    /// of two cars booked in at the same instant, and it is not meant to: that
+    /// one is caught by the unique index and told to the person, which is the
+    /// decision recorded at the DbUpdateException in OpenAsync.
+    /// </remarks>
     private async Task<string> NextNumberAsync(RooftopId rooftopId, CancellationToken cancellationToken)
     {
-        var used = await _db.RepairOrders
+        // Nullable, because MAX over no rows is null rather than zero and a
+        // workshop that has never booked a car in is an ordinary state.
+        var highest = await _db.RepairOrders
             .AsNoTracking()
             .Where(o => o.RooftopId == rooftopId)
-            .CountAsync(cancellationToken);
+            .MaxAsync(o => (int?)o.NumberSequence, cancellationToken) ?? 0;
 
-        return $"RO-{FirstNumber + used + 1}";
+        return $"{RepairOrder.NumberPrefix}{Math.Max(highest, FirstNumber) + 1}";
     }
 
     private async Task<RepairOrder?> LoadAsync(

@@ -64,6 +64,43 @@ internal sealed class RepairOrderConfiguration : IEntityTypeConfiguration<Repair
         // where it is said — within the workshop that issued it.
         builder.HasIndex(x => new { x.RooftopId, x.Number }).IsUnique();
 
+        // The high-water mark the next job number is allocated from, derived by
+        // the database from the display number rather than stored beside it.
+        //
+        // It exists because allocation used to be a COUNT of the rooftop's
+        // jobs, which is right only while its numbers are the one contiguous
+        // block 1001 … 1000+count. ImportAsync writes the number a job carried
+        // at ANOTHER installation, and only for the subset whose customer and
+        // vehicle survived the package — so a rooftop that has received one has
+        // holes below its top and rows above it, the count lands on a number
+        // already in use, and the unique index above refuses the booking. Two
+        // tests failed in CI that way on 2026-09-22.
+        //
+        // COMPUTED rather than a plain column, for two reasons that are worth
+        // more than the cost below. A stored column would need a data backfill
+        // that EF cannot generate, and this project does not hand-edit
+        // generated migrations; a computed one is right for every existing row
+        // the moment it exists. And it cannot drift from the Number it is
+        // derived from, which a stored copy quietly could.
+        //
+        // THE COST, stated plainly: the number format now lives here as well as
+        // in RepairOrderService, and the two have to agree. The prefix guard is
+        // what keeps them honest — another installation's "CM-1044" is not one
+        // of ours, so it maps to 0 and takes no part in this sequence. Anything
+        // else unparseable maps to 0 as well, and cannot collide with a
+        // generated number unless it IS one, in which case it parses.
+        //
+        // MAX over the string itself would not do: "RO-9999" sorts ABOVE
+        // "RO-10000", so a workshop passing four digits would stop dead.
+        builder.Property(x => x.NumberSequence)
+            .HasComputedColumnSql(
+                $"CASE WHEN [Number] LIKE '{RepairOrder.NumberPrefix}%' "
+                + $"THEN ISNULL(TRY_CAST(SUBSTRING([Number], {RepairOrder.NumberPrefix.Length + 1}, 26) AS int), 0) "
+                + "ELSE 0 END",
+                stored: true);
+
+        builder.HasIndex(x => new { x.RooftopId, x.NumberSequence });
+
         // The workshop's day: "what is open here, and what is at each stage".
         builder.HasIndex(x => new { x.RooftopId, x.Status });
         builder.HasIndex(x => x.CustomerId);

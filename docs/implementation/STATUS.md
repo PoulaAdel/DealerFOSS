@@ -20,12 +20,13 @@ the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no cross-module actions and the arrival-motion work recorded in
 the device-only motion audit. The pager finding closed on 2026-09-19; the token
 migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 852/852,
+Last verified: 2026-09-23 · `dotnet build` 0 warnings/0 errors, `dotnet test` 873/873,
 `verify-e2e.ps1` PASS against the configured SQL container (the canonical LocalDB
-catalogue is detached with its MDF still on disk; see the milestone below),
-frontend `npm audit` clean at high (two
+catalogue is detached with its MDF still on disk; see the milestone below).
+The frontend gates were last run on 2026-09-21 — `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 492/492, and `npm run build` all pass
+`npm run typecheck`, `npm test` 498/498, `npm run build` — and are not re-stated
+here because nothing under `frontend/` has changed since
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1598,3 +1599,17 @@ to come.
   **Walked across two tenant databases**, `citymotors/CM-01` into `northgroup/NAG-02`, through the screen: **"5 written, 315 already here, 571 not brought in"**, every refusal named in a table. The deal's vehicle order and the job's service invoice came out **byte-identical** on the far side, at `$19,400.00` and `$270.00`; the deal still names its customer and its car, the car still names its vehicle, and all of it landed in the lot the person chose rather than the one written in the file.
 
   Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **864/864** (was 853 — eleven new), `verify-e2e.ps1` PASS against the SQL container, `npm audit` clean at high, `npm run typecheck`, `npm test` **498/498** (was 492 — six new), `npm run build`.
+
+- **2026-09-23 — A workshop that has taken in another installation's records can still book a car in.** Found by CI rather than by a desk, and the mechanism is worth keeping because the failure looked like a race and was not. `RepairOrderService.NextNumberAsync` allocated a job number by **counting** the rooftop's jobs: `RO-{1000 + count + 1}`. That is correct only while a rooftop's numbers are the one contiguous block `1001 … 1000+count`.
+
+  `IRepairOrders.ImportAsync` landed on 2026-09-21 and broke exactly that assumption. It writes the number a job carried at the **other** installation, and only for the subset whose customer and vehicle survived the package — refusing the rest by name. So a rooftop that has received a package is sparse: holes below its top and rows above it. The count then lands on a number already in use, the unique index on `(RooftopId, Number)` refuses the insert, and the person booking a car in is told the number is taken.
+
+  It reached CI rather than anybody's screen because it is **order-dependent**, not racy: `PackageTests` imports `citymotors/CM-01` into `northgroup/NAG-02`, and only a run where that happened first left the NAG-02 tests opening a job into a hole. Everything is sequential inside `HostCollection`; the order of test *classes* is not fixed.
+
+  **Allocation is now a high-water mark**, `MAX(NumberSequence) + 1`, where `RepairOrder.NumberSequence` is a **persisted computed column** the database derives from the display number. Computed rather than stored beside it for two reasons: a stored column would need a data backfill that EF cannot generate, and this project does not hand-edit generated migrations — a computed one is correct for every existing row the moment it exists; and it cannot drift from the `Number` it is derived from. The cost, stated rather than hidden: the number format now lives in the mapping as well as in the service. A prefix guard keeps another installation's `CM-1044` out of our sequence, and anything unparseable maps to 0 and takes no part in it. `MAX` over the string itself would not have done — `"RO-9999"` sorts above `"RO-10000"`, so a workshop passing four digits would have stopped dead.
+
+  **What was deliberately not changed:** the `DbUpdateException` → `NumberTaken` handler in `OpenAsync`. A high-water mark removes the *systematic* reissue; it does not remove two cars booked in at the same instant, and that one should still collide visibly rather than disappear into a retry loop.
+
+  **Proven against the bug first**, which is the only reason the fix is trustworthy: `A_job_number_is_never_reissued_after_a_sparse_import` places one job at `RO-9000` at NAG-02 and opens another there. On the old allocator it was issued **`RO-1081`**. It asserts the number is above everything in use rather than merely different from it — the property the count never had, and one that holds whatever order the classes run in.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **873/873** (was 872 — one new), `verify-e2e.ps1` PASS against the SQL container. Nothing under `frontend/` changed.

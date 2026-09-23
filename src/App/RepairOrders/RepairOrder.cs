@@ -33,6 +33,13 @@ namespace DealerFOSS.RepairOrders;
 
 public sealed class RepairOrder : AuditableEntity
 {
+    /// <summary>
+    /// What a generated job number starts with. Here rather than in the service
+    /// that formats it, because the database derives NumberSequence from the
+    /// same prefix and a third copy would be one too many already.
+    /// </summary>
+    public const string NumberPrefix = "RO-";
+
     private readonly List<ServiceLine> _lines = [];
     private readonly List<RepairOrderStatusChange> _history = [];
 
@@ -48,6 +55,17 @@ public sealed class RepairOrder : AuditableEntity
 
     /// <summary>Sequential per rooftop, and what everybody actually says out loud.</summary>
     public string Number { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// The numeric part of <see cref="Number"/>, for allocating the next one.
+    /// Zero for anything that is not a number this installation generated.
+    /// </summary>
+    /// <remarks>
+    /// Derived by the database from <see cref="Number"/> and never assigned
+    /// here — see RepairOrderTables for the expression and for why it is
+    /// computed rather than stored beside it.
+    /// </remarks>
+    public int NumberSequence { get; private set; }
 
     /// <summary>ISO 4217. Every amount on the job is in this currency.</summary>
     public string Currency { get; private set; } = string.Empty;
