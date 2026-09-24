@@ -36,6 +36,13 @@ public interface IReceivables
     /// The receivable for one billed thing, or null if there is none. Lets a deal
     /// desk or a job sheet show what is still owed without knowing an id.
     /// </summary>
+    /// <remarks>
+    /// Null also means "there is one, but not at a lot you may see". The two
+    /// cases are deliberately indistinguishable: this route takes a reference
+    /// rather than a receivable id, so answering them differently would let any
+    /// signed-in caller test whether a given deal or job had been billed
+    /// anywhere in the group.
+    /// </remarks>
     Task<Result<ReceivableDetail?>> FindAsync(
         ReceivableSource source,
         string reference,

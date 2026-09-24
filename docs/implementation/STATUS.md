@@ -3,26 +3,28 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **a customer can carry an address, and a deal carries its
-own registration address.** `PUT /customers/{id}/address` lets an existing
-customer's mailing address be set or cleared — the domain type and the database
-column already existed (import populated them); there was no way for a person
-to type one in or change it. `Deal.RegistrationAddress`, set through
-`POST /deals/{id}/registration-address`, is the field ADR-024 named as not built:
-where the car will actually be registered or garaged, distinct from the
-customer's own address and from `TaxedAt` (the narrower four-field snapshot a
-tax line was resolved from). It freezes with the rest of the deal's terms once
-submitted, the same rule as the charges and the tax lines. Both are on screen —
-`/customers/:id` and `/deals/:id` — in all six languages.
+Current milestone: **the attacks were tried instead of the controls being
+listed, and one of them worked.** Stage 7's security-testing gap, written up in
+[`SECURITY-TESTING.md`](SECURITY-TESTING.md) as a list of attacks with outcomes
+rather than a list of controls that exist. One real disclosure found and fixed:
+`/receivables/for/{source}/{reference}` answered 204 for a reference nobody has
+and 403 for a bill at a lot the caller cannot see, so the status code alone
+confirmed that a given deal or job had been invoiced somewhere in the group —
+and the permission was checked against the found row, so even a caller with no
+assignment could ask. Everything else held, and every attack is now a test.
+**This is not the independent penetration test doc 06 requires**; that still
+needs somebody outside the project.
 What is next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
 §12 — but see the re-review of 2026-09-16 below before choosing from it, and
 the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no cross-module actions and the arrival-motion work recorded in
 the device-only motion audit. The pager finding closed on 2026-09-19; the token
 migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-23 · `dotnet build` 0 warnings/0 errors, `dotnet test` 874/874,
-`verify-e2e.ps1` PASS against the configured SQL container (the canonical LocalDB
-catalogue is detached with its MDF still on disk; see the milestone below).
+Last verified: 2026-09-24 · `dotnet build` 0 warnings/0 errors, `dotnet test` 931/931,
+`verify-e2e.ps1` PASS **against the canonical LocalDB catalogue** — which now
+works again. The 2026-09-19 note that `DealerFOSS_Host` was detached with its MDF
+still on disk no longer holds; the default command in `AGENTS.md` and
+`docs/LOCAL-DEVELOPMENT.md` runs clean.
 The frontend gates were last run on 2026-09-21 — `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
 `npm run typecheck`, `npm test` 498/498, `npm run build` — and are not re-stated
@@ -1625,3 +1627,25 @@ to come.
   **Proven against the bug first.** `The_printed_invoice_adds_up_to_its_own_total` builds a job carrying customer, warranty, internal and declined work at once, then reads every amount out of **both** money tables and sums each. On the pre-fix renderer it printed **$485.00 of work under a $180.00 total**. `ColumnOf` gained a heading parameter for it — the invoice has two money tables, and scanning the whole document would have summed them together and reported every invoice as exactly double.
 
   Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **874/874** (was 873 — one new), `verify-e2e.ps1` PASS against the SQL container, and the document itself read in a browser at RO-1136: `1.50 h at $120.00` → `$180.00`, water pump `2.00 h` → warranty, discs → declined, wiper blade → no charge, Labour $180.00 + Parts $0.00 + Sent out $0.00 = **Total due $180.00**. Nothing under `frontend/` changed.
+
+- **2026-09-24 — The attacks were tried instead of the controls being listed, and one of them worked.** Stage 7's second named gap. The whole method is the deliverable: [`SECURITY-TESTING.md`](SECURITY-TESTING.md) is a list of attacks with outcomes, not a list of controls that exist, because a control list is written by reading the code and reading the code is how the defect below survived nine days of review by the people who wrote it. Every attack is now a test, so each re-runs on `dotnet test` rather than having been tried once.
+
+  **The finding: a bill could be confirmed to exist at a lot the caller cannot see.** `GET /api/v1/receivables/for/{source}/{reference}` is the one read in the system that takes a *reference* rather than a record id, so "there is none" was already a legitimate business answer — a deal still being worked has no receivable yet. Having a real `null` to return is what made a second, different refusal look reasonable: it answered **204** for a reference nobody has and **403** for a bill at a lot the caller may not see. The difference is itself the disclosure. The permission was checked against the *found row's* rooftop rather than up front, so even a caller holding **no assignment at all** could hand it a deal or job id and learn from the status code alone that it had been invoiced somewhere in the group.
+
+  **Severity is low and it is worth saying why rather than letting it read worse or better than it is.** The reference is a Guid, so the route cannot be walked — an attacker must already hold an id they are not entitled to read, which is a real situation (an advisor moved between lots keeps old bookmarks, printouts and exported files) but is a confirmation oracle rather than a way in, disclosing one bit: *this was billed*. Fixed by answering exactly as a reference that does not exist. The reach is still recorded — `IsAuthorizedAsync` writes the `Denied` row before the answer is composed — so only the **answer** is made identical and the dealership can still see somebody tried.
+
+  **What held, and the gap that let this be found at all.** `RooftopAuthorizationTests` proves the rule in the Organization capability and says in its own header *"cover both routes when you extend them"*. Nothing had extended them, so every other by-id route was held only by the code being written correctly. The attacker is the seeded advisor at NAG-01 — a real user, a real session, every read permission their role carries, and no NAG-02. Records were built at NAG-02 through the ordinary API. Eight by-id routes refused, both printed documents refused without printing the customer they refused to print, seven list filters could not be widened by naming a lot, and the whole set refused again for a caller with no assignment — no scope is never read as no filter. Each route was then asked **twice**, once for a record really at the other lot and once for a Guid nobody has issued, asserting the status **and** the error code match. That pairing is what found the defect; comparing only the status would have missed a route answering 403 to both while naming a different reason.
+
+  **The nine-day-old records-package endpoints.** `POST /migration/packages/{rooftopId}` writes across five capabilities in bulk and was younger than any review of it. Export permission was covered; the import half was not. Refused into another lot, and — the one worth keeping — refused into the caller's **own** lot too, because customers and vehicles in a package are not scoped to a lot at all, so a one-lot manager who could apply a package could rewrite the group's customer list.
+
+  **Rate limiting beyond the password.** The limiter's behaviour is `verify-e2e`'s job and stays there (40 wrong passwords, 29 refused). What behaviour tests cannot catch is a *new* credential route added next year with no `.RequireRateLimiting` on it, breaking nothing and noticed by nobody. So the route table is now read out of the running host: twelve credential routes asserted to carry the policy, the policy name asserted to be one the limiter was configured with, and the limiter asserted **not** to have crept onto the business API. The half that catches what nobody thought of is a sweep treating every `/auth` and `/admin` route as a credential route until exempted in writing — it immediately named five outside the check (tenants, support access, forgetting a passkey), all correctly unlimited, now each carrying its reason instead of being silently absent.
+
+  **Two things measured rather than assumed.** There is **no raw SQL anywhere in `src`** — no `FromSql`, `ExecuteSql`, `SqlQuery` or `CommandText` — so the injection surface is not small, it is absent. And a customer called `<script>alert('x')</script> & "Sons"` prints as text on both documents, asserted as *survives encoded* rather than *no tag appears*, because a document that silently dropped the name would pass the weaker check and be a different bug.
+
+  **What was not tested is in the document, and belongs there.** Timing as a side channel (needs a real socket and a statistical method). TLS itself (both packages serve plain HTTP behind a required proxy, so there is no cipher suite here to test; the failure mode of deploying without one is visible — a `Secure` cookie is never returned over HTTP, so sign-in breaks rather than leaking). Denial of service — the CSV import caps at 20,000 rows and the records package has **no equivalent cap**, which is recorded so the performance milestone inherits it. And the frontend, which did not change.
+
+  **No type was made public.** Identity's sealed surface is untouched; every attack was mounted from outside through the HTTP API as a real caller would, which is a stronger result than it would have been with a widened boundary.
+
+  **This is not the independent penetration test** doc 06 requires for production readiness. That still needs somebody outside this project, and this is the work worth doing before paying for it, so what comes back is what nobody here could have found.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **931/931** (was 874 — 57 new), `verify-e2e.ps1` **PASS against the canonical LocalDB catalogue**, which works again: `DealerFOSS_Host` is ONLINE in `sys.databases` and the default command in `AGENTS.md` runs clean, so the 2026-09-19 note about a detached catalogue with its MDF still on disk no longer holds. Nothing under `frontend/` changed.

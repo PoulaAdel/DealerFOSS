@@ -188,7 +188,20 @@ public sealed class ReceivableService(
 
         if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, row.RooftopId, cancellationToken))
         {
-            return Result.Failure<ReceivableDetail?>(ReceivableErrors.Forbidden);
+            // Answered exactly as if it were not there, and NOT as Forbidden.
+            // This used to refuse, which meant the two answers differed: nothing
+            // owing came back 204 and a bill at a lot the caller cannot see came
+            // back 403. The difference is itself the disclosure — anybody signed
+            // in could hand this route a deal or job id and learn from the status
+            // alone that it had been billed somewhere in the group, which is the
+            // fact the rooftop scope exists to keep from them. Rehearsed by
+            // RecordAuthorizationTests, which fails if this returns Forbidden.
+            //
+            // The reach is still recorded: IsAuthorizedAsync has already written
+            // a Denied row to the dealership's own audit trail. Only the ANSWER
+            // is made identical, so the caller learns nothing the dealership
+            // cannot see them having tried.
+            return Result.Success<ReceivableDetail?>(null);
         }
 
         return Result.Success<ReceivableDetail?>(await DescribeAsync(row, cancellationToken));
