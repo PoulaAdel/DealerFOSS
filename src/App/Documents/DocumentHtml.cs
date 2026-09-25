@@ -65,7 +65,14 @@ internal static class DocumentHtml
         table { width: 100%; border-collapse: collapse; margin-top: 6px; }
         th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
         th { font-size: 9pt; text-transform: uppercase; letter-spacing: .04em; color: #555; }
-        .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        /* `figure` looks exactly like `num` and is a different class on purpose.
+           DocumentTests.The_printed_order_adds_up_to_its_own_total reads every
+           `num` cell in the document and asserts the sum reaches the printed
+           total, so that class means "this belongs in the column that adds up".
+           A finance figure does not — the down payment is how the customer pays,
+           not a reduction in what they owe — and printing one as `num` would
+           break a test that exists to catch four real defects. */
+        .num, .figure { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
         tfoot td { font-weight: 600; border-top: 2px solid #111; border-bottom: none; }
         .total { font-size: 14pt; }
         .note { margin-top: 18px; font-size: 10pt; color: #444; }

@@ -31,6 +31,7 @@ import { RecordBandStatus } from '../../shared/RecordBand';
 import { useRecordRoute } from '../../shared/useRecordRoute';
 import { DealTerms } from './DealTerms';
 import { DealProducts } from './DealProducts';
+import { DealFinancing, SoldFinancing } from './DealFinancing';
 import { DealTax, SoldTax } from './DealTax';
 import { DealRegistrationAddress, SoldRegistrationAddress } from './DealRegistrationAddress';
 import { TakePayment } from '../receivables/TakePayment';
@@ -381,6 +382,9 @@ function DealPanel({
         <>
           <DealTerms deal={deal} onSaved={onChanged} />
           <DealProducts deal={deal} onChanged={onChanged} />
+          {/* After the products, because the amount financed is worked out from
+              everything on the bill and the cover is on the bill. */}
+          <DealFinancing deal={deal} onChanged={onChanged} />
           <DealTax deal={deal} onChanged={onChanged} />
           <DealRegistrationAddress deal={deal} onChanged={onChanged} />
         </>
@@ -388,6 +392,7 @@ function DealPanel({
         <>
           <p className="note">{t('deals.frozen')}</p>
           {deal.products.length === 0 ? null : <SoldProducts deal={deal} onChanged={onChanged} />}
+          <SoldFinancing deal={deal} />
           {deal.taxLines.length === 0 ? null : <SoldTax deal={deal} />}
           <SoldRegistrationAddress deal={deal} />
 

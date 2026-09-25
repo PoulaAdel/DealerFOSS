@@ -48,6 +48,7 @@ const base: DealDetail = {
   taxTotal: 0,
   taxedAt: null,
   registrationAddress: null,
+  financing: null,
   history: [],
 };
 

@@ -203,7 +203,32 @@ public sealed record PackagedDeal(
     /// </summary>
     PackagedTaxAddress? TaxedAt,
     PackagedTradeIn? TradeIn,
+
+    /// <summary>
+    /// How the deal was being paid for over time. Null on a cash deal.
+    /// </summary>
+    /// <remarks>
+    /// THE AMOUNT DUE CHECK CANNOT CATCH THIS ONE. Financing sits outside
+    /// AmountDue on purpose — the down payment is how the customer pays, not a
+    /// reduction in what they owe — so a package that dropped it would balance
+    /// perfectly and still arrive having turned a sixty-month contract into a
+    /// cash deal. It is carried because it is what the customer signed, and the
+    /// paperwork comparison in PackageTests is what proves it survived.
+    /// </remarks>
+    PackagedFinancing? Financing,
     decimal AmountDue);
+
+/// <summary>
+/// A retail instalment structure as the source system settled it. The four
+/// agreed figures only: the amount financed, the monthly payment and the finance
+/// charge all follow from these and are recomputed on the other side.
+/// </summary>
+/// <param name="AnnualPercentageRate">A fraction: 0.0649 is 6.49%.</param>
+public sealed record PackagedFinancing(
+    string? Lender,
+    decimal DownPayment,
+    decimal AnnualPercentageRate,
+    int TermMonths);
 
 public sealed record PackagedTaxAddress(
     string? AdministrativeArea,

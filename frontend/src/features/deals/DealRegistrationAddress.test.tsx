@@ -46,6 +46,7 @@ const deal: DealDetail = {
   taxTotal: 0,
   taxedAt: null,
   registrationAddress: null,
+  financing: null,
   history: [],
   isApproved: false,
 };

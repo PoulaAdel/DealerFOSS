@@ -797,6 +797,37 @@ export const ar: Catalogue = {
     'الأرقام مجمَّدة. توقّف تعديلها لحظة تقديم الصفقة للاعتماد، كي يعتمد المدير ما عُرض عليه بالضبط.',
   'deals.whatHappened': 'ما الذي حدث',
 
+  'financing.title': 'التمويل',
+  'financing.lede':
+    'ما يدفعه العميل شهريًا. يُسجَّل هنا ولا يُرسل إلى أي جهة — لا يذهب أي طلب إلى جهة تمويل.',
+  'financing.notFinanced': 'هذه صفقة نقدية. لا يوجد ما يُموَّل.',
+  'financing.finance': 'تمويل هذه الصفقة',
+  'financing.makeItCash': 'تحويلها إلى صفقة نقدية',
+  'financing.save': 'حفظ التمويل',
+  'financing.provider': 'جهة التمويل',
+  'financing.providerHint': 'اختياري. إلى من أُرسلت الأوراق.',
+  'financing.downPayment': 'المقدَّم',
+  'financing.aprPercent': 'معدل النسبة السنوي (%)',
+  'financing.termMonths': 'المدة بالأشهر',
+  'financing.amountFinanced': 'المبلغ المموَّل',
+  'financing.monthlyPayment': 'القسط الشهري',
+  'financing.finalPayment': 'القسط الأخير',
+  'financing.totalOfPayments': 'مجموع الأقساط',
+  'financing.financeCharge': 'تكلفة التمويل',
+  'financing.months': {
+    zero: 'بدون أشهر',
+    one: 'شهر واحد',
+    two: 'شهران',
+    few: '{count} أشهر',
+    many: '{count} شهرًا',
+    other: '{count} شهر',
+  },
+  'financing.rateAndTerm': '{rate} سنويًا على {term}',
+  'financing.notMoneyOff':
+    'المقدَّم طريقة للدفع وليس خصمًا. ما زال المطلوب من العميل {amountDue}.',
+  'financing.nothingToFinance':
+    'المقدَّم {down} أكبر من {due} المطلوبة الآن، فلا يوجد ما يُموَّل ولا قسط شهري. أعِد ضبطه، أو اجعلها صفقة نقدية.',
+
   'deals.finished': 'انتهت هذه الصفقة. لم يعد بالإمكان فعل شيء بها.',
   'deals.sendToManager': 'أرسِلها إلى المدير',
   'deals.approve': 'اعتماد',

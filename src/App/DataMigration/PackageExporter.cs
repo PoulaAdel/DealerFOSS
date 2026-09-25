@@ -244,6 +244,17 @@ internal sealed class PackageExporter(
                     d.TradeIn is { } trade
                         ? new PackagedTradeIn(trade.Description, trade.Allowance, trade.Payoff)
                         : null,
+
+                    // The four agreed figures only. The amount financed and the
+                    // payments on the view beside them are derived, and the
+                    // receiving installation works them out from these.
+                    d.Financing is { } financing
+                        ? new PackagedFinancing(
+                            financing.Lender,
+                            financing.DownPayment,
+                            financing.AnnualPercentageRate,
+                            financing.TermMonths)
+                        : null,
                     d.AmountDue));
             }
 

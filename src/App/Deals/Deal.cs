@@ -68,6 +68,12 @@ public sealed class Deal : AuditableEntity
     /// </summary>
     public RegistrationAddress? RegistrationAddress { get; private set; }
 
+    /// <summary>
+    /// How the deal is being paid for over time. Null on a cash deal, which is
+    /// an ordinary answer rather than missing data.
+    /// </summary>
+    public Financing? Financing { get; private set; }
+
     public IReadOnlyList<DealCharge> Charges => _charges;
 
     public IReadOnlyList<DealProduct> Products => _products;
@@ -116,6 +122,37 @@ public sealed class Deal : AuditableEntity
             - (Trade?.Allowance ?? 0m) + (Trade?.Payoff ?? 0m)
             + _taxLines.Sum(t => t.Amount),
         Currency);
+
+    /// <summary>
+    /// What is left for a lender to advance: what the customer owes, less the
+    /// cash they put down. Null on a cash deal.
+    /// </summary>
+    /// <remarks>
+    /// DERIVED, AND THERE IS NO COLUMN FOR IT. It is <see cref="AmountDue"/>
+    /// minus the down payment and nothing else, so storing it would give the
+    /// deal a second answer to the same question — and two stored figures with a
+    /// stored difference between them is one figure too many, the same rule as
+    /// DealProduct.Gross.
+    ///
+    /// Can be zero or negative, and is not clamped. A deal repriced downwards
+    /// after the financing was agreed genuinely has more down than it has left
+    /// to owe, and showing that is how somebody notices; hiding it behind a zero
+    /// would make the deal look financeable when it is not.
+    /// </remarks>
+    public Money? AmountFinanced =>
+        Financing is null ? null : new Money(AmountDue.Amount - Financing.DownPayment, Currency);
+
+    /// <summary>
+    /// What the customer pays a month, and what the credit costs them. Worked
+    /// out from the structure every time rather than stored, so it can never
+    /// disagree with the figures it comes from.
+    /// </summary>
+    /// <remarks>
+    /// Null when there is no financing, and also when there is nothing left to
+    /// finance — see <see cref="Financing.PlanFor"/> for why that is a null
+    /// rather than a refusal.
+    /// </remarks>
+    public InstalmentPlan? Instalments => Financing?.PlanFor(AmountFinanced!.Value.Amount);
 
     /// <summary>
     /// What this sale is taxed ON in a jurisdiction with these rules, before any
@@ -244,6 +281,7 @@ public sealed class Deal : AuditableEntity
         IEnumerable<(string Description, string Jurisdiction, decimal Basis, decimal Rate, decimal Amount,
             TaxProvenance Provenance, string? PackId, int? PackVersion)> taxLines,
         TaxAddress? taxedAt,
+        Financing? financing,
         DateTimeOffset importedAt,
         Guid? importedByUserId = null)
     {
@@ -252,6 +290,27 @@ public sealed class Deal : AuditableEntity
         deal.SetTerms(charges, trade);
         deal.SetProducts(products);
         deal.SetTax(taxLines, taxedAt);
+
+        // Assigned rather than set through SetFinancing, and that is not a
+        // shortcut past the rule.
+        //
+        // SetFinancing refuses a down payment that covers the whole total,
+        // because on a deal being worked that means somebody is paying cash. An
+        // arriving deal is not being worked — it is a record of what another
+        // system settled — and applying the check here SHADOWED the one guard
+        // that makes a package trustworthy: a file that had lost a charge came
+        // back "that down payment covers the whole total" instead of "this deal
+        // says 20,000 and its lines come to 251", which sends somebody looking at
+        // the financing for a fault that is in the charges. Found on 2026-09-25
+        // by a package test that tampers with a deal's charges.
+        //
+        // The four figures are still validated: Financing.Create checks the rate,
+        // the term and the sign of the down payment before this is reached. What
+        // is left out is only the comparison against a total, and the total check
+        // below is the authority on that for an arriving record. One whose
+        // financing genuinely does not work shows no monthly payment, which is
+        // visible, rather than being refused for the wrong reason.
+        deal.Financing = financing;
 
         // Start wrote the Draft entry; this one replaces it, so the history is
         // one line about arriving rather than a fiction about being sold here.
@@ -426,6 +485,43 @@ public sealed class Deal : AuditableEntity
     }
 
     /// <summary>
+    /// Records the finance structure agreed on the deal, or clears it with null
+    /// for a cash deal. Only while the deal is open.
+    /// </summary>
+    /// <remarks>
+    /// DRAFT ONLY, like the charges, the products and the tax — and the reason
+    /// is the monthly payment rather than consistency for its own sake. The
+    /// payment is derived from <see cref="AmountDue"/>, which freezes on
+    /// submission; financing that could be changed afterwards would let the
+    /// figure the customer was quoted move without the approval moving with it.
+    /// A genuine rework already has a mechanism, which is going back to Draft.
+    ///
+    /// The down payment is checked against what is actually owed, because a
+    /// customer who has put down the whole price is paying cash and a financing
+    /// record on that deal is a mistake rather than a structure. The check is
+    /// here rather than in Financing.Create because only the deal knows the
+    /// total; Create validates the four figures on their own terms.
+    /// </remarks>
+    public void SetFinancing(Financing? financing)
+    {
+        if (!TermsAreOpen)
+        {
+            throw new InvalidOperationException(
+                $"A {Status} deal is frozen. Move it back to Draft to change the financing.");
+        }
+
+        if (financing is not null && financing.DownPayment >= AmountDue.Amount)
+        {
+            throw new ArgumentException(
+                $"A down payment of {financing.DownPayment} covers the whole {AmountDue.Amount} due, "
+                + "so there is nothing left to finance. That is a cash deal.",
+                nameof(financing));
+        }
+
+        Financing = financing;
+    }
+
+    /// <summary>
     /// Moves the deal on and records the move together with the total at that
     /// moment, so an approval records the number that was approved.
     /// </summary>
@@ -519,6 +615,20 @@ public sealed class Deal : AuditableEntity
             throw new InvalidOperationException(
                 "This deal pays the customer more than they pay the dealership. "
                 + "Check the discount and the trade-in allowance.");
+        }
+
+        // SetFinancing already refused this against the total at the time. The
+        // total can move afterwards — repricing the car, or a bigger trade
+        // allowance — and the financing does not move with it, so the gate is
+        // here as well. Submitting a financed deal with no monthly payment on it
+        // would put it in a manager's queue with the one figure the customer
+        // cares about missing.
+        if (Financing is { } financing && Instalments is null)
+        {
+            throw new InvalidOperationException(
+                $"The {financing.DownPayment} down on this deal is now more than the "
+                + $"{AmountDue.Amount} due, so there is nothing to finance and no monthly "
+                + "payment. Rework the financing or take it off.");
         }
     }
 }

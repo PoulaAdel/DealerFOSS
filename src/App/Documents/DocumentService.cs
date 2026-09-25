@@ -25,6 +25,13 @@
 //   add anything to either AmountDue, those tests fail until it is printed
 //   here.
 //
+//   THE CONVERSE ALSO HOLDS, and the payment terms on a financed deal are the
+//   worked example: they print BELOW the total, in `figure` cells rather than
+//   `num`, because nothing in them is inside AmountDue — a down payment is how
+//   the customer pays, not a reduction in what they owe. Putting a figure in
+//   that column that is not part of the total is the same defect from the other
+//   direction, and it would break the test rather than hide from it.
+//
 //   FIVE lines have now gone missing from a summary column in this product:
 //   the trade-in, the F&I products, the tax on the deal desk, the same tax on
 //   the printed order (2026-09-21), and the service invoice's warranty and
@@ -164,9 +171,21 @@ public sealed class DocumentService(
             $"<td class=\"num total\">{DocumentHtml.Text(DocumentHtml.Money(deal.Value.AmountDue, deal.Value.Currency))}</td>");
         body.Append("</tr></tfoot></table>");
 
+        AppendFinancing(body, deal.Value);
+
+        // The second sentence changes when the deal is financed. Saying a
+        // document "does not include any finance agreement" underneath a table of
+        // payment terms would be wrong in the one place a customer looks to check
+        // what they signed — so the financed copy says what the figures ARE: the
+        // terms agreed, not the credit agreement itself, which is a separate
+        // document with a signature on it.
         body.Append(
-            "<p class=\"note\">This is a summary of what was agreed. It is not a tax invoice "
-            + "and does not include any finance agreement.</p>");
+            deal.Value.Financing is null
+                ? "<p class=\"note\">This is a summary of what was agreed. It is not a tax invoice "
+                    + "and does not include any finance agreement.</p>"
+                : "<p class=\"note\">This is a summary of what was agreed. It is not a tax invoice. "
+                    + "The payment terms above are the terms agreed and are not themselves the "
+                    + "credit agreement, which is signed separately.</p>");
 
         return Result.Success(new RenderedDocument(
             DocumentHtml.Page($"Vehicle order — {deal.Value.CustomerName}", body.ToString()),
@@ -316,6 +335,96 @@ public sealed class DocumentService(
             DocumentHtml.Page($"{title} {job.Value.Number}", body.ToString()),
             "text/html; charset=utf-8",
             $"{job.Value.Number}.html"));
+    }
+
+    /// <summary>
+    /// The payment terms, in their own table BELOW the total. Renders nothing on
+    /// a cash deal.
+    /// </summary>
+    /// <remarks>
+    /// BELOW THE TOTAL AND IN `figure` CELLS, NOT `num`. Both of those are
+    /// load-bearing. None of these amounts is inside AmountDue — the down payment
+    /// is how the customer pays rather than a reduction in what they owe — so
+    /// putting them in the column above would make a column that is supposed to
+    /// add up to the total stop adding up to it, which is the defect this
+    /// document has already been fixed for four times. The `num` class is how
+    /// The_printed_order_adds_up_to_its_own_total decides what belongs in that
+    /// sum, so a finance figure must not carry it.
+    ///
+    /// Nothing here is a dealership-only figure, which is why it may be printed
+    /// at all. Dealer reserve — what the dealership earns on the finance itself —
+    /// is not recorded anywhere in this system, and if it ever is, it does not
+    /// belong on this page.
+    /// </remarks>
+    private static void AppendFinancing(StringBuilder body, DealDetail deal)
+    {
+        if (deal.Financing is not { } financing)
+        {
+            return;
+        }
+
+        body.Append("<h2>Payment terms</h2>");
+        body.Append("<table><tbody>");
+
+        Row("Cash down", DocumentHtml.Money(financing.DownPayment, deal.Currency));
+        Row("Amount financed", DocumentHtml.Money(financing.AmountFinanced, deal.Currency));
+
+        // Three decimal places with the trailing zeros trimmed, the same as a tax
+        // rate on this document: 6.49% reads as 6.49%, and 0.9% does not become 1%.
+        Row(
+            "Annual percentage rate",
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"{financing.AnnualPercentageRate * 100m:0.###}%"));
+
+        Row(
+            "Term",
+            string.Create(CultureInfo.InvariantCulture, $"{financing.TermMonths} months"));
+
+        // Null exactly when a reprice has left nothing to finance. The deal cannot
+        // be submitted in that state, so a printed order should not normally be
+        // able to reach it — printed as a dash rather than omitted, because a
+        // missing row on paperwork is indistinguishable from a rendering fault.
+        if (financing.MonthlyPayment is { } monthly)
+        {
+            // The one figure the customer asked for first, so it is the one row
+            // on this table that is emphasised.
+            Row(
+                "<strong>Monthly payment</strong>",
+                $"<strong>{DocumentHtml.Text(DocumentHtml.Money(monthly, deal.Currency))}</strong>",
+                escape: false);
+
+            // Only when it actually differs. A final payment identical to the
+            // other sixty is a row that makes a reader look for a difference
+            // that is not there.
+            if (financing.FinalPayment is { } final && final != monthly)
+            {
+                Row("Final payment", DocumentHtml.Money(final, deal.Currency));
+            }
+
+            Row("Total of payments", DocumentHtml.Money(financing.TotalOfPayments!.Value, deal.Currency));
+            Row("Finance charge", DocumentHtml.Money(financing.FinanceCharge!.Value, deal.Currency));
+        }
+        else
+        {
+            Row("Monthly payment", "—");
+        }
+
+        // The lender is a name the dealership typed, so it is printed as stored.
+        if (financing.Lender is { } lender)
+        {
+            Row("Finance provider", lender);
+        }
+
+        body.Append("</tbody></table>");
+
+        void Row(string label, string value, bool escape = true)
+        {
+            body.Append(
+                CultureInfo.InvariantCulture,
+                $"<tr><td>{(escape ? DocumentHtml.Text(label) : label)}</td>"
+                + $"<td class=\"figure\">{(escape ? DocumentHtml.Text(value) : value)}</td></tr>");
+        }
     }
 
     /// <summary>

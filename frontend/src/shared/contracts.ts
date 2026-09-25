@@ -1083,7 +1083,39 @@ export interface DealDetail extends DealSummary {
    * it has been worked out.
    */
   registrationAddress: RegistrationAddressView | null;
+  /** How the deal is being paid for over time. Null on a cash deal. */
+  financing: DealFinancingView | null;
   history: DealHistoryEntry[];
+}
+
+/**
+ * The finance structure on a deal, with the payments worked out server-side.
+ *
+ * NONE OF THIS IS INSIDE `amountDue`, and a screen must not add it in. The down
+ * payment is how the customer pays rather than a reduction in what they owe: the
+ * receivable opens at the full amount due and the down payment settles part of it
+ * like any other receipt. Subtracting it here would show the money twice, and
+ * would break the test that reads the deal's column down and asserts it reaches
+ * the printed total.
+ *
+ * The four derived figures are null together, exactly when a reprice has left the
+ * cash down covering the whole total so there is nothing to finance. The deal
+ * cannot be submitted in that state.
+ */
+export interface DealFinancingView {
+  /** Who the paper went to, as the dealership wrote it. Never translated. */
+  lender: string | null;
+  downPayment: number;
+  /** A fraction: 0.0649 is 6.49%. */
+  annualPercentageRate: number;
+  termMonths: number;
+  /** The amount due less the cash down. May be zero or negative after a reprice. */
+  amountFinanced: number;
+  monthlyPayment: number | null;
+  /** The last instalment, which clears the balance and is usually a few cents different. */
+  finalPayment: number | null;
+  totalOfPayments: number | null;
+  financeCharge: number | null;
 }
 
 /**

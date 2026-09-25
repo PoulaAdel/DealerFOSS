@@ -752,6 +752,30 @@ export const de: Catalogue = {
     'Die Kalkulation ist eingefroren. Sie war ab dem Einreichen nicht mehr änderbar, damit die Führungskraft genau das genehmigt, was ihr vorgelegt wurde.',
   'deals.whatHappened': 'Verlauf',
 
+  'financing.title': 'Finanzierung',
+  'financing.lede':
+    'Was der Kunde monatlich zahlt. Wird hier erfasst und nirgendwohin gesendet — es geht kein Antrag an eine Bank.',
+  'financing.notFinanced': 'Das ist ein Barkauf. Es wird nichts finanziert.',
+  'financing.finance': 'Dieses Geschäft finanzieren',
+  'financing.makeItCash': 'In einen Barkauf umwandeln',
+  'financing.save': 'Finanzierung speichern',
+  'financing.provider': 'Finanzierungspartner',
+  'financing.providerHint': 'Optional. Wohin die Unterlagen gegangen sind.',
+  'financing.downPayment': 'Anzahlung',
+  'financing.aprPercent': 'Effektiver Jahreszins (%)',
+  'financing.termMonths': 'Laufzeit in Monaten',
+  'financing.amountFinanced': 'Finanzierungsbetrag',
+  'financing.monthlyPayment': 'Monatliche Rate',
+  'financing.finalPayment': 'Schlussrate',
+  'financing.totalOfPayments': 'Summe aller Raten',
+  'financing.financeCharge': 'Finanzierungskosten',
+  'financing.months': { one: '{count} Monat', other: '{count} Monate' },
+  'financing.rateAndTerm': '{rate} pro Jahr über {term}',
+  'financing.notMoneyOff':
+    'Die Anzahlung ist die Art zu zahlen, kein Rabatt. Geschuldet werden weiterhin {amountDue}.',
+  'financing.nothingToFinance':
+    'Die Anzahlung von {down} ist höher als die jetzt fälligen {due}. Es gibt nichts zu finanzieren und keine monatliche Rate. Überarbeiten Sie sie, oder machen Sie daraus einen Barkauf.',
+
   'deals.finished': 'Dieser Verkauf ist abgeschlossen. Es kann nichts mehr damit geschehen.',
   'deals.sendToManager': 'An eine Führungskraft senden',
   'deals.approve': 'Genehmigen',

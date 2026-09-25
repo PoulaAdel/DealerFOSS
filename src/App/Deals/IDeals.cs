@@ -80,6 +80,22 @@ public interface IDeals
         RegistrationAddressView? address,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Records the finance structure agreed on the deal, or clears it with null
+    /// for a cash deal.
+    /// </summary>
+    /// <remarks>
+    /// NO LENDER IS INVOLVED. A monthly payment is arithmetic over an amount
+    /// financed, a rate and a term, so recording what was agreed needs nothing
+    /// outside this installation. Submitting a credit application and receiving a
+    /// decision are a different capability that does not exist: the lender here
+    /// is a name the dealership typed, and nothing is sent anywhere.
+    /// </remarks>
+    Task<Result<DealDetail>> SetFinancingAsync(
+        Guid dealId,
+        DealFinancing? financing,
+        CancellationToken cancellationToken);
+
     Task<Result<DealDetail>> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest change,
@@ -162,6 +178,13 @@ public sealed record DealDetail(
     /// </summary>
     RegistrationAddressView? RegistrationAddress,
 
+    /// <summary>
+    /// How the deal is being paid for over time, with the monthly payment worked
+    /// out. Null on a cash deal. Deliberately NOT part of
+    /// <see cref="AmountDue"/> — see <see cref="DealFinancingView"/>.
+    /// </summary>
+    DealFinancingView? Financing,
+
     IReadOnlyList<DealHistoryEntry> History);
 
 public sealed record ChargeView(string Kind, string Description, decimal Amount);
@@ -187,6 +210,14 @@ public sealed record ImportedDeal(
     IReadOnlyList<NewTaxLine> TaxLines,
     TaxAddressView? TaxedAt,
     TradeInView? TradeIn,
+
+    /// <summary>
+    /// The finance structure the source system settled. Carried because it is
+    /// what the customer signed: a deal that arrived as a cash deal when it was
+    /// financed over sixty months has lost the contract, and the amount due
+    /// check above would not notice, because financing sits outside the total.
+    /// </summary>
+    DealFinancing? Financing,
     decimal AmountDue);
 
 /// <summary>
@@ -240,6 +271,54 @@ public sealed record SoldProduct(
     decimal Cost,
     int? TermMonths = null,
     int? TermMiles = null);
+
+/// <summary>
+/// What a caller supplies to record the finance structure agreed on a deal.
+/// </summary>
+/// <param name="Lender">
+/// Who the paper went to, as the dealership writes it. Optional, and a name
+/// rather than a reference — there is no lender record to point at.
+/// </param>
+/// <param name="AnnualPercentageRate">A fraction: 0.0649 is 6.49%, not 6.49.</param>
+public sealed record DealFinancing(
+    string? Lender,
+    decimal DownPayment,
+    decimal AnnualPercentageRate,
+    int TermMonths);
+
+/// <summary>
+/// The finance structure on a deal, with the payments worked out from it.
+/// </summary>
+/// <remarks>
+/// NONE OF THIS IS INSIDE AmountDue, and a screen must not add it in. The down
+/// payment is how the customer pays rather than a reduction in what they owe:
+/// the receivable opens at the full amount due and the down payment settles part
+/// of it like any other receipt. A screen that subtracted it here would show the
+/// money twice.
+///
+/// The four derived figures are null together, exactly when a reprice has left
+/// the down payment covering the whole total so there is nothing to finance. The
+/// deal cannot be submitted in that state, and saying so is more use to the
+/// person looking at it than a zero would be.
+/// </remarks>
+/// <param name="AmountFinanced">
+/// What is left for a lender to advance: the amount due less the cash down. May
+/// be zero or negative on a deal repriced after the financing was agreed.
+/// </param>
+/// <param name="FinalPayment">
+/// The last instalment, which clears the balance and is usually a few cents
+/// different from the others.
+/// </param>
+public sealed record DealFinancingView(
+    string? Lender,
+    decimal DownPayment,
+    decimal AnnualPercentageRate,
+    int TermMonths,
+    decimal AmountFinanced,
+    decimal? MonthlyPayment,
+    decimal? FinalPayment,
+    decimal? TotalOfPayments,
+    decimal? FinanceCharge);
 
 public sealed record TradeInView(
     string Description,

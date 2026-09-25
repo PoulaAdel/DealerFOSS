@@ -778,6 +778,35 @@ export const ru: Catalogue = {
     'Расчёт зафиксирован. Он перестал быть редактируемым в момент отправки на согласование, чтобы руководитель согласовывал именно то, что ему показали.',
   'deals.whatHappened': 'Что происходило',
 
+  'financing.title': 'Финансирование',
+  'financing.lede':
+    'Сколько клиент платит в месяц. Записывается здесь и никуда не отправляется — заявка в банк не уходит.',
+  'financing.notFinanced': 'Это сделка за наличные. Ничего не финансируется.',
+  'financing.finance': 'Оформить финансирование',
+  'financing.makeItCash': 'Сделать сделкой за наличные',
+  'financing.save': 'Сохранить финансирование',
+  'financing.provider': 'Финансирующая организация',
+  'financing.providerHint': 'Необязательно. Куда ушли документы.',
+  'financing.downPayment': 'Первоначальный взнос',
+  'financing.aprPercent': 'Годовая процентная ставка (%)',
+  'financing.termMonths': 'Срок в месяцах',
+  'financing.amountFinanced': 'Сумма финансирования',
+  'financing.monthlyPayment': 'Месячный платёж',
+  'financing.finalPayment': 'Последний платёж',
+  'financing.totalOfPayments': 'Сумма всех платежей',
+  'financing.financeCharge': 'Стоимость кредита',
+  'financing.months': {
+    one: '{count} месяц',
+    few: '{count} месяца',
+    many: '{count} месяцев',
+    other: '{count} месяца',
+  },
+  'financing.rateAndTerm': '{rate} в год на {term}',
+  'financing.notMoneyOff':
+    'Первоначальный взнос — это способ оплаты, а не скидка. К оплате по-прежнему {amountDue}.',
+  'financing.nothingToFinance':
+    'Взнос {down} превышает {due}, которые теперь причитаются, поэтому финансировать нечего и месячного платежа нет. Пересмотрите его или сделайте сделку за наличные.',
+
   'deals.finished': 'Сделка завершена. Больше с ней ничего сделать нельзя.',
   'deals.sendToManager': 'Отправить руководителю',
   'deals.approve': 'Согласовать',

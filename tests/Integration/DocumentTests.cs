@@ -67,6 +67,20 @@ public sealed class DocumentTests(HostFixture fixture)
             html.Should().NotContain(word,
                 because: $"'{word}' has no place on something handed across a desk");
         }
+
+        // And the same over a financed order, because the payment terms are the
+        // newest thing on this page. Nothing in them is dealership-only today —
+        // dealer reserve, what the dealership earns on the finance itself, is not
+        // recorded anywhere in this system. If it ever is, this is where adding it
+        // to the paperwork gets caught.
+        var withFinancing = await DealWithCoverAsync(financed: true);
+        var financedHtml = await DocumentAsync($"/api/v1/documents/deals/{withFinancing}");
+
+        foreach (var word in new[] { "gross", "Gross", "cost", "Cost", "reserve", "Reserve" })
+        {
+            financedHtml.Should().NotContain(word,
+                because: $"'{word}' has no place on something handed across a desk");
+        }
     }
 
     [Fact]
@@ -135,6 +149,54 @@ public sealed class DocumentTests(HostFixture fixture)
         // And the row says what the tax was worked out on, since an amount with
         // no basis and no rate cannot be queried by the person paying it.
         html.Should().Contain("$20,000.00 at 8.25%");
+    }
+
+    [Fact]
+    public async Task A_financed_order_prints_what_the_customer_pays_a_month()
+    {
+        var deal = await DealWithCoverAsync(tradeAllowance: 3000m, tax: 1650m, financed: true);
+        var html = await DocumentAsync($"/api/v1/documents/deals/{deal}");
+
+        html.Should().Contain("Payment terms");
+        html.Should().Contain("Monthly payment");
+        html.Should().Contain("Amount financed");
+        html.Should().Contain("5.99%");
+        html.Should().Contain("60 months");
+
+        // The lender is a name the dealership typed, so it prints as stored.
+        html.Should().Contain("Northgate Acceptance");
+
+        // The car is 20,000, the cover 900, the trade takes 3,000 off and the tax
+        // adds 1,650 — so 19,550 is due and 3,000 down leaves 16,550 to finance.
+        html.Should().Contain("$16,550.00");
+
+        // And the note underneath no longer claims the document says nothing about
+        // finance, which would be wrong directly below a table of payment terms.
+        html.Should().NotContain("does not include any finance agreement");
+        html.Should().Contain("not themselves the credit agreement");
+    }
+
+    [Fact]
+    public async Task The_payment_terms_stay_out_of_the_column_that_adds_up()
+    {
+        // The same defect as the missing lines, from the other direction. Nothing
+        // in the payment terms is inside AmountDue — a down payment is how the
+        // customer pays, not a reduction in what they owe — so a finance figure
+        // appearing in the column above would make a column that is supposed to
+        // reach the total stop reaching it. Four lines have gone MISSING from
+        // that column in this product's life; this is the first guard against one
+        // being added to it that does not belong.
+        var financed = await DealWithCoverAsync(tradeAllowance: 3000m, tax: 1650m, financed: true);
+        var html = await DocumentAsync($"/api/v1/documents/deals/{financed}");
+
+        var (amounts, total) = ColumnOf(html, "What it comes to");
+
+        amounts.Sum().Should().Be(total,
+            because: "the payment terms are printed below the total and are not part of it");
+
+        // And the sanity check on the test: the financing really is on this page,
+        // so a document that simply failed to render it would not pass.
+        html.Should().Contain("Payment terms");
     }
 
     [Fact]
@@ -331,7 +393,8 @@ public sealed class DocumentTests(HostFixture fixture)
     private async Task<Guid> DealWithCoverAsync(
         Guid? customerId = null,
         decimal tradeAllowance = 0m,
-        decimal tax = 0m)
+        decimal tax = 0m,
+        bool financed = false)
     {
         var rooftop = await RooftopIdAsync();
         var customer = customerId ?? await FirstAsync("/api/v1/customers?query=a&limit=1", "id");
@@ -392,6 +455,22 @@ public sealed class DocumentTests(HostFixture fixture)
                     },
                 },
                 taxedAt = new { administrativeArea = "WA", county = "King", postalCode = "98101", country = "US" },
+            }, HttpStatusCode.OK);
+        }
+
+        if (financed)
+        {
+            // Set last, because the down payment is checked against what the deal
+            // comes to and the tax above is part of that.
+            await PostAsync<JsonElement>($"/api/v1/deals/{dealId}/financing", Manager, new
+            {
+                financing = new
+                {
+                    lender = "Northgate Acceptance",
+                    downPayment = 3000m,
+                    annualPercentageRate = 0.0599m,
+                    termMonths = 60,
+                },
             }, HttpStatusCode.OK);
         }
 

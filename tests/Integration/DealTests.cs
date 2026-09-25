@@ -458,6 +458,129 @@ public sealed class DealTests(HostFixture fixture)
             because: "the address a manager approved is what the tax on the deal was defended by");
     }
 
+    [Fact]
+    public async Task A_deal_can_say_what_the_customer_pays_a_month()
+    {
+        // The first question every retail buyer asks, and until now the one thing
+        // the desk could not answer. No lender is involved: a payment is
+        // arithmetic over an amount financed, a rate and a term.
+        var dealId = await StartDealAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await PriceAsync(dealId, Manager);
+
+        using var financed = await PostAsync($"{Deals}/{dealId}/financing", Manager, new
+        {
+            financing = new
+            {
+                lender = "Ally Financial",
+                downPayment = 4000m,
+                annualPercentageRate = 0.0649m,
+                termMonths = 60,
+            },
+        });
+
+        financed.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var deal = await financed.Content.ReadFromJsonAsync<JsonElement>();
+        var terms = deal.GetProperty("financing");
+
+        terms.GetProperty("lender").GetString().Should().Be("Ally Financial");
+        terms.GetProperty("amountFinanced").GetDecimal().Should().Be(20_000m);
+        terms.GetProperty("monthlyPayment").GetDecimal().Should().Be(391.23m);
+
+        // And the figures agree with each other, read back off the wire rather
+        // than recomputed here.
+        var monthly = terms.GetProperty("monthlyPayment").GetDecimal();
+        var final = terms.GetProperty("finalPayment").GetDecimal();
+        var total = terms.GetProperty("totalOfPayments").GetDecimal();
+
+        (monthly * 59m + final).Should().Be(total,
+            because: "the total of payments is the payments added up and nothing else");
+
+        terms.GetProperty("financeCharge").GetDecimal().Should().Be(total - 20_000m,
+            because: "the finance charge is what the credit costs over what was advanced");
+
+        // The one that would be easiest to get wrong: financing is how the
+        // customer pays, not money off, so what they owe has not moved.
+        deal.GetProperty("amountDue").GetDecimal().Should().Be(24_000m);
+    }
+
+    [Fact]
+    public async Task Financing_freezes_when_the_deal_leaves_a_managers_hands()
+    {
+        var dealId = await StartDealAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await PriceAsync(dealId, Manager);
+
+        object structure(int termMonths) => new
+        {
+            financing = new { downPayment = 2000m, annualPercentageRate = 0.05m, termMonths },
+        };
+
+        (await PostAsync($"{Deals}/{dealId}/financing", Manager, structure(60)))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        (await MoveAsync(dealId, Manager, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        using var late = await PostAsync($"{Deals}/{dealId}/financing", Manager, structure(72));
+
+        late.StatusCode.Should().Be(HttpStatusCode.Conflict,
+            because: "the payment derives from a total a manager approved, so stretching the "
+                + "term afterwards would requote the customer behind the approval");
+    }
+
+    [Fact]
+    public async Task A_rate_typed_as_a_percentage_is_refused()
+    {
+        var dealId = await StartDealAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await PriceAsync(dealId, Manager);
+
+        using var response = await PostAsync($"{Deals}/{dealId}/financing", Manager, new
+        {
+            // 6.49 rather than 0.0649 — a 649% loan, and the slip this field will
+            // really see.
+            financing = new { downPayment = 0m, annualPercentageRate = 6.49m, termMonths = 60 },
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Clearing_the_financing_makes_it_a_cash_deal_again()
+    {
+        var dealId = await StartDealAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await PriceAsync(dealId, Manager);
+
+        await PostAsync($"{Deals}/{dealId}/financing", Manager, new
+        {
+            financing = new { downPayment = 1000m, annualPercentageRate = 0.05m, termMonths = 48 },
+        });
+
+        using var cleared = await PostAsync($"{Deals}/{dealId}/financing", Manager, new
+        {
+            financing = (object?)null,
+        });
+
+        cleared.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var deal = await cleared.Content.ReadFromJsonAsync<JsonElement>();
+        deal.GetProperty("financing").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task Somebody_who_cannot_write_this_rooftops_deals_cannot_finance_one()
+    {
+        // The advisor reads at NAG-01 and does not write deals. Recording a
+        // structure is Deals.Write, like pricing the car and selling the cover.
+        var dealId = await StartDealAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await PriceAsync(dealId, Manager);
+
+        using var response = await PostAsync($"{Deals}/{dealId}/financing", Advisor, new
+        {
+            financing = new { downPayment = 1000m, annualPercentageRate = 0.05m, termMonths = 48 },
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     private async Task<string> StartDealAsync(string email, string rooftopId, string? unitId = null)
     {
         var inventoryUnitId = unitId ?? await ReceiveAvailableUnitAsync(rooftopId);

@@ -749,6 +749,30 @@ export const fr: Catalogue = {
     'Le chiffrage est figé. Il a cessé d’être modifiable au moment de la soumission, afin que le responsable approuve exactement ce qui lui a été présenté.',
   'deals.whatHappened': 'Historique',
 
+  'financing.title': 'Financement',
+  'financing.lede':
+    "Ce que le client paie par mois. Enregistré ici et envoyé nulle part : aucune demande n'est transmise à un organisme.",
+  'financing.notFinanced': "C'est une affaire au comptant. Rien n'est financé.",
+  'financing.finance': 'Financer cette affaire',
+  'financing.makeItCash': 'Passer au comptant',
+  'financing.save': 'Enregistrer le financement',
+  'financing.provider': 'Organisme de financement',
+  'financing.providerHint': 'Facultatif. À qui le dossier a été adressé.',
+  'financing.downPayment': 'Apport',
+  'financing.aprPercent': 'Taux annuel effectif global (%)',
+  'financing.termMonths': 'Durée en mois',
+  'financing.amountFinanced': 'Montant financé',
+  'financing.monthlyPayment': 'Mensualité',
+  'financing.finalPayment': 'Dernière mensualité',
+  'financing.totalOfPayments': 'Total des mensualités',
+  'financing.financeCharge': 'Coût du crédit',
+  'financing.months': { one: '{count} mois', other: '{count} mois' },
+  'financing.rateAndTerm': '{rate} par an sur {term}',
+  'financing.notMoneyOff':
+    "L'apport est la façon de payer, pas une remise. Le client doit toujours {amountDue}.",
+  'financing.nothingToFinance':
+    "L'apport de {down} dépasse les {due} désormais dus : il n'y a rien à financer et aucune mensualité. Revoyez-le, ou passez cette affaire au comptant.",
+
   'deals.finished': 'Cette vente est terminée. Plus rien ne peut lui arriver.',
   'deals.sendToManager': 'Soumettre au responsable',
   'deals.approve': 'Approuver',

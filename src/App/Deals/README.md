@@ -15,6 +15,7 @@ the organization; the deal is not.
 | `DealStatus.cs` | the statuses, the legal moves, and the kinds of charge |
 | `DealCharge.cs` | one line on the deal, with the sign rules |
 | `TradeIn.cs` | the old car: allowance, payoff, equity |
+| `Financing.cs` | the instalment structure, and the payment arithmetic |
 | `RegistrationAddress.cs` | where the car will be registered or garaged (ADR-024) |
 | `DealTaxLine.cs` | one tax charged, with `TaxAddress`, the narrower snapshot it was resolved from |
 | `DealStatusChange.cs` | one line of history; append-only |
@@ -61,6 +62,48 @@ hidden.
 
 Every amount on a deal shares the deal's currency, so a total can never mix two.
 
+## The financing
+
+`Deal.Financing`, set through `POST /{id}/financing`, records four figures and
+nothing else: a finance provider's name, the cash down, an annual percentage rate
+and a term in months. Everything else is worked out from them:
+
+```
+amount financed   = amount due − cash down
+monthly payment   = P·i·(1+i)^n / ((1+i)^n − 1)      i = APR ÷ 12
+                  = P ÷ n                            at 0%
+final payment     = whatever clears the balance
+finance charge    = total of payments − amount financed
+```
+
+**The financing is not inside `AmountDue`, and that is the rule to know before
+changing anything here.** A down payment is *how* the customer pays, not a
+reduction in what they owe: the receivable opens at the full amount due and the
+down payment settles part of it like any other receipt. Netting it would make the
+same money disappear twice, and it would break both of the "read the column down
+and reach the total" tests at once. On the deal desk and on the printed order the
+payment terms therefore sit in their own table **below** the total.
+
+**The payment is derived every time it is read, never stored.** The amount
+financed follows from `AmountDue`, and two stored figures with a stored difference
+between them is one figure too many — the same rule as `DealProduct.Gross`.
+
+**The schedule is walked, not multiplied.** A rounded payment times the term is
+not what a customer pays; the last instalment clears the balance. `PlanFor` walks
+the months in `decimal` so the balance provably reaches zero, and
+`DealFinancingTests.The_schedule_pays_the_loan_off_exactly` re-amortises the plan
+independently and asserts it.
+
+**The rate is a fraction**, `decimal(9,6)`, the same convention and precision as a
+tax rate: `0.0649` is 6.49%. Anything at or above 1 is refused, because a rate
+typed as `6.49` is the one data-entry slip this field will actually see. The
+screen's box asks for a percentage and converts once, on save.
+
+**No lender is involved.** A monthly payment is arithmetic over an amount
+financed, a rate and a term, so recording what was agreed needs nothing outside
+this installation. The provider here is a name the dealership typed; nothing is
+sent anywhere and no decision is received.
+
 ## The registration address
 
 `Deal.RegistrationAddress`, set through `POST /{id}/registration-address`, is
@@ -97,9 +140,15 @@ number that was approved rather than whatever the total says today.
 permission split is the control today; a same-person check needs a policy decision
 about single-person rooftops before it can be enforced.
 
-Also absent: **lender submission and decisions** (no application is ever sent
-to a lender and no decision is ever recorded — a lender exists here only as a
-payment method on a receivable), **tax and fee rule packs** (a person still
+Also absent: **lender submission and decisions** (the structure agreed is now
+recorded — see "The financing" above — but no application is ever *sent* to a
+lender and no decision is ever received; beyond that a lender is a name on the
+deal and a payment method on a receivable), **dealer reserve** (what the
+dealership earns on the finance itself is not recorded, and where it would post is
+Accounting's question), **financing reworked after approval** (it freezes with the
+rest of the numbers, so a change means sending the deal back to Draft),
+**payment frequencies other than monthly**, **balloon and lease structures**,
+**tax and fee rule packs** (a person still
 types the tax; there is no rate table and no SST pack, so nothing computes
 ADR-024's basis-times-rate automatically), **deal versions
 for desking iterations** (one live set of terms, not a negotiation history),

@@ -72,6 +72,14 @@ public sealed class PackageTests(HostFixture fixture)
         before.Order.Should().Contain("Due from the customer");
         before.Order.Should().Contain("$20,000.00");
         before.Invoice.Should().Contain("declined");
+
+        // Named explicitly as well as covered by the comparison above, because
+        // this is the one component whose loss the amount due check cannot see.
+        // Financing sits outside the total, so a package that dropped it would
+        // balance and still be wrong about what the customer signed.
+        before.Order.Should().Contain("Banque Rousseau");
+        before.Order.Should().Contain("Monthly payment");
+        after.Order.Should().Contain("Banque Rousseau");
     }
 
     [Fact]
@@ -430,6 +438,22 @@ public sealed class PackageTests(HostFixture fixture)
                 },
             },
             taxedAt = new { administrativeArea = "IL", county = "Cook", postalCode = "60601", country = "US" },
+        }, HttpStatusCode.OK);
+
+        // Financed, because financing is the one thing on a deal that the amount
+        // due check CANNOT catch the loss of: it sits outside the total on
+        // purpose, so a package that dropped it would balance perfectly and still
+        // arrive having turned a sixty-month contract into a cash deal. The
+        // paperwork comparison is what notices.
+        await PostAsync(From, $"/api/v1/deals/{deal}/financing", new
+        {
+            financing = new
+            {
+                lender = "Banque Rousseau",
+                downPayment = 2500m,
+                annualPercentageRate = 0.0625m,
+                termMonths = 60,
+            },
         }, HttpStatusCode.OK);
 
         var job = (await PostAsync(From, "/api/v1/repair-orders", new

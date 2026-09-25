@@ -757,6 +757,30 @@ export const es: Catalogue = {
     'Las cifras están congeladas. Dejaron de poder editarse al enviar esta operación, para que lo que aprueba un responsable sea lo que se le puso delante.',
   'deals.whatHappened': 'Qué ha pasado',
 
+  'financing.title': 'Financiación',
+  'financing.lede':
+    'Lo que el cliente paga al mes. Se registra aquí y no se envía a ninguna parte: no se manda ninguna solicitud a una entidad.',
+  'financing.notFinanced': 'Es una operación al contado. No se financia nada.',
+  'financing.finance': 'Financiar esta operación',
+  'financing.makeItCash': 'Convertir en operación al contado',
+  'financing.save': 'Guardar la financiación',
+  'financing.provider': 'Entidad financiera',
+  'financing.providerHint': 'Opcional. A quién se envió la documentación.',
+  'financing.downPayment': 'Entrada',
+  'financing.aprPercent': 'Tasa anual equivalente (%)',
+  'financing.termMonths': 'Plazo en meses',
+  'financing.amountFinanced': 'Importe financiado',
+  'financing.monthlyPayment': 'Cuota mensual',
+  'financing.finalPayment': 'Última cuota',
+  'financing.totalOfPayments': 'Total de las cuotas',
+  'financing.financeCharge': 'Coste de la financiación',
+  'financing.months': { one: '{count} mes', other: '{count} meses' },
+  'financing.rateAndTerm': '{rate} anual a {term}',
+  'financing.notMoneyOff':
+    'La entrada es la forma de pagar, no un descuento. Lo que debe sigue siendo {amountDue}.',
+  'financing.nothingToFinance':
+    'La entrada de {down} supera los {due} que se deben ahora, así que no hay nada que financiar ni cuota mensual. Revísela, o convierta esto en una operación al contado.',
+
   'deals.finished': 'Esta operación está terminada. No puede pasarle nada más.',
   'deals.sendToManager': 'Enviar a un responsable',
   'deals.approve': 'Aprobar',

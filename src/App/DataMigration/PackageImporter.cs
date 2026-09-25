@@ -151,6 +151,13 @@ internal sealed class PackageImporter(
                                 trade.Allowance - trade.Payoff,
                                 trade.Payoff > trade.Allowance)
                             : null,
+                        deal.Financing is { } financing
+                            ? new DealFinancing(
+                                financing.Lender,
+                                financing.DownPayment,
+                                financing.AnnualPercentageRate,
+                                financing.TermMonths)
+                            : null,
                         deal.AmountDue),
                     cancellationToken));
         }

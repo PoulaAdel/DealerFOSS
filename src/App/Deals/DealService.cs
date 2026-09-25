@@ -281,6 +281,13 @@ public sealed class DealService(
                 deal.TaxedAt is { } at
                     ? TaxAddress.Create(at.AdministrativeArea, at.County, at.PostalCode, at.Country)
                     : null,
+                deal.Financing is { } financing
+                    ? Financing.Create(
+                        financing.Lender,
+                        financing.DownPayment,
+                        financing.AnnualPercentageRate,
+                        financing.TermMonths)
+                    : null,
                 _clock.UtcNow,
                 _currentUser.Id);
         }
@@ -729,6 +736,49 @@ public sealed class DealService(
         return await DescribeAsync(deal, cancellationToken);
     }
 
+    public async Task<Result<DealDetail>> SetFinancingAsync(
+        Guid dealId,
+        DealFinancing? financing,
+        CancellationToken cancellationToken)
+    {
+        var deal = await LoadAsync(dealId, tracked: true, cancellationToken);
+        if (deal is null)
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        // Deals.Write, not a right of its own. Recording a structure is the same
+        // act as pricing the car or selling the cover, and an F&I manager already
+        // holds it; a new permission would have to be granted to every existing
+        // role to change nothing.
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        {
+            return Result.Failure<DealDetail>(DealErrors.Forbidden);
+        }
+
+        try
+        {
+            deal.SetFinancing(financing is null
+                ? null
+                : Financing.Create(
+                    financing.Lender,
+                    financing.DownPayment,
+                    financing.AnnualPercentageRate,
+                    financing.TermMonths));
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<DealDetail>(Error.Validation("deals.invalid_financing", ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Failure<DealDetail>(Error.Conflict("deals.terms_frozen", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        return await DescribeAsync(deal, cancellationToken);
+    }
+
     public async Task<Result<DealDetail>> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest change,
@@ -1085,6 +1135,21 @@ public sealed class DealService(
                     deal.RegistrationAddress.Line1, deal.RegistrationAddress.Line2, deal.RegistrationAddress.City,
                     deal.RegistrationAddress.AdministrativeArea, deal.RegistrationAddress.County,
                     deal.RegistrationAddress.PostalCode, deal.RegistrationAddress.Country),
+            deal.Financing is null
+                ? null
+                : new DealFinancingView(
+                    deal.Financing.Lender,
+                    deal.Financing.DownPayment,
+                    deal.Financing.AnnualPercentageRate,
+                    deal.Financing.TermMonths,
+                    deal.AmountFinanced!.Value.Amount,
+                    // Null together, and only when a reprice has left nothing to
+                    // finance. The screen says so rather than printing a zero
+                    // payment, which would read as a free car.
+                    deal.Instalments?.MonthlyPayment,
+                    deal.Instalments?.FinalPayment,
+                    deal.Instalments?.TotalOfPayments,
+                    deal.Instalments?.FinanceCharge),
             history
                 .OrderBy(h => h.OccurredAt)
                 .ThenBy(h => h.Sequence)

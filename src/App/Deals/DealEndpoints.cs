@@ -10,6 +10,7 @@
 //   GET  /api/v1/deals/{id}
 //   POST /api/v1/deals
 //   POST /api/v1/deals/{id}/terms
+//   POST /api/v1/deals/{id}/financing
 //   POST /api/v1/deals/{id}/status
 //
 // Coding Instructions:
@@ -43,6 +44,10 @@ internal static class DealEndpoints
         group.MapPost("/{dealId:guid}/products/{dealProductId:guid}/cancel", CancelProductAsync);
         group.MapPost("/{dealId:guid}/tax", SetTaxAsync);
         group.MapPost("/{dealId:guid}/registration-address", SetRegistrationAddressAsync);
+
+        // Its own path rather than part of terms, for the same reason as products:
+        // the structure is worked out after the price is agreed, by somebody else.
+        group.MapPost("/{dealId:guid}/financing", SetFinancingAsync);
         group.MapPost("/{dealId:guid}/status", ChangeStatusAsync);
     }
 
@@ -152,6 +157,18 @@ internal static class DealEndpoints
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
+    private static async Task<IResult> SetFinancingAsync(
+        Guid dealId,
+        SetFinancingRequest request,
+        IDeals deals,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await deals.SetFinancingAsync(dealId, request.Financing, cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
     private static async Task<IResult> ChangeStatusAsync(
         Guid dealId,
         DealStatusChangeRequest request,
@@ -178,3 +195,9 @@ internal sealed record SetTaxRequest(IReadOnlyList<NewTaxLine>? Lines, TaxAddres
 
 /// <summary>What a caller supplies to set or clear the deal's registration address.</summary>
 internal sealed record SetRegistrationAddressRequest(RegistrationAddressView? Address);
+
+/// <summary>
+/// Sending null clears the financing, which is how a deal becomes a cash deal
+/// again after somebody decided not to finance it.
+/// </summary>
+internal sealed record SetFinancingRequest(DealFinancing? Financing);

@@ -774,6 +774,30 @@ export const en = {
     'The numbers are frozen. They stopped being editable when this deal was submitted, so what a manager approves is what was put in front of them.',
   'deals.whatHappened': 'What happened',
 
+  'financing.title': 'Financing',
+  'financing.lede':
+    'What the customer pays a month. Recorded here and sent nowhere — no application goes to a lender.',
+  'financing.notFinanced': 'This is a cash deal. Nothing is being financed.',
+  'financing.finance': 'Finance this deal',
+  'financing.makeItCash': 'Make it a cash deal',
+  'financing.save': 'Save the financing',
+  'financing.provider': 'Finance provider',
+  'financing.providerHint': 'Optional. Who the paper went to.',
+  'financing.downPayment': 'Cash down',
+  'financing.aprPercent': 'Annual percentage rate (%)',
+  'financing.termMonths': 'Term in months',
+  'financing.amountFinanced': 'Amount financed',
+  'financing.monthlyPayment': 'Monthly payment',
+  'financing.finalPayment': 'Final payment',
+  'financing.totalOfPayments': 'Total of payments',
+  'financing.financeCharge': 'Finance charge',
+  'financing.months': { one: '{count} month', other: '{count} months' },
+  'financing.rateAndTerm': '{rate} a year over {term}',
+  'financing.notMoneyOff':
+    'The cash down is how the customer pays, not money off. What they owe is still {amountDue}.',
+  'financing.nothingToFinance':
+    'The {down} down is more than the {due} now due, so there is nothing to finance and no monthly payment. Rework it, or make this a cash deal.',
+
   'deals.finished': 'This deal is finished. Nothing more can happen to it.',
   'deals.sendToManager': 'Send to a manager',
   'deals.approve': 'Approve',

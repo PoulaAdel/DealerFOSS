@@ -86,7 +86,11 @@ that turns productivity from a figure the report refused to invent into one it
 measures. Real work — in the stage with the least room left and the hardest
 ceiling. What remains of stage 5 is finance applications, which need a lender to
 test against, and warranty claim submission, which needs a manufacturer
-agreement. Neither can be built from a keyboard.
+agreement. Neither can be built from a keyboard. One thing that looked like it
+belonged in that sentence turned out not to: a deal has recorded its own
+**finance structure** since 2026-09-25 — a provider, the cash down, a rate, a
+term, and the monthly payment worked out from them. A payment is arithmetic, so
+it needed no lender. Only *asking* a lender to agree to it still does.
 
 **Where the remaining points actually are.** Each built stage is worth an equal
 share of the number above. Stage 7 holds half of itself and stage 2 holds a
@@ -117,7 +121,7 @@ months of focused work.
 | 2 | Moving data in and out | Importing a dealer's existing records, syncing with their current system, proving nothing is lost or duplicated. | **Three quarters** — in and out both work, with a screen, and keeping in step with another live system has its machinery built and tested. Four things are named and missing: deletes are not modelled, a quarantined record cannot be replayed, export carries no relationships and no documents, and no screen shows a connector's certification status. None of them waits on anybody outside the project |
 | 3 | Customers, vehicles, inventory | The first records a dealership would actually use day to day. | **Done** |
 | 4 | Leads and selling a car | Following up a lead, building a deal, trade-ins, approvals, warranties, paperwork. | **Done** |
-| 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Nine tenths** — the workshop, parts stock, the booking diary, payment, catalogued op codes at posted labour rates, and a technician clock that makes productivity measurable. Finance applications need a lender to test against, and warranty claim submission needs a manufacturer agreement |
+| 5 | Financing and the service lane | Finance applications, contracts, appointments, repair orders. | **Nine tenths** — the workshop, parts stock, the booking diary, payment, catalogued op codes at posted labour rates, a technician clock that makes productivity measurable, and a deal that says what the customer pays a month. Finance **applications** need a lender to test against, and warranty claim submission needs a manufacturer agreement |
 | 6 | Reports and administration | Dashboards, and the tools to run the system without a developer. | **Done** — balances, month-end, staff admin, an operator console, setting up a new dealership, and a dashboard for the month |
 | 7 | Ready to hand to a real dealership | Security testing, performance, backups, training, installation. | **More than half** — backups are rehearsed, there are two installable packages, and the product now wears a real brand. Security testing landed 2026-09-24: an adversarial pass that tried the attacks rather than listing the controls, found one real disclosure and fixed it, and left every attack in the suite so it re-runs. Performance work and training are still not done, there is still no guide for whoever installs it, and the *independent* penetration test doc 06 asks for still needs somebody outside the project. This remains the largest piece of unbuilt ground nobody outside the project is blocking |
 | 8 | Live pilot | Two dealerships running on it for 60 days. | Not started |
@@ -620,9 +624,12 @@ can do all of it.
   there are no purchase orders, no supplier records, no stock takes, and no
   returns to a supplier. Counting the shelf and correcting it is still a job for
   a spreadsheet
-- Finance applications and lenders. The **products** sold alongside a car —
-  warranties, cover, service plans — do exist and carry their own profit; sending
-  an application to a lender does not
+- Finance **applications** and lenders. Two of the three parts are here: the
+  **products** sold alongside a car — warranties, cover, service plans — carry
+  their own profit, and a deal now records the **structure** it was financed on,
+  so the desk can tell a customer what they will pay a month. What does not exist
+  is sending an application to a lender and getting a decision back. Nor does
+  dealer reserve — what the dealership earns on the finance itself
 - Taxes and registration fees calculated by jurisdiction
 - **Signed** paperwork. A vehicle order and a service invoice both print; nothing
   captures a signature

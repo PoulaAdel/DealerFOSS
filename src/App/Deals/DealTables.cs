@@ -51,6 +51,12 @@ internal sealed class DealConfiguration : IEntityTypeConfiguration<Deal>
         builder.Ignore(x => x.TermsAreOpen);
         builder.Ignore(x => x.TaxTotal);
 
+        // The amount financed is AmountDue less the cash down, and the payments
+        // are worked out from it every time they are read. Neither is a column,
+        // and neither should become one — see Financing.cs.
+        builder.Ignore(x => x.AmountFinanced);
+        builder.Ignore(x => x.Instalments);
+
         // The desk list: "what is open at my lot, and what is waiting for me".
         builder.HasIndex(x => new { x.RooftopId, x.Status });
         builder.HasIndex(x => x.CustomerId);
@@ -111,6 +117,23 @@ internal sealed class DealConfiguration : IEntityTypeConfiguration<Deal>
             address.Property(a => a.County).HasColumnName("RegistrationCounty").HasMaxLength(120);
             address.Property(a => a.PostalCode).HasColumnName("RegistrationPostalCode").HasMaxLength(20);
             address.Property(a => a.Country).HasColumnName("RegistrationCountry").HasMaxLength(2);
+        });
+
+        // Four columns and no fifth. The amount financed, the monthly payment and
+        // the finance charge all follow from these and from AmountDue, so a
+        // column for any of them would be a second answer to a question the deal
+        // can already answer.
+        builder.OwnsOne(x => x.Financing, financing =>
+        {
+            financing.Property(f => f.Lender).HasColumnName("FinanceLender").HasMaxLength(120);
+            financing.Property(f => f.DownPayment).HasColumnName("FinanceDownPayment").HasPrecision(18, 2);
+
+            // Six decimal places, not two, for the same reason as a tax rate: a
+            // rate is not money. 0.0649 is 6.49%, and money precision would
+            // round every rate to a hundredth of a percent.
+            financing.Property(f => f.AnnualPercentageRate)
+                .HasColumnName("FinanceAnnualRate").HasPrecision(9, 6);
+            financing.Property(f => f.TermMonths).HasColumnName("FinanceTermMonths");
         });
 
         // Auto-included for the same reason as charges and products: every read
