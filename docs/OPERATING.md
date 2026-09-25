@@ -138,13 +138,24 @@ the service starts, answers health, serves the API, and shows a blank page.
 Copy the folder to the target machine, then, from an elevated PowerShell:
 
 ```powershell
-& .\deploy\install-service.ps1 -Path C:\DealerFOSS\app -Connection "Server=.;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False" -KeyId 2026-08 -Key "<the base64 key>"
+& .\deploy\install-service.ps1 -Path C:\DealerFOSS\app -Connection "Server=.;Database=DealerFOSS_Host;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False" -KeyId 2026-08 -Key "<the base64 key>" -Url "http://+:5080"
 ```
 
 It registers the service to start automatically, sets it to restart on failure,
 and writes the connection string and key into **the service's own registry entry**
 rather than as machine-wide environment variables — so the key that decrypts every
 dealership's connection string is not readable by every process on the box.
+
+> **`-Url` defaults to `http://localhost:5080` if you leave it off — reachable
+> only from the machine itself.** Nothing here warns you: the service installs
+> cleanly, starts, and answers `/health/ready` when you check it from the same
+> box, and the first sign anything is wrong is a shop floor of PCs that cannot
+> reach it. `http://+:5080` binds every interface, the same wildcard
+> `docker-compose.app.yml` already uses for the container path. Once other
+> machines can reach it, put it behind a reverse proxy for TLS and read
+> **"Behind a reverse proxy"** in [`deploy/README.md`](../deploy/README.md) —
+> the sign-in rate limiter misattributes every caller to the proxy's address
+> until you tell it which proxies to trust.
 
 To remove it:
 
@@ -275,6 +286,7 @@ the live data — worse than a restore that plainly failed.
 | **The site is a blank page**, but `/health/live` answers | The package was built without the frontend. `deploy/publish.ps1` refuses to produce one, so this means a hand-rolled publish. Rebuild with the script |
 | **A white page after an upgrade** | A cached `index.html` pointing at assets that no longer exist. It is served `no-store`, so this means a proxy or CDN in front is overriding that |
 | **A dealership is unreachable after a restore** | `--repoint-tenants` was not run — see §5 |
+| **The Windows service answers on the server itself but nothing else on the network can reach it** | `install-service.ps1` was run without `-Url`, so it bound `http://localhost:5080` — reachable only from that machine. Uninstall and reinstall with `-Url "http://+:5080"` (§2) |
 
 ### Checking the whole installation
 
