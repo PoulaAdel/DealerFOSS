@@ -176,15 +176,33 @@ public sealed class FiscalYearTests(HostFixture fixture)
 
     // --- helpers -------------------------------------------------------------
 
-    /// <summary>Opens (and, unless told not to, closes) all twelve months of a fresh random future year.</summary>
+    /// <summary>
+    /// Opens (and, unless told not to, closes) all twelve months of a fresh
+    /// random future year.
+    /// </summary>
+    /// <remarks>
+    /// The year is a shared, bounded resource (FiscalYear.Open only accepts
+    /// 2000-2999) and this file draws it randomly rather than owning a slice of
+    /// it outright, the same as AccountingPeriodTests' own "opened ahead of
+    /// time" test already does — so two draws landing on the same year is a
+    /// real possibility, not a hypothetical one, across this file's own eight
+    /// tests as much as against that one. Claiming month 1 first and retrying
+    /// on a conflict makes a collision a redraw instead of a flake, rather than
+    /// papering over it with a wider or supposedly-disjoint range that the next
+    /// file to do this would collide with just the same.
+    /// </remarks>
     private async Task<int> FreshYearAsync(bool closeAllMonths = true)
     {
-        var year = 2100 + Random.Shared.Next(0, 800);
+        var year = await ClaimUnusedYearAsync();
 
         for (var month = 1; month <= 12; month++)
         {
-            using var opened = await SendAsync(HttpMethod.Post, Periods, Manager, new { year, month, note = (string?)null });
-            opened.StatusCode.Should().Be(HttpStatusCode.OK, because: await opened.Content.ReadAsStringAsync());
+            if (month > 1)
+            {
+                using var opened = await SendAsync(
+                    HttpMethod.Post, Periods, Manager, new { year, month, note = (string?)null });
+                opened.StatusCode.Should().Be(HttpStatusCode.OK, because: await opened.Content.ReadAsStringAsync());
+            }
 
             if (closeAllMonths)
             {
@@ -195,6 +213,36 @@ public sealed class FiscalYearTests(HostFixture fixture)
         }
 
         return year;
+    }
+
+    /// <summary>
+    /// Draws a random year and opens its January, redrawing on a conflict —
+    /// another test already claimed exactly that year — until one succeeds.
+    /// January is left open (the caller's loop does not redo month 1), so the
+    /// claim itself does the work rather than being thrown away and repeated.
+    /// </summary>
+    private async Task<int> ClaimUnusedYearAsync()
+    {
+        for (var attempt = 0; attempt < 25; attempt++)
+        {
+            var candidate = 2100 + Random.Shared.Next(0, 800);
+
+            using var opened = await SendAsync(
+                HttpMethod.Post, Periods, Manager, new { year = candidate, month = 1, note = (string?)null });
+
+            if (opened.StatusCode == HttpStatusCode.OK)
+            {
+                return candidate;
+            }
+
+            if (opened.StatusCode != HttpStatusCode.Conflict)
+            {
+                opened.StatusCode.Should().Be(
+                    HttpStatusCode.OK, because: await opened.Content.ReadAsStringAsync());
+            }
+        }
+
+        throw new InvalidOperationException("Could not find an unclaimed year after 25 attempts.");
     }
 
     /// <summary>
