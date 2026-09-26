@@ -149,4 +149,53 @@ public static class IntegrationErrors
     public static readonly Error DismissalNeedsAReason = Error.Validation(
         "integration.dismissal_needs_a_reason",
         "Say why this record will never apply.");
+
+    // --- Scheduling (doc 05 §4 step 1, ADR-028) ---------------------------
+
+    /// <summary>
+    /// The requested poll interval is outside what a feed may be read at. The
+    /// floor exists because below it a poll is a load generator pointed at
+    /// somebody else's API and buys nothing — a provider's settlement delay is
+    /// routinely longer than the gap being asked for.
+    /// </summary>
+    public static Error IntervalOutOfRange(int minimum, int maximum) => Error.Validation(
+        "integration.interval_out_of_range",
+        $"A sync must run no more often than every {minimum} minutes "
+        + $"and no less often than every {maximum}.");
+
+    /// <summary>
+    /// A schedule already exists for this feed. Refused rather than silently
+    /// replaced, for the same reason the <see cref="ConnectorCursor"/> index is
+    /// unique: two schedules for one feed would each hold their own idea of when
+    /// it last ran, and the feed would read as up to date while both fought over
+    /// one cursor.
+    /// </summary>
+    public static readonly Error ScheduleExists = Error.Conflict(
+        "integration.schedule_exists",
+        "This dealership already has a schedule for that feed.");
+
+    /// <summary>
+    /// The connector named is not one this build ships. Answered before anything
+    /// is stored, because a schedule naming a connector that cannot be resolved
+    /// is a row that suspends on its first tick.
+    /// </summary>
+    public static Error NoSuchConnector(string provider) => Error.Validation(
+        "integration.no_such_connector",
+        $"This build does not ship a connector called '{provider}'.");
+
+    /// <summary>The connector ships, but does not offer that contract.</summary>
+    public static Error NoSuchCapability(string provider, string contract, int version) =>
+        Error.Validation(
+            "integration.no_such_capability",
+            $"'{provider}' does not offer '{contract}' v{version}.");
+
+    /// <summary>
+    /// Asked to change a schedule that does not exist, or one belonging to a
+    /// rooftop the caller cannot see. Both answer identically, so a caller
+    /// cannot probe for another rooftop's feeds by id — the same rule the
+    /// quarantine reads follow.
+    /// </summary>
+    public static readonly Error NoSuchSchedule = Error.Forbidden(
+        "integration.forbidden",
+        "You do not have access to this dealership's integrations.");
 }

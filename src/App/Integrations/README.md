@@ -139,6 +139,26 @@ CSV import worker follows. There is deliberately no system principal: an
 integration that could write records nobody is accountable for would be the one
 path into this application leaving no name on the audit trail.
 
+**This still holds when nobody is at a keyboard**, and `ConnectorSchedule` is how
+(ADR-028). A schedule names the person who armed it; the polling is unattended and
+the run is not. `ScheduleWorker` opens an `UnattendedScope` to find and claim a due
+row — where `Get<T>` reaches `TenantDb` and a capability would not compile — then
+opens a second scope as that person to run it. The worker writes no dealership
+record: it decides *when*, and the capability that owns the record still decides
+*whether*.
+
+**The grant is re-read on every fire, not trusted from arming time.** Somebody
+arms a nightly sync and three months later changes roles. Without the re-check the
+feed keeps writing on a grant that no longer exists, and the audit trail records a
+former employee importing records every night. Such a schedule is **suspended with
+a reason**, because a feed that has quietly stopped is found by a reconciliation
+long after the gap matters.
+
+> **Why the re-check is in the attended scope.** It needs `IAccessDirectory`, which
+> is permission-checked and must never carry `IUnattendedSafe`. Doing it in the
+> dispatcher would have meant widening that allow-list — which is exactly the
+> argument the allow-list exists to force somebody to make out loud.
+
 ## Settings are declared, one field at a time
 
 `ConnectorManifest` declares every per-dealership setting with a name, a kind and
@@ -167,6 +187,9 @@ connector.
 | `ConnectorRuntime.cs` | the run: plan, fetch, apply, quarantine, advance, record |
 | `ConnectorCursor.cs` | how far a feed has been read, and why it stopped |
 | `ConnectorRun.cs` | per-dealership run history |
+| `ConnectorSchedule.cs` | the standing instruction a run starts from, and whose authority it carries |
+| `ScheduleWorker.cs` | the unattended trigger: claim a due feed, run it as the person who armed it |
+| `ConnectorSettings.cs` | a dealership's settings at rest, with declared secrets protected |
 | `QuarantinedRecord.cs` | what was held back, with the payload and an expiry |
 | `IntegrationTables.cs` | how all three are stored |
 | `IntegrationErrors.cs` | the stable refusal codes |
@@ -188,13 +211,19 @@ than one that says where it stops. **Nothing here talks to a network yet.**
   and a member of staff disagree about a phone number — is undecided (doc 05 §4).
   Overwriting somebody's correction with stale provider data would be worse than
   doing nothing.
-- **Nothing calls the runtime.** No scheduler, no endpoint, no screen. A run
-  happens because a test starts one.
+- **Nothing pushes.** A run starts on a clock or not at all. There is no webhook
+  path and no durable inbox, so doc 05 §4 step 1 is half-open and step 2 is
+  untouched. `ScheduleWorker` closed the older "nothing calls the runtime" gap on
+  2026-09-26; the sentence saying no scheduler existed stood here until then.
 - **No quarantine purge.** `QuarantinedRecord.ExpiresAt` is enforced on *read*,
   so an expired row stops being listed, but nothing deletes it from the table.
-- **No replay.** `Resolve` marks a held record dealt with; it does not re-apply
-  it. Where the cursor was held, the record arrives again on its own; where it
-  advanced, a fix currently needs the window re-read by hand.
+- **No lease.** The claim on a due schedule is a conditional update on one row,
+  which stops two application instances firing the same feed. It says nothing
+  about a provider's per-tenant limits, which is what doc 05 §4 means by a poll
+  lease.
+- **No cron, no time-of-day, no backoff.** A schedule is an interval with a
+  five-minute floor. A failed run waits one interval; a run that could not start
+  suspends instead.
 - **No credential storage.** `SettingKind.Secret` says how a setting must be
   treated; nothing yet enforces it.
 - **No raw capture**, though

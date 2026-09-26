@@ -646,6 +646,7 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
             scope.Services.GetRequiredService<IAccessDirectory>(),
             scope.Services.GetRequiredService<ICurrentUser>(),
             scope.Services.GetRequiredService<IAuditSink>(),
+            scope.Services.GetRequiredService<ISecretProtector>(),
             new FixedClock(Start + QuarantinedRecord.Retention + TimeSpan.FromDays(1)));
 
         var refused = await expired.ReplayAsync(id, CancellationToken.None);

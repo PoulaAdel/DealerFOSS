@@ -14,6 +14,10 @@
 //   each advance their own copy, and the feed would read as up to date while
 //   skipping whatever the other row had already passed. The database refuses
 //   it rather than the runtime remembering to.
+//
+//   ConnectorSchedule carries the same index for the same reason, one level up:
+//   two schedules for one feed would fire independently and fight over that
+//   single cursor.
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -68,6 +72,39 @@ internal sealed class ConnectorRunConfiguration : IEntityTypeConfiguration<Conne
         // The operator's question is "how has this feed been doing lately", so
         // the index is per feed, newest first.
         builder.HasIndex(x => new { x.Connector, x.RooftopId, x.Contract, x.StartedAt });
+
+        builder.ConfigureAudit();
+    }
+}
+
+internal sealed class ConnectorScheduleConfiguration : IEntityTypeConfiguration<ConnectorSchedule>
+{
+    public void Configure(EntityTypeBuilder<ConnectorSchedule> builder)
+    {
+        builder.ToTable("ConnectorSchedules", IntegrationSchema.Name);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.Connector).HasMaxLength(60).IsRequired();
+        builder.Property(x => x.Contract).HasMaxLength(60).IsRequired();
+        builder.Property(x => x.State).HasConversion<string>().HasMaxLength(20);
+        builder.Property(x => x.SuspendedReason).HasMaxLength(300);
+        builder.Property(x => x.LastOutcome).HasMaxLength(30);
+        builder.Property(x => x.RooftopId)
+            .HasConversion(id => id.Value, value => new RooftopId(value))
+            .IsRequired();
+
+        // Unbounded, like the quarantine payload: a connector may declare any
+        // number of settings and a protected value is longer than its plaintext,
+        // so a limit here is a length nobody can calculate and a truncation that
+        // corrupts a credential.
+        builder.Property(x => x.Settings).IsRequired();
+
+        // One schedule per feed. See the header — this index is load-bearing.
+        builder.HasIndex(x => new { x.Connector, x.RooftopId, x.Contract, x.Version }).IsUnique();
+
+        // The dispatcher's only query is "what is due", every twenty seconds,
+        // across every tenant. It is the one read worth indexing for.
+        builder.HasIndex(x => new { x.State, x.NextRunAt });
 
         builder.ConfigureAudit();
     }

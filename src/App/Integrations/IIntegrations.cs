@@ -26,6 +26,18 @@
 //   the row exactly where it was, with the new reason recorded. The only way
 //   out of quarantine other than expiry is a record that actually applied, or
 //   a person saying in writing why it never will.
+//
+//   ARMING A SCHEDULE IS AN EXERCISE OF THE CALLER'S OWN AUTHORITY, not a grant
+//   of a new one. Whoever arms a feed becomes the name its runs are made under,
+//   and the grant is re-checked every time it fires — so a schedule can never
+//   outlive the permission that created it (ADR-028). A caller cannot arm a feed
+//   for a rooftop they could not import to by hand.
+//
+//   NO SETTING OF KIND SECRET IS EVER RETURNED, not even in its protected form.
+//   Same rule as the quarantine payload: a ciphertext looks safe to hand out and
+//   is not, because it travels to the browser and into logs, and whoever later
+//   obtains the key gets every one. A screen needs to know a credential IS SET,
+//   which is a boolean.
 
 using DealerFOSS.Core;
 
@@ -64,7 +76,94 @@ public interface IIntegrations
     /// distinguishes a decision from a dismissal.
     /// </remarks>
     Task<Result> DismissAsync(Guid quarantinedRecordId, string note, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Every feed this dealership has a standing instruction to read, with how
+    /// each one is doing.
+    /// </summary>
+    Task<Result<IReadOnlyList<SyncScheduleView>>> SchedulesAsync(
+        RooftopId? rooftopId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Arm a feed to be read on its own, every <c>intervalMinutes</c>.
+    /// </summary>
+    /// <remarks>
+    /// The caller becomes the schedule's authority: runs carry their permissions
+    /// and are audited under their name, and the grant is re-checked every time
+    /// it fires (ADR-028). Settings are validated against the connector's
+    /// manifest here, so a missing required setting fails this request rather
+    /// than every run at three in the morning.
+    /// </remarks>
+    Task<Result<Guid>> ArmAsync(ArmSyncRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Stop a feed firing, keeping its configuration and its history.
+    /// </summary>
+    Task<Result> DisarmAsync(Guid scheduleId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Turn a feed back on — including one we suspended — under the calling
+    /// person's authority, which is re-stated rather than inherited from
+    /// whoever armed it before.
+    /// </summary>
+    Task<Result> RearmAsync(
+        Guid scheduleId,
+        int intervalMinutes,
+        IReadOnlyDictionary<string, string?>? settings,
+        CancellationToken cancellationToken);
 }
+
+/// <summary>What to read, how often, and with what settings.</summary>
+/// <param name="Settings">
+/// Keyed by the setting names the connector's manifest declares. A value for a
+/// setting of kind <c>Secret</c> is plaintext here and is protected before it is
+/// stored; it is never returned by any read.
+/// </param>
+public sealed record ArmSyncRequest(
+    string Connector,
+    Guid RooftopId,
+    string Contract,
+    int Version,
+    int IntervalMinutes,
+    IReadOnlyDictionary<string, string?> Settings);
+
+/// <summary>One standing instruction, as a screen shows it.</summary>
+/// <param name="ArmedBy">
+/// The person whose authority runs carry. Shown because "who is this running
+/// as" is the first question anybody asks about work that happens overnight,
+/// and the answer being visible is half of what makes it answerable.
+/// </param>
+/// <param name="SuspendedReason">
+/// Why we stopped it, when <paramref name="State"/> is <c>Suspended</c>. Null
+/// otherwise — a feed somebody turned off has no reason to explain.
+/// </param>
+public sealed record SyncScheduleView(
+    Guid Id,
+    string Connector,
+    RooftopId RooftopId,
+    string Contract,
+    int Version,
+    int IntervalMinutes,
+
+    /// <summary>
+    /// <c>Armed</c>, <c>Disarmed</c> or <c>Suspended</c>, sent raw so the screen
+    /// translates it rather than the server picking English.
+    /// </summary>
+    string State,
+    string? SuspendedReason,
+    Guid ArmedBy,
+    DateTimeOffset? NextRunAt,
+    DateTimeOffset? LastRunAt,
+
+    /// <summary>The last run's outcome as its enum name, or null if it has never run.</summary>
+    string? LastOutcome,
+
+    /// <summary>
+    /// What this feed needs told, and what it has been told. A secret reports
+    /// only that it is set — see <see cref="ConnectorSettings"/>.
+    /// </summary>
+    IReadOnlyList<ConnectorSettingState> Settings);
 
 /// <summary>One connector, as a screen shows it.</summary>
 public sealed record ConnectorSummary(

@@ -8,6 +8,10 @@
 //   GET  /api/v1/integrations/quarantine            what would not apply
 //   POST /api/v1/integrations/quarantine/{id}/replay   run it again for real
 //   POST /api/v1/integrations/quarantine/{id}/dismiss  it will never apply, and why
+//   GET  /api/v1/integrations/schedules             what reads itself, and how it is doing
+//   POST /api/v1/integrations/schedules             read this feed on its own
+//   POST /api/v1/integrations/schedules/{id}/disarm  stop it, keep the configuration
+//   POST /api/v1/integrations/schedules/{id}/arm     start it again, under my authority
 //
 // Usage:
 //   Mapped in Program.cs alongside the other capability endpoint groups.
@@ -44,7 +48,75 @@ internal static class IntegrationEndpoints
         group.MapGet("/quarantine", QuarantineAsync);
         group.MapPost("/quarantine/{id:guid}/replay", ReplayAsync);
         group.MapPost("/quarantine/{id:guid}/dismiss", DismissAsync);
+
+        group.MapGet("/schedules", SchedulesAsync);
+        group.MapPost("/schedules", ArmAsync);
+        group.MapPost("/schedules/{id:guid}/disarm", DisarmAsync);
+        group.MapPost("/schedules/{id:guid}/arm", RearmAsync);
     }
+
+    private static async Task<IResult> SchedulesAsync(
+        Guid? rooftopId,
+        IIntegrations integrations,
+        CancellationToken cancellationToken)
+    {
+        var result = await integrations.SchedulesAsync(
+            rooftopId is { } id ? new RooftopId(id) : null, cancellationToken);
+
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ArmAsync(
+        ArmSyncRequest request,
+        IIntegrations integrations,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await integrations.ArmAsync(request, cancellationToken);
+
+        // 201 with the id, because arming creates a standing instruction that
+        // will produce runs — it is a thing that now exists, not an action that
+        // happened.
+        return result.IsSuccess
+            ? Results.Created($"/api/v1/integrations/schedules/{result.Value}", result.Value)
+            : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> DisarmAsync(
+        Guid id,
+        IIntegrations integrations,
+        CancellationToken cancellationToken)
+    {
+        var result = await integrations.DisarmAsync(id, cancellationToken);
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> RearmAsync(
+        Guid id,
+        RearmRequest request,
+        IIntegrations integrations,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await integrations.RearmAsync(
+            id, request.IntervalMinutes, request.Settings, cancellationToken);
+
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
+    }
+
+    /// <summary>
+    /// Turning a feed back on, optionally fixing what stopped it.
+    /// </summary>
+    /// <param name="Settings">
+    /// Null to leave the configuration alone. A secret left out of a supplied
+    /// dictionary is kept rather than cleared — see <see cref="ConnectorSettings"/>,
+    /// because a read never returns one, so an edit has nothing to send back.
+    /// </param>
+    internal sealed record RearmRequest(
+        int IntervalMinutes,
+        IReadOnlyDictionary<string, string?>? Settings);
 
     private static async Task<IResult> ConnectorsAsync(
         IIntegrations integrations,

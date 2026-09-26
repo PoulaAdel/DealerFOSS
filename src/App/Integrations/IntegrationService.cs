@@ -40,6 +40,7 @@ public sealed class IntegrationService(
     IAccessDirectory access,
     ICurrentUser currentUser,
     IAuditSink audit,
+    ISecretProtector protector,
     IClock clock)
     : IIntegrations
 {
@@ -57,6 +58,14 @@ public sealed class IntegrationService(
     private readonly IAccessDirectory _access = access;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
+
+    /// <summary>
+    /// Protects a connector credential before it is stored. The one thing
+    /// ISecretProtector's own header names this seam for, and the first code to
+    /// use it that way.
+    /// </summary>
+    private readonly ISecretProtector _protector = protector;
+
     private readonly IClock _clock = clock;
 
     public async Task<Result<IReadOnlyList<ConnectorSummary>>> ConnectorsAsync(
@@ -262,6 +271,286 @@ public sealed class IntegrationService(
 
         return Result.Success();
     }
+
+    // --- Schedules (ADR-028) ------------------------------------------------
+
+    public async Task<Result<IReadOnlyList<SyncScheduleView>>> SchedulesAsync(
+        RooftopId? rooftopId,
+        CancellationToken cancellationToken)
+    {
+        var scope = await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, ReadPermission, cancellationToken);
+
+        if (scope.GrantsNothing)
+        {
+            return Result.Failure<IReadOnlyList<SyncScheduleView>>(IntegrationErrors.Forbidden);
+        }
+
+        if (rooftopId is { } requested && !scope.Covers(requested))
+        {
+            return Result.Failure<IReadOnlyList<SyncScheduleView>>(IntegrationErrors.Forbidden);
+        }
+
+        var schedules = _db.Set<ConnectorSchedule>().AsNoTracking();
+
+        // Filtered in the query, not the results. Rooftop isolation is enforced
+        // in services (ADR-014), and a list of feeds is as much a disclosure as
+        // a list of records: it names another rooftop's providers and how often
+        // they are read.
+        if (!scope.IsOrganizationWide)
+        {
+            var allowed = scope.Rooftops.ToList();
+            schedules = schedules.Where(s => allowed.Contains(s.RooftopId));
+        }
+
+        if (rooftopId is { } only)
+        {
+            schedules = schedules.Where(s => s.RooftopId == only);
+        }
+
+        var rows = await schedules
+            .OrderBy(s => s.Connector)
+            .ThenBy(s => s.Contract)
+            .ToListAsync(cancellationToken);
+
+        var manifests = _connectors.Select(c => c.Manifest).ToList();
+
+        return Result.Success<IReadOnlyList<SyncScheduleView>>(
+        [
+            .. rows.Select(s =>
+            {
+                var manifest = manifests.FirstOrDefault(m =>
+                    string.Equals(m.Provider, s.Connector, StringComparison.OrdinalIgnoreCase));
+
+                return new SyncScheduleView(
+                    s.Id,
+                    s.Connector,
+                    s.RooftopId,
+                    s.Contract,
+                    s.Version,
+                    s.IntervalMinutes,
+                    s.State.ToString(),
+                    s.SuspendedReason,
+                    s.ArmedByUserId,
+                    s.NextRunAt,
+                    s.LastRunAt,
+                    s.LastOutcome,
+
+                    // No manifest means the build stopped shipping this
+                    // connector. The row is still shown — a feed that has
+                    // vanished from the build is exactly what somebody needs to
+                    // see — and it reports no settings rather than guessing at
+                    // which of the stored values were secret.
+                    manifest is null ? [] : ConnectorSettings.Describe(manifest, s.Settings));
+            }),
+        ]);
+    }
+
+    public async Task<Result<Guid>> ArmAsync(
+        ArmSyncRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var rooftopId = new RooftopId(request.RooftopId);
+
+        // Arming is an exercise of the caller's own authority, so it is checked
+        // exactly as a hand-run import would be. A schedule the caller could not
+        // have run by hand must not be creatable.
+        if (!await _access.IsAuthorizedAsync(
+            _currentUser.Id, ReadPermission, rooftopId, cancellationToken))
+        {
+            return Result.Failure<Guid>(IntegrationErrors.Forbidden);
+        }
+
+        var connector = _connectors.FirstOrDefault(c => string.Equals(
+            c.Manifest.Provider, request.Connector, StringComparison.OrdinalIgnoreCase));
+
+        if (connector is null)
+        {
+            return Result.Failure<Guid>(IntegrationErrors.NoSuchConnector(request.Connector));
+        }
+
+        var capability = connector.Manifest.Capability(request.Contract, request.Version);
+
+        if (capability is null)
+        {
+            return Result.Failure<Guid>(IntegrationErrors.NoSuchCapability(
+                connector.Manifest.Provider, request.Contract, request.Version));
+        }
+
+        // Validated now rather than at three in the morning. A missing required
+        // setting fails this request, loudly, for this dealership — which is the
+        // rule ValidateSettings was written for.
+        var configured = connector.Manifest.ValidateSettings(request.Settings);
+        if (configured.IsFailure)
+        {
+            return Result.Failure<Guid>(configured.Error);
+        }
+
+        var existing = await _db.Set<ConnectorSchedule>()
+            .AnyAsync(
+                s => s.Connector == connector.Manifest.Provider
+                    && s.RooftopId == rooftopId
+                    && s.Contract == capability.Contract
+                    && s.Version == capability.Version,
+                cancellationToken);
+
+        if (existing)
+        {
+            // Refused rather than replaced. The unique index would refuse it
+            // anyway; answering here makes it a readable error instead of a
+            // database exception.
+            return Result.Failure<Guid>(IntegrationErrors.ScheduleExists);
+        }
+
+        var stored = ConnectorSettings.Protect(connector.Manifest, request.Settings, _protector);
+        if (stored.IsFailure)
+        {
+            return Result.Failure<Guid>(stored.Error);
+        }
+
+        var schedule = ConnectorSchedule.Arm(
+            Guid.NewGuid(),
+            connector.Manifest.Provider,
+            rooftopId,
+            capability,
+            stored.Value,
+            _currentUser.Id,
+            request.IntervalMinutes,
+            _clock.UtcNow);
+
+        if (schedule.IsFailure)
+        {
+            return Result.Failure<Guid>(schedule.Error);
+        }
+
+        _db.Set<ConnectorSchedule>().Add(schedule.Value);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        await RecordScheduleAsync(
+            schedule.Value,
+            $"Armed to read {capability.Contract} v{capability.Version} from "
+            + $"{connector.Manifest.Provider} every {request.IntervalMinutes} minutes",
+            cancellationToken);
+
+        return Result.Success(schedule.Value.Id);
+    }
+
+    public async Task<Result> DisarmAsync(Guid scheduleId, CancellationToken cancellationToken)
+    {
+        var found = await FindForWritingAsync(scheduleId, cancellationToken);
+        if (found.IsFailure)
+        {
+            return Result.Failure(found.Error);
+        }
+
+        found.Value.Disarm();
+        await _db.SaveChangesAsync(cancellationToken);
+        await RecordScheduleAsync(found.Value, "Disarmed", cancellationToken);
+
+        return Result.Success();
+    }
+
+    public async Task<Result> RearmAsync(
+        Guid scheduleId,
+        int intervalMinutes,
+        IReadOnlyDictionary<string, string?>? settings,
+        CancellationToken cancellationToken)
+    {
+        var found = await FindForWritingAsync(scheduleId, cancellationToken);
+        if (found.IsFailure)
+        {
+            return Result.Failure(found.Error);
+        }
+
+        var schedule = found.Value;
+
+        if (intervalMinutes < ConnectorSchedule.MinimumIntervalMinutes
+            || intervalMinutes > ConnectorSchedule.MaximumIntervalMinutes)
+        {
+            return Result.Failure(IntegrationErrors.IntervalOutOfRange(
+                ConnectorSchedule.MinimumIntervalMinutes, ConnectorSchedule.MaximumIntervalMinutes));
+        }
+
+        var connector = _connectors.FirstOrDefault(c => string.Equals(
+            c.Manifest.Provider, schedule.Connector, StringComparison.OrdinalIgnoreCase));
+
+        if (connector is null)
+        {
+            return Result.Failure(IntegrationErrors.NoSuchConnector(schedule.Connector));
+        }
+
+        if (settings is not null)
+        {
+            var merged = ConnectorSettings.Merge(
+                connector.Manifest, schedule.Settings, settings, _protector);
+
+            if (merged.IsFailure)
+            {
+                return Result.Failure(merged.Error);
+            }
+
+            // Re-validated against the merged result, not against what was sent.
+            // Sending only an interval change must not be able to leave a
+            // required setting blank, and validating the supplied half alone
+            // would let it.
+            var revealed = ConnectorSettings.Reveal(connector.Manifest, merged.Value, _protector);
+
+            var configured = connector.Manifest.ValidateSettings(revealed);
+            if (configured.IsFailure)
+            {
+                return Result.Failure(configured.Error);
+            }
+
+            schedule.Reconfigure(merged.Value);
+        }
+
+        // The caller's own authority, re-stated. Whoever fixes a suspended feed
+        // becomes the name its runs are made under from now on — which is the
+        // honest answer, since they are the one saying it should run.
+        schedule.Rearm(_currentUser.Id, intervalMinutes, _clock.UtcNow);
+
+        await _db.SaveChangesAsync(cancellationToken);
+        await RecordScheduleAsync(
+            schedule, $"Armed every {intervalMinutes} minutes", cancellationToken);
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// A schedule the caller may change, or a refusal. Unknown and unauthorized
+    /// answer identically, so an id cannot be used to probe another rooftop.
+    /// </summary>
+    private async Task<Result<ConnectorSchedule>> FindForWritingAsync(
+        Guid scheduleId,
+        CancellationToken cancellationToken)
+    {
+        var schedule = await _db.Set<ConnectorSchedule>()
+            .SingleOrDefaultAsync(s => s.Id == scheduleId, cancellationToken);
+
+        if (schedule is null)
+        {
+            return Result.Failure<ConnectorSchedule>(IntegrationErrors.NoSuchSchedule);
+        }
+
+        if (!await _access.IsAuthorizedAsync(
+            _currentUser.Id, ReadPermission, schedule.RooftopId, cancellationToken))
+        {
+            return Result.Failure<ConnectorSchedule>(IntegrationErrors.NoSuchSchedule);
+        }
+
+        return Result.Success(schedule);
+    }
+
+    private Task RecordScheduleAsync(
+        ConnectorSchedule schedule,
+        string what,
+        CancellationToken cancellationToken) =>
+        _audit.RecordAsync(
+            new AuditEntry(_currentUser.Id, ReadPermission, AuditOutcome.Allowed,
+                "ConnectorSchedule", schedule.Id.ToString(), schedule.RooftopId.Value, what, null, null),
+            cancellationToken);
 
     private Task RecordAsync(QuarantinedRecord held, string what, CancellationToken cancellationToken) =>
         _audit.RecordAsync(

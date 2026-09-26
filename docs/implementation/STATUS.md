@@ -184,10 +184,11 @@ the sentence saying it had not been written was left standing for two days; it i
 struck now. Field ownership is still a named concern in a comment in
 `CustomerRecordSink` and not a rule anything enforces.
 
-The one that matters most of those left is the **unattended trigger** — an inbox
-or a webhook that starts a run with nobody at a keyboard. Every run today is
-asked for by a person, which is fine for a migration and useless for keeping in
-step with a live system overnight. It is the whole of stage 2's remainder.
+The **unattended trigger closed on 2026-09-26**, and it was the whole of stage 2's
+remainder. A run no longer needs a person: `ConnectorSchedule` stores a
+dealership's standing instruction to read one feed and `ScheduleWorker` claims the
+earliest due one. What it is not is a push — there is still no webhook and no
+inbox, so this is a poll on a clock, and the paragraph above keeps the honest list.
 
 What *does* exist is the seam they would hang from: compiled connector
 discovery, a versioned contract envelope, per-feed cursors with hold counting,

@@ -180,6 +180,11 @@ if (tenancyEnabled)
     // "current" tenant and there must never be one (see TenantScope).
     builder.Services.AddSingleton<ITenantScopeFactory, TenantScopeFactory>();
     builder.Services.AddHostedService<ImportWorker>();
+
+    // The unattended trigger. It decides WHEN a feed is read; whether a record
+    // may be written is still decided below it, by the capability that owns the
+    // record, inside the scope of the person who armed the schedule (ADR-028).
+    builder.Services.AddHostedService<ScheduleWorker>();
 }
 
 // --- Health: liveness, readiness, and degraded dependencies are separated
