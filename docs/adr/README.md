@@ -48,6 +48,8 @@ Two carry one today: [ADR-007](0007-integration-platform-edge.md) and
 | [ADR-025](0025-the-session-carries-permissions-as-a-hint.md) | The session carries the caller's permissions, and they are a hint, never a control | Accepted |
 | [ADR-026](0026-a-deleted-record-is-marked-not-removed.md) | A record deleted at the provider is marked, never removed | Accepted |
 | [ADR-027](0027-a-package-carries-records-not-transactions.md) | A records package carries records, not transactions, and its documents are re-rendered rather than copied | Accepted |
+| [ADR-028](0028-a-scheduled-run-carries-the-authority-that-armed-it.md) | A scheduled run carries the authority that armed it, re-checked every time | Accepted |
+| [ADR-029](0029-authorization-has-more-dimensions-than-a-permission-name.md) | Authorization has more dimensions than a permission name | Proposed |
 
 ## ADR file template
 
