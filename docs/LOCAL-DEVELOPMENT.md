@@ -52,12 +52,12 @@ npm audit --audit-level=high && npm run typecheck && npm test && npm run build
 
 Two SQL engines are supported. Check the machine-specific note before choosing.
 
-**Checked 2026-09-19:** the SQL container passes the end-to-end verifier. LocalDB
-passes the integration suite in its per-run catalogues, but this machine's
-`DealerFOSS_Host` is not attached while its MDF still exists, so the default
-end-to-end command fails trying to create it. Use the configured SQL container
-connection until the maintainer repairs the LocalDB attachment; do not delete
-the existing files to make the gate pass.
+**Re-checked 2026-09-29:** both engines pass the end-to-end verifier, and
+LocalDB is the default. A note here dated 2026-09-19 said `DealerFOSS_Host` was
+detached with its MDF still on disk, so the default command had to be pointed at
+the container instead. That stopped being true, and the note outlived it by five
+days — it is removed rather than left to send somebody reconfiguring around a
+problem that is gone.
 
 **LocalDB** is the lightest, and is what the verification script defaults to:
 

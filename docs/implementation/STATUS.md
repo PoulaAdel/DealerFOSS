@@ -510,10 +510,13 @@ are not engineering, and none is blocked by anything in this repository:
   customer is reported unchanged and left alone. Who wins when a provider and a
   member of staff disagree about a phone number is a product decision (doc 05
   §4), and any connector that syncs rather than seeds needs it settled.
-- **Measure the performance target.** Doc 07 promises p95 under 500 ms at 50
-  concurrent users and it has never been measured. Database-per-tenant carries a
-  known cost — connection pool pressure, and migration time multiplied by tenant
-  count — that has never been exercised. A day, and no external party needed.
+- **Exercise database-per-tenant at tenant count.** The p95 half of this is done
+  (2026-09-29): 44 ms at the documented load, and rate is not the constraint to
+  at least 200 req/s. What that could not touch is the cost the architecture
+  actually carries — connection pool pressure, and migration time multiplied by
+  tenant count. Pools are per connection string, so two seeded tenants means two
+  pools and no pressure at all; this needs twenty or fifty tenants provisioned,
+  not more requests. Still a day, and still no external party needed.
 - **A scheduler**, now that a run has somewhere to deliver. Nothing starts an
   integration unattended, and the quarantine expiry has nothing to purge it.
 
@@ -1673,3 +1676,21 @@ to come.
   Deliberately absent, and named in the Deals README: dealer reserve (what the dealership earns on the finance itself — and where it would post is Accounting's question), payment frequencies other than monthly, balloon and lease structures, financing reworked after approval, and lender submission.
 
   Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **959/959** (was 931 — 28 new), `verify-e2e.ps1` PASS against the canonical LocalDB catalogue, `npm audit` clean at high, `npm run typecheck`, `npm test` **508/508** (was 498 — ten new), `npm run build`.
+
+- **2026-09-29 — the performance target is measured, and measuring it found a defect that ships in the production configuration.** Doc 07 promises normal API p95 under 500 ms, doc 09 makes it an exit criterion, and doc 01 §7 sets the load: **50 concurrent users per organization**. Nothing had ever been run against it. `deploy/load.cs` runs it now.
+
+  **The number: p95 44 ms against a 500 ms target**, at the documented load across both seeded organizations, 1,200 samples, zero non-200s, the offered rate sustained for the full sixty seconds. Eleven times the margin the criterion asks for.
+
+  **Rate is not this system's constraint.** 20, 30, 60, 120 and 200 req/s all sustain, with p95 between 44 and 52 ms and no errors — ten times the documented load, and the figure moves by 8 ms across the whole range.
+
+  **What the exercise was actually worth.** At 200 req/s against a freshly started host the application failed **5,493 of 6,000 requests** and sustained 51 req/s rather than 200. The cause is configuration that ships in `appsettings.json`: EF Core logs every SQL statement under `Microsoft.EntityFrameworkCore.Database.Command` at Information, and the Serilog sink in `Program.cs` is a **synchronous** Console sink — so every statement the application runs serialises through one lock on the request path. It wrote **244,843 log lines in under two minutes**. Overriding that one category to Warning: **199.8 req/s sustained, zero errors, 8,010 lines**, which is request logging still doing its job. Every failure was at connection establishment and the host logged nothing about any of them, because they never reached application code. The override is now in `appsettings.json` with the measurement beside it; raising it to debug a query is deliberate and reversible, and parameters were already redacted as `?`, so this is a throughput decision rather than a privacy one.
+
+  **Two wrong answers on the way, both recorded because the evidence looked conclusive at the time.** First: *capacity collapses above roughly twice the documented load* — wrong, produced by comparing a cold run against a warm one. Second: *a freshly started host cannot absorb production load*, attributed to JIT tiering on the strength of a uniform 2.2x speedup — also wrong; the same cold start with logging suppressed sustains 200 req/s cleanly. The tell was never in the log's contents but in its **line count**, and the errors that would have explained a real collapse were not in it at all. Both claims were one step from being written into this file as findings.
+
+  **The driver had a defect of its own**, fixed and recorded in its header. It computed achieved rate as samples divided by the *requested* duration, so a forty-second run that took a hundred and eighty printed `achieved 200.0 req/s — driver kept up: yes` in the middle of a collapse. It now measures against the wall clock, says what the failures were rather than only how many, and refuses to let response time be read as latency once the offered load stops being sustained — because past that point it is backlog, and it reported a 181 *second* p95 against an 11 second service time.
+
+  **What this does not establish, named so nobody cites it for more than it is.** Database-per-tenant's connection-pool cost — the thing doc 09's risk list says has never been exercised — is **still untested**: pools are per connection string, so two tenants means two pools, and pressure needs many tenants rather than more load. Whether the connection failures were server accept-queue exhaustion or ephemeral-port exhaustion on the driver is **unresolved**; the two are indistinguishable from where this measured. Everything ran on one machine hosting the application, SQL Server and the load driver at once, so the driver competed with what it measured and the ceiling found is a floor on the real one. And every p99 here rests on too few samples to quote.
+
+  `deploy/load.cs` is a .NET 10 file-based app deliberately: no project, not in `DealerFOSS.slnx`, no NuGet package — so it adds nothing to the build, nothing for `NuGetAudit` to police, and cannot slow the gates. It still carries the four-part header and passes `SourceHeaderTests`, which walks the repository root and does not exclude `deploy/`.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **969/969**, `verify-e2e.ps1` PASS against the canonical LocalDB catalogue. Nothing under `frontend/` changed.
