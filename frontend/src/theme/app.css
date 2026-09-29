@@ -212,6 +212,14 @@
      read as continuous motion, not a flicker, so it gets its own duration
      rather than borrowing one built for something ten times shorter. */
   --shimmer-duration: 1.4s;
+
+  /* UX motion audit (local/UI/ui-motion-audit.md): every band on this
+     application appeared instantly, with nothing to say it had just
+     arrived or changed. --arrive-distance rises rather than slides — a
+     horizontal slide has a direction, and getting it backwards in Arabic
+     is worse than not animating at all; a vertical rise has none. */
+  --arrive-duration: 220ms;
+  --arrive-distance: 6px;
 }
 
 :root[data-theme='dark'] {
@@ -289,6 +297,35 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* --- arrival --------------------------------------------------------------
+   A record's detail band, a signal band (what needs attention now) and a
+   freshly-loaded list all used to appear the same way everything else on
+   the page does: instantly, indistinguishable from having always been
+   there. `.arrives` says "this is new" with a rise-and-settle rather than
+   a slide, which has no direction to get wrong in a right-to-left page —
+   the reduced-motion block above already flattens it to a single frame
+   for anyone who asked for less movement, so it needs no rule of its own
+   here. `both` keeps the element at its start state until the animation
+   actually begins, so nothing flashes at full opacity for one frame first. */
+.panel--detail,
+.panel--deal,
+.panel--signal,
+.arrives {
+  animation: arrive var(--arrive-duration) ease-out both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(var(--arrive-distance));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

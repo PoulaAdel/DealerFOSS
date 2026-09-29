@@ -144,7 +144,12 @@ export function ListTable<T>({ page, onPage, tableClassName, columns, row }: {
   return (
     <>
       <Pager page={page} onPage={onPage} />
-      <div className="scroll">
+      {/* No key needed to force the animation to replay: every caller of
+          ListTable swaps it in from a loading (or skeleton) state through
+          its own load.kind switch, so this is already a fresh DOM node —
+          and so a fresh .arrives animation — each time the list changes,
+          without an artificial remount trick. */}
+      <div className="scroll arrives">
         <table className={tableClassName}>
           <caption className="visually-hidden">{caption(page)}</caption>
           <thead>
