@@ -128,7 +128,7 @@ export function StatementPage() {
         <p className="state" aria-live="polite">{t('statement.loading')}</p>
       ) : null}
 
-      {load.kind === 'denied' ? <p className="note">{t('statement.denied')}</p> : null}
+      {load.kind === 'denied' ? <p className="state" role="alert">{t('statement.denied')}</p> : null}
 
       {load.kind === 'failed' ? (
         <>

@@ -64,7 +64,7 @@ export function AgeingPage() {
 
       {load.kind === 'loading' ? <p className="state" aria-live="polite">{t('ageing.loading')}</p> : null}
 
-      {load.kind === 'denied' ? <p className="note">{t('ageing.denied')}</p> : null}
+      {load.kind === 'denied' ? <p className="state" role="alert">{t('ageing.denied')}</p> : null}
 
       {load.kind === 'failed' ? (
         <>

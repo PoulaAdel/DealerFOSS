@@ -102,7 +102,7 @@ export function ReportsPage() {
 
       {load.kind === 'loading' ? <p className="state" aria-live="polite">{t('reports.loading')}</p> : null}
 
-      {load.kind === 'denied' ? <p className="note">{t('reports.denied')}</p> : null}
+      {load.kind === 'denied' ? <p className="state" role="alert">{t('reports.denied')}</p> : null}
 
       {load.kind === 'failed' ? (
         <>
