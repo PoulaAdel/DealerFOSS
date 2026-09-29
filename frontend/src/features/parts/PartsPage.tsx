@@ -218,9 +218,12 @@ export function PartsPage() {
         row={(part) => (
           <tr key={`${part.id}-${part.rooftopId}`}>
             <td>
+              {/* .cell-open fills the cell, so the hit target is the row's
+                  height rather than just the part number's text — the same
+                  reason Customers, Inventory and Deals use it. */}
               <button
                 type="button"
-                className="link"
+                className="cell-open"
                 onClick={() => void api<PartDetail>(`/parts/${part.id}`).then(setSelected)}
               >
                 {part.partNumber}

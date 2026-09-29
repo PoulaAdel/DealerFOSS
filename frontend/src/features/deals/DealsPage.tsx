@@ -728,8 +728,11 @@ function DealTable({
           <td>
             {/* A button, not a link: opening a deal changes what this page
                 shows rather than navigating anywhere, and a link that does
-                not navigate breaks middle-click and "open in new tab". */}
-            <button type="button" className="link" onClick={() => onOpen(deal.id)}>
+                not navigate breaks middle-click and "open in new tab". Fills
+                the cell (.cell-open) rather than sitting as inline text, so
+                the hit target is the row's height and not just the name —
+                the same reason Customers and Inventory use it. */}
+            <button type="button" className="cell-open" onClick={() => onOpen(deal.id)}>
               {deal.customerName}
             </button>
           </td>

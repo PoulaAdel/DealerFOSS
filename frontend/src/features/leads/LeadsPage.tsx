@@ -609,7 +609,7 @@ function LeadTable({
       row={(lead) => (
         <tr key={lead.id}>
           <td>
-            <button type="button" className="link" onClick={() => onOpen(lead.id)}>
+            <button type="button" className="cell-open" onClick={() => onOpen(lead.id)}>
               {lead.customerName}
             </button>
           </td>

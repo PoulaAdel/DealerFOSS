@@ -178,7 +178,7 @@ export function StaffPage() {
               {load.people.map((person) => (
                 <tr key={person.id}>
                   <td>
-                    <button type="button" className="link" onClick={() => setSelected(person)}>
+                    <button type="button" className="cell-open" onClick={() => setSelected(person)}>
                       {person.displayName}
                     </button>
                   </td>
