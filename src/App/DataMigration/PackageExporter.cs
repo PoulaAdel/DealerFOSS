@@ -234,8 +234,15 @@ internal sealed class PackageExporter(
                     // without its cancellation would re-sell it.
                     [.. d.Products
                         .Where(p => !p.IsCancelled)
+                        // Cost is non-null by the time it reaches here:
+                        // ExportPackageAsync refuses a caller who may not see it,
+                        // precisely so this file never carries a blank where a
+                        // figure belongs. Asserted rather than defaulted — a zero
+                        // written here would arrive at the far side looking like a
+                        // free product, and nothing downstream could tell.
                         .Select(p => new PackagedProduct(
-                            p.FinanceProductId, p.Name, p.Provider, p.Price, p.Cost, p.TermMonths, p.TermMiles))],
+                            p.FinanceProductId, p.Name, p.Provider, p.Price, p.Cost!.Value,
+                            p.TermMonths, p.TermMiles))],
                     [.. d.TaxLines.Select(t => new PackagedTaxLine(
                         t.Description, t.Jurisdiction, t.Basis, t.Rate, t.Amount, t.Provenance))],
                     d.TaxedAt is { } at

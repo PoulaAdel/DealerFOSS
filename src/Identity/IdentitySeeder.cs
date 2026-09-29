@@ -175,6 +175,11 @@ public static class IdentitySeeder
             // this from the person who runs the group would make the promise
             // hollow (doc 05 §6).
             Permissions.MigrationExport,
+            // What the lot paid and what it made. Deliberately on this role and
+            // no other — see ADR-029 and Permissions.ProfitabilityRead. An
+            // advisor, a salesperson and a technician all work the same records
+            // without it, which is how a dealership actually runs.
+            Permissions.ProfitabilityRead,
         ]);
 
         // An advisor can look a customer up but not create one, and can see stock,

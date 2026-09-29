@@ -154,8 +154,12 @@ public sealed record DealDetail(
     /// What the products made in total. Reported separately from the car because
     /// a dealer principal reads them as two businesses — and on many deals this is
     /// the larger one.
+    ///
+    /// Null when the caller does not hold <c>Profitability.Read</c> at this
+    /// deal's rooftop (ADR-029). Null is not zero: a deal whose products made
+    /// nothing reports 0.
     /// </summary>
-    decimal ProductGross,
+    decimal? ProductGross,
     Guid? SalespersonUserId,
     Guid? ApprovedByUserId,
     DateTimeOffset? ApprovedAt,
@@ -236,7 +240,10 @@ public sealed record ImportedDealProduct(
 
 /// <summary>
 /// One product sold on this deal. <c>Cost</c> and <c>Gross</c> are the
-/// dealership's own figures and never appear on anything the customer is handed.
+/// dealership's own figures and never appear on anything the customer is handed
+/// — and, since ADR-029, are null for a caller who does not hold
+/// <c>Profitability.Read</c> at this deal's rooftop. <c>Price</c> is what the
+/// customer agreed to pay and is always filled in.
 /// </summary>
 public sealed record DealProductView(
     Guid Id,
@@ -244,8 +251,8 @@ public sealed record DealProductView(
     string Name,
     string? Provider,
     decimal Price,
-    decimal Cost,
-    decimal Gross,
+    decimal? Cost,
+    decimal? Gross,
     int? TermMonths,
     int? TermMiles,
     bool IsCancelled,

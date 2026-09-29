@@ -171,9 +171,12 @@ public sealed class InventoryTests(HostFixture fixture)
         });
         received.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        // The scoped reader already sees cost on detail. Listing must carry the
-        // same nullable pair without fetching every detail or inventing a zero.
-        var page = await PageAsync($"{Inventory}?stock={stock}", Advisor);
+        // Read as the manager since 2026-09-29: cost is a field right now
+        // (ADR-029) and the advisor no longer holds it, which the test below
+        // asserts. This one is about the LIST carrying the nullable pair rather
+        // than inventing a zero or making the caller open every car — so it uses
+        // an identity that can see the figures at all.
+        var page = await PageAsync($"{Inventory}?stock={stock}", Manager);
         var row = page.Rows().Should().ContainSingle().Subject;
         if (amount is null)
         {
@@ -187,6 +190,63 @@ public sealed class InventoryTests(HostFixture fixture)
         row.GetProperty("costCurrency").GetString().Should().Be(currency);
         (await PageAsync($"{Inventory}?stock={stock}&rooftopId={await RooftopIdAsync("NAG-02")}", Manager))
             .Rows().Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// The first field right in the product (ADR-029). The advisor may read this
+    /// car — same record, same rooftop, same list — and may not read what it
+    /// cost. Asserted on the LIST and the DETAIL, because they are built by two
+    /// different methods and gating one and forgetting the other is the whole
+    /// failure mode this is meant to catch.
+    /// </summary>
+    [Fact]
+    public async Task What_the_lot_paid_is_withheld_from_somebody_who_may_not_see_it()
+    {
+        var stock = UniqueStock();
+        using var received = await PostAsync(Inventory, Manager, new
+        {
+            vehicleId = await AddVehicleAsync(UniqueVin()),
+            rooftopId = await RooftopIdAsync("NAG-01"),
+            stockNumber = stock,
+            costAmount = 24500,
+            costCurrency = "USD",
+        });
+        received.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var unitId = (await received.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        // The manager sees the figure, so the test cannot pass by the car simply
+        // having no cost recorded.
+        var seen = await PageAsync($"{Inventory}?stock={stock}", Manager);
+        seen.Rows().Should().ContainSingle().Which
+            .GetProperty("costAmount").GetDecimal().Should().Be(24500m);
+
+        var hidden = await PageAsync($"{Inventory}?stock={stock}", Advisor);
+        var row = hidden.Rows().Should().ContainSingle().Subject;
+
+        row.GetProperty("stockNumber").GetString().Should().Be(stock,
+            because: "the advisor may read the car — it is only the money that is withheld");
+
+        foreach (var field in new[] { "costAmount", "costCurrency", "reconditioningAmount", "bookValueAmount" })
+        {
+            row.GetProperty(field).ValueKind.Should().Be(JsonValueKind.Null,
+                because: $"{field} is what the lot paid, and the advisor does not hold Profitability.Read");
+        }
+
+        using var detail = await SendAsync(HttpMethod.Get, $"{Inventory}/{unitId}", Advisor);
+        detail.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "the record is still readable; this is a field right, not a record right");
+
+        var body = await detail.Content.ReadFromJsonAsync<JsonElement>();
+
+        foreach (var field in new[] { "costAmount", "costCurrency", "reconditioningAmount", "bookValueAmount" })
+        {
+            body.GetProperty(field).ValueKind.Should().Be(JsonValueKind.Null);
+        }
+
+        body.GetProperty("reconditioning").EnumerateArray().Should().BeEmpty(
+            because: "the charges behind the figure are the same disclosure as the figure");
     }
 
     [Fact]

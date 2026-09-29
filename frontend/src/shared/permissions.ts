@@ -10,10 +10,10 @@
 //   holds(Permission.AccountingRead)
 //
 // Coding Instructions:
-//   A PARTIAL MIRROR, ON PURPOSE. The server defines thirty-three permissions;
+//   A PARTIAL MIRROR, ON PURPOSE. The server defines thirty-four permissions;
 //   only the ones a screen needs in order to decide what to DRAW belong here.
 //   Copying all of them would suggest the browser has opinions about the other
-//   twenty, and it must not.
+//   twenty-three, and it must not.
 //
 //   Same rule as contracts.ts: these are hand-written, so renaming one on the
 //   server means renaming it here in the same commit. A string that stops
@@ -37,6 +37,14 @@ export const Permission = {
   StaffRead: 'Staff.Read',
   MigrationImport: 'Migration.Import',
   MigrationExport: 'Migration.Export',
+
+  // The first entry here that decides whether to draw a COLUMN rather than a
+  // link (ADR-029). Without it the server sends cost and gross as null, which is
+  // also what an unrecorded figure looks like — so a screen that merely rendered
+  // the null would tell a salesperson every car was bought for nothing. Asking
+  // this instead lets it leave the column out altogether, which is the honest
+  // drawing of "not yours to see".
+  ProfitabilityRead: 'Profitability.Read',
 } as const;
 
 export type PermissionName = (typeof Permission)[keyof typeof Permission];

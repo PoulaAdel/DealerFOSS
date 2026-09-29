@@ -69,7 +69,12 @@ describe('checking for safety recalls', () => {
     renderCheck();
 
     expect(screen.getByRole('button', { name: 'Check for recalls' })).toBeVisible();
-    expect(apiCalls()).toHaveLength(0);
+
+    // Filtered to the regulator's path, as the sibling assertion below already
+    // is. The mounted tree now also asks `/auth/me` — every screen sits inside
+    // SessionProvider — and counting ALL calls would make this test about the
+    // shell's own plumbing rather than about not troubling the regulator.
+    expect(apiCalls().filter((c) => c.path === '/vehicles/v1/recalls')).toHaveLength(0);
   });
 
   it('asks once, when pressed', async () => {

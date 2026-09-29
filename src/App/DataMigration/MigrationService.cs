@@ -318,6 +318,27 @@ public sealed class MigrationService(
             return Result.Failure<ExportedFile>(MigrationErrors.ForbiddenExport);
         }
 
+        // And the right to see what the records cost, because the package
+        // CARRIES cost — every car's acquisition price and every product's.
+        //
+        // Found by the compiler when profitability became a field right
+        // (ADR-029): the exporter reads through the capability contracts on
+        // purpose, so without this it would have built a package with the cost
+        // fields quietly emptied. That is the silent-partial-export twin of the
+        // failure PackageImporter's header calls the worst outcome, and it would
+        // have been permanent — the far side has no way to know a figure was
+        // withheld rather than never recorded.
+        //
+        // Organization-wide for the same reason as the export right itself: this
+        // is the whole group's money leaving in one file.
+        var profit = await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, Permissions.ProfitabilityRead, cancellationToken);
+
+        if (!profit.IsOrganizationWide)
+        {
+            return Result.Failure<ExportedFile>(MigrationErrors.ForbiddenExport);
+        }
+
         var built = await _packageExporter.BuildAsync(rooftopId, _clock.UtcNow, cancellationToken);
         if (built.IsFailure)
         {

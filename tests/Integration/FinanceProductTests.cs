@@ -98,6 +98,42 @@ public sealed class FinanceProductTests(HostFixture fixture)
         withProduct.GetProperty("productGross").GetDecimal().Should().Be(500m);
     }
 
+    /// <summary>
+    /// The first field right in the product (ADR-029), on the side where it
+    /// matters most: what F&amp;I makes is the single most withheld figure in a
+    /// dealership. The salesperson sells the product, reads the deal, and reads
+    /// the PRICE the customer agreed — and does not read the cost behind it or
+    /// the gross it produced.
+    /// </summary>
+    [Fact]
+    public async Task What_a_product_made_is_withheld_from_the_person_who_sold_it()
+    {
+        var product = await AddProductAsync(price: 1200m, cost: 700m);
+        var deal = await StartDealAsync(vehiclePrice: 20000m);
+        await SetProductsAsync(deal, [(product, 1200m, 700m)]);
+
+        // The manager sees it, so this cannot pass by the deal simply having no
+        // products on it.
+        (await GetDealAsync(deal)).GetProperty("productGross").GetDecimal().Should().Be(500m);
+
+        using var response = await SendAsync(HttpMethod.Get, $"/api/v1/deals/{deal}", Salesperson);
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "the deal is still theirs to read — it is the money behind it that is withheld");
+
+        var seen = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        seen.GetProperty("productGross").ValueKind.Should().Be(JsonValueKind.Null);
+        seen.GetProperty("amountDue").GetDecimal().Should().Be(21200m,
+            because: "what the CUSTOMER owes is not a secret from the person selling it to them");
+
+        var line = seen.GetProperty("products").EnumerateArray().Should().ContainSingle().Subject;
+
+        line.GetProperty("price").GetDecimal().Should().Be(1200m,
+            because: "the price was agreed with the customer in the room");
+        line.GetProperty("cost").ValueKind.Should().Be(JsonValueKind.Null);
+        line.GetProperty("gross").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
     [Fact]
     public async Task The_gross_is_what_it_sold_for_less_what_it_cost()
     {

@@ -1,6 +1,6 @@
 # ADR-0029 — Authorization has more dimensions than a permission name
 
-**Status:** Proposed · **Date:** 2026-09-29
+**Status:** Accepted · **Date:** 2026-09-29
 
 ## Context
 
@@ -155,3 +155,42 @@ avoid.
 access-control lists. Each is real in some systems; none was observed as a
 dealership requirement in this review, and an unused dimension costs every check
 forever.
+
+## Correction — 2026-09-29
+
+Written the same day as the ADR, on implementing dimension 1. **The decision is
+unaffected; two claims above about the code were wrong.**
+
+**Dimension 1 does not change the shape of `AuthorizedScope` or
+`UserAssignment`, and is therefore not an Identity-internals change.** The
+section "This is a security decision, said out loud" says dimensions 1–4 all do.
+Field-level visibility turned out to need nothing new: it is an ordinary
+permission name, resolved through the existing `GetAuthorizedScopeAsync`, and
+the dimension is expressed by *where the answer is applied* — to fields on a
+view rather than to the record — not by new data on the scope object. No public
+type was added, and `BoundaryTests` is untouched. Dimensions 2–4 (department,
+ownership, threshold) still change both shapes, and the paragraph stands for
+them.
+
+That makes the ordering better than it was argued, not worse: the cheapest
+dimension to carry is the one that needed no new machinery at all.
+
+**Three checks, not one.** The ADR says the rule belongs "on `AuthorizedScope`"
+so that a capability cannot forget it. In practice each capability applies it in
+the one method that builds its view — `DealService.DescribeAsync`,
+`InventoryService.Summarize` and `.Describe` — so the guarantee is "one place
+per capability", not "one place". That is materially weaker than the text
+implies and is worth saying plainly. It is still far better than the six
+hand-applied copies the argument was against, because every view of a deal in
+the product goes through that one method; but a capability added next year must
+still remember, and nothing yet makes forgetting a compile error. Making it one
+genuinely cannot happen until a later dimension puts the data on the scope
+object.
+
+**One thing the change found on its own.** Making cost nullable broke the build
+in `PackageExporter`, which reads through the capability contracts deliberately.
+Without a new check, a records package would have exported with every cost field
+quietly emptied — permanent on the far side, which cannot tell a withheld figure
+from one never recorded. `ExportPackageAsync` now requires
+`Profitability.Read` organization-wide alongside `Migration.Export`. The type
+system caught what a reviewer reading the diff would not have.

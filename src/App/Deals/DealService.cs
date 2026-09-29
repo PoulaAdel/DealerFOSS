@@ -1036,6 +1036,20 @@ public sealed class DealService(
             return Result.Failure<DealDetail>(context.Error);
         }
 
+        // What this deal cost and what it made, or nothing, decided once here
+        // rather than at each of the ten callers (ADR-029). Every DealDetail in
+        // the product is built by this method, so a capability added next year
+        // inherits the rule instead of re-implementing it — which is the whole
+        // reason this is a field right and not six copies of an `if`.
+        //
+        // GetAuthorizedScopeAsync and NOT IsAuthorizedAsync: the latter writes a
+        // Denied row to the dealership's audit trail, and an advisor opening
+        // their own deals all day is not a refusal worth recording. Reading a
+        // deal was already allowed; only the internal money is withheld.
+        var maySeeProfit = (await _access.GetAuthorizedScopeAsync(
+                _currentUser.Id, Permissions.ProfitabilityRead, cancellationToken))
+            .Covers(deal.RooftopId);
+
 
         var unit = context.Value.Unit(deal.InventoryUnitId);
 
@@ -1102,8 +1116,8 @@ public sealed class DealService(
                     // onto the sale.
                     providers.TryGetValue(p.FinanceProductId, out var provider) ? provider : null,
                     p.Price,
-                    p.Cost,
-                    p.Gross,
+                    maySeeProfit ? p.Cost : null,
+                    maySeeProfit ? p.Gross : null,
                     p.TermMonths,
                     p.TermMiles,
                     p.IsCancelled,
@@ -1111,7 +1125,7 @@ public sealed class DealService(
                     p.RefundAmount,
                     p.CancellationReason))
                 .ToList(),
-            deal.ProductGross.Amount,
+            maySeeProfit ? deal.ProductGross.Amount : null,
             deal.SalespersonUserId,
             deal.ApprovedByUserId,
             deal.ApprovedAt,

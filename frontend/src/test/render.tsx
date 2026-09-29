@@ -32,11 +32,24 @@ import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { I18nProvider } from '../shared/i18n';
 import { AppearanceProvider } from '../shared/appearance';
+import { SessionProvider } from '../app/session';
 
 /**
- * The two the shell mounts above the router. Appearance joined i18n here when a
- * third screen — password recovery — started carrying the appearance and
+ * The three the shell mounts above the router. Appearance joined i18n here when
+ * a third screen — password recovery — started carrying the appearance and
  * language controls, which are on every screen a signed-out person can reach.
+ *
+ * Session joined them on 2026-09-29, when the first screens outside the
+ * navigation started asking `holds` — the stock band and the deal desk, to
+ * decide whether to draw the money a caller may not see (ADR-029). Adding it
+ * here rather than at each call site is the argument this file already makes,
+ * and it is the same tree the shell builds.
+ *
+ * A test that does not mock `/auth/me` gets a signed-out session, so `holds` is
+ * false and those screens draw their public half. That is a real state of the
+ * application rather than a test artefact, and it fails SAFE: a test asserting
+ * on a gross figure without saying who is signed in will not find one. Use
+ * `signedInAs()` from `test/session` to say.
  *
  * `appearance.test.tsx` still proves `useAppearance` throws outside its
  * provider; that test imports the raw `render` deliberately, so this wrapper
@@ -45,7 +58,9 @@ import { AppearanceProvider } from '../shared/appearance';
 function Providers({ children }: { children: ReactNode }) {
   return (
     <I18nProvider>
-      <AppearanceProvider>{children}</AppearanceProvider>
+      <AppearanceProvider>
+        <SessionProvider>{children}</SessionProvider>
+      </AppearanceProvider>
     </I18nProvider>
   );
 }

@@ -38,6 +38,8 @@ import { TakePayment } from '../receivables/TakePayment';
 import { StartDeal } from './StartDeal';
 import type { DealDetail, DealStatus, DealSummary, Page } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
+import { Permission } from '../../shared/permissions';
+import { useSession } from '../../app/session';
 import { useEnumLabel } from '../../shared/i18n/enums';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { ListTable } from '../../shared/ListScreen';
@@ -217,6 +219,8 @@ function DealPanel({
   const { t, format } = useI18n();
   const label = useEnumLabel();
   const describe = useApiMessage();
+  const { holds } = useSession();
+  const holdsProfitability = holds(Permission.ProfitabilityRead);
   const money = (amount: number) => format.money(amount, deal.currency);
 
   const [busy, setBusy] = useState(false);
@@ -381,7 +385,14 @@ function DealPanel({
         // fill it in and lose the work.
         <>
           <DealTerms deal={deal} onSaved={onChanged} />
-          <DealProducts deal={deal} onChanged={onChanged} />
+          {/* The product editor sets each product's COST as well as its price,
+              so it needs the right to see cost (ADR-029). Without it the form
+              would seed every row from the catalogue default — the server sends
+              null, and the fallback beside it is `?? product.defaultCost` — and
+              saving would quietly overwrite a negotiated cost with a list one.
+              Absent rather than disabled, the same rule as every other act this
+              screen withholds. */}
+          {holdsProfitability ? <DealProducts deal={deal} onChanged={onChanged} /> : null}
           {/* After the products, because the amount financed is worked out from
               everything on the bill and the cover is on the bill. */}
           <DealFinancing deal={deal} onChanged={onChanged} />
@@ -541,7 +552,14 @@ function SoldProducts({
   onChanged: (updated: DealDetail) => void;
 }) {
   const { t, format } = useI18n();
+  const { holds } = useSession();
   const money = (amount: number) => format.money(amount, deal.currency);
+
+  // Whether to draw the gross column at all. The server sends null to anybody
+  // without this, and null is also what an unrecorded figure looks like — so
+  // rendering it would read as "this product made nothing" rather than "not
+  // yours to see". Leaving the column out says the true thing (ADR-029).
+  const showsGross = holds(Permission.ProfitabilityRead);
 
   // Which product's cancel form is open, if any. One at a time — cancelling
   // is a deliberate act with its own refund figure, not a batch operation.
@@ -558,9 +576,11 @@ function SoldProducts({
               <th scope="col" className="num">
                 {t('deals.colPrice')}
               </th>
-              <th scope="col" className="num">
-                {t('deals.colGross')}
-              </th>
+              {showsGross ? (
+                <th scope="col" className="num">
+                  {t('deals.colGross')}
+                </th>
+              ) : null}
               {/* Cancelling only ever makes sense once the car has actually been
                   delivered — nothing was charged for it before that, and
                   DealService refuses the attempt anyway. Rather than show a
@@ -588,7 +608,9 @@ function SoldProducts({
                   ) : null}
                 </td>
                 <td className="num">{money(product.price)}</td>
-                <td className="num">{money(product.gross)}</td>
+                {showsGross ? (
+                  <td className="num">{money(product.gross ?? 0)}</td>
+                ) : null}
                 {deal.status === 'Delivered' ? (
                   <td>
                     {product.isCancelled ? null : cancelling === product.id ? null : (
@@ -620,7 +642,9 @@ function SoldProducts({
           </tbody>
         </table>
       </div>
-      <p className="note">{t('deals.productGross', { amount: money(deal.productGross) })}</p>
+      {showsGross ? (
+        <p className="note">{t('deals.productGross', { amount: money(deal.productGross ?? 0) })}</p>
+      ) : null}
     </>
   );
 }

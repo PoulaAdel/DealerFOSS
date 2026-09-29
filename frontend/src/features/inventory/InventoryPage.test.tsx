@@ -17,6 +17,9 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { InventoryPage } from './InventoryPage';
 import { apiCalls, mockApi, mockApiPending, mockApiUnreachable, page } from '../../test/setup';
+import { signedInAs } from '../../test/session';
+import { setCurrentTenant } from '../../shared/api';
+import { Permission } from '../../shared/permissions';
 import type { InventoryUnitSummary } from '../../shared/contracts';
 
 const unit: InventoryUnitSummary = {
@@ -39,6 +42,13 @@ const unit: InventoryUnitSummary = {
  * optional `:id` segment that says which car is open.
  */
 function renderStock(at = '/inventory') {
+  // SessionProvider asks `/auth/me` only once a dealership is chosen — signing
+  // in is what sets it — so without this the screen mounts signed-out and the
+  // money rows are correctly withheld. Set here rather than per test, because
+  // "which dealership" is a precondition of the screen rather than a property
+  // any of these tests is about.
+  setCurrentTenant('northgroup');
+
   return renderAtRecordRoute('/inventory', <InventoryPage />, at);
 }
 
@@ -544,6 +554,9 @@ describe('what is in the car', () => {
 
   it('shows what was paid, what was spent, and the two added up', async () => {
     mockApi({
+      // Signed in as somebody who may see what the lot paid. Without this the
+      // three money rows are correctly absent — which is the next test.
+      '/auth/me': signedInAs(),
       '/inventory': { ok: true, body: page([unit]) },
       [`/inventory/${unit.id}`]: { ok: true, body: reconditioned },
     });
@@ -563,6 +576,7 @@ describe('what is in the car', () => {
     // the other looks like a figure somebody computed.
     mockApi({
       '/inventory': { ok: true, body: page([unit]) },
+      '/auth/me': signedInAs(),
       [`/inventory/${unit.id}`]: {
         ok: true,
         body: { ...reconditioned, reconditioningAmount: 0, bookValueAmount: 14500, reconditioning: [] },
@@ -580,6 +594,7 @@ describe('what is in the car', () => {
     // saying the figure is not known.
     mockApi({
       '/inventory': { ok: true, body: page([unit]) },
+      '/auth/me': signedInAs(),
       [`/inventory/${unit.id}`]: {
         ok: true,
         body: { ...reconditioned, costAmount: null, costCurrency: null, bookValueAmount: null },
@@ -589,5 +604,40 @@ describe('what is in the car', () => {
 
     const band = await screen.findByRole('region', { name: /NAG-1042/ });
     expect(within(band).getAllByText('not recorded').length).toBeGreaterThan(0);
+  });
+
+  it('shows a salesperson none of it, rather than a car that cost nothing', async () => {
+    // ADR-029. The server sends null for all three to a caller without
+    // Profitability.Read, and null is ALSO what an unrecorded cost looks like —
+    // so a screen that merely rendered it would say this car was bought for
+    // nothing. The rows have to be absent, not empty.
+    mockApi({
+      '/auth/me': signedInAs(
+        Object.values(Permission).filter((p) => p !== Permission.ProfitabilityRead),
+      ),
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: {
+        ok: true,
+        body: {
+          ...reconditioned,
+          costAmount: null,
+          costCurrency: null,
+          reconditioningAmount: null,
+          bookValueAmount: null,
+          reconditioning: [],
+        },
+      },
+    });
+    renderStock(`/inventory/${unit.id}`);
+
+    const band = await screen.findByRole('region', { name: /NAG-1042/ });
+
+    // The band is there and the car is readable — only the money is withheld.
+    expect(within(band).getByText('NAG-1042')).toBeVisible();
+
+    expect(within(band).queryByText('Total in the car')).not.toBeInTheDocument();
+    expect(within(band).queryByText('not recorded')).not.toBeInTheDocument();
+    expect(within(band).queryByText('none yet')).not.toBeInTheDocument();
+    expect(within(band).queryByText('$0.00')).not.toBeInTheDocument();
   });
 });

@@ -180,15 +180,24 @@ export interface InventoryUnitSummary {
   vehicleId: string;
   vin: string;
   vehicleDisplayName: string;
-  /** What the dealership paid to acquire the car, and nothing else. */
+  /**
+   * What the dealership paid to acquire the car, and nothing else.
+   *
+   * Null for two different reasons, and the server does not say which: the
+   * figure was never recorded, or the caller does not hold `Profitability.Read`
+   * at this car's rooftop (ADR-029). Do not try to tell them apart from the
+   * value — ask `holds('Profitability.Read')` and hide the column outright,
+   * which is what the permission list on `/auth/me` is for (ADR-025).
+   */
   costAmount: number | null;
   costCurrency: string | null;
 
   /**
-   * Work capitalised onto this car since it came into stock. Zero, never null:
-   * a car with no recon has absorbed nothing, which is a known amount.
+   * Work capitalised onto this car since it came into stock. Zero when a car has
+   * absorbed nothing, which is a known amount — null only when the caller may
+   * not see what the lot paid. Same rule as `costAmount` above.
    */
-  reconditioningAmount: number;
+  reconditioningAmount: number | null;
 
   /**
    * Acquisition plus reconditioning — what the car is carried at, and what
@@ -408,15 +417,19 @@ export interface FinanceProductView {
   isAvailable: boolean;
 }
 
-/** One product sold on a deal. Cost and gross never appear on a customer's copy. */
+/**
+ * One product sold on a deal. Cost and gross never appear on a customer's copy,
+ * and since ADR-029 they are null for a caller without `Profitability.Read` at
+ * this deal's rooftop. `price` is what the customer agreed and is always there.
+ */
 export interface DealProductView {
   id: string;
   financeProductId: string;
   name: string;
   provider: string | null;
   price: number;
-  cost: number;
-  gross: number;
+  cost: number | null;
+  gross: number | null;
   termMonths: number | null;
   termMiles: number | null;
   isCancelled: boolean;
@@ -1064,8 +1077,12 @@ export interface DealDetail extends DealSummary {
   charges: ChargeView[];
   /** What was sold alongside the car. */
   products: DealProductView[];
-  /** What those products made. Reported apart from the car, as a dealer reads it. */
-  productGross: number;
+  /**
+   * What those products made. Reported apart from the car, as a dealer reads it.
+   * Null when the caller may not see gross (ADR-029) — not zero, which is what a
+   * deal whose products made nothing reports.
+   */
+  productGross: number | null;
   approvedByUserId: string | null;
   approvedAt: string | null;
   /** False once submitted: the numbers are frozen from that point. */

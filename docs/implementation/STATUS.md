@@ -3,31 +3,32 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **the attacks were tried instead of the controls being
-listed, and one of them worked.** Stage 7's security-testing gap, written up in
-[`SECURITY-TESTING.md`](SECURITY-TESTING.md) as a list of attacks with outcomes
-rather than a list of controls that exist. One real disclosure found and fixed:
-`/receivables/for/{source}/{reference}` answered 204 for a reference nobody has
-and 403 for a bill at a lot the caller cannot see, so the status code alone
-confirmed that a given deal or job had been invoiced somewhere in the group —
-and the permission was checked against the found row, so even a caller with no
-assignment could ask. Everything else held, and every attack is now a test.
-**This is not the independent penetration test doc 06 requires**; that still
-needs somebody outside the project.
+Current milestone: **a salesperson can sell the car without being shown what it
+made.** The first FIELD right in the product and [ADR-029](../adr/0029-authorization-has-more-dimensions-than-a-permission-name.md)'s
+first dimension: until now a permission said which *records* you may see, and
+`Profitability.Read` says whether the internal money on them is filled in. Held
+by the Manager role and no other, covering acquisition cost, book value,
+reconditioning, product cost and every gross figure on Deals and Inventory.
+Default-deny, so it removes access that existed — before this, cost and gross
+went to anybody holding the capability's Read permission, and only the printed
+page suppressed them. Accounting, Parts and RepairOrders are the three
+remaining contracts and are a separate change; so are dimensions 2–4
+(department, ownership, threshold) and the access-review surface the FTC
+Safeguards Rule wants.
 What is next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
 §12 — but see the re-review of 2026-09-16 below before choosing from it, and
 the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no cross-module actions and the arrival-motion work recorded in
 the device-only motion audit. The pager finding closed on 2026-09-19; the token
 migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-25 · `dotnet build` 0 warnings/0 errors, `dotnet test` 959/959,
+Last verified: 2026-09-29 · `dotnet build` 0 warnings/0 errors, `dotnet test` 972/972,
 `verify-e2e.ps1` PASS **against the canonical LocalDB catalogue** — which now
 works again. The 2026-09-19 note that `DealerFOSS_Host` was detached with its MDF
 still on disk no longer holds; the default command in `AGENTS.md` and
 `docs/LOCAL-DEVELOPMENT.md` runs clean.
-The frontend gates were last run on 2026-09-25 — `npm audit` clean at high (two
+The frontend gates were last run on 2026-09-29 — `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 508/508, `npm run build`
+`npm run typecheck`, `npm test` 509/509, `npm run build`
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1694,3 +1695,23 @@ to come.
   `deploy/load.cs` is a .NET 10 file-based app deliberately: no project, not in `DealerFOSS.slnx`, no NuGet package — so it adds nothing to the build, nothing for `NuGetAudit` to police, and cannot slow the gates. It still carries the four-part header and passes `SourceHeaderTests`, which walks the repository root and does not exclude `deploy/`.
 
   Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **969/969**, `verify-e2e.ps1` PASS against the canonical LocalDB catalogue. Nothing under `frontend/` changed.
+
+- **2026-09-29 — A salesperson can sell the car without being shown what it made.** The first FIELD right in the product, and ADR-029's first dimension. Until now a permission said which RECORDS you may see; `Profitability.Read` says whether the internal money on them is filled in. Held by the seeded Manager role and no other, so an advisor, a salesperson and a technician all work the same records without it — which is how a dealership actually runs, and the reason this is the most political permission in one.
+
+  **What it covers.** Acquisition cost and currency, reconditioning, book value and the charges behind it on Inventory; product cost, product gross and the deal's total product gross on Deals. The customer-facing figures are untouched on purpose: a salesperson still reads the PRICE agreed in the room and the amount the customer owes, because withholding those from the person selling would be absurd. Six contracts carry cost in total — Accounting, Parts and RepairOrders are the remaining three and are a separate change.
+
+  **Default-deny, so it removes access that existed.** Before this, cost and gross were returned to anybody holding the capability's Read permission. `DocumentService` suppressed them on the printed page, and the comment there said they "never appear on anything the customer is handed" — true, and a narrower claim than it reads as. The JSON never suppressed anything.
+
+  **Null means hidden AND null means unrecorded, deliberately.** The server does not say which, because to a caller who may not see it they are the same answer. The BROWSER is told which it is, by the permission list on `/auth/me` that ADR-025 already ships, so it leaves the column out rather than printing an empty one. That distinction is the whole reason the frontend work is not cosmetic: a screen that merely rendered the null would tell a salesperson every car was bought for nothing.
+
+  **One gate per capability, not one gate.** `DealService.DescribeAsync` builds every `DealDetail` in the product — ten call sites funnel through it — and `InventoryService.Summarize`/`Describe` do the same for stock. So a capability applies the rule once rather than at each read. ADR-029 argued for putting it somewhere a capability *cannot* forget; this is one place per capability, which is materially weaker, and the ADR now carries a Correction saying so. Making it genuinely one needs a later dimension to put the data on the scope object.
+
+  **The compiler found a defect nobody would have caught reading the diff.** Making cost nullable broke `PackageExporter`, which reads through the capability contracts on purpose. Unchanged, a records package would have exported with every cost field quietly emptied — and permanently, because the far side cannot tell a withheld figure from one never recorded, which is the silent-partial twin of the failure `PackageImporter`'s own header calls the worst outcome. `ExportPackageAsync` now demands `Profitability.Read` organization-wide alongside `Migration.Export`.
+
+  **A second consequence worth naming.** The deal's product editor writes cost as well as price, and seeds each row from the catalogue default when the deal does not supply one. A salesperson opening it without this right would have had every negotiated cost silently reset to a list price on save. The editor is now absent for them rather than disabled, the same rule this screen already follows for every other act it withholds.
+
+  **Two corrections to claims made earlier in this work**, both of which changed the plan. Catalogue growth is NOT a performance precondition: the "thirty-three queries on every page load" comment beside `GetHeldPermissionsAsync` describes the alternative that was rejected, not the code that ships, which is one round trip independent of how many permissions exist. And this was first called the "smallest change" before the surface had been counted — it spans six contracts and is a milestone. Neither error survived into the ADR.
+
+  **No type was made public.** Dimension 1 needed no change to `AuthorizedScope` or `UserAssignment`, so this is not an Identity-internals change and `BoundaryTests` is untouched — which is better than the ADR predicted, and is now recorded in its Correction. Dimensions 2 to 4 still change both.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **972/972** (was 969 — three new: cost withheld on the stock list and detail, product gross withheld from the person who sold it, and the package carrying its figures), `verify-e2e.ps1` PASS against LocalDB, and all four frontend gates — `npm audit` clean at high, `typecheck`, `npm test` **509/509** (was 508), `npm run build`. `SessionProvider` joined the test render helper so screens outside the navigation can ask `holds`; three inventory tests and one recall test needed a signed-in fixture or a filtered call count as a result, and say why in place.

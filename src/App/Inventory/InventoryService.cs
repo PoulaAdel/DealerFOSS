@@ -144,10 +144,12 @@ public sealed class InventoryService(
         var recon = await ReconditioningForAsync(
             rows.Select(r => r.Unit.Id).ToList(), cancellationToken);
 
+        var profit = await ProfitScopeAsync(cancellationToken);
+
         return Result.Success(new Page<InventoryUnitSummary>(
             rows.OrderBy(row => row.Unit.StockNumber, StringComparer.Ordinal)
                 .Select(row => Summarize(
-                    row.Unit, row.Vehicle, recon.GetValueOrDefault(row.Unit.Id)))
+                    row.Unit, row.Vehicle, recon.GetValueOrDefault(row.Unit.Id), profit))
                 .ToList(),
             total,
             skip,
@@ -179,7 +181,8 @@ public sealed class InventoryService(
             .ToListAsync(cancellationToken);
 
         return Result.Success(Describe(
-            row.Unit, row.Vehicle, history, await ChargesForAsync(unitId, cancellationToken)));
+            row.Unit, row.Vehicle, history, await ChargesForAsync(unitId, cancellationToken),
+            await ProfitScopeAsync(cancellationToken)));
     }
 
     public async Task<Result<IReadOnlyList<InventoryUnitSummary>>> GetManyAsync(
@@ -215,9 +218,11 @@ public sealed class InventoryService(
         var recon = await ReconditioningForAsync(
             rows.Select(r => r.Unit.Id).ToList(), cancellationToken);
 
+        var profit = await ProfitScopeAsync(cancellationToken);
+
         return Result.Success<IReadOnlyList<InventoryUnitSummary>>(
             rows.Select(row => Summarize(
-                row.Unit, row.Vehicle, recon.GetValueOrDefault(row.Unit.Id))).ToList());
+                row.Unit, row.Vehicle, recon.GetValueOrDefault(row.Unit.Id), profit)).ToList());
     }
 
     public async Task<Result<ImportOutcome>> ImportAsync(
@@ -416,7 +421,9 @@ public sealed class InventoryService(
             cancellationToken);
 
         // A car just taken in has absorbed nothing yet, which is a known amount.
-        return Result.Success(Describe(received, vehicle, received.StatusHistory, []));
+        return Result.Success(Describe(
+            received, vehicle, received.StatusHistory, [],
+            await ProfitScopeAsync(cancellationToken)));
     }
 
     public async Task<Result<InventoryUnitDetail>> ChangeStatusAsync(
@@ -482,7 +489,8 @@ public sealed class InventoryService(
             .ToListAsync(cancellationToken);
 
         return Result.Success(Describe(
-            unit, vehicle, history, await ChargesForAsync(unitId, cancellationToken)));
+            unit, vehicle, history, await ChargesForAsync(unitId, cancellationToken),
+            await ProfitScopeAsync(cancellationToken)));
     }
 
     public async Task<Result<Guid?>> FindOwnedAsync(
@@ -740,15 +748,38 @@ public sealed class InventoryService(
     private static decimal? BookValue(decimal? cost, decimal reconditioning) =>
         cost is null ? null : cost.Value + reconditioning;
 
-    private static InventoryUnitSummary Summarize(InventoryUnit u, Vehicle v, decimal recon) =>
-        new(u.Id, u.StockNumber, u.RooftopId, u.Status.ToString(), v.Id, v.Vin, v.DisplayName,
-            u.CostAmount, u.CostCurrency, recon, BookValue(u.CostAmount, recon));
+    /// <summary>
+    /// What the lot paid and what the car is carried at, or nothing (ADR-029).
+    ///
+    /// Takes the whole <see cref="AuthorizedScope"/> rather than a bool because a
+    /// list legitimately spans rooftops: a group manager who may see the numbers
+    /// at one lot and not the next gets a page that is right row by row. A bool
+    /// decided once for the page would be wrong for half of it.
+    /// </summary>
+    private async Task<AuthorizedScope> ProfitScopeAsync(CancellationToken cancellationToken) =>
+        // Not IsAuthorizedAsync: that writes a Denied row per refusal, and a
+        // salesperson scrolling the stock list is not an incident.
+        await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, Permissions.ProfitabilityRead, cancellationToken);
+
+    private static InventoryUnitSummary Summarize(
+        InventoryUnit u, Vehicle v, decimal recon, AuthorizedScope profit)
+    {
+        var maySee = profit.Covers(u.RooftopId);
+
+        return new(u.Id, u.StockNumber, u.RooftopId, u.Status.ToString(), v.Id, v.Vin, v.DisplayName,
+            maySee ? u.CostAmount : null,
+            maySee ? u.CostCurrency : null,
+            maySee ? recon : null,
+            maySee ? BookValue(u.CostAmount, recon) : null);
+    }
 
     private static InventoryUnitDetail Describe(
         InventoryUnit u,
         Vehicle v,
         IReadOnlyList<InventoryStatusChange> history,
-        IReadOnlyList<ReconditioningCharge> reconditioning) =>
+        IReadOnlyList<ReconditioningCharge> reconditioning,
+        AuthorizedScope profit) =>
         new(u.Id,
             u.StockNumber,
             u.RooftopId,
@@ -756,8 +787,8 @@ public sealed class InventoryService(
             v.Id,
             v.Vin,
             v.DisplayName,
-            u.CostAmount,
-            u.CostCurrency,
+            profit.Covers(u.RooftopId) ? u.CostAmount : null,
+            profit.Covers(u.RooftopId) ? u.CostCurrency : null,
             u.AcquiredOn,
             history
                 .OrderBy(h => h.OccurredAt)
@@ -765,13 +796,19 @@ public sealed class InventoryService(
                 .Select(h => new InventoryStatusEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt, h.Note))
                 .ToList(),
-            reconditioning.Sum(c => c.Amount),
-            BookValue(u.CostAmount, reconditioning.Sum(c => c.Amount)),
-            reconditioning
-                .OrderBy(c => c.OccurredAt)
-                .Select(c => new ReconditioningEntry(
-                    c.Amount, c.Currency, c.SourceRepairOrderId, c.OccurredAt))
-                .ToList());
+            profit.Covers(u.RooftopId) ? reconditioning.Sum(c => c.Amount) : null,
+            profit.Covers(u.RooftopId)
+                ? BookValue(u.CostAmount, reconditioning.Sum(c => c.Amount))
+                : null,
+            // The charges behind the figure go with the figure. A list of what
+            // was spent is the same disclosure as the total of it.
+            profit.Covers(u.RooftopId)
+                ? reconditioning
+                    .OrderBy(c => c.OccurredAt)
+                    .Select(c => new ReconditioningEntry(
+                        c.Amount, c.Currency, c.SourceRepairOrderId, c.OccurredAt))
+                    .ToList()
+                : []);
 }
 
 /// <summary>Stable error codes for the Inventory capability (doc 06 §6).</summary>

@@ -36,6 +36,8 @@ import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { ListTable } from '../../shared/ListScreen';
 import { RecallCheck } from '../vehicles/RecallCheck';
 import { TakeIntoStock } from './TakeIntoStock';
+import { Permission } from '../../shared/permissions';
+import { useSession } from '../../app/session';
 
 /**
  * What the server will return at most, however many are asked for — it clamps
@@ -214,6 +216,8 @@ function UnitDetail({
 }) {
   const { t, format } = useI18n();
   const label = useEnumLabel();
+  const { holds } = useSession();
+  const showsProfit = holds(Permission.ProfitabilityRead);
 
   return (
     <section className="panel panel--detail" aria-label={t('stock.detailFor', { stock: unit.stockNumber })}>
@@ -232,6 +236,13 @@ function UnitDetail({
           </span>
         </dd>
 
+        {/* All three money rows together, or none of them (ADR-029). The server
+            sends null for every one of them to a caller without
+            Profitability.Read, and null is also what an unrecorded cost looks
+            like — so drawing them would tell a salesperson this car was bought
+            for nothing. Left out entirely instead, which is the true statement. */}
+        {showsProfit ? (
+          <>
         <dt>{t('stock.cost')}</dt>
         <dd>
           <AcquisitionCost unit={unit} />
@@ -246,7 +257,7 @@ function UnitDetail({
             different questions a manager asks on the same screen. */}
         <dt>{t('stock.reconditioning')}</dt>
         <dd>
-          {unit.reconditioningAmount === 0 || unit.costCurrency === null ? (
+          {!unit.reconditioningAmount || unit.costCurrency === null ? (
             <span className="muted">{t('stock.reconditioningNone')}</span>
           ) : (
             <bdi>{format.money(unit.reconditioningAmount, unit.costCurrency)}</bdi>
@@ -261,6 +272,8 @@ function UnitDetail({
             <bdi>{format.money(unit.bookValueAmount, unit.costCurrency)}</bdi>
           )}
         </dd>
+          </>
+        ) : null}
 
         <dt>{t('stock.acquired')}</dt>
         <dd>

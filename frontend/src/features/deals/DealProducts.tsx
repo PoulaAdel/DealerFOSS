@@ -70,7 +70,12 @@ export function DealProducts({
               kind: 'Other',
               provider: line.provider ?? t('products.withdrawn'),
               defaultPrice: line.price,
-              defaultCost: line.cost,
+              // Non-null here: DealsPage only mounts this editor for a caller
+              // holding Profitability.Read, precisely because the form writes
+              // cost back (ADR-029). Zero rather than a guess if that ever stops
+              // being true — a visibly wrong figure somebody corrects, not a
+              // plausible one that lands in the ledger unnoticed.
+              defaultCost: line.cost ?? 0,
               currency: deal.currency,
               termMonths: line.termMonths,
               termMiles: line.termMiles,

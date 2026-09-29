@@ -173,6 +173,31 @@ public static class Permissions
     /// </summary>
     public const string FinanceManageProducts = "Finance.ManageProducts";
 
+    /// <summary>
+    /// Seeing what the dealership paid and what it made — acquisition cost, book
+    /// value, product cost, and every gross figure derived from them.
+    ///
+    /// The first permission here that protects FIELDS rather than an action
+    /// (ADR-029). Holding a capability's Read permission says which records you
+    /// may see; this says whether the internal money on them is filled in. A
+    /// caller without it gets the same record with those fields null, which is
+    /// indistinguishable from a figure that was never recorded — deliberately,
+    /// because "hidden" and "unrecorded" are the same answer as far as a caller
+    /// who may not see it is concerned. The BROWSER is told which it is, the same
+    /// way it is told anything else it needs to draw a screen: the permission is
+    /// in the list on <c>/auth/me</c> (ADR-025), so it hides the column rather
+    /// than printing an empty one.
+    ///
+    /// Rooftop-scoped rather than organization-wide, because a one-lot manager
+    /// legitimately runs their own lot's numbers and has no business in the one
+    /// next door.
+    ///
+    /// Not held by the seeded Advisor, Salesperson or Technician roles. This is
+    /// the most political right in a dealership and withholding it is the normal
+    /// arrangement, not a hardening measure.
+    /// </summary>
+    public const string ProfitabilityRead = "Profitability.Read";
+
     /// <summary>Seeing the parts catalogue and what is on the shelf.</summary>
     public const string PartsRead = "Parts.Read";
 
@@ -280,6 +305,7 @@ public static class Permissions
         AccountingClosePeriod,
         AccountingReopenPeriod,
         FinanceManageProducts,
+        ProfitabilityRead,
     ];
 }
 

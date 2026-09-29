@@ -183,10 +183,11 @@ public sealed record InventoryUnitSummary(
 
     /// <summary>
     /// Work capitalised onto this car since it came into stock, summed from
-    /// <see cref="ReconditioningCharge"/>. Zero, never null: a car with no recon
-    /// has absorbed nothing, which is a known amount.
+    /// <see cref="ReconditioningCharge"/>. Zero when a car has absorbed nothing,
+    /// which is a known amount — and null only when the caller does not hold
+    /// <c>Profitability.Read</c> at this car's rooftop (ADR-029).
     /// </summary>
-    decimal ReconditioningAmount,
+    decimal? ReconditioningAmount,
 
     /// <summary>
     /// Acquisition plus reconditioning — what the car is actually carried at and
@@ -217,7 +218,7 @@ public sealed record InventoryUnitDetail(
     IReadOnlyList<InventoryStatusEntry> History,
 
     /// <summary>See <see cref="InventoryUnitSummary.ReconditioningAmount"/>.</summary>
-    decimal ReconditioningAmount,
+    decimal? ReconditioningAmount,
 
     /// <summary>See <see cref="InventoryUnitSummary.BookValueAmount"/>.</summary>
     decimal? BookValueAmount,

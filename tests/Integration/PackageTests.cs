@@ -309,6 +309,38 @@ public sealed class PackageTests(HostFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    /// <summary>
+    /// A package carries every car's acquisition price and every product's cost,
+    /// so taking one needs the right to SEE cost as well as the right to export
+    /// (ADR-029).
+    ///
+    /// Found by the compiler rather than by review: the exporter reads through
+    /// the capability contracts on purpose, so when cost became nullable it
+    /// stopped type-checking. Without the extra check it would have built a
+    /// package with the cost fields quietly emptied — permanent on the far side,
+    /// which has no way to tell a withheld figure from one never recorded.
+    /// </summary>
+    [Fact]
+    public async Task Taking_a_package_needs_the_right_to_see_what_the_records_cost()
+    {
+        // The advisor is refused for lacking the export right, which is a
+        // different test above. This one needs somebody who HOLDS export and not
+        // profitability, and no seeded role is that — so it asserts the gate from
+        // the other side: the identity that can export is exactly the one that
+        // can see cost, and what it produces has the figures in it.
+        using var response = await SendAsync(
+            HttpMethod.Get, $"/api/v1/migration/packages/{await RooftopAsync(From, "CM-01")}", Manager, From);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadAsStringAsync();
+        var units = JsonNode.Parse(content)!.AsObject()["inventoryUnits"]!.AsArray();
+
+        units.Should().NotBeEmpty(because: "a lot with no cars would prove nothing here");
+        units.Any(u => u!["costAmount"] is not null).Should().BeTrue(
+            because: "the package must carry what the cars cost, not a blank where the figure belongs");
+    }
+
     [Fact]
     public async Task An_exported_package_carries_a_checksum_that_matches_it()
     {
