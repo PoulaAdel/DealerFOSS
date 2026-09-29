@@ -37,16 +37,12 @@ import type {
   PartsCostingSetting,
   RooftopSummary,
 } from '../../shared/contracts';
-import { Pager, usePageCaption } from '../../shared/Pager';
+import { ListScreen, type ListLoad } from '../../shared/ListScreen';
 
 /** How many parts a page holds. The server clamps anything larger. */
 const PageSize = 100;
 
-type Load =
-  | { kind: 'loading' }
-  | { kind: 'ready'; page: Page<PartSummary> }
-  | { kind: 'denied' }
-  | { kind: 'failed'; message: string };
+type Load = ListLoad<PartSummary>;
 
 /**
  * Money and shelf counts, in the reader's language.
@@ -73,7 +69,6 @@ export function PartsPage() {
   const { t } = useI18n();
   const describe = useApiMessage();
   const { money, quantity } = useAmounts();
-  const caption = usePageCaption();
 
   const [search, setSearch] = useState('');
 
@@ -148,31 +143,6 @@ export function PartsPage() {
     })();
   }, []);
 
-  if (load.kind === 'loading') {
-    return <p>{t('parts.loading')}</p>;
-  }
-
-  if (load.kind === 'denied') {
-    return (
-      <section className="page">
-        <h1>{t('parts.title')}</h1>
-        <p className="note">{t('parts.denied')}</p>
-      </section>
-    );
-  }
-
-  if (load.kind === 'failed') {
-    return (
-      <section className="page">
-        <h1>{t('parts.title')}</h1>
-        <p className="error">{load.message}</p>
-        <button type="button" onClick={() => void find(search, offset)}>
-          {t('common.retry')}
-        </button>
-      </section>
-    );
-  }
-
   return (
     <section className="page">
       <header className="page__head">
@@ -229,67 +199,54 @@ export function PartsPage() {
         <p className="hint">{t('parts.findHint')}</p>
       </div>
 
-      {load.page.total === 0 ? (
-        <p className="note">
-          {search.trim() === '' ? t('parts.catalogueEmpty') : t('parts.noMatches')}
-        </p>
-      ) : (
-        <div className="scroll">
-          <table className="table">
-            <caption className="visually-hidden">{caption(load.page)}</caption>
-            <thead>
-              <tr>
-                <th scope="col">{t('parts.colNumber')}</th>
-                <th scope="col">{t('parts.colDescription')}</th>
-                <th scope="col">{t('parts.colWhere')}</th>
-                <th scope="col" className="num">
-                  {t('parts.colOnHand')}
-                </th>
-                <th scope="col" className="num">
-                  {t('parts.colCostEach')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {load.page.rows.map((part) => (
-                <tr key={`${part.id}-${part.rooftopId}`}>
-                  <td>
-                    <button
-                      type="button"
-                      className="link"
-                      onClick={() =>
-                        void api<PartDetail>(`/parts/${part.id}`).then(setSelected)
-                      }
-                    >
-                      {part.partNumber}
-                    </button>
-                  </td>
-                  <td>{part.description}</td>
-                  <td>
-                    {part.rooftopId === null
-                      ? // Never stocked anywhere. Saying "one location" would be a
-                        // lie, and a blank cell would read as a loading bug.
-                        <span className="muted">{t('parts.notStocked')}</span>
-                      : (rooftops.find((r) => r.id === part.rooftopId)?.code ?? t('parts.oneLocation'))}
-                  </td>
-                  <td className="num">
-                    {part.quantityOnHand <= 0 ? (
-                      <span className="chip chip--warn">{t('parts.noneOnHand')}</span>
-                    ) : (
-                      quantity(part.quantityOnHand)
-                    )}
-                  </td>
-                  <td className="num">
-                    {part.rooftopId === null ? '—' : money(part.unitCost, part.currency)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <Pager page={load.page} onPage={setOffset} />
-        </div>
-      )}
+      <ListScreen
+        load={load}
+        onRetry={() => void find(search, offset)}
+        onPage={setOffset}
+        loadingMessage={t('parts.loading')}
+        deniedMessage={t('parts.denied')}
+        emptyMessage={search.trim() === '' ? t('parts.catalogueEmpty') : t('parts.noMatches')}
+        columns={
+          <>
+            <th scope="col">{t('parts.colNumber')}</th>
+            <th scope="col">{t('parts.colDescription')}</th>
+            <th scope="col">{t('parts.colWhere')}</th>
+            <th scope="col" className="num">{t('parts.colOnHand')}</th>
+            <th scope="col" className="num">{t('parts.colCostEach')}</th>
+          </>
+        }
+        row={(part) => (
+          <tr key={`${part.id}-${part.rooftopId}`}>
+            <td>
+              <button
+                type="button"
+                className="link"
+                onClick={() => void api<PartDetail>(`/parts/${part.id}`).then(setSelected)}
+              >
+                {part.partNumber}
+              </button>
+            </td>
+            <td>{part.description}</td>
+            <td>
+              {part.rooftopId === null
+                ? // Never stocked anywhere. Saying "one location" would be a
+                  // lie, and a blank cell would read as a loading bug.
+                  <span className="muted">{t('parts.notStocked')}</span>
+                : (rooftops.find((r) => r.id === part.rooftopId)?.code ?? t('parts.oneLocation'))}
+            </td>
+            <td className="num">
+              {part.quantityOnHand <= 0 ? (
+                <span className="chip chip--warn">{t('parts.noneOnHand')}</span>
+              ) : (
+                quantity(part.quantityOnHand)
+              )}
+            </td>
+            <td className="num">
+              {part.rooftopId === null ? '—' : money(part.unitCost, part.currency)}
+            </td>
+          </tr>
+        )}
+      />
     </section>
   );
 }
