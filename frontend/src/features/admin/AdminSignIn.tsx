@@ -20,6 +20,7 @@ import { useAdminSession } from '../../app/adminSession';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 import { AppearanceControls } from '../../app/AppearanceControls';
+import { Mark, Wordmark } from '../../app/Mark';
 
 export function AdminSignIn() {
   const { refresh } = useAdminSession();
@@ -67,9 +68,16 @@ export function AdminSignIn() {
         <AppearanceControls />
       </div>
 
-      <h1>
-        {t('app.name')} <span className="shell__badge">{t('admin.badge')}</span>
-      </h1>
+      {/* Same mark the dealership's own sign-in uses (.signin__brand) — this
+          door was showing plain text where every other sign-in surface in
+          the app shows the icon, which is exactly the "which door am I at"
+          confusion this screen's own file header warns about. */}
+      <div className="signin__brand">
+        <Mark size={44} />
+        <h1>
+          <Wordmark /> <span className="shell__badge">{t('admin.badge')}</span>
+        </h1>
+      </div>
 
       <form onSubmit={(e) => void submit(e)} noValidate>
         <p className="signin__lede">{t('admin.signInLede')}</p>
