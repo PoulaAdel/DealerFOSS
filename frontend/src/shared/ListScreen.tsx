@@ -49,7 +49,7 @@
 //   would disagree with the picture; a second pager would add another stop.
 //   ListTable owns this order even for screens with their own load states.
 
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import { Pager, usePageCaption } from './Pager';
 import type { Page } from './contracts';
 import { useI18n } from './i18n';
@@ -85,9 +85,11 @@ export function ListScreen<T>({
 
   if (load.kind === 'loading') {
     return (
-      <p className="state" aria-live="polite">
-        {loadingMessage}
-      </p>
+      <SkeletonTable
+        loadingMessage={loadingMessage}
+        tableClassName={tableClassName}
+        columns={columns}
+      />
     );
   }
 
@@ -152,5 +154,58 @@ export function ListTable<T>({ page, onPage, tableClassName, columns, row }: {
         </table>
       </div>
     </>
+  );
+}
+
+/** How many placeholder rows to shimmer while the real count is unknown. */
+const SkeletonRows = 5;
+
+/**
+ * A uniform block of bars reads as a barcode, not as "text is coming" — real
+ * columns vary in length, so the placeholder cycles through a few widths
+ * rather than filling every cell edge to edge.
+ */
+const SkeletonWidths = ['92%', '68%', '80%', '55%', '75%'];
+
+/**
+ * The loading state, shaped like the table it is about to become rather than
+ * a sentence above an empty page. `loadingMessage` still reaches a screen
+ * reader — visually hidden, not dropped — the shimmering cells are
+ * `aria-hidden` because a blind user gets nothing from counting fake rows.
+ *
+ * Column count comes from `Children.count(columns)` rather than a prop:
+ * `columns` is already the real `<th>` list, and asking the caller to say
+ * how many a second time is exactly the kind of duplicated fact that drifts.
+ */
+function SkeletonTable({ loadingMessage, tableClassName, columns }: {
+  loadingMessage: string;
+  tableClassName?: string;
+  columns: ReactNode;
+}) {
+  const columnCount = Children.count(columns);
+
+  return (
+    <div className="scroll">
+      <span className="visually-hidden" aria-live="polite">{loadingMessage}</span>
+      <table className={tableClassName} aria-hidden="true">
+        <thead>
+          <tr>{columns}</tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: SkeletonRows }, (_, rowIndex) => (
+            <tr key={rowIndex}>
+              {Array.from({ length: columnCount }, (_, colIndex) => (
+                <td key={colIndex}>
+                  <span
+                    className="skeleton-line"
+                    style={{ maxInlineSize: SkeletonWidths[colIndex % SkeletonWidths.length] }}
+                  />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
