@@ -109,6 +109,26 @@ project has hit three separate times with columns that do not reach their own
 totals, and a manager reading a partial gross as a whole one would not know to
 doubt it. (Same source.)
 
+**A field right applies to an OUTBOUND view, and "outbound" is not the same as
+"public record in a capability contract".** `IParts.IssuedParts` and
+`IssuedPart` are public, sit in `IParts.cs` beside genuine views, and never
+reach a caller: `IssueAsync` has no endpoint and its only caller in the solution
+is `RepairOrderService`, inside the invoice transaction, where the cost is used
+to freeze the line. Gating `IssuedPart.Cost` would make that freeze silently not
+happen — `RecordCost` is once-only and throws on a second call, so the job's
+parts cost would be wrong permanently, and the reconciliation report would
+average a real figure against a missing one.
+
+Worse, nothing would catch it. The consuming line already casts to `decimal?`,
+so the change compiles clean, and no test asserts a per-job cost. This is the
+`PackageExporter` trap with the compiler taken away.
+
+The rule: **follow who reads the field, not what type it is declared on.** A
+list of line numbers is exactly the wrong handover for this, because it invites
+gating by grep — which is how this one was nearly done. (Found by Service &
+Parts reading the caller, 2026-09-30, on a list of six fields from this project
+that contained one input record and two internal ones.)
+
 **And null still means two things on purpose** — withheld, or never recorded.
 The server does not distinguish them, because to a caller who may not see the
 figure they are the same answer. The browser is told which it is by the
