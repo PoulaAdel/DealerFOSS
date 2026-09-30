@@ -126,6 +126,17 @@ public sealed class RepairOrderService(
             orders = orders.Where(o => o.Status == wanted);
         }
 
+        // The jobs they are on, as either the technician or the advisor (ADR-030).
+        // Both, because both have a real claim on a job and a workshop where the
+        // advisor could not see what they booked in would not work. Unlike
+        // query.TechnicianUserId below — which has always existed and is a
+        // convenience anybody may point at anybody — this one cannot be turned off.
+        if (scope.OwnRecordsOnly)
+        {
+            var self = scope.UserId;
+            orders = orders.Where(o => o.TechnicianUserId == self || o.AdvisorUserId == self);
+        }
+
         if (query.CustomerId is { } customer)
         {
             orders = orders.Where(o => o.CustomerId == customer);
@@ -426,7 +437,7 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
@@ -440,6 +451,10 @@ public sealed class RepairOrderService(
     {
         ArgumentNullException.ThrowIfNull(order);
 
+        // The rooftop question: a job arriving in a package names people from the
+        // installation it came from, who mean nothing here (ADR-030). Package
+        // import already demands Migration.Import organization-wide, so nobody
+        // limited to their own work reaches this.
         if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
         {
             return Result.Failure<ImportOutcome>(ServiceErrors.Forbidden);
@@ -541,6 +556,10 @@ public sealed class RepairOrderService(
     {
         ArgumentNullException.ThrowIfNull(order);
 
+        // Opening a job is the rooftop question — there is no job yet to belong
+        // to anybody, which is exactly the case AuthorizedScope.Covers exists for
+        // (ADR-030). The advisor or technician is named afterwards, and every
+        // call that reaches the job from then on asks the record question.
         if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
@@ -618,7 +637,7 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
@@ -679,7 +698,7 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
@@ -714,7 +733,7 @@ public sealed class RepairOrderService(
         // Recording that the customer agreed to pay is its own right. Somebody who
         // may write up work is not automatically somebody who may say it was
         // authorized.
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, AuthorizePermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, AuthorizePermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             await _audit.RecordAsync(
                 AuditEntry.Denied(_currentUser.Id, AuthorizePermission, "RepairOrder", order.Id.ToString(),
@@ -757,7 +776,7 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
@@ -796,7 +815,7 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
@@ -871,7 +890,7 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
@@ -926,7 +945,7 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.UnknownStatus);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
@@ -1123,7 +1142,7 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, order.RooftopId, WhoseJob(order), cancellationToken))
         {
             return Result.Failure<RepairOrderDetail>(ServiceErrors.Forbidden);
         }
@@ -1577,6 +1596,28 @@ public sealed class RepairOrderService(
                 .Select(h => new WarrantyClaimHistoryEntry(
                     h.FromStatus?.ToString(), h.ToStatus.ToString(), h.OccurredAt, h.ChangedByUserId, h.Note))
                 .ToList());
+
+    /// <summary>
+    /// Whose job this is, for the record-level check (ADR-030).
+    ///
+    /// <para>
+    /// A job has TWO people on it and both have a real claim: the technician
+    /// doing the work, and the advisor running it for the customer. Either makes
+    /// it theirs, which is why this cannot just be a field passed straight to
+    /// <see cref="AuthorizedScope.Allows"/> the way a deal's salesperson is.
+    /// </para>
+    /// <para>
+    /// When neither is the caller it returns whoever the job DOES name, so the
+    /// check refuses and the audit row records a real owner rather than a null.
+    /// A job naming nobody yet returns null and is refused, same as everywhere
+    /// else — the workshop's equivalent of the enquiry pool is the booking
+    /// diary, and a job with no technician is not an invitation.
+    /// </para>
+    /// </summary>
+    private Guid? WhoseJob(RepairOrder order) =>
+        order.TechnicianUserId == _currentUser.Id || order.AdvisorUserId == _currentUser.Id
+            ? _currentUser.Id
+            : order.TechnicianUserId ?? order.AdvisorUserId;
 }
 
 /// <summary>Stable error codes for the RepairOrders capability (doc 06 §6).</summary>

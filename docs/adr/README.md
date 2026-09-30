@@ -49,7 +49,8 @@ Two carry one today: [ADR-007](0007-integration-platform-edge.md) and
 | [ADR-026](0026-a-deleted-record-is-marked-not-removed.md) | A record deleted at the provider is marked, never removed | Accepted |
 | [ADR-027](0027-a-package-carries-records-not-transactions.md) | A records package carries records, not transactions, and its documents are re-rendered rather than copied | Accepted |
 | [ADR-028](0028-a-scheduled-run-carries-the-authority-that-armed-it.md) | A scheduled run carries the authority that armed it, re-checked every time | Accepted |
-| [ADR-029](0029-authorization-has-more-dimensions-than-a-permission-name.md) | Authorization has more dimensions than a permission name | Accepted |
+| [ADR-029](0029-authorization-has-more-dimensions-than-a-permission-name.md) | Authorization has more dimensions than a permission name | Superseded by [ADR-030](0030-a-scope-answers-about-a-record.md) |
+| [ADR-030](0030-a-scope-answers-about-a-record.md) | A scope answers about a record, not about a rooftop | Accepted |
 
 ## ADR file template
 

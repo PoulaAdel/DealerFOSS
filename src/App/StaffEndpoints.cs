@@ -209,12 +209,17 @@ internal static class StaffEndpoints
             return OrganizationRefused.ToProblem();
         }
 
+        // Note what is NOT checked here: whether the granter is themselves
+        // narrowed. Handing somebody a grant narrower than your own is giving
+        // away less than you hold, which the rule above already permits — it
+        // refuses only handing over MORE.
         var result = await staff.AssignAsync(
             userId,
             request.RoleId,
             request.RooftopId is { } id ? new RooftopId(id) : null,
             currentUser.Id,
-            cancellationToken);
+            cancellationToken,
+            request.OwnRecordsOnly);
 
         return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
     }
@@ -405,8 +410,18 @@ internal static class StaffEndpoints
         "You can only change access at a location you manage.");
 }
 
-/// <summary>Grant a role. A null rooftop means organization-wide.</summary>
-internal sealed record AssignRoleRequest(Guid RoleId, Guid? RooftopId);
+/// <summary>
+/// Grant a role. A null rooftop means organization-wide.
+/// </summary>
+/// <param name="OwnRecordsOnly">
+/// Narrows the grant to records the person is named on (ADR-030). Optional and
+/// false by default, so a client written before this existed grants what it
+/// always granted rather than silently narrowing somebody.
+/// </param>
+internal sealed record AssignRoleRequest(
+    Guid RoleId,
+    Guid? RooftopId,
+    bool OwnRecordsOnly = false);
 
 internal sealed record SetActiveRequest(bool Active);
 

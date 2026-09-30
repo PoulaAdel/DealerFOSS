@@ -946,6 +946,7 @@ export const de: Catalogue = {
   'staff.holdsNothingYet': 'Noch keine — sie kann sich anmelden und sieht nichts.',
   'staff.everywhere': 'überall',
   'staff.oneLocation': 'ein Standort',
+  'staff.ownWorkOnly': 'nur eigene Vorgänge',
   'staff.takeItAway': 'Entziehen',
   'staff.giveARole': 'Eine Rolle geben',
   'staff.role': 'Rolle',

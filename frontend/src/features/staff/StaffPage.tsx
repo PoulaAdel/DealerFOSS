@@ -398,7 +398,14 @@ function Person({
                   // location and is printed as they set it.
                   (rooftops.find((r) => r.id === assignment.rooftopId)?.code ??
                     t('staff.oneLocation'))
-                )}
+                )}{' '}
+                {/* Beside the role rather than instead of it: the role name says
+                    what they may do and this says how far it reaches, and a
+                    manager reviewing access needs both. Absent when the grant is
+                    ordinary, so the chip means something when it appears. */}
+                {assignment.ownRecordsOnly ? (
+                  <span className="chip">{t('staff.ownWorkOnly')}</span>
+                ) : null}
               </span>
               <button
                 type="button"

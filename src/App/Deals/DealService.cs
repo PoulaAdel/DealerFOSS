@@ -105,6 +105,17 @@ public sealed class DealService(
             deals = deals.Where(d => allowed.Contains(d.RooftopId));
         }
 
+        // Their own deals and nothing else (ADR-030). Applied BEFORE the caller's
+        // own filters, so it narrows rather than competes with them — and note it
+        // is not the same thing as query.SalespersonUserId below, which has
+        // always existed and is a convenience anybody may point at anybody. This
+        // one the caller cannot turn off.
+        if (scope.OwnRecordsOnly)
+        {
+            var self = scope.UserId;
+            deals = deals.Where(d => d.SalespersonUserId == self);
+        }
+
         if (query.RooftopId is { } only)
         {
             deals = deals.Where(d => d.RooftopId == only);
@@ -180,7 +191,7 @@ public sealed class DealService(
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, deal.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
@@ -219,6 +230,12 @@ public sealed class DealService(
     {
         ArgumentNullException.ThrowIfNull(deal);
 
+        // The rooftop question, not the record question, and the compiler made
+        // the point for me: an ImportedDeal names no salesperson, because the one
+        // it had belongs to the installation it came from and means nothing here
+        // (ADR-030). A package is a bulk write that already demands
+        // Migration.Import organization-wide, so nobody limited to their own work
+        // reaches this at all.
         if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
         {
             return Result.Failure<ImportOutcome>(DealErrors.Forbidden);
@@ -334,6 +351,12 @@ public sealed class DealService(
     {
         ArgumentNullException.ThrowIfNull(deal);
 
+        // The rooftop question. Starting a deal CREATES the record that will
+        // belong to somebody, so asking whether it is already theirs is asking
+        // about something that does not exist yet (ADR-030) — and a NewDeal names
+        // no salesperson in the usual case, so the record check would refuse the
+        // caller their own first deal. Rehearsed: OwnRecordsOnlyTests fails with
+        // a 403 on this line if the owner is passed here.
         if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
         {
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
@@ -422,7 +445,7 @@ public sealed class DealService(
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
@@ -475,7 +498,7 @@ public sealed class DealService(
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
@@ -548,7 +571,7 @@ public sealed class DealService(
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
@@ -652,7 +675,7 @@ public sealed class DealService(
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
@@ -710,7 +733,7 @@ public sealed class DealService(
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
@@ -751,7 +774,7 @@ public sealed class DealService(
         // act as pricing the car or selling the cover, and an F&I manager already
         // holds it; a new permission would have to be granted to every existing
         // role to change nothing.
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
             return Result.Failure<DealDetail>(DealErrors.Forbidden);
         }
@@ -800,7 +823,7 @@ public sealed class DealService(
         // Signing a deal off is a different right from building one. A salesperson
         // who could approve their own numbers is not a control at all.
         var required = next == DealStatus.Approved ? ApprovePermission : WritePermission;
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, required, deal.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, required, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
             return Result.Failure<DealDetail>(
                 next == DealStatus.Approved ? DealErrors.ApprovalForbidden : DealErrors.Forbidden);

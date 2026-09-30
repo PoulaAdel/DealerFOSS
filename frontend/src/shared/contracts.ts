@@ -969,6 +969,14 @@ export interface StaffAssignment {
   roleName: string;
   isOrganizationWide: boolean;
   rooftopId: string | null;
+
+  /**
+   * True when this grant reaches only records the person is named on — their
+   * own deals, their own jobs (ADR-030). Shown beside the role, because a
+   * manager reviewing who-holds-what needs the real reach rather than the role
+   * name, and the role name alone would read as the wider thing.
+   */
+  ownRecordsOnly: boolean;
 }
 
 export interface StaffRole {

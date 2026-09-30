@@ -1001,6 +1001,7 @@ export const ar: Catalogue = {
   'staff.holdsNothingYet': 'لا شيء بعد، فبإمكانه تسجيل الدخول دون أن يرى شيئًا.',
   'staff.everywhere': 'في كل مكان',
   'staff.oneLocation': 'فرع واحد',
+  'staff.ownWorkOnly': 'سجلاته فقط',
   'staff.takeItAway': 'اسحبها',
   'staff.giveARole': 'امنحه دورًا',
   'staff.role': 'الدور',

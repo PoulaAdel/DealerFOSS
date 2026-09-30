@@ -357,7 +357,8 @@ internal sealed class StaffDirectoryService(
         Guid roleId,
         RooftopId? rooftopId,
         Guid actingUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool ownRecordsOnly = false)
     {
         var user = await _db.Users
             .Include(u => u.Assignments)
@@ -376,11 +377,21 @@ internal sealed class StaffDirectoryService(
 
         // Granting what is already held changes nothing, and an audit row saying
         // it happened would be a lie.
+        //
+        // "Already held" has to mean AT LEAST AS WIDE, not "same role and scope"
+        // (ADR-030). An existing grant limited to the person's own records does
+        // NOT already contain an unrestricted one: read the old way, a manager
+        // widening somebody from their own deals to the whole lot would be told
+        // it succeeded and nothing would change — silently, which is the worst
+        // shape a permission bug can take. The reverse is genuinely a no-op: a
+        // narrower grant adds nothing to a wider one, because grants combine
+        // additively and the wider one keeps winning.
         var alreadyHeld = user.Assignments.Any(a =>
             a.RoleId == roleId
             && (rooftopId is null
                 ? a.Scope == AssignmentScope.Organization
-                : a.Scope == AssignmentScope.Rooftop && a.RooftopId == rooftopId));
+                : a.Scope == AssignmentScope.Rooftop && a.RooftopId == rooftopId)
+            && (!a.OwnRecordsOnly || ownRecordsOnly));
 
         if (alreadyHeld)
         {
@@ -388,8 +399,8 @@ internal sealed class StaffDirectoryService(
         }
 
         user.Assignments.Add(rooftopId is { } rooftop
-            ? UserAssignment.ForRooftop(Guid.NewGuid(), userId, roleId, rooftop)
-            : UserAssignment.ForOrganization(Guid.NewGuid(), userId, roleId));
+            ? UserAssignment.ForRooftop(Guid.NewGuid(), userId, roleId, rooftop, ownRecordsOnly)
+            : UserAssignment.ForOrganization(Guid.NewGuid(), userId, roleId, ownRecordsOnly));
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -547,7 +558,8 @@ internal sealed class StaffDirectoryService(
                         a.RoleId,
                         roleNames.TryGetValue(a.RoleId, out var name) ? name : "(role no longer exists)",
                         a.Scope == AssignmentScope.Organization,
-                        a.RooftopId?.Value))
+                        a.RooftopId?.Value,
+                        a.OwnRecordsOnly))
                     .OrderBy(a => a.RoleName, StringComparer.Ordinal)
                     .ToList()))
             .ToList();

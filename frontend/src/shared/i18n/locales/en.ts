@@ -974,6 +974,7 @@ export const en = {
   'staff.holdsNothingYet': 'Nothing yet, so they can sign in and see nothing.',
   'staff.everywhere': 'everywhere',
   'staff.oneLocation': 'one location',
+  'staff.ownWorkOnly': 'own work only',
   'staff.takeItAway': 'Take it away',
   'staff.giveARole': 'Give them a role',
   'staff.role': 'Role',

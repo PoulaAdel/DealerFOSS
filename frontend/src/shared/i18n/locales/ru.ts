@@ -982,6 +982,7 @@ export const ru: Catalogue = {
   'staff.holdsNothingYet': 'Пока никаких — он сможет войти и не увидит ничего.',
   'staff.everywhere': 'везде',
   'staff.oneLocation': 'одна площадка',
+  'staff.ownWorkOnly': 'только свои записи',
   'staff.takeItAway': 'Отозвать',
   'staff.giveARole': 'Выдать роль',
   'staff.role': 'Роль',

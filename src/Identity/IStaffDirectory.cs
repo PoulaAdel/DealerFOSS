@@ -124,12 +124,20 @@ public interface IStaffDirectory
     /// <paramref name="rooftopId"/> is null. Granting the same thing twice is not
     /// an error — it is already true.
     /// </summary>
+    /// <param name="ownRecordsOnly">
+    /// Narrows the grant to records this person is named on (ADR-030). Defaults
+    /// false, so a caller that does not mention it grants what it always granted.
+    /// Note what it does NOT do: it never widens anything, and a person holding
+    /// one ordinary grant elsewhere is unrestricted, because grants combine
+    /// additively and the narrowing applies only when every grant carries it.
+    /// </param>
     Task<Result> AssignAsync(
         Guid userId,
         Guid roleId,
         RooftopId? rooftopId,
         Guid actingUserId,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool ownRecordsOnly = false);
 
     /// <summary>Takes one grant away. The person and their other grants remain.</summary>
     Task<Result> UnassignAsync(
@@ -198,7 +206,13 @@ public sealed record StaffAssignment(
     Guid RoleId,
     string RoleName,
     bool IsOrganizationWide,
-    Guid? RooftopId);
+    Guid? RooftopId,
+    /// <summary>
+    /// True when this grant reaches only records the person is named on. Reported
+    /// so a manager reviewing who-holds-what reads the real reach rather than the
+    /// role name — which is the whole point of an access review (ADR-030).
+    /// </summary>
+    bool OwnRecordsOnly = false);
 
 /// <summary>
 /// A role and what it grants, so somebody deciding whether to hand it over can

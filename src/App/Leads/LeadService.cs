@@ -99,6 +99,18 @@ public sealed class LeadService(
             leads = leads.Where(l => l.RooftopId == only);
         }
 
+        // Their own enquiries, plus the ones nobody has taken (ADR-030). The
+        // second half is the difference between this capability and every other
+        // one: an unclaimed enquiry is the POOL, and hiding the pool from a
+        // salesperson limited to their own work would stop them ever claiming
+        // one — which is the act that makes it theirs. Deals have no equivalent;
+        // an unassigned deal is not everybody's.
+        if (scope.OwnRecordsOnly)
+        {
+            var self = scope.UserId;
+            leads = leads.Where(l => l.AssignedToUserId == self || l.AssignedToUserId == null);
+        }
+
         if (status is { } wanted)
         {
             leads = leads.Where(l => l.Status == wanted);
@@ -206,7 +218,7 @@ public sealed class LeadService(
             return Result.Failure<LeadDetail>(LeadErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, lead.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, lead.RooftopId, PoolOrOwn(lead), cancellationToken))
         {
             return Result.Failure<LeadDetail>(LeadErrors.Forbidden);
         }
@@ -291,7 +303,7 @@ public sealed class LeadService(
             return Result.Failure<LeadDetail>(LeadErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ManagePermission, lead.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ManagePermission, lead.RooftopId, PoolOrOwn(lead), cancellationToken))
         {
             return Result.Failure<LeadDetail>(LeadErrors.Forbidden);
         }
@@ -343,7 +355,7 @@ public sealed class LeadService(
             return Result.Failure<LeadDetail>(LeadErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ManagePermission, lead.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ManagePermission, lead.RooftopId, PoolOrOwn(lead), cancellationToken))
         {
             return Result.Failure<LeadDetail>(LeadErrors.Forbidden);
         }
@@ -441,6 +453,22 @@ public sealed class LeadService(
         var days = (int)(until - lead.CapturedAt).TotalDays;
         return days < 0 ? 0 : days;
     }
+
+    /// <summary>
+    /// Who this enquiry belongs to, for the record-level check — and the caller
+    /// themselves when nobody has taken it.
+    ///
+    /// <para>
+    /// <see cref="AuthorizedScope.Allows"/> refuses a null owner on purpose,
+    /// because an unowned record is not everybody's in general (ADR-030). Leads
+    /// are the one capability that genuinely means the other thing: an unclaimed
+    /// enquiry is the pool, and somebody limited to their own work has to be able
+    /// to reach one in order to claim it. Saying that HERE, rather than teaching
+    /// the scope object to assume it, is what keeps the assumption from leaking
+    /// onto deals and jobs where it would be wrong.
+    /// </para>
+    /// </summary>
+    private Guid? PoolOrOwn(Lead lead) => lead.AssignedToUserId ?? _currentUser.Id;
 }
 
 /// <summary>Stable error codes for the Leads capability (doc 06 §6).</summary>

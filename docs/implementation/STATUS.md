@@ -3,32 +3,33 @@
 Current phase: **I0 complete → I1 complete except OIDC, which is blocked.** Work
 has since run ahead into I3, I4 and I5 rather than down the phase list — the
 per-phase exit criteria below are the honest record of which parts are done
-Current milestone: **a salesperson can sell the car without being shown what it
-made.** The first FIELD right in the product and [ADR-029](../adr/0029-authorization-has-more-dimensions-than-a-permission-name.md)'s
-first dimension: until now a permission said which *records* you may see, and
-`Profitability.Read` says whether the internal money on them is filled in. Held
-by the Manager role and no other, covering acquisition cost, book value,
-reconditioning, product cost and every gross figure on Deals and Inventory.
-Default-deny, so it removes access that existed — before this, cost and gross
-went to anybody holding the capability's Read permission, and only the printed
-page suppressed them. Accounting, Parts and RepairOrders are the three
-remaining contracts and are a separate change; so are dimensions 2–4
-(department, ownership, threshold) and the access-review surface the FTC
-Safeguards Rule wants.
+Current milestone: **a salesperson sees their own deals, and a scope stops being
+about rooftops.** [ADR-030](../adr/0030-a-scope-answers-about-a-record.md)
+supersedes 029: `AuthorizedScope` now answers about a **record** — the lot, and
+whether the record is theirs — so a grant can be narrowed to the work its holder
+is named on across Deals, Leads, RepairOrders and Appointments. Measuring first
+found the ADR's own order wrong: department was not the cheap next step, because
+**no business record carries a `DepartmentId`**, while ownership was, because
+every record already named its person and the filters already existed as
+caller-chosen query parameters. Default-off, so nobody is narrowed until
+somebody is granted it. Still open: threshold, department (reopen whether it is
+wanted at all), the access-review surface the FTC Safeguards Rule wants, and
+field-level visibility on Parts and RepairOrders — Deals, Inventory and
+Accounting landed 2026-09-29 and 2026-09-30.
 What is next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
 §12 — but see the re-review of 2026-09-16 below before choosing from it, and
 the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
 record having no cross-module actions and the arrival-motion work recorded in
 the device-only motion audit. The pager finding closed on 2026-09-19; the token
 migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-29 · `dotnet build` 0 warnings/0 errors, `dotnet test` 972/972,
+Last verified: 2026-09-30 · `dotnet build` 0 warnings/0 errors, `dotnet test` 985/985,
 `verify-e2e.ps1` PASS **against the canonical LocalDB catalogue** — which now
 works again. The 2026-09-19 note that `DealerFOSS_Host` was detached with its MDF
 still on disk no longer holds; the default command in `AGENTS.md` and
 `docs/LOCAL-DEVELOPMENT.md` runs clean.
-The frontend gates were last run on 2026-09-29 — `npm audit` clean at high (two
+The frontend gates were last run on 2026-09-30 — `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 509/509, `npm run build`
+`npm run typecheck`, `npm test` 511/511, `npm run build`
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1715,3 +1716,23 @@ to come.
   **No type was made public.** Dimension 1 needed no change to `AuthorizedScope` or `UserAssignment`, so this is not an Identity-internals change and `BoundaryTests` is untouched — which is better than the ADR predicted, and is now recorded in its Correction. Dimensions 2 to 4 still change both.
 
   Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **972/972** (was 969 — three new: cost withheld on the stock list and detail, product gross withheld from the person who sold it, and the package carrying its figures), `verify-e2e.ps1` PASS against LocalDB, and all four frontend gates — `npm audit` clean at high, `typecheck`, `npm test` **509/509** (was 508), `npm run build`. `SessionProvider` joined the test render helper so screens outside the navigation can ask `holds`; three inventory tests and one recall test needed a signed-in fixture or a filtered call count as a result, and say why in place.
+
+- **2026-09-30 — A salesperson sees their own deals, and a scope stops being about rooftops.** ADR-030's dimension, and a correction to the ADR that ordered it. `OwnRecordsOnly` on an assignment narrows a grant to the records its holder is named on — their deals, their enquiries, their jobs, their bookings — without changing which lot they work at.
+
+  **Measuring before building found the plan was wrong, and that is the more useful half.** ADR-029 called department "the cheapest structural win — the `Department` entity already exists and is unused by authorization". The second half is true; the first is not. **No business record carries a `DepartmentId`.** Departments are organisational structure: created by the seeder, returned in the organization view, referenced by nothing. Scoping records by department means tagging deals, jobs and parts with one first — a data-model change across capabilities, not an Identity change. And its value is weaker than assumed, because the six kinds map onto capabilities and the permission catalogue already expresses that split: a technician holds `Service.Read` and `Parts.Read` and not `Deals.Read`.
+
+  **Ownership was the cheap one all along.** Every record that needed it already named its person — `Deal.SalespersonUserId`, `Lead.AssignedToUserId`, `RepairOrder.TechnicianUserId` and `AdvisorUserId`, `Appointment.AdvisorUserId` — and the filter expressions already existed in all three list methods. They were **caller-supplied query parameters**: a convenience anybody holding the read permission could point at anybody, or omit to see the whole lot. The work was turning an optional filter into one the caller cannot switch off.
+
+  **A scope now answers about a record.** `AuthorizedScope.Allows(rooftopId, ownerUserId)` asks the lot question and then whether the record is theirs; `Covers(rooftopId)` stays for the acts that have no record yet. Keeping both is the point rather than an oversight — starting a deal, opening a job and booking a car in all create the thing that will belong to somebody, and a refactor that collapsed the two would have forced those sites to invent an owner. The compiler made that argument for me three times: `ImportedDeal`, `ImportedRepairOrder` and `NewRepairOrder` all failed to compile when handed to the record check, because a record arriving in a package names people from the installation it came from and a job being opened names nobody yet.
+
+  **The one it could NOT make for me is the one that bit.** The first version inferred which question to ask — "no owner and an unrestricted scope means the lot, otherwise the record" — which looks equivalent and is not: for a caller limited to their own work it sent every rooftop-level act down the record path with a null owner, so they were refused their own **first** deal. Found by the test, not by reading. The overload called now decides, and nothing else does.
+
+  **Two capability-level decisions that the scope object deliberately does not make.** An unowned record is not everybody's — `Allows` refuses a null owner, because an unassigned deal is not an invitation. Leads are the one capability that genuinely means the other thing: an unclaimed enquiry is the **pool**, and hiding it would leave somebody limited to their own work unable ever to claim one, which is the act that makes it theirs. `LeadService` says so itself rather than teaching the scope object an assumption that would be wrong on deals. A job has **two** owners, the technician doing it and the advisor running it, and either makes it theirs.
+
+  **Grants stay additive.** Narrowed only when every covering assignment says so; one ordinary grant wins. `StaffDirectoryService.AssignAsync` needed the matching fix and it is the subtle one: "already held" now means **at least as wide**, because read the old way a manager widening somebody from their own deals to the whole lot would have been told it succeeded while nothing changed.
+
+  **Default-off, unlike the last dimension.** `OwnRecordsOnly` is an additive column defaulting false, so every existing assignment keeps exactly the reach it had and the right has to be granted before anybody is narrowed. Profitability took access away on landing; this one does not.
+
+  **Proven by a control, not by a refusal.** `ownwork@dev.local` holds the SAME role at the SAME rooftop as `sales@dev.local`; the only difference is the flag. Every test runs both and asserts they differ, because a refusal the salesperson also gets is a role gap and proves nothing. Both halves are covered per capability — the list and the record — since hiding a deal from a list while leaving it readable by its id is not scope, it is decoration.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **985/985** (was 974 — eleven new: seven integration across deals, the enquiry pool and the access review, four unit on the scope object itself), `verify-e2e.ps1` PASS against LocalDB, and all four frontend gates — `npm audit` clean at high, `typecheck`, `npm test` **511/511**, `npm run build`. One EF migration on the `identity` schema, additive.

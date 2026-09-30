@@ -170,10 +170,20 @@ public static class DevelopmentSeeder
         /// </summary>
         public static Guid SecondFactor { get; } = new("55555555-5555-5555-5555-555555555555");
 
+        /// <summary>
+        /// The same salesperson role at the same rooftop as
+        /// <see cref="Salesperson"/>, granted with <c>OwnRecordsOnly</c> — so the
+        /// only difference between the two accounts is the narrowing itself
+        /// (ADR-030). A test that compares them is testing the dimension and
+        /// nothing else, which it could not do if the two also differed by role.
+        /// </summary>
+        public static Guid OwnWorkOnly { get; } = new("77777777-7777-7777-7777-777777777777");
+
         public const string UnassignedEmail = "nobody@dev.local";
         public const string SalespersonEmail = "sales@dev.local";
         public const string SecondFactorEmail = "mfa@dev.local";
         public const string TechnicianEmail = "tech@dev.local";
+        public const string OwnWorkOnlyEmail = "ownwork@dev.local";
     }
 
     private static async Task SeedTenantAsync(
@@ -220,7 +230,8 @@ public static class DevelopmentSeeder
             new DevelopmentAccount(DevUsers.Unassigned, DevUsers.UnassignedEmail, "Unassigned User"),
             new DevelopmentAccount(DevUsers.Salesperson, DevUsers.SalespersonEmail, "Rooftop Salesperson"),
             new DevelopmentAccount(DevUsers.SecondFactor, DevUsers.SecondFactorEmail, "Second Factor Test"),
-            new DevelopmentAccount(DevUsers.Technician, DevUsers.TechnicianEmail, "Workshop Technician"));
+            new DevelopmentAccount(DevUsers.Technician, DevUsers.TechnicianEmail, "Workshop Technician"),
+            new DevelopmentAccount(DevUsers.OwnWorkOnly, DevUsers.OwnWorkOnlyEmail, "Own Work Only"));
 
         await SeedCustomersAsync(tenantDb);
         await SeedStockAsync(tenantDb, clock);

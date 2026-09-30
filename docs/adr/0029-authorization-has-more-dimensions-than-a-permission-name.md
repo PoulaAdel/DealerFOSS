@@ -1,6 +1,6 @@
 # ADR-0029 — Authorization has more dimensions than a permission name
 
-**Status:** Accepted · **Date:** 2026-09-29
+**Status:** Superseded by [ADR-030](0030-a-scope-answers-about-a-record.md) · **Date:** 2026-09-29
 
 ## Context
 

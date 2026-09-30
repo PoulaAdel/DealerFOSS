@@ -186,6 +186,10 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
                 .HasConversion(
                     id => id!.Value.Value,
                     value => new RooftopId(value));
+            // Defaulted in the database as well as in the entity, so a row written
+            // by the restore script or by hand cannot arrive with a null that EF
+            // would read as "unknown" for a question that has to have an answer.
+            builder.Property(x => x.OwnRecordsOnly).IsRequired().HasDefaultValue(false);
             builder.HasIndex(x => new { x.UserId, x.Scope });
             ConfigureAudit(builder);
         });

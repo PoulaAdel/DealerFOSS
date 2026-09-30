@@ -51,7 +51,8 @@ public static class IdentitySeeder
         DevelopmentAccount unassigned,
         DevelopmentAccount salesperson,
         DevelopmentAccount secondFactor,
-        DevelopmentAccount technician)
+        DevelopmentAccount technician,
+        DevelopmentAccount ownWorkOnly)
     {
         ArgumentNullException.ThrowIfNull(organizationWide);
         ArgumentNullException.ThrowIfNull(rooftopScoped);
@@ -77,7 +78,8 @@ public static class IdentitySeeder
 
         await SeedDevelopmentAccountsAsync(
             db, hasher, password, firstRooftop, manager, advisor, sales, technicianRole,
-            organizationWide, rooftopScoped, unassigned, salesperson, secondFactor, technician);
+            organizationWide, rooftopScoped, unassigned, salesperson, secondFactor, technician,
+            ownWorkOnly);
     }
 
     /// <summary>
@@ -338,7 +340,8 @@ public static class IdentitySeeder
         DevelopmentAccount unassigned,
         DevelopmentAccount salesperson,
         DevelopmentAccount secondFactor,
-        DevelopmentAccount technician)
+        DevelopmentAccount technician,
+        DevelopmentAccount ownWorkOnly)
     {
         // Accounts are reconciled one at a time rather than all-or-nothing, for the
         // same reason roles are: a database seeded before an account existed
@@ -353,6 +356,14 @@ public static class IdentitySeeder
 
         await UpsertUserAsync(db, hasher, password, salesperson,
             () => UserAssignment.ForRooftop(Guid.NewGuid(), salesperson.Id, sales.Id, firstRooftop));
+
+        // The SAME role at the SAME rooftop as the salesperson above, narrowed to
+        // their own records (ADR-030). The only difference between the two
+        // accounts is the narrowing, which is what lets a test attribute a
+        // refusal to the dimension rather than to a role gap.
+        await UpsertUserAsync(db, hasher, password, ownWorkOnly,
+            () => UserAssignment.ForRooftop(
+                Guid.NewGuid(), ownWorkOnly.Id, sales.Id, firstRooftop, ownRecordsOnly: true));
 
         await UpsertUserAsync(db, hasher, password, technician,
             () => UserAssignment.ForRooftop(Guid.NewGuid(), technician.Id, technicianRole.Id, firstRooftop));

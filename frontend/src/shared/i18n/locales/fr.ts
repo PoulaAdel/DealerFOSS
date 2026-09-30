@@ -943,6 +943,7 @@ export const fr: Catalogue = {
   'staff.holdsNothingYet': 'Aucun pour l’instant : elle peut se connecter et ne rien voir.',
   'staff.everywhere': 'partout',
   'staff.oneLocation': 'un site',
+  'staff.ownWorkOnly': 'son propre travail uniquement',
   'staff.takeItAway': 'Retirer',
   'staff.giveARole': 'Lui attribuer un rôle',
   'staff.role': 'Rôle',

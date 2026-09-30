@@ -44,10 +44,36 @@ public interface IAccessDirectory
     /// Whether the user may exercise <paramref name="permission"/> on one
     /// rooftop. Denials are audited by the implementation.
     /// </summary>
+    /// <remarks>
+    /// Use this for an act with no record behind it yet — receiving a car,
+    /// opening a job, booking one in. Anything that reaches an EXISTING record
+    /// that names somebody should use the overload below and pass who, or a
+    /// caller whose grant reaches only their own work will be let through to
+    /// somebody else's record (ADR-030).
+    /// </remarks>
     Task<bool> IsAuthorizedAsync(
         Guid userId,
         string permission,
         RooftopId rooftopId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether the user may exercise <paramref name="permission"/> on one record:
+    /// the rooftop it sits at, and whether it is theirs when their grant goes no
+    /// wider than their own work. Denials are audited, and the audit reason tells
+    /// the two refusals apart even though the caller is told neither.
+    /// </summary>
+    /// <param name="ownerUserId">
+    /// Whoever the record names — the salesperson on a deal, the technician on a
+    /// job, the advisor on a booking. <c>null</c> means nobody is named, which is
+    /// refused for a caller limited to their own work rather than treated as
+    /// everybody's.
+    /// </param>
+    Task<bool> IsAuthorizedAsync(
+        Guid userId,
+        string permission,
+        RooftopId rooftopId,
+        Guid? ownerUserId,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -88,7 +114,17 @@ public interface IAccessDirectory
 /// represented explicitly rather than as "every rooftop currently known", so a
 /// rooftop added later is covered without re-granting.
 /// </summary>
-public sealed record AuthorizedScope(bool IsOrganizationWide, IReadOnlySet<RooftopId> Rooftops)
+/// <remarks>
+/// This answers about a RECORD, not only about a rooftop (ADR-030). It carries
+/// the caller's own id so a service never has to hand back an identity the scope
+/// was already resolved for, and it is the one place a later dimension is added
+/// — that is the whole reason it exists in this shape.
+/// </remarks>
+public sealed record AuthorizedScope(
+    bool IsOrganizationWide,
+    IReadOnlySet<RooftopId> Rooftops,
+    bool OwnRecordsOnly = false,
+    Guid UserId = default)
 {
     public static AuthorizedScope None { get; } =
         new(false, new HashSet<RooftopId>());
@@ -98,5 +134,30 @@ public sealed record AuthorizedScope(bool IsOrganizationWide, IReadOnlySet<Rooft
 
     public bool GrantsNothing => !IsOrganizationWide && Rooftops.Count == 0;
 
+    /// <summary>
+    /// May this caller reach the lot at all.
+    ///
+    /// Kept alongside <see cref="Allows"/> deliberately. Receiving stock, opening
+    /// a job and booking a car in all happen before there is a record with an
+    /// owner, so they have a real question to ask and no owner to ask it with.
+    /// Collapsing the two would force those sites to invent one.
+    /// </summary>
     public bool Covers(RooftopId rooftopId) => IsOrganizationWide || Rooftops.Contains(rooftopId);
+
+    /// <summary>
+    /// May this caller reach this record: the lot, and then whether the record is
+    /// theirs when their grant goes no wider than their own work.
+    /// </summary>
+    /// <param name="ownerUserId">
+    /// Whoever the record names — the salesperson on a deal, the technician on a
+    /// job. <c>null</c> means nobody is named, and an unowned record is NOT
+    /// everybody's: a caller limited to their own work is refused it. That is the
+    /// safe direction, and where a capability genuinely means "unclaimed, so
+    /// anyone may take it" — an enquiry in the pool — it says so itself with
+    /// <see cref="Covers"/> rather than having that meaning assumed here for
+    /// every record in the product.
+    /// </param>
+    public bool Allows(RooftopId rooftopId, Guid? ownerUserId) =>
+        Covers(rooftopId)
+        && (!OwnRecordsOnly || (ownerUserId is { } owner && owner == UserId));
 }

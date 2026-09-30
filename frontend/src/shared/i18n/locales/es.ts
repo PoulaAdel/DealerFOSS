@@ -953,6 +953,7 @@ export const es: Catalogue = {
   'staff.holdsNothingYet': 'Todavía nada, así que puede iniciar sesión y no verá nada.',
   'staff.everywhere': 'en todas partes',
   'staff.oneLocation': 'una sede',
+  'staff.ownWorkOnly': 'solo su propio trabajo',
   'staff.takeItAway': 'Quitárselo',
   'staff.giveARole': 'Darle un puesto',
   'staff.role': 'Puesto',

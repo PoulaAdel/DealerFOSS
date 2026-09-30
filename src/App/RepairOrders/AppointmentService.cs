@@ -115,6 +115,15 @@ public sealed class AppointmentService(
             bookings = bookings.Where(a => allowed.Contains(a.RooftopId));
         }
 
+        // The bookings they are running (ADR-030). Only the advisor here, unlike
+        // a job — a booking has no technician yet, which is rather the point of
+        // it being a booking.
+        if (scope.OwnRecordsOnly)
+        {
+            var self = scope.UserId;
+            bookings = bookings.Where(a => a.AdvisorUserId == self);
+        }
+
         if (query.RooftopId is { } only)
         {
             bookings = bookings.Where(a => a.RooftopId == only);
@@ -185,7 +194,7 @@ public sealed class AppointmentService(
             return Result.Failure<AppointmentView>(AppointmentErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, booking.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ReadPermission, booking.RooftopId, booking.AdvisorUserId, cancellationToken))
         {
             return Result.Failure<AppointmentView>(AppointmentErrors.Forbidden);
         }
@@ -199,6 +208,11 @@ public sealed class AppointmentService(
     {
         ArgumentNullException.ThrowIfNull(booking);
 
+        // The rooftop question. Booking a car in creates the record, so there is
+        // nothing yet to belong to anybody (ADR-030) — and a NewAppointment may
+        // name an advisor, which the record check would read as "is this yours",
+        // quietly stopping a counter clerk booking one in for a colleague. That
+        // is a different rule from the one this dimension is for.
         if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, booking.RooftopId, cancellationToken))
         {
             return Result.Failure<AppointmentView>(AppointmentErrors.Forbidden);
@@ -265,7 +279,7 @@ public sealed class AppointmentService(
             return Result.Failure<AppointmentView>(AppointmentErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, booking.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, booking.RooftopId, booking.AdvisorUserId, cancellationToken))
         {
             return Result.Failure<AppointmentView>(AppointmentErrors.Forbidden);
         }
@@ -296,7 +310,7 @@ public sealed class AppointmentService(
             return Result.Failure<ArrivalResult>(AppointmentErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, booking.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, booking.RooftopId, booking.AdvisorUserId, cancellationToken))
         {
             return Result.Failure<ArrivalResult>(AppointmentErrors.Forbidden);
         }
@@ -371,7 +385,7 @@ public sealed class AppointmentService(
             return Result.Failure<AppointmentView>(AppointmentErrors.Forbidden);
         }
 
-        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, booking.RooftopId, cancellationToken))
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, WritePermission, booking.RooftopId, booking.AdvisorUserId, cancellationToken))
         {
             return Result.Failure<AppointmentView>(AppointmentErrors.Forbidden);
         }

@@ -65,6 +65,55 @@ public sealed class AuthorizationScopeTests
         scope.GrantsNothing.Should().BeFalse();
     }
 
+    // --- records, not only rooftops (ADR-030) --------------------------------
+
+    [Fact]
+    public void An_ordinary_scope_allows_any_record_at_a_rooftop_it_covers()
+    {
+        var scope = new AuthorizedScope(false, new HashSet<RooftopId> { Downtown }, false, Me);
+
+        scope.Allows(Downtown, Somebody).Should().BeTrue(
+            because: "without the narrowing, who a record belongs to is not a question");
+        scope.Allows(Downtown, null).Should().BeTrue();
+        scope.Allows(Uptown, Me).Should().BeFalse(
+            because: "the rooftop still decides first — owning it does not import it");
+    }
+
+    [Fact]
+    public void A_narrowed_scope_allows_only_records_it_is_named_on()
+    {
+        var scope = new AuthorizedScope(false, new HashSet<RooftopId> { Downtown }, true, Me);
+
+        scope.Allows(Downtown, Me).Should().BeTrue();
+        scope.Allows(Downtown, Somebody).Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_narrowed_scope_refuses_a_record_naming_nobody()
+    {
+        // The decision worth pinning: an unowned record is NOT everybody's. A
+        // capability that genuinely means the other thing — the enquiry pool —
+        // says so itself rather than having it assumed here for every record in
+        // the product.
+        var scope = new AuthorizedScope(false, new HashSet<RooftopId> { Downtown }, true, Me);
+
+        scope.Allows(Downtown, null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void The_narrowing_does_not_widen_an_organization_scope_into_one_rooftop()
+    {
+        // Own-records-only says WHICH records, never which lots. Somebody
+        // group-wide and narrowed still reaches their own work everywhere.
+        var scope = new AuthorizedScope(true, new HashSet<RooftopId>(), true, Me);
+
+        scope.Allows(Uptown, Me).Should().BeTrue();
+        scope.Allows(Uptown, Somebody).Should().BeFalse();
+    }
+
+    private static readonly Guid Me = Guid.NewGuid();
+    private static readonly Guid Somebody = Guid.NewGuid();
+
     [Fact]
     public void An_organization_assignment_covers_any_rooftop()
     {
