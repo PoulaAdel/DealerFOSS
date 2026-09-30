@@ -194,3 +194,40 @@ quietly emptied — permanent on the far side, which cannot tell a withheld figu
 from one never recorded. `ExportPackageAsync` now requires
 `Profitability.Read` organization-wide alongside `Migration.Export`. The type
 system caught what a reviewer reading the diff would not have.
+
+## Addendum — Accounting, and a question this ADR left open
+
+Written the same day, extending dimension 1 to `IAccounting`. Two things worth
+recording for whichever capability applies this next.
+
+**A withheld figure has to take everything derived from it with it, or the
+withholding is decorative.** `ProfitAndLoss.NetProfit` is `GrossProfit` less
+`TotalExpenses`. Nulling `GrossProfit` and leaving `NetProfit` a real number
+would hand gross straight back to a caller who also knows overheads — which
+this report shows regardless of `Profitability.Read`, because spending on rent
+is not the same secret as what a car made. The rule: find every field on the
+view that is *computed from* a withheld one, not only the ones this ADR named,
+and withhold those too. `DepartmentResult.Margin` is the same case one level
+down — it existed already, for a different reason (nothing sold), and the two
+reasons are indistinguishable on purpose, same as everywhere else this
+dimension applies.
+
+**The question this ADR posed without answering: what does a GROUP total do
+when the caller's grant does not cover every rooftop that fed it.** Unlike a
+list (one row per record, nulled row by row — `DepartmentResult` looked like
+this case and is not; see below), `LedgerPerformance.TotalCost` and
+`ProfitAndLoss.GrossProfit` are single figures for however many rooftops the
+query covers. Three answers were on the table: compute it from the rooftops
+the caller can see, return null, or refuse the request outright. Chose null,
+matching what dimension 1 already does elsewhere — computing a partial sum and
+presenting it as the total is the exact failure shape this project has hit
+repeatedly with columns that do not reach their own totals (the tax line, the
+trade-in, the products — three separate incidents on `docs/11`), and a group
+manager reading a partial gross as a whole one would not know to doubt it.
+Applied as one rule for the whole query rather than per department:
+`DepartmentResult` is not actually a per-rooftop row the way an inventory unit
+or a deal is — it is one named category (`Vehicles`, `Service`, …) already
+summed across whatever rooftops the query touched — so there is no row-level
+signal to null field-by-field, and the same organization-wide-or-covers-the-
+one-rooftop check that decides the totals decides every department's figures
+together.

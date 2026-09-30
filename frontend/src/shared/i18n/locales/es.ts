@@ -293,6 +293,7 @@ export const es: Catalogue = {
   'reports.totalOverheads': 'Total de gastos',
   'reports.netProfit': 'Beneficio neto',
   'reports.lastYear': 'Año pasado',
+  'reports.profitWithheld': 'Lo que ganó la tienda no es suyo para verlo.',
   'reports.sheetTitle': 'Lo que vale el negocio',
   'reports.sheetBalances': 'Cuadra: lo que el negocio tiene es igual a lo que debe más lo que vale.',
   'reports.sheetDoesNotBalance':
@@ -1036,6 +1037,8 @@ export const es: Catalogue = {
   'dash.withheldTrading':
     'El dinero de este mes no es suyo para verlo, así que las cifras de abajo son solo el stock.',
   'dash.withheldStock': 'El stock no es suyo para verlo, así que este mes muestra solo lo vendido.',
+  'dash.withheldGross':
+    'Lo que ganó la tienda no es suyo para verlo. Lo vendido aparece abajo, sin el dinero detrás.',
 
   'dash.booksOpen': 'La contabilidad está abierta, así que estas cifras todavía pueden moverse.',
   'dash.booksClosed': 'La contabilidad está cerrada. Estas son las cifras que se comunicaron.',

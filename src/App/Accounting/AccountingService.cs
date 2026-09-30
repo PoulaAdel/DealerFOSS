@@ -292,25 +292,32 @@ public sealed class AccountingService(
         decimal Spent(string code) =>
             totals.TryGetValue(code, out var t) ? t.Debits - t.Credits : 0m;
 
-        var departments = new List<DepartmentResult>
+        // Real numbers first, gated only in the objects handed back — Total*
+        // below sums THESE, never the masked DepartmentResult fields, or hiding
+        // one department would silently understate a total that is still shown.
+        var raw = new (string Name, decimal Revenue, decimal Cost)[]
         {
-            Department(
-                Departments.Vehicles,
+            (Departments.Vehicles,
                 Earned(AccountCodes.VehicleSalesRevenue)
                     + Earned(AccountCodes.FeeRevenue)
                     + Earned(AccountCodes.SalesDiscounts),
                 Spent(AccountCodes.CostOfVehicleSales)),
-            Department(
-                Departments.FinanceAndInsurance,
+            (Departments.FinanceAndInsurance,
                 Earned(AccountCodes.FinanceProductRevenue),
                 Spent(AccountCodes.CostOfFinanceProducts)),
-            Department(
-                Departments.Service,
+            (Departments.Service,
                 Earned(AccountCodes.LabourRevenue)
                     + Earned(AccountCodes.PartsRevenue)
                     + Earned(AccountCodes.SubletRevenue),
                 Spent(AccountCodes.CostOfPartsSales)),
         };
+
+        var profit = await ProfitScopeAsync(cancellationToken);
+        var mayShowProfit = MayShowProfit(profit, query);
+
+        var departments = raw
+            .Select(d => Department(d.Name, d.Revenue, d.Cost, mayShowProfit))
+            .ToList();
 
         var deliveries = await CountAsync(entries, JournalSource.DealDelivery, cancellationToken);
         var invoices = await CountAsync(entries, JournalSource.ServiceInvoice, cancellationToken);
@@ -320,12 +327,34 @@ public sealed class AccountingService(
             query.To,
             currency,
             departments,
-            departments.Sum(d => d.Revenue),
-            departments.Sum(d => d.Cost),
-            departments.Sum(d => d.Gross),
+            raw.Sum(d => d.Revenue),
+            mayShowProfit ? raw.Sum(d => d.Cost) : null,
+            mayShowProfit ? raw.Sum(d => d.Revenue - d.Cost) : null,
             deliveries,
             invoices));
     }
+
+    /// <summary>
+    /// Whether this caller sees cost and gross for what <paramref name="query"/>
+    /// covers (ADR-029). A single rooftop asks whether the scope reaches that one;
+    /// a group-wide query asks for the whole organization, rather than adding up
+    /// the lots the caller happens to cover — a partial total presented as the
+    /// whole one is the exact failure shape this project has hit repeatedly with
+    /// columns that do not reach their own totals, and there is no row here to
+    /// null field-by-field the way a stock list has one row per car.
+    /// </summary>
+    private static bool MayShowProfit(AuthorizedScope profit, BalanceQuery query) =>
+        query.RooftopId is { } rooftopId ? profit.Covers(rooftopId) : profit.IsOrganizationWide;
+
+    /// <summary>
+    /// Not <see cref="IAccessDirectory.IsAuthorizedAsync"/>: that writes a Denied
+    /// row to the audit trail on every refusal, and a salesperson opening a
+    /// dashboard they are allowed to open is not an incident — only the money is
+    /// withheld, not the page.
+    /// </summary>
+    private async Task<AuthorizedScope> ProfitScopeAsync(CancellationToken cancellationToken) =>
+        await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, Permissions.ProfitabilityRead, cancellationToken);
 
     public Task<Result<ProfitAndLoss>> ProfitAndLossAsync(
         BalanceQuery query,
@@ -607,20 +636,21 @@ public sealed class AccountingService(
         return Result.Success(await DescribeAsync(posted, cancellationToken));
     }
 
-    private static DepartmentResult Department(string name, decimal revenue, decimal cost)
+    private static DepartmentResult Department(string name, decimal revenue, decimal cost, bool mayShowProfit)
     {
         var gross = revenue - cost;
 
         return new DepartmentResult(
             name,
             revenue,
-            cost,
-            gross,
+            mayShowProfit ? cost : null,
+            mayShowProfit ? gross : null,
 
             // No revenue is not a zero margin. A department that has not sold
             // anything has no margin to state, and 0% would read as "we sold
-            // things and made nothing on them".
-            revenue == 0m ? null : gross / revenue);
+            // things and made nothing on them". Withheld reads the same as
+            // unrecorded here too (ADR-029) — both are just null.
+            revenue == 0m || !mayShowProfit ? null : gross / revenue);
     }
 
     /// <summary>

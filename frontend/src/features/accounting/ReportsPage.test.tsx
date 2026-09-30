@@ -16,6 +16,9 @@ import { render, screen } from '../../test/render';
 import { describe, expect, it } from 'vitest';
 import { ReportsPage } from './ReportsPage';
 import { mockApi, mockApiPending } from '../../test/setup';
+import { setCurrentTenant } from '../../shared/api';
+import { signedInAs } from '../../test/session';
+import { Permission } from '../../shared/permissions';
 import type { BalanceSheet, ProfitAndLoss } from '../../shared/contracts';
 
 const profit: ProfitAndLoss = {
@@ -62,9 +65,15 @@ const sheet: BalanceSheet = {
 };
 
 function mockBoth(overrides: Partial<BalanceSheet> = {}) {
+  // SessionProvider asks /auth/me only once a dealership is chosen.
+  setCurrentTenant('northgroup');
+
   mockApi({
     '/accounting/profit-and-loss': { ok: true, body: profit },
     '/accounting/balance-sheet': { ok: true, body: { ...sheet, ...overrides } },
+    // Signed in as somebody who may see gross (ADR-029) — without this the
+    // whole P&L panel correctly withholds itself, which is its own test below.
+    '/auth/me': signedInAs(),
   });
 }
 
@@ -122,6 +131,40 @@ describe('the month reports', () => {
 
     expect(await screen.findByText(/Earned since the beginning/)).toBeVisible();
     expect(screen.getByText(/no year has been closed yet/)).toBeVisible();
+  });
+
+  it('withholds the whole profit and loss from a caller without Profitability.Read', async () => {
+    // ADR-029. The record right is untouched — this caller may read the
+    // report, and the server still sends `profit`, but its cost/gross/net
+    // fields are null. A page with only a revenue column would not be a
+    // smaller P&L, it would be a confusing one, so the whole panel says it is
+    // withheld instead.
+    setCurrentTenant('northgroup');
+
+    mockApi({
+      '/accounting/profit-and-loss': {
+        ok: true,
+        body: {
+          ...profit,
+          departments: profit.departments.map((d) => ({ ...d, cost: null, gross: null, margin: null })),
+          totalCost: null,
+          grossProfit: null,
+          netProfit: null,
+        },
+      },
+      '/accounting/balance-sheet': { ok: true, body: sheet },
+      '/auth/me': signedInAs(
+        Object.values(Permission).filter((p) => p !== Permission.ProfitabilityRead),
+      ),
+    });
+    render(<ReportsPage />);
+
+    expect(await screen.findByText(/store made is not yours to see/)).toBeVisible();
+    expect(screen.queryByText(/Net profit/)).not.toBeInTheDocument();
+    expect(screen.queryByText('$60,000.00')).not.toBeInTheDocument();
+
+    // The balance sheet is a different report, unaffected.
+    expect(screen.getByText(/It balances/)).toBeVisible();
   });
 
   it('explains a refusal rather than showing an empty report', async () => {

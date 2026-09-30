@@ -29,6 +29,8 @@ import { ApiError, api } from '../../shared/api';
 import type { BalanceSheet, ProfitAndLoss } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { useSession } from '../../app/session';
+import { Permission } from '../../shared/permissions';
 
 type Load =
   | { kind: 'loading' }
@@ -125,7 +127,22 @@ type Money = (amount: number, currency: string) => string;
 
 function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: Money }) {
   const { t } = useI18n();
+  const { holds } = useSession();
   const priorYear = report.priorYear;
+
+  // ADR-029. Cost, gross and net profit are null for a caller without
+  // Profitability.Read at this report's rooftop(s), and the whole point of a
+  // P&L is those figures — a page with only a revenue column and everything
+  // else blank would not be a smaller report, it would be a confusing one.
+  // Withheld in words instead, the same rule every other screen follows.
+  if (!holds(Permission.ProfitabilityRead)) {
+    return (
+      <section className="panel" aria-label={t('reports.profitTitle')}>
+        <h2>{t('reports.profitTitle')}</h2>
+        <p className="notice" role="note">{t('reports.profitWithheld')}</p>
+      </section>
+    );
+  }
 
   return (
     <section className="panel" aria-label={t('reports.profitTitle')}>
@@ -149,8 +166,8 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
               <tr key={department.name}>
                 <td>{department.name}</td>
                 <td className="num">{money(department.revenue, report.currency)}</td>
-                <td className="num">{money(department.cost, report.currency)}</td>
-                <td className="num">{money(department.gross, report.currency)}</td>
+                <td className="num">{money(department.cost ?? 0, report.currency)}</td>
+                <td className="num">{money(department.gross ?? 0, report.currency)}</td>
                 {priorYear === null ? null : (
                   <td className="num muted">
                     {money(
@@ -166,10 +183,10 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
             <tr>
               <td className="strong">{t('reports.grossProfit')}</td>
               <td className="num">{money(report.totalRevenue, report.currency)}</td>
-              <td className="num">{money(report.totalCost, report.currency)}</td>
-              <td className="num strong">{money(report.grossProfit, report.currency)}</td>
+              <td className="num">{money(report.totalCost ?? 0, report.currency)}</td>
+              <td className="num strong">{money(report.grossProfit ?? 0, report.currency)}</td>
               {priorYear === null ? null : (
-                <td className="num strong muted">{money(priorYear.grossProfit, report.currency)}</td>
+                <td className="num strong muted">{money(priorYear.grossProfit ?? 0, report.currency)}</td>
               )}
             </tr>
           </tfoot>
@@ -209,10 +226,10 @@ function ProfitAndLossPanel({ report, money }: { report: ProfitAndLoss; money: M
         </table>
       </div>
 
-      <p className={report.netProfit < 0 ? 'error strong' : 'strong'}>
-        {t('reports.netProfit')}: {money(report.netProfit, report.currency)}
+      <p className={(report.netProfit ?? 0) < 0 ? 'error strong' : 'strong'}>
+        {t('reports.netProfit')}: {money(report.netProfit ?? 0, report.currency)}
         {priorYear === null ? null : (
-          <span className="muted"> ({t('reports.lastYear')}: {money(priorYear.netProfit, report.currency)})</span>
+          <span className="muted"> ({t('reports.lastYear')}: {money(priorYear.netProfit ?? 0, report.currency)})</span>
         )}
       </p>
     </section>

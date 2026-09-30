@@ -26,6 +26,8 @@ import { Link } from 'react-router';
 import { ApiError, api } from '../../shared/api';
 import { useHotkeys } from '../../shared/useHotkeys';
 import { departments } from '../../shared/contracts';
+import { Permission } from '../../shared/permissions';
+import { useSession } from '../../app/session';
 import type {
   DepartmentResult,
   LedgerPerformance,
@@ -342,6 +344,14 @@ function Trading({
   money: Intl.NumberFormat;
 }) {
   const { t } = useI18n();
+  const { holds } = useSession();
+
+  // ADR-029. The server sends null for cost, gross and margin to a caller
+  // without Profitability.Read, and null is also what an unsold department
+  // looks like — so this whole block of tiles, the per-car figure and the
+  // gross breakdown either draw together or not at all, the same "all three
+  // money rows together, or none of them" rule InventoryPage follows.
+  const showsProfit = holds(Permission.ProfitabilityRead);
 
   const find = (name: string, from: LedgerPerformance | null): DepartmentResult | undefined =>
     from?.departments.find((department) => department.name === name);
@@ -351,30 +361,41 @@ function Trading({
   // this screen invents — the total, and the abbreviation for the finance
   // department — are translated.
   const tiles = [
-    { label: t('dash.totalGross'), now: trading.totalGross, was: prior?.totalGross, lead: true },
+    {
+      label: t('dash.totalGross'),
+      now: trading.totalGross ?? 0,
+      was: prior?.totalGross ?? undefined,
+      lead: true,
+    },
     ...Object.values(departments).map((name) => ({
       label: name === departments.finance ? t('dash.financeShort') : name,
       now: find(name, trading)?.gross ?? 0,
-      was: find(name, prior)?.gross,
+      was: find(name, prior)?.gross ?? undefined,
       lead: false,
     })),
   ];
 
   return (
     <>
-      <section aria-label={t('dash.whatTheMonthMade')}>
-        <div className="tiles">
-          {tiles.map((tile) => (
-            <Tile
-              key={tile.label}
-              label={tile.label}
-              value={money.format(tile.now)}
-              lead={tile.lead}
-              change={change(tile.now, tile.was)}
-            />
-          ))}
-        </div>
-      </section>
+      {showsProfit ? (
+        <section aria-label={t('dash.whatTheMonthMade')}>
+          <div className="tiles">
+            {tiles.map((tile) => (
+              <Tile
+                key={tile.label}
+                label={tile.label}
+                value={money.format(tile.now)}
+                lead={tile.lead}
+                change={change(tile.now, tile.was)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : (
+        <p className="notice" role="note">
+          {t('dash.withheldGross')}
+        </p>
+      )}
 
       <div className="dash__split">
         <section className="panel panel--dash" aria-label={t('dash.whatSold')}>
@@ -395,78 +416,82 @@ function Trading({
                 <Was value={prior?.serviceInvoices} />
               </dd>
             </div>
-            <div>
-              <dt>{t('dash.grossPerCar')}</dt>
-              <dd>
-                {trading.vehiclesDelivered === 0 ? (
-                  // No cars is no average. "— front and back together" reads as
-                  // a qualifier on a figure that is not there.
-                  <>—</>
-                ) : (
-                  <>
-                    {money.format(
-                      ((find(departments.vehicles, trading)?.gross ?? 0) +
-                        (find(departments.finance, trading)?.gross ?? 0)) /
-                        trading.vehiclesDelivered,
-                    )}
-                    <span className="muted"> {t('dash.frontAndBack')}</span>
-                  </>
-                )}
-              </dd>
-            </div>
+            {showsProfit ? (
+              <div>
+                <dt>{t('dash.grossPerCar')}</dt>
+                <dd>
+                  {trading.vehiclesDelivered === 0 ? (
+                    // No cars is no average. "— front and back together" reads as
+                    // a qualifier on a figure that is not there.
+                    <>—</>
+                  ) : (
+                    <>
+                      {money.format(
+                        ((find(departments.vehicles, trading)?.gross ?? 0) +
+                          (find(departments.finance, trading)?.gross ?? 0)) /
+                          trading.vehiclesDelivered,
+                      )}
+                      <span className="muted"> {t('dash.frontAndBack')}</span>
+                    </>
+                  )}
+                </dd>
+              </div>
+            ) : null}
           </dl>
         </section>
 
-        <section className="panel panel--dash" aria-label={t('dash.whereGrossCameFrom')}>
-          <h2>{t('dash.whereGrossCameFrom')}</h2>
+        {showsProfit ? (
+          <section className="panel panel--dash" aria-label={t('dash.whereGrossCameFrom')}>
+            <h2>{t('dash.whereGrossCameFrom')}</h2>
 
-          <div className="scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">{t('dash.colDepartment')}</th>
-                  <th scope="col" className="num">
-                    Revenue
-                  </th>
-                  <th scope="col" className="num">
-                    Cost
-                  </th>
-                  <th scope="col" className="num">
-                    Gross
-                  </th>
-                  <th scope="col" className="num">
-                    {t('dash.colMargin')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {trading.departments.map((department) => (
-                  <tr key={department.name}>
-                    <td>{department.name}</td>
-                    <td className="num mono">{money.format(department.revenue)}</td>
-                    <td className="num mono">{money.format(department.cost)}</td>
-                    <td className="num mono strong">{money.format(department.gross)}</td>
-                    <td className="num mono">
-                      {/* Nothing sold is not a margin of zero. */}
-                      {department.margin === null
-                        ? '—'
-                        : `${Math.round(department.margin * 100)}%`}
-                    </td>
+            <div className="scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">{t('dash.colDepartment')}</th>
+                    <th scope="col" className="num">
+                      Revenue
+                    </th>
+                    <th scope="col" className="num">
+                      Cost
+                    </th>
+                    <th scope="col" className="num">
+                      Gross
+                    </th>
+                    <th scope="col" className="num">
+                      {t('dash.colMargin')}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td>{t('dash.total')}</td>
-                  <td className="num mono">{money.format(trading.totalRevenue)}</td>
-                  <td className="num mono">{money.format(trading.totalCost)}</td>
-                  <td className="num mono strong">{money.format(trading.totalGross)}</td>
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {trading.departments.map((department) => (
+                    <tr key={department.name}>
+                      <td>{department.name}</td>
+                      <td className="num mono">{money.format(department.revenue)}</td>
+                      <td className="num mono">{money.format(department.cost ?? 0)}</td>
+                      <td className="num mono strong">{money.format(department.gross ?? 0)}</td>
+                      <td className="num mono">
+                        {/* Nothing sold is not a margin of zero. */}
+                        {department.margin === null
+                          ? '—'
+                          : `${Math.round(department.margin * 100)}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>{t('dash.total')}</td>
+                    <td className="num mono">{money.format(trading.totalRevenue)}</td>
+                    <td className="num mono">{money.format(trading.totalCost ?? 0)}</td>
+                    <td className="num mono strong">{money.format(trading.totalGross ?? 0)}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </section>
+        ) : null}
       </div>
     </>
   );

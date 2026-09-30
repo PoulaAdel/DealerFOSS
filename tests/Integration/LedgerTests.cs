@@ -1150,6 +1150,90 @@ public sealed class LedgerTests(HostFixture fixture)
         codes.Should().NotContain("5500", because: "and the cost of F&I products");
     }
 
+    /// <summary>
+    /// ADR-029's first dimension, applied to the widest of the four contracts it
+    /// crosses. Accounting.Read is held by the Advisor and the Salesperson —
+    /// neither holds Profitability.Read, and before this both could read the
+    /// whole store's gross profit from a report while being refused a single
+    /// deal's gross on the deal itself. Cost, gross and net are withheld; revenue
+    /// is not, the same as the price agreed is not withheld from a salesperson on
+    /// a deal.
+    /// </summary>
+    [Fact]
+    public async Task Cost_and_gross_are_withheld_from_somebody_who_may_not_see_them()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var rooftopId = await RooftopIdAsync("NAG-01");
+
+        // The manager sees real figures, so the test cannot pass by the report
+        // simply having nothing in it.
+        using var seen = await SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/accounting/profit-and-loss?rooftopId={rooftopId}&from={today}&to={today}",
+            Manager);
+        var visible = await seen.Content.ReadFromJsonAsync<JsonElement>();
+        visible.GetProperty("totalCost").ValueKind.Should().Be(JsonValueKind.Number);
+
+        using var performance = await SendAsync(
+            HttpMethod.Get, $"/api/v1/accounting/performance?rooftopId={rooftopId}", Advisor);
+        performance.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var perf = await performance.Content.ReadFromJsonAsync<JsonElement>();
+        perf.GetProperty("totalRevenue").ValueKind.Should().Be(JsonValueKind.Number,
+            because: "what the store sold is not the same secret as what it made");
+        perf.GetProperty("totalCost").ValueKind.Should().Be(JsonValueKind.Null);
+        perf.GetProperty("totalGross").ValueKind.Should().Be(JsonValueKind.Null);
+
+        foreach (var department in perf.GetProperty("departments").EnumerateArray())
+        {
+            department.GetProperty("revenue").ValueKind.Should().Be(JsonValueKind.Number);
+            department.GetProperty("cost").ValueKind.Should().Be(JsonValueKind.Null);
+            department.GetProperty("gross").ValueKind.Should().Be(JsonValueKind.Null);
+            department.GetProperty("margin").ValueKind.Should().Be(JsonValueKind.Null);
+        }
+
+        using var response = await SendAsync(
+            HttpMethod.Get,
+            $"/api/v1/accounting/profit-and-loss?rooftopId={rooftopId}&from={today}&to={today}",
+            Advisor);
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "the report is still readable; this is a field right, not a record right");
+
+        var report = await response.Content.ReadFromJsonAsync<JsonElement>();
+        report.GetProperty("totalRevenue").ValueKind.Should().Be(JsonValueKind.Number);
+        report.GetProperty("totalCost").ValueKind.Should().Be(JsonValueKind.Null);
+        report.GetProperty("grossProfit").ValueKind.Should().Be(JsonValueKind.Null);
+        report.GetProperty("netProfit").ValueKind.Should().Be(JsonValueKind.Null,
+            because: "net is gross less overheads, and a net profit computed from a withheld gross " +
+                "would hand it straight back arithmetically");
+
+        // Overheads are a different secret from what a car made, and are not
+        // withheld by this permission.
+        report.GetProperty("totalExpenses").ValueKind.Should().Be(JsonValueKind.Number);
+    }
+
+    /// <summary>
+    /// The same withholding on the other shape of query: no rooftopId asks for
+    /// everything the caller's READ scope covers, rather than one location. A
+    /// group total is refused outright here rather than computed from whatever
+    /// the caller happens to see — a partial sum presented as the whole one is
+    /// the failure shape this project has hit repeatedly with columns that do
+    /// not reach their own totals, and there is no genuinely PARTIAL grant to
+    /// test against among the seeded roles: Profitability.Read is all or nothing
+    /// per caller today, so this and the rooftop-scoped test above are the two
+    /// branches of the same rule, not two different outcomes.
+    /// </summary>
+    [Fact]
+    public async Task A_group_wide_query_also_gets_no_total_rather_than_one_computed_from_what_is_visible()
+    {
+        using var response = await SendAsync(HttpMethod.Get, "/api/v1/accounting/performance", Advisor);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var perf = await response.Content.ReadFromJsonAsync<JsonElement>();
+        perf.GetProperty("totalCost").ValueKind.Should().Be(JsonValueKind.Null);
+        perf.GetProperty("totalGross").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
     [Fact]
     public async Task A_balance_sheet_balances()
     {

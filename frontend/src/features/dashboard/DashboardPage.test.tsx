@@ -27,6 +27,8 @@ import { MemoryRouter } from 'react-router';
 import { DashboardPage } from './DashboardPage';
 import { apiCalls, mockApi, mockApiPending } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
+import { signedInAs } from '../../test/session';
+import { Permission } from '../../shared/permissions';
 import type { LedgerPerformance, MonthInReview } from '../../shared/contracts';
 
 function trading(overrides: Partial<LedgerPerformance> = {}): LedgerPerformance {
@@ -88,6 +90,12 @@ const august: MonthInReview = {
 
 const noOrganization = { '/organization': { ok: true as const, body: { legalEntities: [] } } };
 
+// Signed in as somebody who may see gross (ADR-029). Spread into every test
+// that reads the trading tiles or the "where the gross came from" table — a
+// screen that merely rendered the null the server sends without this right
+// would say the month made nothing, which is the next test's own subject.
+const signedIn = { ...noOrganization, '/auth/me': signedInAs() };
+
 function renderDashboard() {
   setCurrentTenant('northgroup');
 
@@ -107,7 +115,7 @@ describe('how did we do this month', () => {
   });
 
   it('leads with the total gross and how it compares with last month', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
 
     // Scoped to the tiles: the same figure is in the table's total row, and a
@@ -117,7 +125,7 @@ describe('how did we do this month', () => {
   });
 
   it('reports the car and the warranty as two businesses', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
 
     // The split a dealer principal reads first. One combined figure would make
@@ -129,7 +137,7 @@ describe('how did we do this month', () => {
   });
 
   it('counts what sold and what it averaged', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
 
     const sold = await screen.findByLabelText('What sold');
@@ -141,7 +149,7 @@ describe('how did we do this month', () => {
   });
 
   it('says whether the figures can still move', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
 
     expect(await screen.findByText(/books are open, so these figures can still move/))
@@ -154,7 +162,7 @@ describe('how did we do this month', () => {
         ok: true,
         body: { ...august, books: 'Closed', closedAt: '2026-09-04T16:00:00Z' },
       },
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -176,7 +184,7 @@ describe('how did we do this month', () => {
           }),
         },
       },
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -191,7 +199,7 @@ describe('how did we do this month', () => {
         ok: true,
         body: { ...august, priorMonth: trading({ totalGross: 0 }) },
       },
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -203,7 +211,7 @@ describe('how did we do this month', () => {
   it('offers no comparison at all when there is no previous month to read', async () => {
     mockApi({
       '/reporting/month': { ok: true, body: { ...august, priorMonth: null } },
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -213,7 +221,7 @@ describe('how did we do this month', () => {
 
 describe('what is standing on the lot', () => {
   it('states every band as a number and not only as a bar', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
 
     const stock = await screen.findByLabelText('How old the stock is');
@@ -225,7 +233,7 @@ describe('what is standing on the lot', () => {
   });
 
   it('names the oldest cars and links straight to them', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
 
     const link = await screen.findByRole('link', { name: 'NAG-1042' });
@@ -244,7 +252,7 @@ describe('what is standing on the lot', () => {
           },
         },
       },
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -257,7 +265,7 @@ describe('what is standing on the lot', () => {
         ok: true,
         body: { ...august, stock: { asOf: '2026-08-07', units: 0, bands: [], oldest: [] } },
       },
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -274,7 +282,7 @@ describe('what the reader is not allowed to see', () => {
         ok: true,
         body: { ...august, trading: null, priorMonth: null, withheld: ['Trading'] },
       },
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -290,7 +298,7 @@ describe('what the reader is not allowed to see', () => {
         code: 'reporting.forbidden',
         detail: 'No.',
       },
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -303,7 +311,7 @@ describe('what the reader is not allowed to see', () => {
         { ok: false, status: 500, code: 'server', detail: 'Something broke.' },
         { ok: true, body: august },
       ],
-      ...noOrganization,
+      ...signedIn,
     });
     renderDashboard();
 
@@ -311,11 +319,51 @@ describe('what the reader is not allowed to see', () => {
 
     expect(within(await tiles()).getByText('$57,000')).toBeVisible();
   });
+
+  it('shows a salesperson what sold, not what the store made on it', async () => {
+    // ADR-029. The record right (`withheld`) is untouched here — this caller
+    // may read the month, and the server still sends `trading`, but its
+    // cost/gross/margin fields are all null: the field right. A screen that
+    // rendered the null would say the month made nothing, so the whole
+    // gross-shaped block has to say it is withheld instead.
+    mockApi({
+      '/reporting/month': {
+        ok: true,
+        body: {
+          ...august,
+          trading: trading({
+            totalCost: null,
+            totalGross: null,
+            departments: august.trading!.departments.map((d) => ({
+              ...d,
+              cost: null,
+              gross: null,
+              margin: null,
+            })),
+          }),
+        },
+      },
+      ...noOrganization,
+      '/auth/me': signedInAs(
+        Object.values(Permission).filter((p) => p !== Permission.ProfitabilityRead),
+      ),
+    });
+    renderDashboard();
+
+    expect(await screen.findByText(/store made is not yours to see/)).toBeVisible();
+    expect(screen.queryByLabelText('What the month made')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Where the gross came from')).not.toBeInTheDocument();
+    expect(screen.queryByText('$0')).not.toBeInTheDocument();
+
+    // What sold is not the same secret, and stays.
+    const sold = await screen.findByLabelText('What sold');
+    expect(within(sold).getByText('12')).toBeVisible();
+  });
 });
 
 describe('moving between months', () => {
   it('asks the server for the month before without leaving the page', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
     await tiles();
 
@@ -329,7 +377,7 @@ describe('moving between months', () => {
   });
 
   it('moves month from the keyboard, and back again', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
     await tiles();
 
@@ -348,7 +396,7 @@ describe('moving between months', () => {
   it('will not step past this month from the keyboard either', async () => {
     // The button for it is disabled; a shortcut that ignored that would be a
     // second, quieter set of rules.
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
     await tiles();
 
@@ -359,7 +407,7 @@ describe('moving between months', () => {
   });
 
   it('will not offer a month that has not happened', async () => {
-    mockApi({ '/reporting/month': { ok: true, body: august }, ...noOrganization });
+    mockApi({ '/reporting/month': { ok: true, body: august }, ...signedIn });
     renderDashboard();
     await tiles();
 

@@ -261,12 +261,21 @@ export interface TrialBalance {
 
 // --- how did we do this month? ---
 
-/** One department's revenue, cost, and the difference. Margin is null when nothing sold. */
+/**
+ * One department's revenue, cost, and the difference.
+ *
+ * `cost`, `gross` and `margin` are null for a caller without
+ * `Profitability.Read` at the rooftop(s) this covers (ADR-029) — the same
+ * answer as nothing having sold. Do not try to tell the two apart from the
+ * value: ask `holds('Profitability.Read')` and leave the columns out rather
+ * than rendering the null, the same rule as everywhere else this permission
+ * applies.
+ */
 export interface DepartmentResult {
   name: string;
   revenue: number;
-  cost: number;
-  gross: number;
+  cost: number | null;
+  gross: number | null;
   margin: number | null;
 }
 
@@ -283,8 +292,10 @@ export interface LedgerPerformance {
   currency: string;
   departments: DepartmentResult[];
   totalRevenue: number;
-  totalCost: number;
-  totalGross: number;
+  /** Null under the same rule as {@link DepartmentResult.cost} (ADR-029). */
+  totalCost: number | null;
+  /** Null under the same rule as {@link DepartmentResult.cost} (ADR-029). */
+  totalGross: number | null;
   /** Cars that left the lot, less any delivery reversed in the same period. */
   vehiclesDelivered: number;
   serviceInvoices: number;
@@ -1470,11 +1481,14 @@ export interface ProfitAndLoss {
   currency: string;
   departments: DepartmentResult[];
   totalRevenue: number;
-  totalCost: number;
-  grossProfit: number;
+  /** Null for a caller without `Profitability.Read` here (ADR-029). */
+  totalCost: number | null;
+  /** Null under the same rule as {@link totalCost}. */
+  grossProfit: number | null;
   expenses: ExpenseLine[];
   totalExpenses: number;
-  netProfit: number;
+  /** Null whenever {@link grossProfit} is — see ADR-029. */
+  netProfit: number | null;
   /** The same report, one year earlier. Null when there is nothing to compare against. */
   priorYear: ProfitAndLoss | null;
 }

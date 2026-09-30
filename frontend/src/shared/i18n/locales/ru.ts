@@ -291,6 +291,7 @@ export const ru: Catalogue = {
   'reports.totalOverheads': 'Итого расходов',
   'reports.netProfit': 'Чистая прибыль',
   'reports.lastYear': 'Прошлый год',
+  'reports.profitWithheld': 'То, что заработал магазин, вам недоступно.',
   'reports.sheetTitle': 'Сколько стоит бизнес',
   'reports.sheetBalances': 'Сходится: то, чем бизнес владеет, равно тому, что он должен, плюс его стоимость.',
   'reports.sheetDoesNotBalance':
@@ -1063,6 +1064,8 @@ export const ru: Catalogue = {
   'dash.withheldTrading':
     'Суммы за этот месяц вам недоступны, поэтому ниже показаны только данные по складу.',
   'dash.withheldStock': 'Склад вам недоступен, поэтому за месяц показано только проданное.',
+  'dash.withheldGross':
+    'То, что заработал магазин, вам недоступно. Ниже показано, что продано, без стоящих за этим денег.',
 
   'dash.booksOpen': 'Период открыт, поэтому эти цифры ещё могут измениться.',
   'dash.booksClosed': 'Период закрыт. Это те цифры, которые были сданы.',

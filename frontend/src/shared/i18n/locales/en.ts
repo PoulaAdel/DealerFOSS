@@ -304,6 +304,7 @@ export const en = {
   'reports.totalOverheads': 'Total overheads',
   'reports.netProfit': 'Net profit',
   'reports.lastYear': 'Last year',
+  'reports.profitWithheld': 'What the store made is not yours to see.',
   'reports.sheetTitle': 'What the business is worth',
   'reports.sheetBalances': 'It balances: what the business owns equals what it owes plus what it is worth.',
   'reports.sheetDoesNotBalance':
@@ -1057,6 +1058,8 @@ export const en = {
   'dash.withheldTrading':
     'The money on this month is not yours to see, so the figures below are only the stock.',
   'dash.withheldStock': 'Stock is not yours to see, so this month shows only what was sold.',
+  'dash.withheldGross':
+    'What the store made is not yours to see. What sold is below, without the money behind it.',
 
   'dash.booksOpen': 'The books are open, so these figures can still move.',
   'dash.booksClosed': 'The books are closed. These are the figures that were reported.',

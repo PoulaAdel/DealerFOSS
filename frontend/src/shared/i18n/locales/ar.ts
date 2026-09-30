@@ -302,6 +302,7 @@ export const ar: Catalogue = {
   'reports.totalOverheads': 'إجمالي المصروفات',
   'reports.netProfit': 'صافي الربح',
   'reports.lastYear': 'العام الماضي',
+  'reports.profitWithheld': 'ما ربحته الوكالة ليس من صلاحيتك.',
   'reports.sheetTitle': 'كم يساوي النشاط',
   'reports.sheetBalances': 'متوازنة: ما يملكه النشاط يساوي ما عليه زائد قيمته.',
   'reports.sheetDoesNotBalance':
@@ -1082,6 +1083,7 @@ export const ar: Catalogue = {
   'dash.withheldTrading':
     'مبالغ هذا الشهر ليست من صلاحيتك، لذا فالأرقام أدناه تخص المخزون فقط.',
   'dash.withheldStock': 'المخزون ليس من صلاحيتك، لذا يعرض هذا الشهر ما بيع فقط.',
+  'dash.withheldGross': 'ما ربحته الوكالة ليس من صلاحيتك. ما بيع أدناه، من دون المال وراءه.',
 
   'dash.booksOpen': 'الدفاتر مفتوحة، لذا قد تتغيَّر هذه الأرقام بعد.',
   'dash.booksClosed': 'الدفاتر مقفلة. هذه هي الأرقام التي أُبلغ عنها.',

@@ -587,8 +587,17 @@ public sealed record LedgerPerformance(
     string Currency,
     IReadOnlyList<DepartmentResult> Departments,
     decimal TotalRevenue,
-    decimal TotalCost,
-    decimal TotalGross,
+
+    /// <summary>
+    /// Null for a caller without <c>Profitability.Read</c> at the rooftop(s) this
+    /// report covers (ADR-029) — the same answer as a figure never recorded, on
+    /// purpose. Revenue above is untouched: what the store sold is not the same
+    /// secret as what it made on selling it.
+    /// </summary>
+    decimal? TotalCost,
+
+    /// <summary>Null under the same rule as <see cref="TotalCost"/>.</summary>
+    decimal? TotalGross,
 
     /// <summary>
     /// Cars that left the lot, counted from the deliveries posted in the period.
@@ -608,13 +617,20 @@ public sealed record LedgerPerformance(
 public sealed record DepartmentResult(
     string Name,
     decimal Revenue,
-    decimal Cost,
-    decimal Gross,
+
+    /// <summary>Null for a caller without <c>Profitability.Read</c> here (ADR-029).</summary>
+    decimal? Cost,
+
+    /// <summary>Null under the same rule as <see cref="Cost"/>.</summary>
+    decimal? Gross,
 
     /// <summary>
     /// Gross as a share of revenue, 0 to 1. Null when nothing was sold — a
     /// department with no revenue has no margin, and printing 0% would say
-    /// something false about a month that simply has not started.
+    /// something false about a month that simply has not started — and null for
+    /// the same withholding reason as <see cref="Gross"/> (ADR-029). The two
+    /// reasons are indistinguishable on purpose, the same as everywhere else this
+    /// rule applies: a caller who may not see it gets one answer either way.
     /// </summary>
     decimal? Margin);
 
@@ -670,19 +686,27 @@ public sealed record ProfitAndLoss(
     string Currency,
     IReadOnlyList<DepartmentResult> Departments,
     decimal TotalRevenue,
-    decimal TotalCost,
 
-    /// <summary>Revenue less what the things sold cost. The dealer's daily number.</summary>
-    decimal GrossProfit,
+    /// <summary>Null for a caller without <c>Profitability.Read</c> here (ADR-029).</summary>
+    decimal? TotalCost,
+
+    /// <summary>
+    /// Revenue less what the things sold cost. The dealer's daily number, and
+    /// null under the same rule as <see cref="TotalCost"/>.
+    /// </summary>
+    decimal? GrossProfit,
 
     IReadOnlyList<ExpenseLine> Expenses,
     decimal TotalExpenses,
 
     /// <summary>
     /// Gross less overheads. The figure this system could not produce at all
-    /// before 2026-09-11, because it had nowhere to record an overhead.
+    /// before 2026-09-11, because it had nowhere to record an overhead. Null
+    /// whenever <see cref="GrossProfit"/> is — overheads alone are not the
+    /// withheld secret, but a net profit computed from a withheld gross would
+    /// hand it straight back arithmetically, so it goes with it.
     /// </summary>
-    decimal NetProfit,
+    decimal? NetProfit,
 
     /// <summary>
     /// The same report, one year earlier, so a dealer reads this year beside last

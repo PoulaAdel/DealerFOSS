@@ -288,6 +288,7 @@ export const de: Catalogue = {
   'reports.totalOverheads': 'Summe der Kosten',
   'reports.netProfit': 'Ergebnis',
   'reports.lastYear': 'Vorjahr',
+  'reports.profitWithheld': 'Was das Autohaus verdient hat, ist für Sie nicht einsehbar.',
   'reports.sheetTitle': 'Was das Unternehmen wert ist',
   'reports.sheetBalances': 'Es stimmt: Was das Unternehmen besitzt entspricht dem, was es schuldet, plus seinem Wert.',
   'reports.sheetDoesNotBalance':
@@ -1028,6 +1029,8 @@ export const de: Catalogue = {
     'Die Beträge dieses Monats sind für Sie nicht einsehbar, die Zahlen unten betreffen daher nur den Bestand.',
   'dash.withheldStock':
     'Der Bestand ist für Sie nicht einsehbar, dieser Monat zeigt daher nur das Verkaufte.',
+  'dash.withheldGross':
+    'Was das Autohaus verdient hat, ist für Sie nicht einsehbar. Das Verkaufte steht unten, ohne das Geld dahinter.',
 
   'dash.booksOpen': 'Die Bücher sind offen, diese Zahlen können sich also noch ändern.',
   'dash.booksClosed': 'Die Bücher sind abgeschlossen. Dies sind die gemeldeten Zahlen.',
