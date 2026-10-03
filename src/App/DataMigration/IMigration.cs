@@ -196,4 +196,23 @@ internal static class MigrationErrors
     public static Error PackageIsNewer(int found, int supported) => Error.Validation(
         "migration.package_is_newer",
         $"That package is version {found} and this installation reads up to {supported}. Upgrade before importing it.");
+
+    /// <summary>
+    /// A rooftop holds more of one kind than a package carries.
+    ///
+    /// Refused rather than truncated, and this is the whole reason the error
+    /// exists. The exporter pages to a ceiling and already reads the rooftop's
+    /// true count on every page, so a short package was never an unavoidable
+    /// limitation — it was this system losing records silently on the one
+    /// operation that exists to guarantee a dealership can leave with all of
+    /// them. A refusal naming the number is something a person acts on; a file
+    /// missing five thousand customers is discovered by the dealership, later,
+    /// somewhere else.
+    /// </summary>
+    public static Error TooManyToPackage(string kind, int held, int limit) => Error.Validation(
+        "migration.too_many_to_package",
+        $"This dealership holds {held} {kind} and one package carries at most {limit}. "
+        + "Nothing was exported, because a package missing records is worse than no package. "
+        + "Take a database backup instead (deploy/backup.ps1): it carries everything, "
+        + "and its restore is rehearsed.");
 }

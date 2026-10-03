@@ -23,6 +23,16 @@
 //   dealership large enough to notice ever appears, add keyset paging to the
 //   list calls rather than a second read path.
 //
+//   A SHORT PACKAGE IS A REFUSAL, NEVER A SUCCESS. Each paging loop below is
+//   bounded by MaxPerKind and also reads the rooftop's true count on every
+//   page, so "there were more than I took" is always knowable here. It was not
+//   checked until 2026-10-03, and the cost of that was the worst kind of bug
+//   this file could have: a dealership exercising its right to leave with its
+//   records, receiving a file quietly missing some of them, and finding out
+//   somewhere else. A round trip cannot catch it either — the existing one
+//   compares the package against itself, so a truncated package round-trips
+//   perfectly. The test that guards this compares against the SOURCE count.
+//
 //   THE PACKAGE IS CLOSED OVER ITS REFERENCES. Units, deals and jobs are
 //   collected first; the customers and vehicles they point at are fetched
 //   afterwards, by id, from the set that was actually referenced. So an
@@ -45,7 +55,8 @@ internal sealed class PackageExporter(
     IVehicles vehicles,
     IInventory inventory,
     IDeals deals,
-    IRepairOrders repairOrders)
+    IRepairOrders repairOrders,
+    int maxPerKind = PackageExporter.MaxPerKind)
 {
     /// <summary>
     /// One list request's worth. Large enough that a real lot comes back in one
@@ -57,8 +68,19 @@ internal sealed class PackageExporter(
     /// The most of any one kind a package carries. A lot with more records than
     /// this is not a migration problem, it is a backup problem, and backup is
     /// deploy/backup.ps1 rather than this.
+    ///
+    /// Exceeding it is REFUSED, not truncated. Until 2026-10-03 each loop below
+    /// simply stopped at this bound and returned <c>Result.Success</c> with a
+    /// short list, so a rooftop holding 25,000 repair orders exported 20,000 of
+    /// them and the package said nothing about the other 5,000.
+    ///
+    /// It is the default of a constructor parameter rather than used directly,
+    /// so a test can set a ceiling of two and prove the refusal with three
+    /// records instead of twenty thousand and one. A guard nobody can afford to
+    /// exercise is a guard nobody knows works — which is how this one shipped
+    /// broken. Production passes nothing and gets this number.
     /// </summary>
-    private const int MaxPerKind = 20_000;
+    internal const int MaxPerKind = 20_000;
 
     private readonly IOrganization _organization = organization;
     private readonly ICustomers _customers = customers;
@@ -66,6 +88,7 @@ internal sealed class PackageExporter(
     private readonly IInventory _inventory = inventory;
     private readonly IDeals _deals = deals;
     private readonly IRepairOrders _repairOrders = repairOrders;
+    private readonly int _maxPerKind = maxPerKind;
 
     public async Task<Result<RecordPackage>> BuildAsync(
         RooftopId rooftopId,
@@ -144,11 +167,19 @@ internal sealed class PackageExporter(
         CancellationToken cancellationToken)
     {
         var packaged = new List<PackagedUnit>();
+        var held = 0;
 
-        for (var offset = 0; offset < MaxPerKind; offset += PageSize)
+        var offset = 0;
+
+        while (offset < _maxPerKind)
         {
+            // Clamped, so the ceiling is the number it says rather than that
+            // number rounded up to a page. It also lets a test set a ceiling of
+            // two and reach it with three records.
+            var limit = Math.Min(PageSize, _maxPerKind - offset);
+
             var page = await _inventory.ListAsync(
-                new InventoryQuery(RooftopId: rooftopId, Limit: PageSize, Offset: offset),
+                new InventoryQuery(RooftopId: rooftopId, Limit: limit, Offset: offset),
                 cancellationToken);
 
             if (page.IsFailure)
@@ -179,10 +210,21 @@ internal sealed class PackageExporter(
                     unit.Value.AcquiredOn));
             }
 
-            if (packaged.Count >= page.Value.Total)
+            held = page.Value.Total;
+            offset += limit;
+
+            if (packaged.Count >= held)
             {
                 break;
             }
+        }
+
+        // The loop can also end by exhausting the ceiling, and that exit used to
+        // return Success with a short list. See MigrationErrors.TooManyToPackage.
+        if (packaged.Count < held)
+        {
+            return Result.Failure<List<PackagedUnit>>(
+                MigrationErrors.TooManyToPackage("vehicles in stock", held, _maxPerKind));
         }
 
         return Result.Success(packaged);
@@ -193,11 +235,16 @@ internal sealed class PackageExporter(
         CancellationToken cancellationToken)
     {
         var packaged = new List<PackagedDeal>();
+        var held = 0;
 
-        for (var offset = 0; offset < MaxPerKind; offset += PageSize)
+        var offset = 0;
+
+        while (offset < _maxPerKind)
         {
+            var limit = Math.Min(PageSize, _maxPerKind - offset);
+
             var page = await _deals.ListAsync(
-                new DealQuery(RooftopId: rooftopId, Limit: PageSize, Offset: offset),
+                new DealQuery(RooftopId: rooftopId, Limit: limit, Offset: offset),
                 cancellationToken);
 
             if (page.IsFailure)
@@ -265,10 +312,19 @@ internal sealed class PackageExporter(
                     d.AmountDue));
             }
 
-            if (packaged.Count >= page.Value.Total)
+            held = page.Value.Total;
+            offset += limit;
+
+            if (packaged.Count >= held)
             {
                 break;
             }
+        }
+
+        if (packaged.Count < held)
+        {
+            return Result.Failure<List<PackagedDeal>>(
+                MigrationErrors.TooManyToPackage("deals", held, _maxPerKind));
         }
 
         return Result.Success(packaged);
@@ -279,11 +335,16 @@ internal sealed class PackageExporter(
         CancellationToken cancellationToken)
     {
         var packaged = new List<PackagedRepairOrder>();
+        var held = 0;
 
-        for (var offset = 0; offset < MaxPerKind; offset += PageSize)
+        var offset = 0;
+
+        while (offset < _maxPerKind)
         {
+            var limit = Math.Min(PageSize, _maxPerKind - offset);
+
             var page = await _repairOrders.ListAsync(
-                new RepairOrderQuery(RooftopId: rooftopId, Limit: PageSize, Offset: offset),
+                new RepairOrderQuery(RooftopId: rooftopId, Limit: limit, Offset: offset),
                 cancellationToken);
 
             if (page.IsFailure)
@@ -322,10 +383,22 @@ internal sealed class PackageExporter(
                     j.AmountDue));
             }
 
-            if (packaged.Count >= page.Value.Total)
+            held = page.Value.Total;
+            offset += limit;
+
+            if (packaged.Count >= held)
             {
                 break;
             }
+        }
+
+        // Repair orders reach the ceiling first in practice: a busy shop writes
+        // five to ten thousand a year, so twenty thousand arrives in two to four
+        // years while customers are still well under it.
+        if (packaged.Count < held)
+        {
+            return Result.Failure<List<PackagedRepairOrder>>(
+                MigrationErrors.TooManyToPackage("repair orders", held, _maxPerKind));
         }
 
         return Result.Success(packaged);

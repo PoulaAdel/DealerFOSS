@@ -35,7 +35,17 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using DealerFOSS.App;
+using DealerFOSS.Core;
+using DealerFOSS.Customers;
+using DealerFOSS.DataMigration;
+using DealerFOSS.Deals;
+using DealerFOSS.Inventory;
+using DealerFOSS.Organization;
+using DealerFOSS.RepairOrders;
+using DealerFOSS.Tenancy;
+using DealerFOSS.Vehicles;
 
 namespace DealerFOSS.IntegrationTests;
 
@@ -555,6 +565,76 @@ public sealed class PackageTests(HostFixture fixture)
 
         return await response.Content.ReadFromJsonAsync<JsonElement>();
     }
+
+    /// <summary>
+    /// The guard that did not exist until 2026-10-03. Until then every paging
+    /// loop in <c>PackageExporter</c> stopped at its ceiling and returned
+    /// <c>Result.Success</c> with a short list, so a rooftop holding more
+    /// records than a package carries exported some of them and the file said
+    /// nothing about the rest. A dealership exercising its right to leave with
+    /// its records would have found out somewhere else, later.
+    ///
+    /// Note what this test does NOT do, because it is the reason the bug lived:
+    /// it does not compare the package against itself. Every other test in this
+    /// file round-trips, and a truncated package round-trips perfectly — the
+    /// far side receives exactly what was sent and agrees with all of it. This
+    /// asserts against the ROOFTOP'S OWN count, which is the only thing that
+    /// can see records that never left.
+    ///
+    /// The ceiling is injected as one rather than seeding twenty thousand and
+    /// one records. The number was never the point; the exit path was, and a
+    /// guard too expensive to exercise is a guard nobody knows works.
+    /// </summary>
+    [Fact]
+    public async Task A_rooftop_holding_more_than_a_package_carries_is_refused_not_truncated()
+    {
+        await ASoldCarAndAJobAsync();
+
+        var rooftop = new RooftopId(await RooftopAsync(From, "CM-01"));
+
+        await using var scope = await _fixture.Services
+            .GetRequiredService<ITenantScopeFactory>()
+            .OpenAsync(
+                JobContext.RequestedBy(
+                    From, DevelopmentSeeder.DevUsers.OrganizationWide, "export ceiling test"),
+                CancellationToken.None)
+            ?? throw new InvalidOperationException(
+                $"{From} did not resolve, so the host is not seeded as this test expects.");
+
+        var stock = await scope.Services.GetRequiredService<IInventory>()
+            .ListAsync(new InventoryQuery(RooftopId: rooftop, Limit: 1), CancellationToken.None);
+
+        var held = stock.Value.Total;
+        held.Should().BeGreaterThan(
+            1, "the rooftop needs more records than the ceiling or this proves nothing");
+
+        var refused = await Exporter(scope, maxPerKind: 1)
+            .BuildAsync(rooftop, DateTimeOffset.UtcNow, CancellationToken.None);
+
+        refused.IsFailure.Should().BeTrue("a short package is a refusal, never a success");
+        refused.Error.Code.Should().Be("migration.too_many_to_package");
+        refused.Error.Message.Should().Contain(
+            held.ToString(CultureInfo.InvariantCulture),
+            "the refusal has to name the real count, or nobody can act on it");
+
+        // The control, and it matters: a guard that refused everything would
+        // satisfy every assertion above. Same rooftop, same code path, real
+        // ceiling - and the package still carries all of the stock.
+        var allowed = await Exporter(scope, PackageExporter.MaxPerKind)
+            .BuildAsync(rooftop, DateTimeOffset.UtcNow, CancellationToken.None);
+
+        allowed.IsSuccess.Should().BeTrue();
+        allowed.Value.InventoryUnits.Should().HaveCount(held);
+    }
+
+    private static PackageExporter Exporter(TenantScope scope, int maxPerKind) => new(
+        scope.Services.GetRequiredService<IOrganization>(),
+        scope.Services.GetRequiredService<ICustomers>(),
+        scope.Services.GetRequiredService<IVehicles>(),
+        scope.Services.GetRequiredService<IInventory>(),
+        scope.Services.GetRequiredService<IDeals>(),
+        scope.Services.GetRequiredService<IRepairOrders>(),
+        maxPerKind);
 
     private async Task<JsonElement> MoveAsync() => await ApplyAsync(await ExportAsync());
 
