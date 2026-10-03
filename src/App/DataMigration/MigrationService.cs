@@ -72,6 +72,26 @@ public sealed class MigrationService(
     /// </summary>
     private const int MaxRows = 20_000;
 
+    /// <summary>
+    /// The most records one records-package request applies, across every kind.
+    ///
+    /// Far below <see cref="MaxRows"/> on purpose, and the gap is not an
+    /// oversight: a CSV import is a QUEUED JOB that ImportWorker applies in the
+    /// background, so twenty thousand rows cost a person nothing but patience.
+    /// A package import happens inside the request. Measured 2026-10-03, 2,000
+    /// records took 29.5 seconds, which already sits inside one proxy timeout
+    /// rather than comfortably below it, and 8,000 took four minutes.
+    ///
+    /// KNOWN TENSION, NOT RESOLVED HERE: PackageExporter will happily produce
+    /// 20,000 records PER KIND, so this installation can build a package it
+    /// then refuses to import. Capping the import is still right — an endpoint
+    /// that holds a connection for hours is worse — but the real fix is to
+    /// apply a package the way a CSV import is applied, as a job. That is a
+    /// change to how the endpoint answers, not a number, and it belongs to
+    /// whoever owns this module.
+    /// </summary>
+    private const int MaxPackageRecords = 2_000;
+
     private const int MaxJobs = 100;
 
     /// <summary>Rows per page while walking the whole set for an export.</summary>
@@ -402,6 +422,23 @@ public sealed class MigrationService(
         if (package is null)
         {
             return Result.Failure<PackageImportReport>(MigrationErrors.Unreadable);
+        }
+
+        // Counted before a single record is applied, and counted across every
+        // kind, because the cost is per record and the importer has no
+        // transaction to roll back. Refusing half way would leave the rooftop
+        // holding part of a package nobody asked for. See the measurements on
+        // MigrationErrors.TooManyToImport.
+        var records = package.Customers.Count
+            + package.Vehicles.Count
+            + package.InventoryUnits.Count
+            + package.Deals.Count
+            + package.RepairOrders.Count;
+
+        if (records > MaxPackageRecords)
+        {
+            return Result.Failure<PackageImportReport>(
+                MigrationErrors.TooManyToImport(records, MaxPackageRecords));
         }
 
         var applied = await _packageImporter.ApplyAsync(package, rooftopId, cancellationToken);

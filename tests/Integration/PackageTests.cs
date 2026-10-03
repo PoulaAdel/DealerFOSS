@@ -627,6 +627,61 @@ public sealed class PackageTests(HostFixture fixture)
         allowed.Value.InventoryUnits.Should().HaveCount(held);
     }
 
+    /// <summary>
+    /// A package too large to apply inside a request is refused before any of
+    /// it lands. The importer has no transaction on purpose — a half-applied
+    /// package is safe to re-run — so refusing part way would leave the rooftop
+    /// holding records nobody asked for. The count has to be checked first.
+    ///
+    /// The ceiling is 2,000 records across every kind, and it is measured
+    /// rather than chosen: 2,000 took 29.5 seconds on a seeded host and 8,000
+    /// took 237.9. Before this, what bounded the endpoint was ASP.NET's default
+    /// 30 MB body, which admits around two hundred thousand records.
+    /// </summary>
+    [Fact]
+    public async Task A_package_too_large_to_apply_in_one_request_is_refused_before_anything_lands()
+    {
+        // Called for its side effect: it creates the records the export carries.
+        await ASoldCarAndAJobAsync();
+
+        // Clone one customer under fresh ids until the package is over the
+        // ceiling. Cloning rather than inventing records keeps the shape ours.
+        var node = JsonNode.Parse(await ExportAsync())!;
+        var customers = node["customers"]!.AsArray();
+        var template = customers[0]!.ToJsonString();
+        var firstClone = Guid.NewGuid();
+
+        while (customers.Count <= 2_000)
+        {
+            var clone = JsonNode.Parse(template)!;
+            clone["id"] = (customers.Count == 1 ? firstClone : Guid.NewGuid()).ToString();
+            customers.Add(clone);
+        }
+
+        using var response = await SendAsync(
+            HttpMethod.Post,
+            $"/api/v1/migration/packages/{await RooftopAsync(Into, "NAG-02")}",
+            Manager,
+            Into,
+            new { content = node.ToJsonString() });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        problem.GetProperty("code").GetString().Should().Be("migration.too_many_to_import");
+
+        // And nothing landed. Asserted against a CLONE's id, which exists only
+        // in the refused package: if the importer had begun and stopped part
+        // way, the early customers would be on the far side. That matters here
+        // more than elsewhere, because the importer has no transaction - a
+        // partial apply would not be rolled back, it would just be partial.
+        using var far = await SendAsync(
+            HttpMethod.Get, $"/api/v1/customers/{firstClone}", Manager, Into);
+        far.StatusCode.Should().NotBe(
+            HttpStatusCode.OK,
+            "a record from a refused package must not exist on the far side");
+    }
+
     private static PackageExporter Exporter(TenantScope scope, int maxPerKind) => new(
         scope.Services.GetRequiredService<IOrganization>(),
         scope.Services.GetRequiredService<ICustomers>(),

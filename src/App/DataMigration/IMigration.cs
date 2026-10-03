@@ -209,6 +209,29 @@ internal static class MigrationErrors
     /// missing five thousand customers is discovered by the dealership, later,
     /// somewhere else.
     /// </summary>
+    /// <summary>
+    /// A package with more records than one request can apply.
+    ///
+    /// The number is measured, not chosen for tidiness. Applying a package is
+    /// one insert per record through the capability contracts, inside the
+    /// request, with no batching and no transaction — and the cost per record
+    /// gets worse as the package grows. Measured 2026-10-03 against a seeded
+    /// host: 500 records in 7.1s, 2,000 in 29.5s, 8,000 in 237.9s — four times
+    /// the records for eight times the time — and 24,770 had not finished when
+    /// the client gave up at ten minutes. Until this cap, what bounded the
+    /// endpoint was ASP.NET's default 30 MB request body, which admits roughly
+    /// two hundred thousand records: a single HTTP request running for hours
+    /// while holding a connection open.
+    ///
+    /// It is a total across every kind rather than a per-kind ceiling, because
+    /// the cost is per record and does not care which collection it came from.
+    /// </summary>
+    public static Error TooManyToImport(int found, int limit) => Error.Validation(
+        "migration.too_many_to_import",
+        $"That package holds {found} records and one request applies at most {limit}. "
+        + "Nothing was imported. A dealership this size moves by database restore "
+        + "(deploy/backup.ps1 and deploy/restore.ps1) rather than by package.");
+
     public static Error TooManyToPackage(string kind, int held, int limit) => Error.Validation(
         "migration.too_many_to_package",
         $"This dealership holds {held} {kind} and one package carries at most {limit}. "
