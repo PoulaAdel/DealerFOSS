@@ -22,6 +22,26 @@ import { render, screen, within } from '../test/render';
 import { ListScreen } from './ListScreen';
 
 describe('paging without walking every record', () => {
+  it('reserves every header column while loading, including fragments and spanning headers', () => {
+    const { container } = render(
+      <ListScreen
+        load={{ kind: 'loading' }}
+        onPage={vi.fn()}
+        onRetry={vi.fn()}
+        loadingMessage="Finding records"
+        deniedMessage="Denied"
+        emptyMessage="Empty"
+        columns={<><th>Name</th><><th colSpan={2}>Contact</th><th>Stage</th></></>}
+        row={() => null}
+      />,
+    );
+    expect(screen.getByText('Finding records')).toHaveAttribute('aria-live', 'polite');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    const rows = container.querySelectorAll('tbody tr');
+    expect(rows).toHaveLength(5);
+    for (const row of rows) expect(row.querySelectorAll('td')).toHaveLength(4);
+  });
+
   it('skips both unavailable directions when the list fits on one page', async () => {
     const user = userEvent.setup();
     render(

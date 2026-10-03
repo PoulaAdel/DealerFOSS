@@ -18,18 +18,22 @@ field-level visibility on Parts and RepairOrders — Deals, Inventory and
 Accounting landed 2026-09-29 and 2026-09-30.
 What is next is on the register in [`docs/11`](../11-Franchise-and-External-Scope.md)
 §12 — but see the re-review of 2026-09-16 below before choosing from it, and
-the UI/UX audit of 2026-09-17, whose remaining open findings are the customer
-record having no cross-module actions and the arrival-motion work recorded in
-the device-only motion audit. The pager finding closed on 2026-09-19; the token
-migration closed on 2026-09-18, although this header still called it unfinished.
-Last verified: 2026-09-30 · `dotnet build` 0 warnings/0 errors, `dotnet test` 985/985,
+the UI/UX audit of 2026-09-17, whose remaining open finding is the customer
+record having no cross-module actions. Arrival motion and skeleton loading
+landed on 2026-09-22 (`692c292`, `faafd9a`), so older notes that call the motion
+vocabulary hover-only are stale. The pager finding closed on 2026-09-19; the
+token migration closed on 2026-09-18, although this header once still called it
+unfinished. A presentation-only pass followed on 2026-10-03 — see its entry at
+the end of the milestone log, which also records an unrelated defect on
+`/accounting/reports` that was found and deliberately not fixed.
+Last verified: 2026-10-03 · `dotnet build` 0 warnings/0 errors, `dotnet test` 985/985,
 `verify-e2e.ps1` PASS **against the canonical LocalDB catalogue** — which now
 works again. The 2026-09-19 note that `DealerFOSS_Host` was detached with its MDF
 still on disk no longer holds; the default command in `AGENTS.md` and
 `docs/LOCAL-DEVELOPMENT.md` runs clean.
-The frontend gates were last run on 2026-09-30 — `npm audit` clean at high (two
+The frontend gates were last run on 2026-10-03 — `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 511/511, `npm run build`
+`npm run typecheck`, `npm test` 517/517, `npm run build`
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1736,3 +1740,17 @@ to come.
   **Proven by a control, not by a refusal.** `ownwork@dev.local` holds the SAME role at the SAME rooftop as `sales@dev.local`; the only difference is the flag. Every test runs both and asserts they differ, because a refusal the salesperson also gets is a role gap and proves nothing. Both halves are covered per capability — the list and the record — since hiding a deal from a list while leaving it readable by its id is not scope, it is decoration.
 
   Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **985/985** (was 974 — eleven new: seven integration across deals, the enquiry pool and the access review, four unit on the scope object itself), `verify-e2e.ps1` PASS against LocalDB, and all four frontend gates — `npm audit` clean at high, `typecheck`, `npm test` **511/511**, `npm run build`. One EF migration on the `identity` schema, additive.
+
+- **2026-10-03 — The product reads as one calm, compact surface, measured rather than eyeballed.** Presentation only: no route, callback, payload, permission, calculation or workflow changed, and no locale catalogue was touched. The frontend diff is `theme/app.css`, `NavGroup`, `Confirm`, `Shortcuts`, `ListScreen` and one new hook, `useDialogFocus`.
+
+  **What changed.** Controls are identifiable without hovering: a new `--control-border` token measures **4.12:1 against the page in light and 3.99:1 in dark** (the quieter `--line` stays for grouping — it cannot also mark an empty input). Buttons lost their shadow and hover lift; radii on controls, switchers and navigation moved from pill to `--r-sm`, leaving pills to chips. Table headers are sans 600 on a subtle surface (**5.89:1 light, 5.56:1 dark**), rows are tighter, and the content measure is 80rem instead of 1080px, which is what finally lets the dashboard's intended two columns exist (**600px + 600px at 1440; one 1016px column before**). The header bar's content now shares the page's measure and gutter — measured, the brand sat at x=28 while every title sat at x=105, a 77px step on every screen, introduced by the widening itself and caught only by measuring it; after, brand, nav and titles all start at 105 and the utility row ends where the content does (1321). Long signal queues are bounded to one scrolling band with every entry still rendered and reachable.
+
+  **Behaviour that is a real fix, not styling.** `NavGroup` closes when Tab leaves it (without pulling focus backwards) and no longer claims a menu popup it never was; `Confirm` and the shortcuts sheet share one focus helper that contains Tab and **returns focus to whatever opened them**, which neither did before; the typed-confirmation input has a unique id; the list skeleton counted a `<th>` fragment as one column, so every multi-column list drew a one-cell placeholder and jumped sideways on arrival. The class `.scroller` existed in JSX with no rule — `/receivables/ageing` scrolled the whole page sideways to **387px at 320 wide**; it measures **0** now.
+
+  **Measured, in a running browser.** Horizontal overflow by actually scrolling (`window.scrollTo`, not `scrollWidth`): **0px on all 17 signed-in routes at 320px, and on the six checked at 768px.** Real Tab presses: every header control shows a 3px `:focus-visible` outline; Enter on a group opens it with `aria-controls` matching its menu, the menu stays inside the viewport, and five further Tabs pass its four links and close it; the shortcuts sheet holds Tab and Escape returns to the opener; the typed `Confirm` focuses its field, keeps Tab inside, and Escape returns to the button that opened it with nothing confirmed. Arabic at 320px: `dir=rtl`, 0px overflow, the disclosure fully in view.
+
+  **What this entry does not claim.** Not every code path or workflow was inspected, and the matrix is not the whole of the request's. The 1024px laptop width was not swept separately; French, German, Russian and Spanish were not walked; forms and table editors were looked at, not exercised end to end; `prefers-reduced-motion` was confirmed from the one global rule that flattens every animation, not emulated; light-theme screens were checked by contrast figures and earlier screenshots, not re-walked page by page. The browser pane crops screenshots at custom widths, so layout claims here rest on measured geometry, not on images.
+
+  **Found, deliberately not fixed.** `/accounting/reports` renders a blank page for the default October 2026 period. The console says `RangeError: Invalid currency code :` from `money()` in `shared/i18n/index.tsx`, called by `ProfitAndLossPanel` at `ReportsPage.tsx:225` — an overhead row with an empty currency. It fails the same way on the committed stylesheet; it is a data-and-formatting fault, not a presentation one. A fallback currency would be an invented financial behaviour, so it is recorded here for the maintainer to decide and left alone. Reproduce: sign in as `gm@dev.local` on `northgroup`, open *Accounting → Reports*.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **985/985** (398 + 31 + 556), `verify-e2e.ps1` PASS, all four frontend gates with **`npm test` 517/517** (was 511 — six new, covering the disclosure, the dialog focus helper and the skeleton's column count).

@@ -22,8 +22,9 @@
 //   on the keyboard, and localising it to a mnemonic in another language
 //   would describe a key the reader does not have.
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { CloseButton } from '../shared/CloseButton';
+import { trapDialogTab, useDialogFocus } from '../shared/useDialogFocus';
 import { useI18n, type MessageKey } from '../shared/i18n';
 
 export interface Shortcut {
@@ -78,7 +79,7 @@ export function ShortcutsPanel({ onClose }: { onClose: () => void }) {
   // Focus moves into the panel, so Escape and Tab do what somebody who never
   // touched the mouse expects. Without this the panel opens behind the keyboard
   // rather than in front of it.
-  useEffect(() => dialog.current?.focus(), []);
+  useDialogFocus(dialog);
 
   return (
     <div
@@ -92,6 +93,7 @@ export function ShortcutsPanel({ onClose }: { onClose: () => void }) {
         if (event.key === 'Escape') {
           onClose();
         }
+        trapDialogTab(event);
       }}
     >
       <div className="sheet__head">

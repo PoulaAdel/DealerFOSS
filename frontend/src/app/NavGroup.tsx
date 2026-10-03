@@ -31,7 +31,7 @@
 //   full arrow-key menu is more machinery than five or six links justify and
 //   Tab already reaches every one of them.
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
 export function NavGroup({
   label,
@@ -46,6 +46,7 @@ export function NavGroup({
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
+  const menuId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -72,12 +73,16 @@ export function NavGroup({
   }, [open]);
 
   return (
-    <div className="navgroup" ref={root}>
+    <div className="navgroup" ref={root} onBlur={(event) => {
+      // Tab leaving a disclosure should uncover the page it was covering.
+      // Unlike Escape it must not send focus backwards to the trigger.
+      if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+    }}>
       <button
         type="button"
         ref={trigger}
         className={active ? 'navgroup__trigger navgroup__trigger--active' : 'navgroup__trigger'}
-        aria-haspopup="true"
+        aria-controls={open ? menuId : undefined}
         aria-expanded={open}
         onClick={() => setOpen((was) => !was)}
         onKeyDown={(event) => {
@@ -104,7 +109,7 @@ export function NavGroup({
       </button>
 
       {open ? (
-        <div className="navgroup__menu" ref={menu} onClick={() => setOpen(false)}>
+        <div id={menuId} className="navgroup__menu" ref={menu} onClick={() => setOpen(false)}>
           {children}
         </div>
       ) : null}

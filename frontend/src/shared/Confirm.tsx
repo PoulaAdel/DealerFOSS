@@ -44,8 +44,9 @@
 //   form focuses the input instead, since typing IS the safe first action
 //   there.
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useI18n } from './i18n';
+import { trapDialogTab, useDialogFocus } from './useDialogFocus';
 
 export interface ConfirmProps {
   title: string;
@@ -58,8 +59,6 @@ export interface ConfirmProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
-
-const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export function Confirm({
   title,
@@ -81,40 +80,9 @@ export function Confirm({
 
   // Typing IS the safe first action when a typed answer is required; the
   // cancel button is the safe default otherwise — see the file header.
-  useEffect(() => {
-    (typeToConfirm === undefined ? cancelButton.current : typedInput.current)?.focus();
-  }, [typeToConfirm]);
+  useDialogFocus(dialog, typeToConfirm === undefined ? cancelButton : typedInput);
 
   const canConfirm = !busy && (typeToConfirm === undefined || typed === typeToConfirm);
-
-  function trapTab(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key === 'Escape') {
-      onCancel();
-      return;
-    }
-
-    if (event.key !== 'Tab' || dialog.current === null) {
-      return;
-    }
-
-    const focusable = Array.from(dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-      (el) => !el.hasAttribute('disabled'),
-    );
-    if (focusable.length === 0) {
-      return;
-    }
-
-    const first = focusable[0]!;
-    const last = focusable[focusable.length - 1]!;
-
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
 
   return (
     <div className="confirm-backdrop" onClick={onCancel}>
@@ -126,7 +94,10 @@ export function Confirm({
         aria-describedby={bodyId}
         tabIndex={-1}
         ref={dialog}
-        onKeyDown={trapTab}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') onCancel();
+          trapDialogTab(event);
+        }}
         // Stops a click inside the dialog from bubbling to the backdrop and
         // being read as "cancel".
         onClick={(event) => event.stopPropagation()}
@@ -138,11 +109,11 @@ export function Confirm({
 
         {typeToConfirm === undefined ? null : (
           <div className="field">
-            <label htmlFor="confirm-typed">
+            <label htmlFor={`${titleId}-typed`}>
               {t('confirm.typeToConfirm', { text: typeToConfirm })}
             </label>
             <input
-              id="confirm-typed"
+              id={`${titleId}-typed`}
               ref={typedInput}
               value={typed}
               dir="ltr"

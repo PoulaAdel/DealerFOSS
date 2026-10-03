@@ -49,7 +49,7 @@
 //   would disagree with the picture; a second pager would add another stop.
 //   ListTable owns this order even for screens with their own load states.
 
-import { Children, type ReactNode } from 'react';
+import { Children, Fragment, isValidElement, type ReactNode } from 'react';
 import { Pager, usePageCaption } from './Pager';
 import type { Page } from './contracts';
 import { useI18n } from './i18n';
@@ -178,7 +178,7 @@ const SkeletonWidths = ['92%', '68%', '80%', '55%', '75%'];
  * reader — visually hidden, not dropped — the shimmering cells are
  * `aria-hidden` because a blind user gets nothing from counting fake rows.
  *
- * Column count comes from `Children.count(columns)` rather than a prop:
+ * Column count comes from the actual header cells rather than a prop:
  * `columns` is already the real `<th>` list, and asking the caller to say
  * how many a second time is exactly the kind of duplicated fact that drifts.
  */
@@ -187,7 +187,16 @@ function SkeletonTable({ loadingMessage, tableClassName, columns }: {
   tableClassName?: string;
   columns: ReactNode;
 }) {
-  const columnCount = Children.count(columns);
+  // Children.count treats a Fragment as ONE child. Every multi-column caller
+  // passes a fragment, so the previous placeholder had one cell underneath
+  // four or seven headings and jumped sideways when the rows arrived.
+  function countColumns(nodes: ReactNode): number {
+    return Children.toArray(nodes).reduce<number>((count, node) => {
+      if (!isValidElement<{ children?: ReactNode; colSpan?: number }>(node)) return count;
+      return count + (node.type === Fragment ? countColumns(node.props.children) : (node.props.colSpan ?? 1));
+    }, 0);
+  }
+  const columnCount = countColumns(columns);
 
   return (
     <div className="scroll">
