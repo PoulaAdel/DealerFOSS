@@ -516,13 +516,24 @@ are not engineering, and none is blocked by anything in this repository:
   customer is reported unchanged and left alone. Who wins when a provider and a
   member of staff disagree about a phone number is a product decision (doc 05
   §4), and any connector that syncs rather than seeds needs it settled.
-- **Exercise database-per-tenant at tenant count.** The p95 half of this is done
-  (2026-09-29): 44 ms at the documented load, and rate is not the constraint to
-  at least 200 req/s. What that could not touch is the cost the architecture
-  actually carries — connection pool pressure, and migration time multiplied by
-  tenant count. Pools are per connection string, so two seeded tenants means two
-  pools and no pressure at all; this needs twenty or fifty tenants provisioned,
-  not more requests. Still a day, and still no external party needed.
+- **Tune the connection pool per tenant.** Measured 2026-10-09 at thirty
+  tenants, which closed the old version of this item: provisioning is linear
+  (~1.3 s each, no drift), connections grow on demand rather than by tenant
+  count × ceiling, and spreading load across many pools *helps* — two tenants
+  could not sustain a rate thirty absorbed. What the measurement found instead
+  is **retention**: idle tenants held ~31 connections each, 1,053 sessions
+  across thirty-four databases with no load on them. Nothing sets
+  `Max Pool Size` or `Min Pool Size` per tenant, so an installation with many
+  dealerships carries a large idle connection count that costs SQL Server
+  memory and worker threads. Needs a number chosen against a measurement, not a
+  default. Half a day, nobody outside the project.
+- **A recovery path for a locked-out operator.** `docs/OPERATING.md` §8 already
+  says there are no recovery codes for the seeded administrator; on 2026-10-09
+  that was reached by accident twice in one session, locking both seeded
+  administrators out of a dev installation with no way back but a fresh host
+  catalog. On a real installation that is the whole deployment. Enrolling a
+  second factor is the first thing an operator does, and losing the secret is an
+  ordinary mistake with a total cost.
 - **A scheduler**, now that a run has somewhere to deliver. Nothing starts an
   integration unattended, and the quarantine expiry has nothing to purge it.
 
@@ -1788,3 +1799,28 @@ to come.
   Also measured and worth recording for whoever does the job work: the host log stayed at 22 lines throughout, confirming the EF command-logging override committed on 2026-09-29 is doing its job. Without it these timings would have been measuring Serilog.
 
   Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **987/987** (one new), `verify-e2e.ps1` PASS against the canonical LocalDB catalogue. Nothing under `frontend/` changed.
+
+- **2026-10-09 — database-per-tenant is measured at tenant count, and the cost runs the opposite way to the one we feared.** The last item on doc 09's risk list that had never been exercised, and the third time it had been named in this file without being done. Thirty dealerships were provisioned on a fresh host catalog and driven with `deploy/load.cs`.
+
+  **Provisioning is linear and cheap.** Each dealership creates and migrates its own database: median **1,335 ms**, fastest 1,257, slowest 2,068, **41.4 s for thirty**. The first five averaged 1,410 ms and the last five 1,300 — **drift ×0.92**, so standing up the thirtieth costs no more than the first. Fifty dealerships is about a minute of provisioning. "Migration time multiplied by tenant count" is exactly that: multiplied, not compounded.
+
+  **Connections grow on demand, not by tenant count times pool size.** The arithmetic that worried us was thirty pools × a 100-connection ceiling = 3,000 connections. Measured directly in `sys.dm_exec_sessions` during load: thirty active tenants at 210 req/s held **294 user sessions, about ten per tenant** — each pool at a tenth of its ceiling. Pools are lazy, so the ceiling is a limit, not an allocation.
+
+  **The pressure comes from concentration, and database-per-tenant relieves it.** The same 900 req/s was offered two ways:
+
+  | 900 req/s over | sustained | service p95 | response p95 |
+  |---|---:|---:|---:|
+  | thirty tenants | 898.9 req/s | 862 ms | 1,142 ms |
+  | **two tenants** | **541.4 req/s** | **3,789 ms** | **33,097 ms** |
+
+  Same rate, same empty-tenant data, same machine, no errors in either. Thirty pools absorb it; two cannot. The mechanism was then read off the server rather than inferred: during the two-tenant run both loaded databases sat at **exactly 100 connections** — SqlClient's default Max Pool Size — so nine hundred users were queueing behind two hundred connections. A single shared database would have **one** pool and would meet this wall sooner. The architecture raises the ceiling; it does not lower it.
+
+  **What does deserve attention is retention, not exhaustion.** In the same sample, the thirty tenants from the *previous* run were still holding about **31 connections each, 1,053 sessions in total**, with no load on them. Pools do not hand connections back promptly, so an installation with many dealerships carries a high idle connection count — which costs memory and worker threads on the SQL side rather than throughput. That is the real shape of "pool pressure" here, and nothing currently tunes `Max Pool Size` or `Min Pool Size` per tenant.
+
+  **The 500 ms target breaks at 900 req/s**, which is forty-five times the documented load of 50 concurrent users per organization. At 210 req/s across thirty tenants it was **42 ms** with no errors.
+
+  **What this cannot claim.** The provisioned tenants hold no business data, so these latencies measure tenant routing and connection handling, not query cost — the query half was measured on seeded data on 2026-09-29. Everything ran on one machine hosting the application, SQL Server and the driver, so at 900 req/s the driver was competing for CPU with the thing it measured: every ceiling here is a **floor** on the real one. Separating that needs the driver on another machine.
+
+  **An operational finding that cost an hour and would cost an operator their installation.** Enrolling a second factor for a seeded administrator and not keeping the TOTP secret locks the account permanently — there are no recovery codes, exactly as `docs/OPERATING.md` §8 says. It happened twice here in one session, to both seeded administrators, and the only way forward was a fresh host catalog. The documented gap is real, it is reachable by accident on the first day of an installation, and it is worth building a recovery path for.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **987/987**, `verify-e2e.ps1` PASS against the canonical LocalDB catalogue. No source changed — this milestone is a measurement and its record. Nothing under `frontend/` changed.
