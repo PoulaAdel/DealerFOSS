@@ -64,6 +64,7 @@ them.
 | **What is safe to change** | [06 Security & API](06-Security-and-API.md) and [08 Governance](08-Governance-and-Standards.md). Then the file header of whatever you are about to edit: the load-bearing rules are written where they can be broken, not only here |
 | **What happens next** | [09 Implementation Roadmap](09-Implementation-Roadmap.md) for the phase you are in and its exit criteria; [07 Delivery Roadmap](07-Delivery-Roadmap.md) for the commercial plan around it; [11 §11](11-Franchise-and-External-Scope.md) for the decisions blocking both |
 | **How to run it for somebody else** | [Operating](OPERATING.md) — first start, setting a dealership up, backups, and what to check when something is wrong |
+| **How the dealership's own staff use it** | [Using DealerFOSS](USING-DEALERFOSS.md) — by the job somebody came to work to do, not by the menu. The only document written for a salesperson, an advisor or a parts person rather than for us |
 
 **Two things are not in this list on purpose.** A per-file guide to the codebase
 does not exist and should not: the file headers are that guide, and a second copy
@@ -108,6 +109,7 @@ eighteen.
 | — | [First tasks](FIRST-TASKS.md) | open work with nothing blocking it but engineering time, each checked against the code |
 | — | [Local Development](LOCAL-DEVELOPMENT.md) | prerequisites, canonical commands, and the environment facts that are easy to get wrong |
 | — | [Operating](OPERATING.md) | **for whoever runs the installation** — first start, setting a dealership up, backups, diagnosis |
+| — | [Using DealerFOSS](USING-DEALERFOSS.md) | **for the dealership's own staff** — selling, the workshop, taking money, buying cars in, and the refusals that are deliberate |
 | 09 | [Implementation Roadmap](09-Implementation-Roadmap.md) | implementation workflow, phase roadmap, completion rules, and progress reporting |
 | — | [Commercial License](COMMERCIAL-LICENSE.md) | the alternative terms offered alongside AGPLv3 |
 

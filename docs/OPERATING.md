@@ -6,6 +6,10 @@ For whoever runs the installation. Not for dealership staff, and not for people
 changing the code — this is the runbook for standing the system up, setting a
 dealership up on it, and the handful of things that go wrong.
 
+**Dealership staff want [Using DealerFOSS](USING-DEALERFOSS.md)** — selling a
+car, running the workshop, taking the money, and why a screen they were told
+about is not on their menu. Hand them that, not this.
+
 > **You are not a dealership.** Everything here happens at the *control plane*: a
 > separate sign-in, at `/admin`, with its own account. There is deliberately no
 > path from an operator account into a dealership's records — see
