@@ -253,6 +253,24 @@ public static class Permissions
     public const string SecurityManagePolicy = "Security.ManagePolicy";
 
     /// <summary>
+    /// Reading who holds which rights where, and signing that the dealership has
+    /// reviewed it. The FTC Safeguards Rule obliges a dealership to review access
+    /// periodically; this is the right to perform that review.
+    ///
+    /// Its own permission, and organization-wide, for the same reason as
+    /// <see cref="SecurityManagePolicy"/>: a question about who has power over
+    /// the whole dealership is not answered from one lot, and an answer narrowed
+    /// to one lot would be a review that misses whoever can reach every lot.
+    ///
+    /// Deliberately NOT folded into <see cref="StaffRead"/>, which the seeded
+    /// salesperson holds so they can hand an enquiry to a named colleague. That
+    /// right already shows more than it needs to — see the open question on the
+    /// register — and widening its meaning to "may audit the dealership" would
+    /// make the gap permanent instead of visible.
+    /// </summary>
+    public const string SecurityReviewAccess = "Security.ReviewAccess";
+
+    /// <summary>
     /// Bringing a dealership's existing records in from a file. Held
     /// organization-wide by design: an import writes across every rooftop at
     /// once, so a rooftop-scoped grant cannot express it, and treating a partial
@@ -306,6 +324,7 @@ public static class Permissions
         AccountingReopenPeriod,
         FinanceManageProducts,
         ProfitabilityRead,
+        SecurityReviewAccess,
     ];
 }
 

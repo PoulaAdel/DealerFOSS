@@ -40,6 +40,22 @@ public interface ISecurityPolicy
         bool required,
         Guid actingUserId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// How many days may pass between access reviews before the next one is due.
+    /// </summary>
+    Task<int> AccessReviewEveryDaysAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Changes that interval, recording who changed it. Refused outside one day
+    /// to a year — zero would make every review instantly overdue, and a decade
+    /// would be a way of switching the obligation off while the screen still
+    /// said "reviewed".
+    /// </summary>
+    Task<Result> ReviewAccessEveryAsync(
+        int days,
+        Guid actingUserId,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>One role's second-factor obligation, and how many people it affects.</summary>

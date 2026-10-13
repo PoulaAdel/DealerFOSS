@@ -161,6 +161,26 @@ public sealed class BoundaryTests
             // it cannot reach an account that never had a password, which is
             // enrolment's job and has its own preconditions.
             "IAccountRecovery", "RecoveryMethods", "RecoveryErrors",
+            // Added deliberately, and it is a security decision rather than a
+            // convenience: reading who holds which right, where, and recording
+            // that the dealership has looked. The FTC Safeguards Rule obliges a
+            // periodic access review, and answering "who can approve a deal"
+            // means reading users, roles, permissions and assignments together —
+            // four tables sealed inside this project. Either this contract
+            // exists or those tables stop being sealed, and this is the smaller
+            // hole.
+            //
+            // Note what it cannot do, because that is what makes it safe to
+            // export. It GRANTS nothing and changes no access: the only write is
+            // a signature, and a signature gives nobody a permission they did
+            // not have. No password hash, no TOTP secret, no session, no
+            // recovery code. No administrator can appear — they live in
+            // ControlPlaneDb, which this contract never opens, and
+            // AccessReviewTests proves that rather than trusting it. And it
+            // reads the whole organization or nothing, so there is no
+            // per-rooftop answer to assemble into a map of who is weak where.
+            "IAccessReview", "AccessReview", "AccessReviewRow",
+            "AccessReviewSignature", "AccessReviewErrors",
         };
 
         // Migration classes are generated artifacts and are public by design;

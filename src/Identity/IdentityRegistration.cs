@@ -40,6 +40,7 @@ public static class IdentityRegistration
         services.AddScoped<IAuditSink, SqlAuditSink>();
         services.AddScoped<IAccessDirectory, AccessService>();
         services.AddScoped<ISecurityPolicy, SecurityPolicyService>();
+        services.AddScoped<IAccessReview, AccessReviewService>();
         services.AddScoped<IStaffDirectory, StaffDirectoryService>();
         services.AddScoped<IAccountRecovery, AccountRecoveryService>();
 

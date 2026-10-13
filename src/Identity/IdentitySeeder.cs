@@ -182,6 +182,10 @@ public static class IdentitySeeder
             // advisor, a salesperson and a technician all work the same records
             // without it, which is how a dealership actually runs.
             Permissions.ProfitabilityRead,
+            // Reading who holds what, and signing that it was reviewed. On this
+            // role and no other: it is the dealership auditing itself, which is
+            // the same kind of act as setting the second-factor rule beside it.
+            Permissions.SecurityReviewAccess,
         ]);
 
         // An advisor can look a customer up but not create one, and can see stock,

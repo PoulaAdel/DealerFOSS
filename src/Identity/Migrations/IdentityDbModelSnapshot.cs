@@ -23,6 +23,36 @@ namespace DealerFOSS.Identity.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DealerFOSS.Identity.AccessReviewRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Checksum")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SignedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("TakenAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TakenAt");
+
+                    b.ToTable("AccessReviews", "identity");
+                });
+
             modelBuilder.Entity("DealerFOSS.Identity.AuditEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -229,6 +259,38 @@ namespace DealerFOSS.Identity.Migrations
                     b.HasKey("RoleId", "Permission");
 
                     b.ToTable("RolePermissions", "identity");
+                });
+
+            modelBuilder.Entity("DealerFOSS.Identity.SecuritySettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AccessReviewEveryDays")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTimeOffset?>("ModifiedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SecuritySettings", "identity");
                 });
 
             modelBuilder.Entity("DealerFOSS.Identity.Session", b =>

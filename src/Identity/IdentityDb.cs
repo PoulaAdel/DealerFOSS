@@ -51,6 +51,12 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
 
     public DbSet<PasskeyChallenge> PasskeyChallenges => Set<PasskeyChallenge>();
 
+    /// <summary>Signatures that the dealership has reviewed who holds what.</summary>
+    public DbSet<AccessReviewRecord> AccessReviews => Set<AccessReviewRecord>();
+
+    /// <summary>One row: the dealership's own security settings that are not per-role.</summary>
+    public DbSet<SecuritySettings> SecuritySettings => Set<SecuritySettings>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -210,6 +216,30 @@ internal sealed class IdentityDb(DbContextOptions<IdentityDb> options, IClock cl
             // session or none.
             builder.HasIndex(x => x.TokenHash).IsUnique();
             builder.HasIndex(x => new { x.UserId, x.AbsoluteExpiresAt });
+            ConfigureAudit(builder);
+        });
+
+        modelBuilder.Entity<AccessReviewRecord>(builder =>
+        {
+            builder.ToTable("AccessReviews");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
+
+            // 64 hex characters, fixed. Not nvarchar(max) for a value whose
+            // length is a property of SHA-256 rather than of the data.
+            builder.Property(x => x.Checksum).HasMaxLength(64).IsRequired();
+            builder.Property(x => x.Note).HasMaxLength(2000);
+
+            // The only query this table serves is "the most recent one".
+            builder.HasIndex(x => x.TakenAt);
+        });
+
+        modelBuilder.Entity<SecuritySettings>(builder =>
+        {
+            builder.ToTable("SecuritySettings");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedNever();
+            builder.Property(x => x.AccessReviewEveryDays).IsRequired();
             ConfigureAudit(builder);
         });
 
