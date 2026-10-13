@@ -1856,3 +1856,28 @@ to come.
   **Frontend gates did not run.** Docker Desktop itself was not running on this machine — not a container, the daemon — which `gate.ps1` detected and reported plainly (`FrontendOk: false` in `local/last-gate.json`) rather than claiming a pass it did not earn. Backend is fully verified; the ten new or changed frontend test cases across `DealsPage.test.tsx` and the five other Deal test fixtures that needed `availableMoves` added are reviewed by hand, not run. Whoever next runs the frontend gate on this code should treat it as unverified until then.
 
   Evidence: `dotnet build` **0 warnings/0 errors**, `dotnet test` **994/994** (was 987 — seven new), `verify-e2e.ps1` **PASS**. `npm audit`/`typecheck`/`test`/`build` **not run** — Docker Desktop unavailable; see above.
+
+- **2026-10-13 — the integration suite's fixed cost is measured, and the obvious fix is not worth building.** The suite pays a large setup cost on every invocation, which is why `--filter` saves nobody any time and everybody runs everything. The cost was real; the cause had been inferred rather than measured, and the inference was wrong.
+
+  **Where it goes.** `HostFixture` now times its own phases, and they are not close:
+
+  | Phase | Run A | Run B |
+  |---|---:|---:|
+  | SQL reachable | 90 ms | 2,051 ms |
+  | sweep of stale databases | 30 ms | 299 ms |
+  | **first `/health/ready`** | **67,995 ms** | **155,400 ms** |
+  | second `/health/ready`, warm | 3 ms | 7 ms |
+
+  So the whole fixed cost is **one call** — the one that forces host construction, creates three databases, runs four migration sets, seeds two organizations and JIT-compiles the path on first use. Everything else is rounding. Steady state is 3–7 ms, so nothing is slow once it is up.
+
+  **Why the template database was not built.** The plan was to migrate once into a template and create each run's databases from it. But provisioning was measured independently on 2026-10-09 at **~1.3 s per database including its migrations** (thirty samples, no drift), and this fixture creates three. So migrations are on the order of **four seconds of a sixty-eight second cost** — under six percent. A template would add a staleness failure mode whose shape is the worst available (a template not rebuilt when a migration lands means the suite tests last week's schema and **passes**) in exchange for a saving the run-to-run noise would hide. Not built, on purpose.
+
+  **The noise is the second finding and it changes how any future attempt must be judged.** The same filtered class measured 24 s, 29 s, 33 s, then 35 s on consecutive runs, and first-ready came in at 68 s and 155 s on two runs of identical work — a factor of 2.3. Any claim that a change saved ten or twenty percent cannot be substantiated by one run before and one run after. That is why the timings are now printed rather than derived by subtraction, which is how the original attribution went wrong.
+
+  **What the cost actually is**, and therefore where a future attempt should aim: seeding through the real application services, plus first-use JIT and EF model building. The seeder posts deliveries and invoices through the real services on purpose, so the ledger balances because the application balanced it — that is a lot of application code executing once, cold. It is consistent with the 2026-09-29 finding that a cold host is ~2.2x slower than a warm one across every endpoint. **A schema template touches none of it.** The seeder is the target, not the schema.
+
+  **Honestly not measured:** the split of that one call into create / migrate / seed / JIT. Two attempts to read it from EF command timestamps failed on environment-variable naming, and the figure above is bounded by an independent measurement of the same operation rather than read directly. Anybody who picks this up should get that split first; it is the only thing that says which half of "seeding plus JIT" to attack.
+
+  **A candidate recorded rather than taken.** vitest 5 reports the frontend suite spawning 39 workers, one per test file, at ~842 ms of spawn-and-environment startup each, and suggests `isolate: false` to reuse them. Deliberately not taken: it gives up per-file isolation, and this repository has already lost a session to a cross-test flake from shared state (`f0a08c1`). The backend equivalent — one host shared across the suite — is already how `HostCollection` works, which is why the cost is paid once rather than per class.
+
+  Evidence: `& .\local\gate.ps1` green. The only behaviour change is one extra warm health check per suite run.

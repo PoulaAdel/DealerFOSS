@@ -16,6 +16,7 @@
 //   unreachable this fails loudly on purpose — a skipped isolation test is
 //   not evidence of isolation.
 
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
@@ -111,19 +112,47 @@ public sealed class HostFixture : WebApplicationFactory<Program>, IAsyncLifetime
     // share a signature. Base disposal still runs via IDisposable.
     async Task IAsyncLifetime.InitializeAsync()
     {
+        // The phases are timed and printed because the suite's fixed cost was
+        // argued about on 2026-10-13 from wall-clock subtraction, and the
+        // run-to-run variance turned out to be as large as the differences
+        // being attributed — the same filtered class measured 24s, 29s and 33s
+        // on three consecutive runs. Numbers a reader can see beat arithmetic
+        // on noise, and this is the only place that can separate these four.
+        var timer = Stopwatch.StartNew();
+
         await EnsureSqlReachableAsync();
+        var reachable = timer.ElapsedMilliseconds;
 
         // Databases left behind by a run that crashed before it could tidy up.
         // Swept on a delay so a run happening right now on the same engine is
         // not pulled out from under itself.
+        timer.Restart();
         await DropDatabasesAsync(
             "name LIKE @prefix + '%' AND create_date < DATEADD(hour, -6, GETUTCDATE())");
+        var swept = timer.ElapsedMilliseconds;
 
         // Force host construction (and therefore database creation, migration,
         // and seeding) once, before any test runs.
+        timer.Restart();
         using var client = CreateClient();
         using var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
         response.EnsureSuccessStatusCode();
+        var built = timer.ElapsedMilliseconds;
+
+        // The same call again, against the host that is now up. Everything this
+        // one does, the first one also did — so the difference is the one-off
+        // part: creating three databases, four migration sets, seeding two
+        // organizations, and JIT-compiling the path on first use. Without this
+        // second reading there is no way to tell a slow setup from slow code.
+        timer.Restart();
+        using var warm = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
+        warm.EnsureSuccessStatusCode();
+        var steady = timer.ElapsedMilliseconds;
+
+        Console.Error.WriteLine(
+            $"[HostFixture] sql-reachable {reachable}ms  sweep {swept}ms  "
+            + $"first-ready {built}ms  second-ready {steady}ms  "
+            + $"(one-off share of first-ready: {built - steady}ms)");
     }
 
     async Task IAsyncLifetime.DisposeAsync()

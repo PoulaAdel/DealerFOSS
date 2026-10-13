@@ -488,6 +488,7 @@ the date you re-read it, even when nothing changed.
 | Four-part file headers with a copyright line (doc 08 §5) | Product | Done | **Applied 2026-09-04, enforced 2026-09-14** — and this row was stale for ten days because nothing could answer "is it still done?" without opening every file. A test now walks the tree on every `dotnet test` and names any file and any missing part. Checking it found 378 of 379 correct and one that had slipped through, `deploy/otel-collector.yaml` |
 | Public safety recall lookup | Vehicle | Done | Built, with a screen |
 | Spanish as a sixth language | Product | Done | Built |
+| Idle connections scale with tenant count | Platform | Build | **Measured 2026-10-09, nothing built against it.** Thirty idle tenant databases held ~31 connections each — **1,053 sessions with no load on them** — because pools do not release promptly and nothing sets `Max Pool Size` or `Min Pool Size` per tenant. Not a test-suite cost: a thirty-rooftop group on one engine is the shape stage 8 reaches, and the idle cost is paid in SQL Server memory and worker threads before a request arrives. The same run proved the *active* case is fine — thirty pools sustained 900 req/s where two could not, both loaded pools pinned at exactly 100 connections — so this is retention, not exhaustion |
 
 ## 13. What was done rather than only written down
 
