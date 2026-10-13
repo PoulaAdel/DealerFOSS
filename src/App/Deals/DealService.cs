@@ -821,7 +821,13 @@ public sealed class DealService(
         }
 
         // Signing a deal off is a different right from building one. A salesperson
-        // who could approve their own numbers is not a control at all.
+        // who could approve their own numbers is not a control at all. Sending a
+        // Submitted deal BACK to Draft is deliberately not given the same
+        // treatment: Deals.Write is enough, the same right that built it, because
+        // unlike Approve this is not a sign-off — a salesperson who spots their
+        // own mistake should be able to pull it back without waiting on a
+        // manager, and a manager who holds Write besides Approve, as the seeded
+        // roles do, already reaches it too.
         var required = next == DealStatus.Approved ? ApprovePermission : WritePermission;
         if (!await _access.IsAuthorizedAsync(_currentUser.Id, required, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
         {
@@ -1051,6 +1057,72 @@ public sealed class DealService(
         public InventoryUnitSummary? Unit(Guid id) => Units.FirstOrDefault(u => u.Id == id);
     }
 
+    /// <summary>
+    /// Which of the domain-legal moves from this deal's status this CALLER may
+    /// actually make, so the screen stops offering a button that only finds out
+    /// it was wrong when the server refuses it.
+    /// </summary>
+    /// <remarks>
+    /// GetAuthorizedScopeAsync and Allows, not IsAuthorizedAsync, for the same
+    /// reason maySeeProfit above uses it and not the auditing overload: this
+    /// runs on every read of a deal, including one nobody is about to act on,
+    /// and IsAuthorizedAsync writes a Denied row per call. A person opening
+    /// twenty deals in a row to find the one they can approve would fill the
+    /// audit trail with twenty refusals that never happened.
+    ///
+    /// Approved carries the one rule ownership scope cannot express: it is not
+    /// available to this deal's own salesperson, full stop, regardless of what
+    /// their grant otherwise reaches — see EnsureApproverIsNotTheSalesperson,
+    /// which ChangeStatusAsync enforces independently of this hint.
+    ///
+    /// Draft (sending a submitted deal back) needs no narrower permission than
+    /// Deals.Write — the same one that built the deal. That is a decision, not
+    /// an oversight: unlike Approve, sending it back is not a sign-off with a
+    /// segregation-of-duties problem, and a salesperson who spots their own
+    /// mistake before a manager even opens the deal should be able to pull it
+    /// back without waiting on anybody. See docs/11 register, "A submitted deal
+    /// cannot be sent back for changes from any screen".
+    /// </remarks>
+    private async Task<IReadOnlyList<string>> AvailableMovesAsync(Deal deal, CancellationToken cancellationToken)
+    {
+        var candidates = DealStatusRules.MovesFrom(deal.Status);
+        if (candidates.Count == 0)
+        {
+            return [];
+        }
+
+        var writeScope = await _access.GetAuthorizedScopeAsync(_currentUser.Id, WritePermission, cancellationToken);
+
+        AuthorizedScope? approveScope = null;
+        if (candidates.Contains(DealStatus.Approved))
+        {
+            approveScope = await _access.GetAuthorizedScopeAsync(
+                _currentUser.Id, ApprovePermission, cancellationToken);
+        }
+
+        var moves = new List<string>();
+        foreach (var candidate in candidates)
+        {
+            if (candidate == DealStatus.Approved)
+            {
+                if (approveScope!.Allows(deal.RooftopId, deal.SalespersonUserId)
+                    && deal.SalespersonUserId != _currentUser.Id)
+                {
+                    moves.Add(candidate.ToString());
+                }
+
+                continue;
+            }
+
+            if (writeScope.Allows(deal.RooftopId, deal.SalespersonUserId))
+            {
+                moves.Add(candidate.ToString());
+            }
+        }
+
+        return moves;
+    }
+
     private async Task<Result<DealDetail>> DescribeAsync(Deal deal, CancellationToken cancellationToken)
     {
         var context = await LookupAsync([deal], cancellationToken);
@@ -1073,6 +1145,7 @@ public sealed class DealService(
                 _currentUser.Id, Permissions.ProfitabilityRead, cancellationToken))
             .Covers(deal.RooftopId);
 
+        var availableMoves = await AvailableMovesAsync(deal, cancellationToken);
 
         var unit = context.Value.Unit(deal.InventoryUnitId);
 
@@ -1187,6 +1260,7 @@ public sealed class DealService(
                     deal.Instalments?.FinalPayment,
                     deal.Instalments?.TotalOfPayments,
                     deal.Instalments?.FinanceCharge),
+            availableMoves,
             history
                 .OrderBy(h => h.OccurredAt)
                 .ThenBy(h => h.Sequence)

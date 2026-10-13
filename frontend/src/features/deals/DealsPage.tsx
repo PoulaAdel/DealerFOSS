@@ -440,10 +440,15 @@ function DealPanel({
 /**
  * The moves available from here.
  *
- * Only the transitions the deal's own status allows are offered. Whether *this
- * caller* may make one is the server's answer, not this file's — so the refusal
- * appears after asking rather than being predicted, and the note below says what
- * the rule is instead of pretending to enforce it.
+ * Driven entirely by `deal.availableMoves`, never by `deal.status` alone. The
+ * server has already folded in domain legality, the caller's own permission,
+ * and the one rule a permission cannot express — nobody approves their own
+ * deal — so a button that would be refused is simply absent rather than shown
+ * and then refused. Do not grow a parallel `deal.status === 'X'` guard here:
+ * that is exactly the second copy of the rule ADR-025/AGENTS.md §6 forbid, and
+ * it is how this screen drifted from the domain before (the register row "a
+ * submitted deal cannot be sent back for changes" was this file offering four
+ * buttons when the domain and the caller's rights together allowed five).
  */
 function Actions({
   deal, busy, onMove,
@@ -454,45 +459,56 @@ function Actions({
 }) {
   const { t } = useI18n();
 
-  if (deal.status === 'Delivered' || deal.status === 'Lost') {
+  if (deal.availableMoves.length === 0) {
     return <p className="note">{t('deals.finished')}</p>;
   }
 
   return (
-    <>
-      <div className="actions">
-        {deal.status === 'Draft' ? (
-          <button type="button" className="primary" disabled={busy} onClick={() => onMove('Submitted')}>
-            {t('deals.sendToManager')}
-          </button>
-        ) : null}
+    <div className="actions">
+      {deal.availableMoves.includes('Submitted') ? (
+        <button type="button" className="primary" disabled={busy} onClick={() => onMove('Submitted')}>
+          {t('deals.sendToManager')}
+        </button>
+      ) : null}
 
-        {deal.status === 'Submitted' ? (
-          <button type="button" className="primary" disabled={busy} onClick={() => onMove('Approved')}>
-            {t('deals.approve')}
-          </button>
-        ) : null}
+      {deal.availableMoves.includes('Approved') ? (
+        <button type="button" className="primary" disabled={busy} onClick={() => onMove('Approved')}>
+          {t('deals.approve')}
+        </button>
+      ) : null}
 
-        {deal.status === 'Approved' ? (
-          <button type="button" className="primary" disabled={busy} onClick={() => onMove('Delivered')}>
-            {t('deals.handOver')}
-          </button>
-        ) : null}
+      {deal.availableMoves.includes('Delivered') ? (
+        <button type="button" className="primary" disabled={busy} onClick={() => onMove('Delivered')}>
+          {t('deals.handOver')}
+        </button>
+      ) : null}
 
-        {/* The note travels to the server and lands in the deal's permanent
-            history, so it is written in the language of whoever marked it —
-            which is the honest record of who did what. */}
+      {/* Draft only ever appears in availableMoves when the deal is Submitted —
+          DealStatusRules has no other move that targets it — so this needs no
+          separate status guard, consistent with every button above it. */}
+      {deal.availableMoves.includes('Draft') ? (
         <button
           type="button"
           disabled={busy}
-          onClick={() => onMove('Lost', t('deals.markedLostNote'))}
+          onClick={() => onMove('Draft', t('deals.sentBackNote'))}
+        >
+          {t('deals.sendBack')}
+        </button>
+      ) : null}
+
+      {/* The note travels to the server and lands in the deal's permanent
+          history, so it is written in the language of whoever marked it —
+          which is the honest record of who did what. */}
+      {deal.availableMoves.includes('Cancelled') ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onMove('Cancelled', t('deals.markedLostNote'))}
         >
           {t('deals.markLost')}
         </button>
-      </div>
-
-      {deal.status === 'Submitted' ? <p className="note">{t('deals.cannotApproveOwn')}</p> : null}
-    </>
+      ) : null}
+    </div>
   );
 }
 

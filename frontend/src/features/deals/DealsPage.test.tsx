@@ -11,10 +11,14 @@
 // Coding Instructions:
 //   The trap this file guards is the screen quietly becoming the second
 //   place a rule lives. A salesperson cannot approve their own deal, and the
-//   numbers freeze on submission — both are enforced in DealService. The
-//   screen's job is to *show* the refusal the server gave, never to predict
-//   one. If these tests start asserting that a button is hidden from a
-//   particular person, the rule has been copied and the copies will drift.
+//   numbers freeze on submission — both are enforced in DealService and
+//   folded into `availableMoves`, which the screen renders without judging.
+//   Tests here prove the screen reacts correctly to what it is TOLD — set
+//   `availableMoves` on the fixture and assert the right buttons appear or
+//   do not — never that it independently knows who may approve what. If a
+//   test starts reasoning about status or identity to decide a button should
+//   be visible, the rule has been copied back into this file and the copies
+//   will drift.
 
 import { renderAtRecordRoute, screen, waitFor, within } from '../../test/render';
 import userEvent from '@testing-library/user-event';
@@ -54,6 +58,10 @@ const detail = (over: Partial<DealDetail> = {}): DealDetail => ({
   taxedAt: null,
   registrationAddress: null,
   financing: null,
+  // A full-rights caller's view of a fresh Draft deal, matching DealStatusRules
+  // — tests that open a deal at a different stage pass their own, because the
+  // whole point of this field is that it is not derivable from status alone.
+  availableMoves: ['Submitted', 'Cancelled'],
   history: [
     { fromStatus: null, toStatus: 'Draft', occurredAt: '2026-08-04T09:00:00Z', changedByUserId: 's1', note: null, amountAtChange: 24000 },
   ],
@@ -412,9 +420,15 @@ describe('one deal', () => {
     expect(screen.queryByRole('button', { name: 'Hand the car over' })).not.toBeInTheDocument();
   });
 
-  it('offers approval once it has been submitted, and says who may not do it', async () => {
+  it('offers approval once it has been submitted, when the caller is allowed it', async () => {
     mockApi({
-      '/deals/d1': { ok: true, body: detail({ status: 'Submitted', termsAreOpen: false }) },
+      '/deals/d1': {
+        ok: true,
+        body: detail({
+          status: 'Submitted', termsAreOpen: false,
+          availableMoves: ['Approved', 'Draft', 'Cancelled'],
+        }),
+      },
       '/deals': { ok: true, body: page([{ ...summary, status: 'Submitted' }]) },
     });
 
@@ -422,13 +436,38 @@ describe('one deal', () => {
     await openDeal();
 
     expect(await screen.findByRole('button', { name: 'Approve' })).toBeVisible();
-    expect(screen.getByText(/cannot be the one who approves it/)).toBeVisible();
     expect(screen.getByText(/numbers are frozen/)).toBeVisible();
+  });
+
+  it('does not offer approval when the server left it out of availableMoves', async () => {
+    // The own-deal exclusion, and every other reason Approve might be missing,
+    // is the server's decision. This fixture is what it looks like on the wire
+    // when the caller built this deal themselves — the button must simply not
+    // be there, with nothing in this file saying why.
+    mockApi({
+      '/deals/d1': {
+        ok: true,
+        body: detail({
+          status: 'Submitted', termsAreOpen: false,
+          availableMoves: ['Draft', 'Cancelled'],
+        }),
+      },
+      '/deals': { ok: true, body: page([{ ...summary, status: 'Submitted' }]) },
+    });
+
+    renderDeals();
+    await openDeal();
+
+    await screen.findByRole('button', { name: 'Send back for changes' });
+    expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
   });
 
   it('shows the server’s refusal rather than predicting it', async () => {
     mockApi({
-      '/deals/d1': { ok: true, body: detail({ status: 'Submitted' }) },
+      '/deals/d1': {
+        ok: true,
+        body: detail({ status: 'Submitted', availableMoves: ['Approved', 'Draft', 'Cancelled'] }),
+      },
       '/deals/d1/status': {
         ok: false, status: 403, code: 'deals.self_approval',
         detail: 'You cannot approve a deal you built.',
@@ -445,10 +484,62 @@ describe('one deal', () => {
     expect(await screen.findByText('You cannot approve a deal you built.')).toBeVisible();
   });
 
+  it('sends a submitted deal back for changes, and posts the status it means', async () => {
+    mockApi({
+      '/deals/d1': {
+        ok: true,
+        body: detail({
+          status: 'Submitted', termsAreOpen: false,
+          availableMoves: ['Approved', 'Draft', 'Cancelled'],
+        }),
+      },
+      '/deals/d1/status': { ok: true, body: detail({ status: 'Draft' }) },
+      '/deals': { ok: true, body: page([{ ...summary, status: 'Submitted' }]) },
+    });
+
+    renderDeals();
+    await openDeal();
+    await userEvent.click(await screen.findByRole('button', { name: 'Send back for changes' }));
+
+    const sent = apiCalls().find((call) => call.path === '/deals/d1/status');
+    const body = JSON.parse(sent!.init!.body as string) as { status: string; note: string | null };
+    expect(body.status).toBe('Draft');
+    expect(body.note).toBeTruthy();
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send to a manager' })).toBeVisible());
+  });
+
+  it('marks a deal lost as Cancelled on the wire, labelled Lost on the screen', async () => {
+    // The two names differ on purpose — see the rename note on DealStatus in
+    // contracts.ts. This is the test that would have caught it: the button
+    // used to post a status the server has never recognised.
+    mockApi({
+      '/deals/d1': { ok: true, body: detail({ status: 'Draft' }) },
+      '/deals/d1/status': { ok: true, body: detail({ status: 'Cancelled', availableMoves: [] }) },
+      '/deals': { ok: true, body: page([summary]) },
+    });
+
+    renderDeals();
+    await openDeal();
+    await userEvent.click(await screen.findByRole('button', { name: 'Mark lost' }));
+
+    const sent = apiCalls().find((call) => call.path === '/deals/d1/status');
+    const body = JSON.parse(sent!.init!.body as string) as { status: string };
+    expect(body.status).toBe('Cancelled');
+
+    await waitFor(() => expect(screen.getByText(/This deal is finished/)).toBeVisible());
+  });
+
   it('moves a deal on and reflects the new stage', async () => {
     mockApi({
       '/deals/d1': { ok: true, body: detail({ status: 'Draft' }) },
-      '/deals/d1/status': { ok: true, body: detail({ status: 'Submitted', termsAreOpen: false }) },
+      '/deals/d1/status': {
+        ok: true,
+        body: detail({
+          status: 'Submitted', termsAreOpen: false,
+          availableMoves: ['Approved', 'Draft', 'Cancelled'],
+        }),
+      },
       '/deals': { ok: true, body: page([summary]) },
     });
 
@@ -461,7 +552,7 @@ describe('one deal', () => {
 
   it('offers nothing on a finished deal', async () => {
     mockApi({
-      '/deals/d1': { ok: true, body: detail({ status: 'Delivered' }) },
+      '/deals/d1': { ok: true, body: detail({ status: 'Delivered', availableMoves: [] }) },
       '/deals': { ok: true, body: page([{ ...summary, status: 'Delivered' }]) },
     });
 

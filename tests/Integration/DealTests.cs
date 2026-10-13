@@ -187,6 +187,136 @@ public sealed class DealTests(HostFixture fixture)
         write.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    // --- availableMoves: a button a caller would be refused is never offered ---
+
+    [Fact]
+    public async Task AvailableMoves_excludes_approval_for_the_deals_own_salesperson()
+    {
+        // Same shape as Nobody_approves_their_own_deal_even_holding_the_permission:
+        // the manager holds Deals.Approve and every other right, and it is still
+        // their own deal. The point here is not the refusal — it is that the
+        // button offering it was never there to click.
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var unitId = await ReceiveAvailableUnitAsync(rooftop);
+
+        using var started = await PostAsync(Deals, Manager, new
+        {
+            rooftopId = rooftop,
+            customerId = await AddCustomerAsync(),
+            inventoryUnitId = unitId,
+            currency = "USD",
+        });
+        var dealId = (await started.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+
+        await PriceAsync(dealId, Manager);
+        (await MoveAsync(dealId, Manager, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        using var response = await SendAsync(HttpMethod.Get, $"{Deals}/{dealId}", Manager);
+        var moves = (await response.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("availableMoves").EnumerateArray().Select(m => m.GetString()).ToList();
+
+        moves.Should().NotContain("Approved", because: "it is this caller's own deal");
+        // Holding Deals.Write, which building the deal already required, is enough
+        // to send it back or mark it lost — neither is a sign-off.
+        moves.Should().Contain("Draft");
+        moves.Should().Contain("Cancelled");
+    }
+
+    [Fact]
+    public async Task AvailableMoves_includes_approval_for_a_manager_who_did_not_build_the_deal()
+    {
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Sales, rooftop);
+        await PriceAsync(dealId, Sales);
+        (await MoveAsync(dealId, Sales, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        using var response = await SendAsync(HttpMethod.Get, $"{Deals}/{dealId}", Manager);
+        var moves = (await response.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("availableMoves").EnumerateArray().Select(m => m.GetString()).ToList();
+
+        moves.Should().Contain("Approved");
+    }
+
+    [Fact]
+    public async Task AvailableMoves_is_empty_for_a_caller_who_only_holds_read()
+    {
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Manager, rooftop);
+        await PriceAsync(dealId, Manager);
+        (await MoveAsync(dealId, Manager, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        using var response = await SendAsync(HttpMethod.Get, $"{Deals}/{dealId}", Advisor);
+        var moves = (await response.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("availableMoves").EnumerateArray().ToList();
+
+        moves.Should().BeEmpty(because: "the advisor holds Deals.Read and nothing that changes a deal");
+    }
+
+    // --- sending a submitted deal back for changes --------------------------
+
+    [Fact]
+    public async Task A_submitted_deal_can_be_sent_back_for_changes()
+    {
+        // Draft is reachable only from Submitted (DealStatusRules.Allowed) — an
+        // Approved deal can fall through to Delivered or Cancelled and nowhere
+        // else, so a manager who wants changes has to act BEFORE approving, not
+        // after. That is the scenario this register row actually describes: a
+        // submitted deal with a wrong figure, not yet signed off.
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Sales, rooftop);
+        await PriceAsync(dealId, Sales);
+        (await MoveAsync(dealId, Sales, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        using var sentBack = await PostAsync($"{Deals}/{dealId}/status", Manager,
+            new { status = "Draft", note = "Trade-in allowance looks wrong, please check." });
+
+        sentBack.StatusCode.Should().Be(HttpStatusCode.OK, because: await sentBack.Content.ReadAsStringAsync());
+        var body = await sentBack.Content.ReadFromJsonAsync<JsonElement>();
+
+        body.GetProperty("status").GetString().Should().Be("Draft");
+        body.GetProperty("termsAreOpen").GetBoolean().Should().BeTrue(
+            because: "the figures are meant to be editable again");
+        // Already null on an unapproved deal — asserted anyway because
+        // Deal.ChangeStatus clears both fields unconditionally on any move to
+        // Draft, and a later change widening Draft's sources (say, from
+        // Approved) must not leave a stale approver's name on a reopened deal.
+        body.GetProperty("approvedByUserId").ValueKind.Should().Be(JsonValueKind.Null);
+        body.GetProperty("approvedAt").ValueKind.Should().Be(JsonValueKind.Null);
+
+        var history = body.GetProperty("history").EnumerateArray().ToList();
+        history.Last().GetProperty("toStatus").GetString().Should().Be("Draft");
+        history.Last().GetProperty("changedByUserId").GetString().Should().NotBeNullOrEmpty(
+            because: "the history records who sent it back");
+        history.Last().GetProperty("note").GetString().Should().Be(
+            "Trade-in allowance looks wrong, please check.");
+    }
+
+    [Fact]
+    public async Task Sending_a_deal_back_needs_no_more_than_the_right_that_built_it()
+    {
+        // The decision, written down and proved: Deals.Write is enough — the
+        // same right Sales already holds and used to build the deal. Sending it
+        // back is not a sign-off, so it is not raised to Deals.Approve.
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Sales, rooftop);
+        await PriceAsync(dealId, Sales);
+        (await MoveAsync(dealId, Sales, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        (await MoveAsync(dealId, Sales, "Draft")).Should().Be(HttpStatusCode.OK,
+            because: "the salesperson who spotted their own mistake should not have to wait on a manager");
+    }
+
+    [Fact]
+    public async Task An_advisor_cannot_send_a_deal_back_with_only_read()
+    {
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var dealId = await StartDealAsync(Manager, rooftop);
+        await PriceAsync(dealId, Manager);
+        (await MoveAsync(dealId, Manager, "Submitted")).Should().Be(HttpStatusCode.OK);
+
+        (await MoveAsync(dealId, Advisor, "Draft")).Should().Be(HttpStatusCode.Forbidden);
+    }
+
     // --- the rooftop boundary ----------------------------------------------
 
     [Fact]

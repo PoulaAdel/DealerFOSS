@@ -199,7 +199,7 @@ export const ru: Catalogue = {
   'enum.dealStatus.Submitted': 'На согласовании',
   'enum.dealStatus.Approved': 'Согласована',
   'enum.dealStatus.Delivered': 'Выдан автомобиль',
-  'enum.dealStatus.Lost': 'Потеряна',
+  'enum.dealStatus.Cancelled': 'Потеряна',
 
   'enum.chargeKind.VehiclePrice': 'Цена автомобиля',
   'enum.chargeKind.Fee': 'Сбор',
@@ -812,10 +812,10 @@ export const ru: Catalogue = {
   'deals.sendToManager': 'Отправить руководителю',
   'deals.approve': 'Согласовать',
   'deals.handOver': 'Выдать автомобиль',
+  'deals.sendBack': 'Вернуть на доработку',
+  'deals.sentBackNote': 'Возвращена на доработку.',
   'deals.markLost': 'Отметить как потерянную',
   'deals.markedLostNote': 'Отмечена как потерянная в отделе продаж.',
-  'deals.cannotApproveOwn':
-    'Тот, кто собрал сделку, не может сам её согласовать. Если это вы — согласовать должен руководитель.',
 
   'deals.soldWithTheCar': 'Продано вместе с автомобилем',
   'deals.colProduct': 'Продукт',

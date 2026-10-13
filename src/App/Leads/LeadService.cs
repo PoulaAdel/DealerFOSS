@@ -403,6 +403,14 @@ public sealed class LeadService(
             history = lead.History.ToList();
         }
 
+        // GetAuthorizedScopeAsync and Allows, not IsAuthorizedAsync: this runs on
+        // every read, including one nobody is about to act on, and the auditing
+        // overload would write a Denied row per view. Every move needs the same
+        // Leads.Manage, so the answer is all-or-nothing rather than per-move —
+        // unlike Deals, nothing here splits write from approve.
+        var mayMove = (await _access.GetAuthorizedScopeAsync(_currentUser.Id, ManagePermission, cancellationToken))
+            .Allows(lead.RooftopId, PoolOrOwn(lead));
+
         return Result.Success(new LeadDetail(
             lead.Id,
             lead.RooftopId,
@@ -422,7 +430,7 @@ public sealed class LeadService(
             lead.CapturedAt,
             lead.ClosedAt,
             lead.IsOpen,
-            LeadStatusRules.MovesFrom(lead.Status).Select(s => s.ToString()).ToList(),
+            mayMove ? LeadStatusRules.MovesFrom(lead.Status).Select(s => s.ToString()).ToList() : [],
             history
                 .OrderBy(h => h.OccurredAt)
                 .ThenBy(h => h.Sequence)

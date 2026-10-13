@@ -206,7 +206,7 @@ export const es: Catalogue = {
   'enum.dealStatus.Submitted': 'Enviada',
   'enum.dealStatus.Approved': 'Aprobada',
   'enum.dealStatus.Delivered': 'Entregada',
-  'enum.dealStatus.Lost': 'Perdida',
+  'enum.dealStatus.Cancelled': 'Perdida',
 
   'enum.chargeKind.VehiclePrice': 'Precio del vehículo',
   'enum.chargeKind.Fee': 'Gasto',
@@ -786,10 +786,10 @@ export const es: Catalogue = {
   'deals.sendToManager': 'Enviar a un responsable',
   'deals.approve': 'Aprobar',
   'deals.handOver': 'Entregar el vehículo',
+  'deals.sendBack': 'Devolver para cambios',
+  'deals.sentBackNote': 'Devuelta para cambios.',
   'deals.markLost': 'Marcar como perdida',
   'deals.markedLostNote': 'Marcada como perdida desde la mesa de operaciones.',
-  'deals.cannotApproveOwn':
-    'Quien prepara una operación no puede ser quien la aprueba. Si es usted, tiene que hacerlo un responsable.',
 
   'deals.soldWithTheCar': 'Vendido con el vehículo',
   'deals.colProduct': 'Producto',

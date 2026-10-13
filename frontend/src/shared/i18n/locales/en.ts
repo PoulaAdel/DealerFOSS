@@ -213,7 +213,7 @@ export const en = {
   'enum.dealStatus.Submitted': 'Submitted',
   'enum.dealStatus.Approved': 'Approved',
   'enum.dealStatus.Delivered': 'Delivered',
-  'enum.dealStatus.Lost': 'Lost',
+  'enum.dealStatus.Cancelled': 'Lost',
 
   'enum.chargeKind.VehiclePrice': 'Vehicle price',
   'enum.chargeKind.Fee': 'Fee',
@@ -803,10 +803,10 @@ export const en = {
   'deals.sendToManager': 'Send to a manager',
   'deals.approve': 'Approve',
   'deals.handOver': 'Hand the car over',
+  'deals.sendBack': 'Send back for changes',
+  'deals.sentBackNote': 'Sent back for changes.',
   'deals.markLost': 'Mark lost',
   'deals.markedLostNote': 'Marked lost from the deal desk.',
-  'deals.cannotApproveOwn':
-    'Whoever built this deal cannot be the one who approves it. If that is you, a manager has to do it.',
 
   'deals.soldWithTheCar': 'Sold with the car',
   'deals.colProduct': 'Product',

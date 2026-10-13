@@ -117,6 +117,20 @@ public sealed class LeadTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task AvailableMoves_is_empty_for_a_caller_who_cannot_act_on_the_lead()
+    {
+        // Domain-legal is not the same question as caller-legal (ADR-030). The
+        // advisor can read the enquiry — that is a separate right — but holds no
+        // Leads.Manage anywhere, so the chase screen must offer nothing to click
+        // rather than four buttons that all answer 403.
+        var leadId = await CaptureAsync(Manager, await RooftopIdAsync("NAG-01"));
+
+        using var response = await SendAsync(HttpMethod.Get, $"{Leads}/{leadId}", Advisor);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Moves(await response.Content.ReadFromJsonAsync<JsonElement>()).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task A_move_the_life_cycle_does_not_allow_is_refused_with_a_reason()
     {
         var leadId = await CaptureAsync(Manager, await RooftopIdAsync("NAG-01"));

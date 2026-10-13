@@ -68,6 +68,7 @@ const deal: DealDetail = {
   taxedAt: null,
   registrationAddress: null,
   financing: null,
+  availableMoves: ['Submitted', 'Cancelled'],
   salespersonUserId: 'u9',
   isApproved: false,
   history: [],

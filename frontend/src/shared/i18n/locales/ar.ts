@@ -207,7 +207,7 @@ export const ar: Catalogue = {
   'enum.dealStatus.Submitted': 'مُقدَّمة للاعتماد',
   'enum.dealStatus.Approved': 'معتمدة',
   'enum.dealStatus.Delivered': 'مُسلَّمة',
-  'enum.dealStatus.Lost': 'خاسرة',
+  'enum.dealStatus.Cancelled': 'خاسرة',
 
   'enum.chargeKind.VehiclePrice': 'سعر السيارة',
   'enum.chargeKind.Fee': 'رسوم',
@@ -833,10 +833,10 @@ export const ar: Catalogue = {
   'deals.sendToManager': 'أرسِلها إلى المدير',
   'deals.approve': 'اعتماد',
   'deals.handOver': 'تسليم السيارة',
+  'deals.sendBack': 'إعادتها للتعديل',
+  'deals.sentBackNote': 'أُعيدت للتعديل.',
   'deals.markLost': 'اعتبرها خاسرة',
   'deals.markedLostNote': 'اعتُبرت خاسرة من مكتب المبيعات.',
-  'deals.cannotApproveOwn':
-    'من أعدَّ هذه الصفقة لا يمكنه اعتمادها بنفسه. إن كنت أنت، فعلى مدير أن يفعل ذلك.',
 
   'deals.soldWithTheCar': 'بيع مع السيارة',
   'deals.colProduct': 'المنتج',

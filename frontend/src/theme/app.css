@@ -1535,7 +1535,8 @@ button.danger:hover:not(:disabled) {
   color: var(--done);
 }
 
-.chip--lost {
+.chip--lost,
+.chip--cancelled {
   background: var(--fail-soft);
   color: var(--fail);
 }

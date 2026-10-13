@@ -84,12 +84,12 @@ public sealed record LeadDetail(
     bool IsOpen,
 
     /// <summary>
-    /// The statuses this lead may move to, from <see cref="LeadStatusRules"/>.
-    ///
-    /// Sent so a screen offers exactly what the domain allows instead of keeping
-    /// its own copy of the transition table — two copies would drift, and the
-    /// browser's would be the wrong one. Whether *this caller* may make the move
-    /// is still the server's answer on the way in.
+    /// The statuses this CALLER may move this lead to from here —
+    /// <see cref="LeadStatusRules"/>'s domain-legal moves, and empty rather than
+    /// the full list when they do not hold <c>Leads.Manage</c> here (ADR-030: an
+    /// unclaimed enquiry counts as theirs too, so it is not hidden from somebody
+    /// limited to their own work). The server still enforces this independently
+    /// on the way in — this is a hint for drawing the screen, not the decision.
     /// </summary>
     IReadOnlyList<string> AvailableMoves,
     IReadOnlyList<LeadHistoryEntry> History);

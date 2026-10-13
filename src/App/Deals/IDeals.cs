@@ -189,6 +189,15 @@ public sealed record DealDetail(
     /// </summary>
     DealFinancingView? Financing,
 
+    /// <summary>
+    /// The statuses this caller may move this deal to from here — domain-legal
+    /// AND something they personally hold the right to do, including the rule
+    /// that nobody approves their own deal. Sent so a screen offers exactly what
+    /// will be allowed on the way in, rather than predicting from status alone
+    /// and finding out by being refused. See DealService.AvailableMovesAsync.
+    /// </summary>
+    IReadOnlyList<string> AvailableMoves,
+
     IReadOnlyList<DealHistoryEntry> History);
 
 public sealed record ChargeView(string Kind, string Description, decimal Amount);

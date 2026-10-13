@@ -129,15 +129,16 @@ tax figure matches the address the car is being registered at. The system will
 tell you when a tax line contradicts its own basis and rate, but it cannot tell
 you whether the rate is the right one.
 
-Your three buttons are **Approve**, **Hand the car over** once it is approved,
-and **Mark lost**.
+Your buttons are **Approve**, **Hand the car over** once it is approved,
+**Send back for changes**, and **Mark lost**.
 
-**If the numbers are wrong, the screen currently gives you nowhere to go.** The
-figures freeze when a deal leaves Draft, and sending it back to Draft — which
-the rules do allow, and which correctly withdraws your approval with it, because
-a deal that was approved, changed and still shows your name would be a lie about
-what you agreed to — **has no button yet**. Until it does, the salesperson has
-to mark it lost and start again. Recorded, and being fixed; see §9.
+**If the numbers are wrong, send it back rather than approving them or killing
+the deal.** The figures freeze the moment a deal leaves Draft, so a wrong
+discount or trade-in allowance cannot simply be edited in place — sending it
+back reopens them. The salesperson sees exactly why when they reopen it: your
+note travels with the move and sits in the deal's history. You only ever see
+this button on a deal you are actually able to send back; it is not offered on
+one you are not — see the note in §9 on buttons that hide rather than refuse.
 
 ---
 
@@ -267,13 +268,14 @@ Worth knowing before you promise a customer something.
 - **No live link to another dealer system.** Records come in and go out as files
   (see **Records**), and a whole location can be moved to another installation
   with its history intact.
-- **A submitted deal cannot be sent back for changes from the screen.** The
-  rules allow it and the screen has no button, so a manager who spots a wrong
-  figure can only approve it or mark it lost. Found 2026-10-12 while writing
-  this page; recorded in the scope register and being fixed.
-- **Some buttons refuse you rather than being hidden.** If you are told you
-  cannot do something, that is the server being right, not the screen being
-  broken. Hiding them is being worked on.
+- **On the deal desk, a button you would be refused is not shown at all.**
+  Fixed 2026-10-12: a deal's own salesperson no longer sees **Approve** on it,
+  and anybody who holds nothing that changes a deal sees none of the four
+  action buttons. Send back, hand over and mark lost only appear when you are
+  actually allowed them. The same is not yet true everywhere else in the
+  product — a button elsewhere that refuses you rather than being hidden is
+  the server being right, not the screen being broken, and hiding it there is
+  still being worked on, module by module.
 
 ---
 

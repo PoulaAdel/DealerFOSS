@@ -1009,10 +1009,12 @@ export interface LeadDetail {
   isOpen: boolean;
 
   /**
-   * Where this lead may go from here, decided by `LeadStatusRules` on the server.
+   * Where this lead may go from here — domain-legal per `LeadStatusRules` AND
+   * something this caller holds `Leads.Manage` to do (empty otherwise).
    *
-   * The screen offers exactly these and holds no transition table of its own —
-   * a second copy would drift, and the browser's would be the wrong one.
+   * The screen offers exactly these and holds no transition table, and no
+   * permission check, of its own — a second copy would drift, and the
+   * browser's would be the wrong one.
    */
   availableMoves: LeadStatus[];
   history: LeadHistoryEntry[];
@@ -1020,7 +1022,7 @@ export interface LeadDetail {
 
 // --- selling a car ---
 
-export type DealStatus = 'Draft' | 'Submitted' | 'Approved' | 'Delivered' | 'Lost';
+export type DealStatus = 'Draft' | 'Submitted' | 'Approved' | 'Delivered' | 'Cancelled';
 
 /**
  * Exactly one VehiclePrice per deal; Discount is always negative.
@@ -1121,6 +1123,13 @@ export interface DealDetail extends DealSummary {
   registrationAddress: RegistrationAddressView | null;
   /** How the deal is being paid for over time. Null on a cash deal. */
   financing: DealFinancingView | null;
+  /**
+   * The statuses this caller may move this deal to from here — domain-legal
+   * AND something they personally hold the right to do, including that nobody
+   * approves their own deal. The actions band renders exactly these, not a
+   * prediction from `status` alone — see the note on LeadDetail.availableMoves.
+   */
+  availableMoves: DealStatus[];
   history: DealHistoryEntry[];
 }
 
