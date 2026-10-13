@@ -176,7 +176,7 @@ describe('one deal', () => {
     // somebody asks for another copy of the paperwork. The print button lives in
     // the header for that reason.
     mockApi({
-      '/deals/d1': { ok: true, body: detail({ status: 'Delivered', termsAreOpen: false }) },
+      '/deals/d1': { ok: true, body: detail({ status: 'Delivered', termsAreOpen: false, availableMoves: [] }) },
       '/finance/products': { ok: true, body: [] },
       '/deals': { ok: true, body: page([summary]) },
     });
@@ -250,13 +250,17 @@ describe('one deal', () => {
     mockApi({
       '/deals/d1': {
         ok: true,
-        body: detail({ status: 'Delivered', termsAreOpen: false, products: [sold], productGross: 250 }),
+        body: detail({
+          status: 'Delivered', termsAreOpen: false, availableMoves: [],
+          products: [sold], productGross: 250,
+        }),
       },
       '/deals/d1/products/dp1/cancel': {
         ok: true,
         body: detail({
           status: 'Delivered',
           termsAreOpen: false,
+          availableMoves: [],
           products: [{
             ...sold,
             isCancelled: true,
@@ -297,6 +301,7 @@ describe('one deal', () => {
         body: detail({
           status: 'Delivered',
           termsAreOpen: false,
+          availableMoves: [],
           products: [{
             id: 'dp1',
             financeProductId: 'fp1',
