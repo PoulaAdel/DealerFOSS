@@ -46,6 +46,7 @@ import { CustomersPage } from '../features/customers/CustomersPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
 import { DealsPage } from '../features/deals/DealsPage';
 import { StaffPage } from '../features/staff/StaffPage';
+import { AccessReviewPage } from '../features/staff/AccessReviewPage';
 import { WorkshopPage } from '../features/service/WorkshopPage';
 import { LabourPage } from '../features/service/LabourPage';
 import { PayTypeReportPage } from '../features/service/PayTypeReportPage';
@@ -191,6 +192,7 @@ function AppRoutes() {
         <Route path="/workshop/:id?" element={<WorkshopPage />} />
         <Route path="/parts" element={<PartsPage />} />
         <Route path="/staff" element={<StaffPage />} />
+        <Route path="/security/access-review" element={<AccessReviewPage />} />
         <Route path="/security/second-factor" element={<SecondFactorSetup />} />
         {/* Deliberately NOT reachable while somebody owes a second factor: the
             server allows such a session to reach enrolment and nothing else, so
@@ -279,6 +281,11 @@ const navigation: {
     covers: ['/staff', '/security'],
     links: [
       { to: '/staff', label: 'nav.staff', needs: Permission.StaffRead },
+      // Beside the staff list rather than on its own: a reviewer arriving to ask
+      // "who can approve a deal" is in the same frame of mind as somebody
+      // opening the people list, and a separate destination would be a screen
+      // nobody found.
+      { to: '/security/access-review', label: 'nav.accessReview', needs: Permission.SecurityReviewAccess },
       { to: '/security/second-factor', label: 'nav.secondFactor', needs: null },
       { to: '/security/passkeys', label: 'nav.passkeys', needs: null },
     ],

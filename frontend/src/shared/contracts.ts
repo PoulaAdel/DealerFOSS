@@ -979,6 +979,54 @@ export interface StaffAssignment {
   ownRecordsOnly: boolean;
 }
 
+/**
+ * Who holds which right where, and what the dealership has signed about it.
+ *
+ * One flat table rather than two shapes: "everything Dana can do" and "everyone
+ * who can refund" are both sorts of the same rows, and a flat table is what gets
+ * exported and filed for the Safeguards periodic review.
+ */
+export interface AccessReview {
+  takenAt: string;
+  rows: AccessReviewRow[];
+
+  /** SHA-256 of `rows`. Send it back when signing — see AccessReviewPage. */
+  checksum: string;
+
+  lastSignature: AccessReviewSignature | null;
+
+  /** Null when nobody has ever signed: "never reviewed" beats a date in the past. */
+  nextDueAt: string | null;
+  reviewEveryDays: number;
+}
+
+/**
+ * One person, one permission, and the single grant carrying it to them. Somebody
+ * holding one permission through two roles appears twice, on purpose — collapsing
+ * them would hide that removing one role changes nothing.
+ */
+export interface AccessReviewRow {
+  userId: string;
+  email: string;
+  displayName: string;
+  isActive: boolean;
+  hasSecondFactor: boolean;
+  permission: string;
+  roleName: string;
+  isOrganizationWide: boolean;
+  rooftopId: string | null;
+  ownRecordsOnly: boolean;
+}
+
+export interface AccessReviewSignature {
+  takenAt: string;
+  signedByUserId: string;
+  signedByDisplayName: string;
+  checksum: string;
+  rowCount: number;
+  note: string | null;
+}
+
 export interface StaffRole {
   id: string;
   name: string;

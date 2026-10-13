@@ -45,6 +45,11 @@ export const Permission = {
   // this instead lets it leave the column out altogether, which is the honest
   // drawing of "not yours to see".
   ProfitabilityRead: 'Profitability.Read',
+
+  // Decides whether to draw the access-review destination. Note this is the
+  // navigation half only: the screen itself asks the server and is refused, so
+  // somebody typing the address gets the denied band rather than an empty table.
+  SecurityReviewAccess: 'Security.ReviewAccess',
 } as const;
 
 export type PermissionName = (typeof Permission)[keyof typeof Permission];
