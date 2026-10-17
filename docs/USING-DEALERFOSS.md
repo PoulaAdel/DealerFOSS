@@ -57,8 +57,15 @@ Three separate things narrow what you can reach:
   held back from everybody who is not a manager. This is the one that surprises
   people: you can sell a car perfectly well without being shown what it made.
   If a column looks like it should have a number and says nothing, that is this.
+- **How much you see about your colleagues.** Everybody who can hand work to
+  somebody else sees the staff list — you need it to pass an enquiry on. Most
+  people see names and job titles there, which is what choosing a colleague
+  takes. Who can reach what, their email, and whether they have set up two-step
+  sign-in are a manager's business, so those columns are simply not there for
+  everybody else. They are missing rather than blank: an empty column would look
+  like your colleague had no email and held no job.
 
-All three are decided on the server. Nothing you do in the browser changes what
+All four are decided on the server. Nothing you do in the browser changes what
 you are allowed to do — it only changes what is drawn.
 
 ---

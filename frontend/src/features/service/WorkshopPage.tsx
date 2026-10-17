@@ -74,7 +74,7 @@ import {
   type OpCodeView,
   type PartSummary,
   type ServicePayType,
-  type StaffMember,
+  type StaffSummary,
   type Page,
   type WarrantyClaimView,
 } from '../../shared/contracts';
@@ -1205,14 +1205,14 @@ function Technician({
   onAct: (work: () => Promise<RepairOrderDetail>) => Promise<void>;
 }) {
   const { t } = useI18n();
-  const [colleagues, setColleagues] = useState<StaffMember[]>([]);
+  const [colleagues, setColleagues] = useState<StaffSummary[]>([]);
 
   useEffect(() => {
     let current = true;
 
     void (async () => {
       try {
-        const people = await api<StaffMember[]>('/staff');
+        const people = await api<StaffSummary[]>('/staff');
         if (current) {
           setColleagues(people);
         }
@@ -1230,7 +1230,7 @@ function Technician({
 
   // Same two dead ends as the enquiry handover: somebody who cannot sign in, and
   // somebody holding no role at all, cannot do the work.
-  const options = colleagues.filter((p) => p.canSignIn && p.assignments.length > 0);
+  const options = colleagues.filter((p) => p.canBeAssignedWork);
 
   if (options.length === 0) {
     return null;
@@ -1287,7 +1287,7 @@ function Clock({
 }: {
   job: RepairOrderDetail;
   busy: boolean;
-  colleagues: StaffMember[];
+  colleagues: StaffSummary[];
   onAct: (work: () => Promise<RepairOrderDetail>) => Promise<void>;
 }) {
   const { t, format } = useI18n();

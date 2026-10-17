@@ -112,6 +112,12 @@ const colleague = (over: Record<string, unknown> = {}) => ({
   assignments: [
     { id: 'a1', roleId: 'r', roleName: 'Salesperson', isOrganizationWide: false, rooftopId: 'r1' },
   ],
+
+  // What the picker now reads. A salesperson handing over an enquiry is sent
+  // the narrow shape, which carries no assignments and no canSignIn — the two
+  // facts this screen used to derive the answer from itself.
+  roleNames: ['Salesperson'],
+  canBeAssignedWork: true,
   ...over,
 });
 
@@ -134,7 +140,7 @@ describe('handing an enquiry to a named colleague', () => {
       '/auth/me': signedIn,
       '/leads/l1': { ok: true, body: detail() },
       '/leads': { ok: true, body: page([summary]) },
-      '/staff': { ok: true, body: [colleague({ assignments: [] })] },
+      '/staff': { ok: true, body: [colleague({ canBeAssignedWork: false })] },
     });
     renderLeads();
     await openLead();

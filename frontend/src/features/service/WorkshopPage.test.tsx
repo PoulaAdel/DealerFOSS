@@ -694,6 +694,12 @@ describe('who is doing the work', () => {
     assignments: [
       { id: 'a1', roleId: 'r', roleName: 'Technician', isOrganizationWide: false, rooftopId: 'r1' },
     ],
+
+    // What the picker reads now. An advisor choosing who is on a job is sent
+    // the narrow shape, which carries neither assignments nor canSignIn — the
+    // two facts this screen used to derive the answer from for itself.
+    roleNames: ['Technician'],
+    canBeAssignedWork: true,
   };
 
   it('offers colleagues by name', async () => {

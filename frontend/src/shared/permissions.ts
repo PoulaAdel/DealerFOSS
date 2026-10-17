@@ -35,6 +35,13 @@ export const Permission = {
   PartsRead: 'Parts.Read',
   AccountingRead: 'Accounting.Read',
   StaffRead: 'Staff.Read',
+
+  // Decides whether the staff screen draws the detail COLUMNS, not whether it
+  // draws at all — Staff.Read still opens the screen. The server sends the
+  // narrow shape without this, so a screen that drew the columns anyway would
+  // print empty cells where an email and a role list used to be, which reads as
+  // "this colleague has none" rather than "not yours to see".
+  StaffManage: 'Staff.Manage',
   MigrationImport: 'Migration.Import',
   MigrationExport: 'Migration.Export',
 

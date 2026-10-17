@@ -96,7 +96,49 @@ internal static class StaffEndpoints
             return ReadRefused.ToProblem();
         }
 
-        return Results.Ok(await staff.ListAsync(scope, cancellationToken));
+        // Two shapes from one route, decided by what the caller holds
+        // (maintainer, 2026-10-13). Staff.Read alone is "who are my colleagues",
+        // which the enquiry hand-off needs; reading what each of them may REACH
+        // is auditing the dealership and takes Staff.Manage or the review right.
+        //
+        // One route rather than two because the narrow answer is the DEFAULT and
+        // the detailed one is the exception — a second URL for the safe shape
+        // would leave this one dangerous for anybody who did not know to move.
+        return await MaySeeDetailAsync(currentUser, access, cancellationToken)
+            ? Results.Ok(await staff.ListAsync(scope, cancellationToken))
+            : Results.Ok(await staff.ListNamesAndRolesAsync(scope, cancellationToken));
+    }
+
+    /// <summary>
+    /// Whether this caller may see what a colleague can reach, as opposed to who
+    /// they are.
+    ///
+    /// <para>
+    /// Either right carries it: Staff.Manage because somebody granting access has
+    /// to see what they are changing, and Security.ReviewAccess because reading
+    /// who holds what is the whole job. Both are checked at the caller's own
+    /// scope rather than organization-wide — a one-lot manager administers their
+    /// own lot's people and needs the detail for exactly them, which is the set
+    /// the scoped list already returns.
+    /// </para>
+    /// </summary>
+    private static async Task<bool> MaySeeDetailAsync(
+        ICurrentUser currentUser,
+        IAccessDirectory access,
+        CancellationToken cancellationToken)
+    {
+        var manage = await access.GetAuthorizedScopeAsync(
+            currentUser.Id, Permissions.StaffManage, cancellationToken);
+
+        if (!manage.GrantsNothing)
+        {
+            return true;
+        }
+
+        var review = await access.GetAuthorizedScopeAsync(
+            currentUser.Id, Permissions.SecurityReviewAccess, cancellationToken);
+
+        return !review.GrantsNothing;
     }
 
     private static async Task<IResult> ListRolesAsync(
@@ -138,6 +180,21 @@ internal static class StaffEndpoints
         if (person is null || !VisibleTo(person, scope))
         {
             return StaffErrors.NotFound.ToProblem();
+        }
+
+        // The same split as the list. Opening one colleague must not hand over
+        // what the list withheld, or the narrowing would be a page-size
+        // inconvenience rather than a rule.
+        if (!await MaySeeDetailAsync(currentUser, access, cancellationToken))
+        {
+            return Results.Ok(new StaffSummary(
+                person.Id,
+                person.DisplayName,
+                [.. person.Assignments
+                    .Select(a => a.RoleName)
+                    .Distinct(StringComparer.Ordinal)
+                    .OrderBy(name => name, StringComparer.Ordinal)],
+                person.CanSignIn && person.Assignments.Count > 0));
         }
 
         return Results.Ok(person);

@@ -146,6 +146,16 @@ public sealed class BoundaryTests
             // this surface never hands out a reusable credential.
             "IStaffDirectory", "StaffMember", "StaffAssignment", "StaffRole",
             "NewStaffMember", "StaffEnrolmentCode", "StaffErrors", "StaffName",
+            // Added deliberately, and it is a security decision: the narrow half
+            // of the staff directory, decided by the maintainer on 2026-10-13.
+            // Staff.Read is held by the seeded salesperson so they can hand an
+            // enquiry to a named colleague, and it was returning every person's
+            // roles, rooftops, second-factor state and enrolment state with it.
+            // This is the shape that right now returns — names and role names,
+            // nothing else. A separate TYPE rather than StaffMember with fields
+            // blanked, because an empty assignment list reads as "holds nothing"
+            // and withholding must not be confusable with absence.
+            "StaffSummary",
             // Added deliberately, and it is a security decision rather than a
             // convenience: this is the only unauthenticated surface that can
             // change a password, so widening Identity for it deserves the same

@@ -32,7 +32,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { ApiError, api } from '../../shared/api';
-import type { LabourPerformance, StaffMember } from '../../shared/contracts';
+import type { LabourPerformance, StaffSummary } from '../../shared/contracts';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 
@@ -115,7 +115,7 @@ export function LabourPage() {
 
     void (async () => {
       try {
-        const people = await api<StaffMember[]>('/staff');
+        const people = await api<StaffSummary[]>('/staff');
         if (current) {
           setNames(new Map(people.map((person) => [person.id, person.displayName])));
         }

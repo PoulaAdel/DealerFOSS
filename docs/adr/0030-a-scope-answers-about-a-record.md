@@ -129,6 +129,19 @@ gating by grep — which is how this one was nearly done. (Found by Service &
 Parts reading the caller, 2026-09-30, on a list of six fields from this project
 that contained one input record and two internal ones.)
 
+**And the other half, because the same handover was wrong in both directions:
+enumerate what a capability COMPUTES about money — the capability's owner writes
+that list, not a pattern over declared names.** The six-field list above was
+produced by `grep -nE "decimal\??\s+(Cost|Gross|TotalCost|GrossProfit)\b"`,
+which matches a field whose name *is* one of those words and not one that
+*contains* them. So `PayTypeBucket.PartsCost` and `PartsGrossProfit` were
+invisible to it, and the whole workshop's parts cost and gross stayed readable
+by any advisor until Service & Parts found it on 2026-10-13 — a wider
+disclosure than the single field the handover had named. A pattern will also
+miss `UnitMargin`, `LabourGross` and whatever the next capability calls its own
+money. There is no regex that closes this; only the owner reading their own
+reports does.
+
 **And null still means two things on purpose** — withheld, or never recorded.
 The server does not distinguish them, because to a caller who may not see the
 figure they are the same answer. The browser is told which it is by the

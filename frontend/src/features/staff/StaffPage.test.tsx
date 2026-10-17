@@ -25,6 +25,8 @@ import { MemoryRouter } from 'react-router';
 import { StaffPage } from './StaffPage';
 import { apiCalls, mockApi } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
+import { signedInAs } from '../../test/session';
+import { Permission } from '../../shared/permissions';
 import type { StaffMember, StaffRole } from '../../shared/contracts';
 
 const working: StaffMember = {
@@ -46,6 +48,8 @@ const working: StaffMember = {
       ownRecordsOnly: false,
     },
   ],
+  roleNames: ['Manager'],
+  canBeAssignedWork: true,
 };
 
 const starter: StaffMember = {
@@ -58,6 +62,8 @@ const starter: StaffMember = {
   awaitingEnrolment: true,
   recoveryIssuedAt: null,
   assignments: [],
+  roleNames: [],
+  canBeAssignedWork: false,
 };
 
 const leaver: StaffMember = {
@@ -96,6 +102,10 @@ function renderStaff() {
 
 function withStaff(people: StaffMember[]) {
   mockApi({
+    // A manager, so the screen draws the detail columns. Without this the
+    // session is signed out, every permission check answers false, and the
+    // screen correctly shows the narrow shape — which is its own test below.
+    '/auth/me': signedInAs(),
     '/staff/roles': { ok: true, body: roles },
     '/organization': organization,
     '/staff': { ok: true, body: people },
@@ -265,5 +275,38 @@ describe('changing what somebody may reach', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Dana Whitfield' }));
 
     expect(await screen.findByText(/ends their sessions on the very next request/i)).toBeVisible();
+  });
+
+  it('shows a salesperson who their colleagues are, not what each one can reach', async () => {
+    // The maintainer's decision of 2026-10-13. The server sends this caller the
+    // narrow shape, so the columns are ABSENT rather than empty: a blank email
+    // cell reads as "this colleague has none", which is the conflation the
+    // split exists to remove.
+    setCurrentTenant('northgroup');
+
+    mockApi({
+      '/auth/me': signedInAs([Permission.StaffRead]),
+      '/staff/roles': { ok: true, body: roles },
+      '/organization': organization,
+      '/staff': {
+        ok: true,
+        body: [{ id: 'u1', displayName: 'Dana Whitfield', roleNames: ['Manager'], canBeAssignedWork: true }],
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/staff']}>
+        <StaffPage />
+      </MemoryRouter>,
+    );
+
+    // Who they are, and what they do — both still there.
+    expect(await screen.findByRole('button', { name: 'Dana Whitfield' })).toBeVisible();
+    expect(screen.getByText('Manager')).toBeVisible();
+
+    // What they can reach, and how they sign in — gone.
+    expect(screen.queryByRole('columnheader', { name: 'Email' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Two-step' })).not.toBeInTheDocument();
+    expect(screen.queryByText('gm@dev.local')).not.toBeInTheDocument();
   });
 });

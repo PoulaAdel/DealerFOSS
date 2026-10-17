@@ -47,6 +47,32 @@ public interface IStaffDirectory
     /// </summary>
     Task<IReadOnlyList<StaffMember>> ListAsync(AuthorizedScope scope, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The same people, as somebody who may know WHO their colleagues are but not
+    /// what each of them can reach.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A separate shape rather than <see cref="StaffMember"/> with fields blanked
+    /// out, decided by the maintainer on 2026-10-13. Blanking would still ship
+    /// the field names, and a caller reading <c>assignments: []</c> cannot tell
+    /// "none" from "not yours to know" — which is the same conflation this
+    /// project removed from cost and gross, and would be worse here because an
+    /// empty grant list reads as "this colleague holds nothing".
+    /// </para>
+    /// <para>
+    /// <see cref="StaffSummary.CanBeAssignedWork"/> is the one thing a picker
+    /// actually needs, and it is ANSWERED here rather than derived in the
+    /// browser from security state it should not have (ADR-025). Before this,
+    /// three screens each computed it as <c>canSignIn &amp;&amp;
+    /// assignments.length &gt; 0</c> — three copies of a rule, over two fields
+    /// that are now withheld.
+    /// </para>
+    /// </remarks>
+    Task<IReadOnlyList<StaffSummary>> ListNamesAndRolesAsync(
+        AuthorizedScope scope,
+        CancellationToken cancellationToken);
+
     Task<StaffMember?> GetAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
@@ -199,6 +225,32 @@ public sealed record StaffMember(
 /// never drags a security state onto a screen that only needed a label.
 /// </summary>
 public sealed record StaffName(Guid Id, string DisplayName);
+
+/// <summary>
+/// A colleague, to somebody who may hand them work but may not audit them.
+///
+/// <para>
+/// Note what is absent, because that is the whole point of the type: no email,
+/// no assignments, no rooftops, no second-factor state, no enrolment state. The
+/// maintainer's decision on 2026-10-13 was "names and roles", and email was not
+/// in it — a salesperson handing over an enquiry picks a person, not an address.
+/// </para>
+/// </summary>
+/// <param name="RoleNames">
+/// What each colleague does, which is how you choose between two people with
+/// similar names. Role NAMES only — not what those roles grant, which is the
+/// line between knowing who to ask and auditing the dealership.
+/// </param>
+/// <param name="CanBeAssignedWork">
+/// Whether handing this person something would actually work: they can sign in
+/// and they hold at least one grant. The server's answer, so no screen has to
+/// reconstruct it from state it can no longer see.
+/// </param>
+public sealed record StaffSummary(
+    Guid Id,
+    string DisplayName,
+    IReadOnlyList<string> RoleNames,
+    bool CanBeAssignedWork);
 
 /// <summary>One grant: a role, at a rooftop or across the organization.</summary>
 public sealed record StaffAssignment(

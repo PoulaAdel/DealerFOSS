@@ -961,7 +961,13 @@ export interface RegisteredPasskey {
 }
 
 /** One colleague, as the staff screen sees them. Carries no credential material. */
-export interface StaffMember {
+/**
+ * The whole picture of a colleague, for a caller holding `Staff.Manage` or
+ * `Security.ReviewAccess`. Extends {@link StaffSummary} on purpose: a screen
+ * needing only names and roles types against the narrow one and then works for
+ * both kinds of caller.
+ */
+export interface StaffMember extends StaffSummary {
   id: string;
   email: string;
   displayName: string;
@@ -1041,6 +1047,29 @@ export interface AccessReviewSignature {
   checksum: string;
   rowCount: number;
   note: string | null;
+}
+
+/**
+ * A colleague, as somebody who may hand them work but may not audit them sees
+ * them. What `GET /staff` returns to a caller holding only `Staff.Read`.
+ *
+ * `StaffMember` is a superset, so anything that only needs this shape should
+ * type against it and work for both kinds of caller — which is what the three
+ * pickers do.
+ */
+export interface StaffSummary {
+  id: string;
+  displayName: string;
+
+  /** Role names only — not what those roles grant. */
+  roleNames: string[];
+
+  /**
+   * Whether handing this person work would actually land: they can sign in and
+   * hold at least one grant. The server's answer, because the two facts behind
+   * it are withheld from exactly the callers who need this question answered.
+   */
+  canBeAssignedWork: boolean;
 }
 
 export interface StaffRole {

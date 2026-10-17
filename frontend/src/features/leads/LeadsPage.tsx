@@ -37,7 +37,7 @@ import type {
   LeadStatus,
   LeadSummary,
   Page,
-  StaffMember,
+  StaffSummary,
 } from '../../shared/contracts';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useEnumLabel } from '../../shared/i18n/enums';
@@ -402,14 +402,14 @@ function HandOver({
   onHandOver: (userId: string) => void;
 }) {
   const { t } = useI18n();
-  const [colleagues, setColleagues] = useState<StaffMember[] | null>(null);
+  const [colleagues, setColleagues] = useState<StaffSummary[] | null>(null);
 
   useEffect(() => {
     let current = true;
 
     void (async () => {
       try {
-        const people = await api<StaffMember[]>('/staff');
+        const people = await api<StaffSummary[]>('/staff');
         if (current) {
           setColleagues(people);
         }
@@ -433,7 +433,7 @@ function HandOver({
   // beyond that would mean guessing at permissions from here, and the server is
   // the only party that actually knows.
   const options = (colleagues ?? []).filter(
-    (p) => p.canSignIn && p.assignments.length > 0 && p.id !== exclude,
+    (p) => p.canBeAssignedWork && p.id !== exclude,
   );
 
   if (options.length === 0) {

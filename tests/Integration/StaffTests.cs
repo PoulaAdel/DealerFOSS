@@ -492,6 +492,85 @@ public sealed class StaffTests(HostFixture fixture)
             .ToString();
     }
 
+    // --- who may see what a colleague can reach (maintainer, 2026-10-13) ------
+
+    /// <summary>
+    /// The salesperson holds Staff.Read so they can hand an enquiry to a named
+    /// colleague. Until this split that right also returned every person's roles,
+    /// rooftops, second-factor state and enrolment state — the whole dealership's
+    /// access map, to anybody who could pick a name from a list.
+    /// </summary>
+    [Fact]
+    public async Task Somebody_who_may_know_their_colleagues_is_not_shown_what_each_can_reach()
+    {
+        using var response = await SendAsync(
+            HttpMethod.Get, Staff, DevelopmentSeeder.DevUsers.SalespersonEmail);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "the enquiry hand-off depends on this list — the split must not break it");
+
+        var body = await response.Content.ReadAsStringAsync();
+
+        // Asserted on the RAW BODY rather than on parsed fields, deliberately.
+        // A blanked field still ships its name, and "assignments": [] reads as
+        // "this colleague holds nothing" — the conflation this split exists to
+        // remove. The names must be absent, not empty.
+        foreach (var withheld in new[]
+        {
+            "assignments", "email", "hasSecondFactor", "canSignIn",
+            "awaitingEnrolment", "recoveryIssuedAt", "isActive", "rooftopId",
+        })
+        {
+            body.Should().NotContain(withheld,
+                because: $"{withheld} is what a colleague can reach or how they sign in, "
+                    + "and neither is part of knowing who they are");
+        }
+
+        var people = (await response.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().ToList();
+        people.Should().NotBeEmpty();
+
+        // And it still answers the question a picker asks.
+        people.Should().Contain(p => p.GetProperty("canBeAssignedWork").GetBoolean());
+        people.Should().AllSatisfy(p =>
+            p.GetProperty("displayName").GetString().Should().NotBeNullOrWhiteSpace());
+
+        people.Should().Contain(
+            p => p.GetProperty("roleNames").EnumerateArray().Any(),
+            because: "roles are what the maintainer allowed, and how you tell two colleagues apart");
+    }
+
+    [Fact]
+    public async Task A_manager_still_sees_the_whole_picture()
+    {
+        // The control. Without it the test above would pass just as well if the
+        // endpoint had started returning nothing to anybody.
+        using var response = await SendAsync(HttpMethod.Get, Staff, Manager);
+
+        var body = await response.Content.ReadAsStringAsync();
+
+        body.Should().Contain("assignments");
+        body.Should().Contain("hasSecondFactor");
+        body.Should().Contain(DevelopmentSeeder.DevUsers.SalespersonEmail);
+    }
+
+    [Fact]
+    public async Task Opening_one_colleague_does_not_hand_back_what_the_list_withheld()
+    {
+        // Otherwise the narrowing is a page-size inconvenience rather than a rule.
+        using var response = await SendAsync(
+            HttpMethod.Get,
+            $"{Staff}/{DevelopmentSeeder.DevUsers.OrganizationWide}",
+            DevelopmentSeeder.DevUsers.SalespersonEmail);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadAsStringAsync();
+
+        body.Should().NotContain("assignments");
+        body.Should().NotContain("email");
+        body.Should().Contain("roleNames");
+    }
+
     private async Task<HttpResponseMessage> SendAsync(
         HttpMethod method, string path, string email, object? body = null) =>
         await SendAsync(method, path, await _fixture.SignInAsync(email, Tenant), body);

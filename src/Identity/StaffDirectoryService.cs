@@ -45,6 +45,44 @@ internal sealed class StaffDirectoryService(
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
 
+    public async Task<IReadOnlyList<StaffSummary>> ListNamesAndRolesAsync(
+        AuthorizedScope scope,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+
+        if (scope.GrantsNothing)
+        {
+            return [];
+        }
+
+        // Deliberately built from the same query as the full list, so the two
+        // answers describe the same set of people. A narrower shape that was
+        // also a narrower SET would mean a salesperson's picker quietly missing
+        // a colleague the manager can see, which is a different bug wearing this
+        // one's clothes.
+        var users = await ScopedUsersAsync(scope, cancellationToken);
+
+        var roleNames = await _db.Roles
+            .AsNoTracking()
+            .ToDictionaryAsync(r => r.Id, r => r.Name, cancellationToken);
+
+        return users.ConvertAll(user => new StaffSummary(
+            user.Id,
+            user.DisplayName,
+            [.. user.Assignments
+                .Select(a => roleNames.TryGetValue(a.RoleId, out var name) ? name : null)
+                .Where(name => name is not null)
+                .Select(name => name!)
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(name => name, StringComparer.Ordinal)],
+
+            // The two dead ends the pickers used to work out for themselves,
+            // answered once here: somebody who cannot sign in, and somebody
+            // holding no grant at all, cannot be given work.
+            user.CanSignIn && user.Assignments.Count > 0));
+    }
+
     public async Task<IReadOnlyList<StaffMember>> ListAsync(
         AuthorizedScope scope,
         CancellationToken cancellationToken)
@@ -56,6 +94,17 @@ internal sealed class StaffDirectoryService(
             return [];
         }
 
+        return await DescribeAsync(await ScopedUsersAsync(scope, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// The people this caller's scope reaches. Shared by both list shapes so the
+    /// narrow answer and the full one are about the same set of colleagues.
+    /// </summary>
+    private async Task<List<User>> ScopedUsersAsync(
+        AuthorizedScope scope,
+        CancellationToken cancellationToken)
+    {
         var query = _db.Users
             .AsNoTracking()
             .Include(u => u.Assignments)
@@ -72,11 +121,9 @@ internal sealed class StaffDirectoryService(
                 || (a.RooftopId != null && allowed.Contains(a.RooftopId.Value))));
         }
 
-        var users = await query
+        return await query
             .OrderBy(u => u.DisplayName)
             .ToListAsync(cancellationToken);
-
-        return await DescribeAsync(users, cancellationToken);
     }
 
     public async Task<StaffMember?> GetAsync(Guid userId, CancellationToken cancellationToken)

@@ -29,6 +29,8 @@ import { ApiError, api, post, remove } from '../../shared/api';
 import { CloseButton } from '../../shared/CloseButton';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { Permission } from '../../shared/permissions';
+import { useSession } from '../../app/session';
 import type { RooftopSummary, StaffEnrolmentCode, StaffMember, StaffRole } from '../../shared/contracts';
 
 type Load =
@@ -40,6 +42,13 @@ type Load =
 export function StaffPage() {
   const { t } = useI18n();
   const describe = useApiMessage();
+  const { holds } = useSession();
+
+  // Mirrors what the server decides (maintainer, 2026-10-13): either right
+  // carries the detail. Asking here only decides what to DRAW — a caller
+  // without it is sent the narrow shape regardless of what this says.
+  const showsDetail =
+    holds(Permission.StaffManage) || holds(Permission.SecurityReviewAccess);
 
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [roles, setRoles] = useState<StaffRole[]>([]);
@@ -168,10 +177,15 @@ export function StaffPage() {
             <thead>
               <tr>
                 <th scope="col">{t('staff.colName')}</th>
-                <th scope="col">{t('staff.colEmail')}</th>
+                {/* The three detail columns are absent, not empty, for somebody
+                    holding only Staff.Read — the server sends them nothing to
+                    put there, and a blank cell would read as "this colleague has
+                    no email and holds nothing". Roles stay for everybody: the
+                    maintainer's decision was "names and roles". */}
+                {showsDetail && <th scope="col">{t('staff.colEmail')}</th>}
                 <th scope="col">{t('staff.colHolds')}</th>
-                <th scope="col">{t('staff.colSecondFactor')}</th>
-                <th scope="col">{t('staff.colState')}</th>
+                {showsDetail && <th scope="col">{t('staff.colSecondFactor')}</th>}
+                {showsDetail && <th scope="col">{t('staff.colState')}</th>}
               </tr>
             </thead>
             <tbody>
@@ -182,16 +196,22 @@ export function StaffPage() {
                       {person.displayName}
                     </button>
                   </td>
-                  <td>{person.email}</td>
+                  {showsDetail && <td>{person.email}</td>}
                   <td>
-                    {person.assignments.length === 0
+                    {/* roleNames is on both shapes, so this one cell reads the
+                        same for either caller. */}
+                    {person.roleNames.length === 0
                       ? t('staff.holdsNothing')
-                      : person.assignments.map((a) => a.roleName).join(', ')}
+                      : person.roleNames.join(', ')}
                   </td>
-                  <td>{person.hasSecondFactor ? t('common.yes') : t('common.no')}</td>
-                  <td>
-                    <State person={person} />
-                  </td>
+                  {showsDetail && (
+                    <td>{person.hasSecondFactor ? t('common.yes') : t('common.no')}</td>
+                  )}
+                  {showsDetail && (
+                    <td>
+                      <State person={person} />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
