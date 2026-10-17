@@ -675,6 +675,63 @@ public sealed class RepairOrderTests(HostFixture fixture)
     }
 
     [Fact]
+    public async Task What_the_work_cost_the_dealership_is_withheld_without_the_profit_right()
+    {
+        // Two surfaces, and the second is the one that matters. Withholding a
+        // single job's part cost while leaving the reconciliation report open
+        // would be the narrow refusal with the wide one still standing — one
+        // call over a date range returns what every part sold in the period
+        // cost. That is the shape of the hole the Accounting extension found in
+        // the P&L, and it was open here until this test.
+        var jobId = await OpenJobAsync(Manager, await RooftopIdAsync("NAG-01"));
+        await AddLineAsync(jobId, Manager, new
+        {
+            kind = "Labour", description = "Full service", hours = 1m, rate = 100m,
+        });
+
+        (await MoveAsync(jobId, Manager, "InProgress")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Completed")).Should().Be(HttpStatusCode.OK);
+        (await MoveAsync(jobId, Manager, "Invoiced")).Should().Be(HttpStatusCode.OK);
+
+        // The manager still reads both, so a regression that withheld the
+        // figure from everybody would fail here rather than look like success.
+        var managerReport = await PayTypeReportAsync(Manager);
+        managerReport.GetProperty("byPayer").EnumerateArray()
+            .Should().Contain(p => p.GetProperty("partsCost").ValueKind != JsonValueKind.Null,
+                because: "a manager holds Profitability.Read and the report is the point of it");
+
+        var job = await GetJobAsync(jobId, Advisor);
+
+        job.GetProperty("number").GetString().Should().NotBeNullOrWhiteSpace(
+            because: "the job is still readable; this is a field right, not a record right");
+
+        foreach (var line in job.GetProperty("lines").EnumerateArray())
+        {
+            line.GetProperty("cost").ValueKind.Should().Be(JsonValueKind.Null,
+                because: "the technician who did the work has no more claim on the cost side "
+                    + "than a salesperson has on F&I gross");
+        }
+
+        // And the wide door.
+        var report = await PayTypeReportAsync(Advisor);
+
+        foreach (var payer in report.GetProperty("byPayer").EnumerateArray())
+        {
+            payer.GetProperty("partsCost").ValueKind.Should().Be(JsonValueKind.Null,
+                because: "one call over a date range is what every part in the period cost");
+
+            payer.GetProperty("partsGrossProfit").ValueKind.Should().Be(JsonValueKind.Null,
+                because: "gross is derived from cost, so leaving it real hands the cost "
+                    + "straight back to anybody who can also read partsRevenue");
+
+            // Revenue stays. What a thing sold for is not what it cost, and an
+            // advisor who cannot see the department's own sales cannot work.
+            payer.GetProperty("partsRevenue").ValueKind.Should().NotBe(JsonValueKind.Null);
+            payer.GetProperty("labourRevenue").ValueKind.Should().NotBe(JsonValueKind.Null);
+        }
+    }
+
+    [Fact]
     public async Task The_pay_type_reports_period_is_refused_backwards_too()
     {
         using var response = await SendAsync(

@@ -67,6 +67,7 @@ public sealed class PartsService(
             return Result.Failure<Page<PartSummary>>(PartErrors.Forbidden);
         }
 
+        var profit = await ProfitScopeAsync(cancellationToken);
         var method = await MethodAsync(cancellationToken);
         var take = Paging.Limit(query.Limit, fallback: 100);
         var skip = Paging.Offset(query.Offset);
@@ -124,8 +125,11 @@ public sealed class PartsService(
                 // a part nobody can see is a part nobody can book stock onto.
                 if (!query.InStockOnly)
                 {
+                    // Nothing on a shelf anywhere, so there is no cost to
+                    // withhold and no rooftop to decide against. Zero here is a
+                    // real answer about stock, not a figure about money.
                     summaries.Add(new PartSummary(
-                        part.Id, part.PartNumber, part.Description, null, 0m, 0m, "USD"));
+                        part.Id, part.PartNumber, part.Description, null, 0m, null, "USD"));
                 }
 
                 continue;
@@ -147,7 +151,7 @@ public sealed class PartsService(
                     part.Description,
                     group.Key,
                     onHand,
-                    UnitCost(method, shelf),
+                    profit.Covers(group.Key) ? UnitCost(method, shelf) : null,
                     shelf[0].UnitCostCurrency));
             }
         }
@@ -399,6 +403,22 @@ public sealed class PartsService(
 
     // --- helpers -----------------------------------------------------------
 
+    /// <summary>
+    /// Where this caller may be shown what stock cost the dealership.
+    /// </summary>
+    /// <remarks>
+    /// The whole scope rather than a bool, because a parts list legitimately
+    /// spans rooftops: a group manager who may see the figures at one lot and
+    /// not the next gets a page that is right row by row. A bool decided once
+    /// for the page would be wrong for half of it.
+    ///
+    /// Not IsAuthorizedAsync — that writes a Denied audit row per refusal, and
+    /// somebody scrolling the parts list all day is not an incident.
+    /// </remarks>
+    private async Task<AuthorizedScope> ProfitScopeAsync(CancellationToken cancellationToken) =>
+        await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, Permissions.ProfitabilityRead, cancellationToken);
+
     private async Task<PartsCostingMethod> MethodAsync(CancellationToken cancellationToken)
     {
         var settings = await _db.PartsSettings
@@ -427,6 +447,7 @@ public sealed class PartsService(
         AuthorizedScope scope,
         CancellationToken cancellationToken)
     {
+        var profit = await ProfitScopeAsync(cancellationToken);
         var method = await MethodAsync(cancellationToken);
 
         var layers = await Restrict(
@@ -439,16 +460,18 @@ public sealed class PartsService(
             {
                 var shelf = group.ToList();
 
+                var maySee = profit.Covers(group.Key);
+
                 return new PartStockAtRooftop(
                     group.Key,
                     shelf.Sum(l => l.RemainingQuantity),
-                    UnitCost(method, shelf),
+                    maySee ? UnitCost(method, shelf) : null,
                     shelf[0].UnitCostCurrency,
                     shelf
                         .OrderByDescending(l => l.ReceivedAt)
                         .Select(l => new StockLayerView(
                             l.Id, l.QuantityReceived, l.RemainingQuantity,
-                            l.UnitCostAmount, l.ReceivedAt, l.Reference))
+                            maySee ? l.UnitCostAmount : null, l.ReceivedAt, l.Reference))
                         .ToList());
             })
             .ToList();

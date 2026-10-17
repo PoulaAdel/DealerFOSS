@@ -25,6 +25,8 @@ import { ApiError, api } from '../../shared/api';
 import type { PayTypeReconciliation } from '../../shared/contracts';
 import { useI18n, type MessageKey } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
+import { Permission } from '../../shared/permissions';
+import { useSession } from '../../app/session';
 
 type Load =
   | { kind: 'loading' }
@@ -129,7 +131,19 @@ export function PayTypeReportPage() {
 
 function ByPayer({ report }: { report: PayTypeReconciliation }) {
   const { t, format } = useI18n();
+  const { holds } = useSession();
   const money = (amount: number) => format.money(amount, 'USD');
+
+  // Two columns, out together. partsGrossProfit is derived from partsCost, so
+  // showing the gross beside a withheld cost would hand the cost back to
+  // anybody who can also read partsRevenue — which this table shows regardless
+  // of the right. Both go or neither does (ADR-030).
+  //
+  // The server may also send null to somebody who DOES hold the right, when a
+  // row was summed from rooftops they are not covered at everywhere: a partial
+  // sum is never presented as a total. That is why the cells test the value as
+  // well as the permission.
+  const showsCost = holds(Permission.ProfitabilityRead);
 
   if (report.byPayer.length === 0) {
     return <p className="note">{t('payType.nothingInvoiced')}</p>;
@@ -157,8 +171,12 @@ function ByPayer({ report }: { report: PayTypeReconciliation }) {
               <th scope="col" className="num">{t('payType.colParts')}</th>
               <th scope="col" className="num">{t('payType.colSublet')}</th>
               <th scope="col" className="num">{t('payType.colRevenue')}</th>
-              <th scope="col" className="num">{t('payType.colPartsCost')}</th>
-              <th scope="col" className="num">{t('payType.colPartsGross')}</th>
+              {showsCost ? (
+                <>
+                  <th scope="col" className="num">{t('payType.colPartsCost')}</th>
+                  <th scope="col" className="num">{t('payType.colPartsGross')}</th>
+                </>
+              ) : null}
               <th scope="col" className="num">{t('payType.colOrders')}</th>
             </tr>
           </thead>
@@ -170,8 +188,16 @@ function ByPayer({ report }: { report: PayTypeReconciliation }) {
                 <td className="num">{money(row.partsRevenue)}</td>
                 <td className="num">{money(row.subletRevenue)}</td>
                 <td className="num strong">{money(row.revenue)}</td>
-                <td className="num">{money(row.partsCost)}</td>
-                <td className="num">{money(row.partsGrossProfit)}</td>
+                {showsCost ? (
+                  <>
+                    <td className="num">
+                      {row.partsCost === null ? '—' : money(row.partsCost)}
+                    </td>
+                    <td className="num">
+                      {row.partsGrossProfit === null ? '—' : money(row.partsGrossProfit)}
+                    </td>
+                  </>
+                ) : null}
                 <td className="num">{format.number(row.orderCount)}</td>
               </tr>
             ))}

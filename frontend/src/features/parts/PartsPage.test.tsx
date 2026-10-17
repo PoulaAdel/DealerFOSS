@@ -22,6 +22,8 @@ import { MemoryRouter } from 'react-router';
 import { PartsPage } from './PartsPage';
 import { apiCalls, mockApi, page } from '../../test/setup';
 import { setCurrentTenant } from '../../shared/api';
+import { signedInAs } from '../../test/session';
+import { Permission } from '../../shared/permissions';
 import type { PartDetail, PartSummary, PartsCostingSetting } from '../../shared/contracts';
 
 const costing: PartsCostingSetting = {
@@ -91,8 +93,18 @@ function renderParts() {
   );
 }
 
-function withParts(parts: PartSummary[]) {
+/**
+ * Signed in holding everything unless a test says otherwise.
+ *
+ * Needed from 2026-10-16, when unit cost moved behind Profitability.Read: the
+ * render helper gives an unmocked `/auth/me` a SIGNED-OUT session, so `holds`
+ * is false and the cost column is left out. Every assertion about a price in
+ * this file is therefore an assertion about somebody who may see one, and it
+ * has to say so.
+ */
+function withParts(parts: PartSummary[], permissions?: readonly string[]) {
   mockApi({
+    '/auth/me': permissions === undefined ? signedInAs() : signedInAs(permissions),
     '/parts/costing': { ok: true, body: costing },
     '/parts/p1': { ok: true, body: detail },
     '/parts': { ok: true, body: page(parts) },
@@ -109,6 +121,29 @@ describe('the parts catalogue', () => {
     expect(screen.getByText('Front brake pad set')).toBeVisible();
     expect(screen.getByText('18')).toBeVisible();
     expect(screen.getByText('$7.00')).toBeVisible();
+  });
+
+  it('leaves cost out entirely for somebody without the profit right', async () => {
+    // Left OUT, not drawn as a blank. The server sends null, and format.money
+    // coerces null to 0 — so a rendered null would tell a parts person this
+    // part cost the dealership nothing, which is worse than showing the real
+    // figure because it reads as true. ADR-030.
+    withParts(
+      [{ ...summary, unitCost: null }],
+      Object.values(Permission).filter((p) => p !== Permission.ProfitabilityRead),
+    );
+    renderParts();
+
+    expect(await screen.findByRole('button', { name: 'MZ690411' })).toBeVisible();
+
+    // The part, the description and the shelf count are all still there: this
+    // is a field right, not a record right.
+    expect(screen.getByText('Front brake pad set')).toBeVisible();
+    expect(screen.getByText('18')).toBeVisible();
+
+    expect(screen.queryByText('$7.00')).not.toBeInTheDocument();
+    expect(screen.queryByText('$0.00')).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /cost/i })).not.toBeInTheDocument();
   });
 
   it('marks a part that has run out rather than showing a bare zero', async () => {

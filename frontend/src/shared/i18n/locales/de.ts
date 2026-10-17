@@ -1033,6 +1033,7 @@ export const de: Catalogue = {
 
   'parts.noneVisible': 'Davon liegt nichts in einem für Sie sichtbaren Lager.',
   'parts.shelfHeading': '{code} — {quantity} auf Lager zu je {cost}',
+  'parts.shelfHeadingNoCost': '{code} — {quantity} auf Lager',
   'parts.deliveriesCaption': 'Zugänge von {part} bei {code}.',
   'parts.colReceived': 'Zugang',
   'parts.colNote': 'Beleg',

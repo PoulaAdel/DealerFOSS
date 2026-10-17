@@ -1062,6 +1062,7 @@ export const en = {
 
   'parts.noneVisible': 'None of this on any shelf you can see.',
   'parts.shelfHeading': '{code} — {quantity} on hand at {cost} each',
+  'parts.shelfHeadingNoCost': '{code} — {quantity} on hand',
   'parts.deliveriesCaption': 'Deliveries of {part} at {code}.',
   'parts.colReceived': 'Received',
   'parts.colNote': 'Note',

@@ -517,8 +517,17 @@ export interface PartSummary {
   /** Null when the part has never been stocked anywhere the caller can see. */
   rooftopId: string | null;
   quantityOnHand: number;
-  /** What one would cost to sell now under the current method. A forecast, not a commitment. */
-  unitCost: number;
+  /**
+   * What one would cost to sell now under the current method. A forecast, not a
+   * commitment.
+   *
+   * Null when the caller does not hold `Profitability.Read` here — and null also
+   * means "never stocked", which the server does not distinguish. Ask
+   * `holds(Permission.ProfitabilityRead)` and leave the field OUT rather than
+   * rendering the null: `format.money` coerces null to 0, so a drawn null reads
+   * as "this part cost us nothing".
+   */
+  unitCost: number | null;
   currency: string;
 }
 
@@ -533,7 +542,8 @@ export interface PartDetail {
 export interface PartStockAtRooftop {
   rooftopId: string;
   quantityOnHand: number;
-  unitCost: number;
+  /** Null without Profitability.Read here — see PartSummary.unitCost. */
+  unitCost: number | null;
   currency: string;
   layers: StockLayerView[];
 }
@@ -543,7 +553,8 @@ export interface StockLayerView {
   id: string;
   quantityReceived: number;
   remainingQuantity: number;
-  unitCost: number;
+  /** Null without Profitability.Read here — see PartSummary.unitCost. */
+  unitCost: number | null;
   receivedAt: string;
   reference: string | null;
 }
@@ -876,8 +887,13 @@ export interface PayTypeBucket {
   partsRevenue: number;
   subletRevenue: number;
   revenue: number;
-  partsCost: number;
-  partsGrossProfit: number;
+  /**
+   * Null without `Profitability.Read` over EVERY rooftop this row was summed
+   * from — never a partial total.
+   */
+  partsCost: number | null;
+  /** Withheld with `partsCost`, because it is derived from it. */
+  partsGrossProfit: number | null;
   lineCount: number;
   orderCount: number;
 }

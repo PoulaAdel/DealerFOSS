@@ -26,14 +26,14 @@ token migration closed on 2026-09-18, although this header once still called it
 unfinished. A presentation-only pass followed on 2026-10-03 — see its entry at
 the end of the milestone log, which also records an unrelated defect on
 `/accounting/reports` that was found and deliberately not fixed.
-Last verified: 2026-10-03 · `dotnet build` 0 warnings/0 errors, `dotnet test` 985/985,
+Last verified: 2026-10-17 · `dotnet build` 0 warnings/0 errors, `dotnet test` 1009/1009,
 `verify-e2e.ps1` PASS **against the canonical LocalDB catalogue** — which now
 works again. The 2026-09-19 note that `DealerFOSS_Host` was detached with its MDF
 still on disk no longer holds; the default command in `AGENTS.md` and
 `docs/LOCAL-DEVELOPMENT.md` runs clean.
-The frontend gates were last run on 2026-10-03 — `npm audit` clean at high (two
+The frontend gates ran the same day — `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 517/517, `npm run build`
+`npm run typecheck`, `npm test` 529/529, `npm run build`
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which
@@ -1881,3 +1881,19 @@ to come.
   **A candidate recorded rather than taken.** vitest 5 reports the frontend suite spawning 39 workers, one per test file, at ~842 ms of spawn-and-environment startup each, and suggests `isolate: false` to reuse them. Deliberately not taken: it gives up per-file isolation, and this repository has already lost a session to a cross-test flake from shared state (`f0a08c1`). The backend equivalent — one host shared across the suite — is already how `HostCollection` works, which is why the cost is paid once rather than per class.
 
   Evidence: `& .\local\gate.ps1` green. The only behaviour change is one extra warm health check per suite run.
+
+- **2026-10-17 — What the workshop's work and stock cost the dealership stops being readable by the people doing it.** Finishes dimension 1 of ADR-030 across all six capability contracts that carry cost; Deals, Inventory and Accounting were closed on 2026-09-29, and Parts and RepairOrders were what was left.
+
+  **Six fields, two of which no handover had named.** `PartSummary.UnitCost`, `PartStockAtRooftop.UnitCost` and `StockLayerView.UnitCost`; `ServiceLineView.Cost`; and — found by grepping the contracts rather than working from the list of line numbers handed over — `PayTypeBucket.PartsCost` and `.PartsGrossProfit`.
+
+  **Those last two were the whole point.** `GET /repair-orders/pay-type-reconciliation` is served to anybody holding `Service.Read`, which the seeded advisor and technician both hold, and it returns **what every part sold in a date range cost**. Withholding a single job's part cost while leaving that report open would have been the narrow refusal with the wide one still standing — precisely the shape of the hole the Accounting extension found in the P&L three weeks earlier. A list of line numbers is what hid it, which is a lesson the ADR now carries.
+
+  **Three fields were deliberately left ungated, and that decision is worth more than the six.** `StockDelivery.UnitCost` is an **input** — what a caller sends to book a delivery in, nothing to withhold. `IssuedParts.TotalCost` and `IssuedPart.Cost` are public, sit in `IParts.cs` beside genuine views, and **never reach a caller**: `IssueAsync` has no endpoint and its only caller in the solution is `RepairOrderService`, inside the invoice transaction, where the figure freezes onto the line. Gating it would have made that freeze silently stop happening — the consuming line already casts to `decimal?` and skips on null, `ServiceLine.RecordCost` is once-only and throws on a second call — so every job invoiced afterwards would have carried a permanently wrong parts cost, with a clean compile and a green suite. ADR-030 records the general rule: **follow who reads the field, not what type it is declared on.**
+
+  **Rules applied from the Accounting work.** Gross is withheld with cost because it is derived from it, and leaving it real beside a nulled cost hands the cost back to anybody who can also read `partsRevenue`, which the row shows regardless. A bucket summed from rooftops the caller is not covered at everywhere returns **null rather than a partial total** — this project's own repeated lesson about columns that do not reach their own totals, now applied before the defect rather than after it.
+
+  **The browser leaves the field out rather than drawing the null**, and that is not cosmetic: `format.money` runs `Intl.NumberFormat.format(null)`, JavaScript coerces `null` to `0`, and a drawn null would have told a parts person every part cost the dealership **$0.00** — a figure that looks real and is false. The parts list and the deliveries table drop the column; the reconciliation drops both columns together; the shelf heading has a second phrasing in all six languages.
+
+  **Proven against the bug first.** Both new integration tests were run against the ungated server and failed naming the leak — `unitCost` found `Number` where `Null` was expected, and `partsCost` the same. Each also asserts the manager still sees the figure, so a regression that withheld it from everybody would fail rather than look like success, and that revenue is untouched: what a thing sold for is not what it cost, and an advisor who cannot see the department's sales cannot work.
+
+  Evidence: `dotnet build` 0 warnings / 0 errors, `dotnet test` **1009/1009** (was 1007 — two new), `verify-e2e.ps1` PASS, `npm audit` clean at high, `npm run typecheck`, `npm test` **529/529** (was 528 — one new), `npm run build`.

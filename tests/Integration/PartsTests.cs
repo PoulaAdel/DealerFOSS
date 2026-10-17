@@ -270,6 +270,54 @@ public sealed class PartsTests(HostFixture fixture)
         first.Should().Be(7.00m);
     }
 
+    [Fact]
+    public async Task What_stock_cost_the_dealership_is_withheld_without_the_profit_right()
+    {
+        // A field right, not a record right: the advisor still reads the part,
+        // the quantity and the shelf it is on. Only the money goes.
+        //
+        // The layer is the most revealing of the three figures and the easiest
+        // to forget, because it is nested inside the detail rather than being a
+        // column: it names what ONE delivery was paid for, on a date, against a
+        // supplier reference.
+        var part = await AddPartAsync();
+        await ReceiveAsync(part, quantity: 10, unitCost: 5.00m);
+
+        // The manager sees it, so this cannot pass by the cost simply not being
+        // there — which is the way a test like this quietly stops testing.
+        using var seen = await SendAsync(HttpMethod.Get, $"{PartsApi}/{part}", Manager);
+        var managerShelf = (await seen.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("stock").EnumerateArray().Single();
+
+        managerShelf.GetProperty("unitCost").GetDecimal().Should().Be(5.00m);
+        managerShelf.GetProperty("layers").EnumerateArray().Single()
+            .GetProperty("unitCost").GetDecimal().Should().Be(5.00m);
+
+        using var detail = await SendAsync(HttpMethod.Get, $"{PartsApi}/{part}", Advisor);
+        detail.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "the record is still readable; this is a field right, not a record right");
+
+        var shelf = (await detail.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("stock").EnumerateArray().Single();
+
+        shelf.GetProperty("quantityOnHand").GetDecimal().Should().Be(10m,
+            because: "how many are on the shelf is what the advisor needs to do the job");
+
+        shelf.GetProperty("unitCost").ValueKind.Should().Be(JsonValueKind.Null,
+            because: "what the dealership paid a supplier is not needed to book a car in");
+
+        shelf.GetProperty("layers").EnumerateArray().Single()
+            .GetProperty("unitCost").ValueKind.Should().Be(JsonValueKind.Null,
+            because: "a delivery's own price is the same disclosure as the average of them");
+
+        // And on the list, which is the route somebody would actually take.
+        using var listed = await SendAsync(HttpMethod.Get, $"{PartsApi}?limit=200", Advisor);
+        var row = (await listed.Content.ReadFromJsonAsync<JsonElement>())
+            .Rows().Single(r => r.GetProperty("id").GetGuid() == part);
+
+        row.GetProperty("unitCost").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
     // --- helpers -----------------------------------------------------------
 
     /// <summary>Invoices a job selling one of the part, and reports what it cost.</summary>

@@ -86,7 +86,19 @@ public sealed record PartSummary(
     /// forecast, not a commitment — the figure that gets recorded is worked out
     /// at the moment of sale.
     /// </summary>
-    decimal UnitCost,
+    /// <remarks>
+    /// Null when the caller does not hold <c>Profitability.Read</c> at this
+    /// row's rooftop. What the dealership paid a supplier is a different
+    /// question from what a part sells for, and only the second is needed to do
+    /// the job — see ADR-030.
+    ///
+    /// Null also means "never recorded" and the server does not distinguish
+    /// them, because to a caller who may not see the figure they are the same
+    /// answer. The browser is told which it is by the permission list on
+    /// <c>/auth/me</c> and leaves the field out rather than drawing a nothing
+    /// that reads as free.
+    /// </remarks>
+    decimal? UnitCost,
     string Currency);
 
 public sealed record PartDetail(
@@ -99,7 +111,9 @@ public sealed record PartDetail(
 public sealed record PartStockAtRooftop(
     RooftopId RooftopId,
     decimal QuantityOnHand,
-    decimal UnitCost,
+
+    /// <summary>Null without Profitability.Read here — see PartSummary.UnitCost.</summary>
+    decimal? UnitCost,
     string Currency,
     IReadOnlyList<StockLayerView> Layers);
 
@@ -111,7 +125,13 @@ public sealed record StockLayerView(
     Guid Id,
     decimal QuantityReceived,
     decimal RemainingQuantity,
-    decimal UnitCost,
+
+    /// <summary>
+    /// Null without Profitability.Read here. A layer is the most revealing of
+    /// the three: it names what one delivery was paid for, on a date, against a
+    /// supplier reference.
+    /// </summary>
+    decimal? UnitCost,
     DateTimeOffset ReceivedAt,
     string? Reference);
 
@@ -128,8 +148,26 @@ public sealed record StockDelivery(
 public sealed record PartIssue(Guid PartId, decimal Quantity);
 
 /// <summary>What came off the shelf, and what it cost in total.</summary>
+/// <remarks>
+/// <b>NOT gated on Profitability.Read, and that is deliberate — do not "finish
+/// the job" by making these nullable.</b> This is not an outbound view. It is
+/// public and sits beside real views, but <see cref="IParts.IssueAsync"/> has
+/// no endpoint and its only caller in the solution is RepairOrderService,
+/// inside the invoice transaction, where the cost freezes onto the line.
+///
+/// Gate it and that freeze silently stops happening: the consuming line already
+/// casts to <c>decimal?</c> and skips on null, <c>ServiceLine.RecordCost</c> is
+/// once-only and throws on a second call, so the job's parts cost would be
+/// wrong permanently and the reconciliation report would average a real figure
+/// against a missing one. Nothing catches it — it compiles clean and no test
+/// asserts a per-job cost.
+///
+/// ADR-030 records the general rule this is the worked example of: follow who
+/// READS a field, not what type it is declared on.
+/// </remarks>
 public sealed record IssuedParts(decimal TotalCost, string Currency, IReadOnlyList<IssuedPart> Parts);
 
+/// <summary>See IssuedParts: internal to invoicing, deliberately ungated.</summary>
 public sealed record IssuedPart(Guid PartId, string PartNumber, decimal Quantity, decimal Cost);
 
 /// <summary>

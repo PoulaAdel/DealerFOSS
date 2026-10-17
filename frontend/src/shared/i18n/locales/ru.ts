@@ -1069,6 +1069,7 @@ export const ru: Catalogue = {
 
   'parts.noneVisible': 'Этой детали нет ни на одном доступном вам складе.',
   'parts.shelfHeading': '{code} — {quantity} в наличии по {cost} за штуку',
+  'parts.shelfHeadingNoCost': '{code} — {quantity} в наличии',
   'parts.deliveriesCaption': 'Поступления {part} на {code}.',
   'parts.colReceived': 'Поступление',
   'parts.colNote': 'Документ',

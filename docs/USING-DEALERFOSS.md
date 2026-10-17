@@ -183,6 +183,14 @@ which is what gives the department a real profit figure rather than a guess.
 
 You cannot issue more of a part than you have.
 
+**What a part cost is a manager's figure** — see §2. Without that right you see
+the part, the description and how many are on the shelf, and the cost column is
+not there at all rather than being blank. Note the asymmetry: booking a
+delivery in still asks you to type a unit cost, because that is something you
+are telling the system rather than something it is telling you. Today the person
+who books stock in is the manager, who sees both; if that job is ever handed to
+somebody else, they will be entering a figure they cannot then read back.
+
 ---
 
 ## 6. Taking the money

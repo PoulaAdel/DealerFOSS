@@ -1088,6 +1088,7 @@ export const ar: Catalogue = {
 
   'parts.noneVisible': 'لا يوجد منها شيء على أي رف يمكنك رؤيته.',
   'parts.shelfHeading': '{code} — {quantity} متوفرة بسعر {cost} للوحدة',
+  'parts.shelfHeadingNoCost': '{code} — {quantity} متوفرة',
   'parts.deliveriesCaption': 'توريدات {part} في {code}.',
   'parts.colReceived': 'تاريخ الاستلام',
   'parts.colNote': 'المستند',

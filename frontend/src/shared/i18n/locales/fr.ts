@@ -1030,6 +1030,7 @@ export const fr: Catalogue = {
 
   'parts.noneVisible': 'Aucune sur un magasin visible pour vous.',
   'parts.shelfHeading': '{code} — {quantity} en stock à {cost} l’unité',
+  'parts.shelfHeadingNoCost': '{code} — {quantity} en stock',
   'parts.deliveriesCaption': 'Réceptions de {part} sur {code}.',
   'parts.colReceived': 'Réception',
   'parts.colNote': 'Note',

@@ -388,11 +388,16 @@ public sealed class RepairOrderService(
         // computed property (declined work is worth nothing), and translating
         // that rule into SQL a second time is a second place for it to drift
         // from the invoice.
+        // RooftopId travels with the line because the cost figures below are
+        // decided per ROW, against every lot that fed it — see the comment on
+        // partsCost.
         var lines = rows
             .SelectMany(o => o.Lines
                 .Where(l => l.Authorization != LineAuthorization.Declined)
-                .Select(l => new { OrderId = o.Id, l.Kind, l.PayType, l.Amount, l.CostAmount }))
+                .Select(l => new { OrderId = o.Id, o.RooftopId, l.Kind, l.PayType, l.Amount, l.CostAmount }))
             .ToList();
+
+        var profit = await ProfitScopeAsync(cancellationToken);
 
         var byPayer = lines
             .GroupBy(l => l.PayType)
@@ -401,7 +406,18 @@ public sealed class RepairOrderService(
                 var labourRevenue = g.Where(l => l.Kind == ServiceLineKind.Labour).Sum(l => l.Amount);
                 var partsRevenue = g.Where(l => l.Kind == ServiceLineKind.Part).Sum(l => l.Amount);
                 var subletRevenue = g.Where(l => l.Kind == ServiceLineKind.Sublet).Sum(l => l.Amount);
-                var partsCost = g.Where(l => l.Kind == ServiceLineKind.Part).Sum(l => l.CostAmount ?? 0m);
+
+                // EVERY lot that fed this row, not merely the ones the caller
+                // may see the money at. A row is one number summed across
+                // whichever rooftops are in scope, so showing it to somebody
+                // covered at two lots out of three would hand them a partial
+                // sum wearing a total's label — and nothing on the row would
+                // tell them to doubt it. Null is the honest answer. ADR-030.
+                var maySee = g.Select(l => l.RooftopId).Distinct().All(profit.Covers);
+
+                var partsCost = maySee
+                    ? g.Where(l => l.Kind == ServiceLineKind.Part).Sum(l => l.CostAmount ?? 0m)
+                    : (decimal?)null;
 
                 return new PayTypeBucket(
                     g.Key.ToString(),
@@ -410,7 +426,9 @@ public sealed class RepairOrderService(
                     subletRevenue,
                     labourRevenue + partsRevenue + subletRevenue,
                     partsCost,
-                    partsRevenue - partsCost,
+
+                    // Derived from a withheld figure, so withheld with it.
+                    partsCost is { } cost ? partsRevenue - cost : null,
                     g.Count(),
                     g.Select(l => l.OrderId).Distinct().Count());
             })
@@ -1292,6 +1310,22 @@ public sealed class RepairOrderService(
         return $"{RepairOrder.NumberPrefix}{Math.Max(highest, FirstNumber) + 1}";
     }
 
+    /// <summary>
+    /// Where this caller may be shown what work cost the dealership.
+    /// </summary>
+    /// <remarks>
+    /// The whole scope rather than a bool, because both callers span rooftops:
+    /// a job list and a reconciliation report each legitimately cross lots, and
+    /// a group manager covered at one and not the next must get an answer that
+    /// is right row by row.
+    ///
+    /// Not IsAuthorizedAsync — that writes a Denied audit row per refusal, and
+    /// an advisor opening jobs all day is not an incident.
+    /// </remarks>
+    private async Task<AuthorizedScope> ProfitScopeAsync(CancellationToken cancellationToken) =>
+        await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, Permissions.ProfitabilityRead, cancellationToken);
+
     private async Task<RepairOrder?> LoadAsync(
         Guid repairOrderId,
         bool tracked,
@@ -1484,6 +1518,11 @@ public sealed class RepairOrderService(
             return Result.Failure<RepairOrderDetail>(context.Error);
         }
 
+        // One job, one rooftop, so this resolves to a single yes or no — but it
+        // is still the scope rather than a bool, so the rule reads the same
+        // here as it does on the list and the report.
+        var maySeeCost = (await ProfitScopeAsync(cancellationToken)).Covers(order.RooftopId);
+
         var history = await _db.RepairOrderHistory
             .AsNoTracking()
             .Where(h => h.RepairOrderId == order.Id)
@@ -1559,7 +1598,7 @@ public sealed class RepairOrderService(
                     l.OpCodeId,
                     l.PartId,
                     l.PartQuantity,
-                    l.CostAmount))
+                    maySeeCost ? l.CostAmount : null))
                 .ToList(),
             history
                 .OrderBy(h => h.OccurredAt)

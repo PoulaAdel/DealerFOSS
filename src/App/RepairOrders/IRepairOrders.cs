@@ -430,11 +430,37 @@ public sealed record PayTypeBucket(
     /// <summary>Labour, parts and sublet revenue added together.</summary>
     decimal Revenue,
 
-    /// <summary>What the parts billed here cost the dealership, frozen at invoicing.</summary>
-    decimal PartsCost,
+    /// <summary>
+    /// What the parts billed here cost the dealership, frozen at invoicing.
+    /// </summary>
+    /// <remarks>
+    /// <b>Null without <c>Profitability.Read</c> over every rooftop this row
+    /// was summed from — never a partial total.</b> This report is the widest
+    /// door onto workshop cost there is: one call over a date range returns
+    /// what every part sold in the period cost. Withholding a single job's cost
+    /// while leaving this open would be the narrow refusal with the wide one
+    /// still standing, which is exactly the hole the Accounting extension found
+    /// in the P&amp;L.
+    ///
+    /// A partial sum presented as a total is the failure this project has hit
+    /// repeatedly with columns that do not reach their own totals, and a
+    /// manager reading a partial cost as a whole one would not know to doubt
+    /// it. ADR-030 carries the rule.
+    /// </remarks>
+    decimal? PartsCost,
 
-    /// <summary>Parts revenue less parts cost. See the caveat on <see cref="PayTypeReconciliation"/>.</summary>
-    decimal PartsGrossProfit,
+    /// <summary>
+    /// Parts revenue less parts cost. See the caveat on
+    /// <see cref="PayTypeReconciliation"/>.
+    /// </summary>
+    /// <remarks>
+    /// Withheld with <see cref="PartsCost"/> rather than on its own account: it
+    /// is derived from it, and leaving it real beside a nulled cost hands the
+    /// cost straight back to anybody who can also read PartsRevenue, which this
+    /// row shows regardless. A withheld figure takes everything derived from
+    /// it (ADR-030).
+    /// </remarks>
+    decimal? PartsGrossProfit,
 
     /// <summary>How many lines make up this row.</summary>
     int LineCount,
@@ -518,6 +544,13 @@ public sealed record ServiceLineView(
     /// is invoiced, and null forever on a line that sells no stock — those are
     /// different things and the screen should not conflate them.
     /// </summary>
+    /// <remarks>
+    /// Now null for a THIRD reason: the caller does not hold
+    /// <c>Profitability.Read</c> at this job's rooftop. The technician who did
+    /// the work has no more claim on the cost side than a salesperson has on
+    /// F&amp;I gross. The server does not distinguish the three, because to a
+    /// caller who may not see the figure they are the same answer.
+    /// </remarks>
     decimal? Cost);
 
 public sealed record RepairOrderHistoryEntry(

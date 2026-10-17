@@ -1041,6 +1041,7 @@ export const es: Catalogue = {
 
   'parts.noneVisible': 'Nada de esto en ninguna estantería que usted vea.',
   'parts.shelfHeading': '{code} — {quantity} en existencias a {cost} cada uno',
+  'parts.shelfHeadingNoCost': '{code} — {quantity} en existencias',
   'parts.deliveriesCaption': 'Entradas de {part} en {code}.',
   'parts.colReceived': 'Recibido',
   'parts.colNote': 'Nota',

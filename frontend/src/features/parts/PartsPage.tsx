@@ -38,6 +38,8 @@ import type {
   RooftopSummary,
 } from '../../shared/contracts';
 import { ListScreen, type ListLoad } from '../../shared/ListScreen';
+import { Permission } from '../../shared/permissions';
+import { useSession } from '../../app/session';
 
 /** How many parts a page holds. The server clamps anything larger. */
 const PageSize = 100;
@@ -69,6 +71,14 @@ export function PartsPage() {
   const { t } = useI18n();
   const describe = useApiMessage();
   const { money, quantity } = useAmounts();
+  const { holds } = useSession();
+
+  // The COLUMN goes, not the value. The server sends null for every row to a
+  // caller without this right, and format.money coerces null to 0 — so drawing
+  // it would tell a parts person every part cost the dealership nothing. A
+  // column of placeholders would be honest but is pure noise when it is empty
+  // for everybody, so the field is left out, which is what ADR-030 asks for.
+  const showsCost = holds(Permission.ProfitabilityRead);
 
   const [search, setSearch] = useState('');
 
@@ -212,7 +222,7 @@ export function PartsPage() {
             <th scope="col">{t('parts.colDescription')}</th>
             <th scope="col">{t('parts.colWhere')}</th>
             <th scope="col" className="num">{t('parts.colOnHand')}</th>
-            <th scope="col" className="num">{t('parts.colCostEach')}</th>
+            {showsCost ? <th scope="col" className="num">{t('parts.colCostEach')}</th> : null}
           </>
         }
         row={(part) => (
@@ -244,9 +254,11 @@ export function PartsPage() {
                 quantity(part.quantityOnHand)
               )}
             </td>
-            <td className="num">
-              {part.rooftopId === null ? '—' : money(part.unitCost, part.currency)}
-            </td>
+            {showsCost ? (
+              <td className="num">
+                {part.unitCost === null ? '—' : money(part.unitCost, part.currency)}
+              </td>
+            ) : null}
           </tr>
         )}
       />
@@ -417,6 +429,13 @@ function Part({
   const { t, format } = useI18n();
   const describe = useApiMessage();
   const { money, quantity } = useAmounts();
+  const { holds } = useSession();
+
+  // Booking a delivery IN still asks for a unit cost — that is an input, and
+  // the right withholds what the shelf is worth, not what you are typing. A
+  // person who may do one and not see the other is possible in principle;
+  // today Parts.Manage is the manager's and a manager holds both.
+  const showsCost = holds(Permission.ProfitabilityRead);
 
   const [rooftopId, setRooftopId] = useState(rooftops[0]?.id ?? '');
   const [qty, setQty] = useState('');
@@ -466,11 +485,16 @@ function Part({
         part.stock.map((shelf) => (
           <div key={shelf.rooftopId}>
             <h3>
-              {t('parts.shelfHeading', {
-                code: codeFor(shelf.rooftopId),
-                quantity: quantity(shelf.quantityOnHand),
-                cost: money(shelf.unitCost, shelf.currency),
-              })}
+              {showsCost && shelf.unitCost !== null
+                ? t('parts.shelfHeading', {
+                    code: codeFor(shelf.rooftopId),
+                    quantity: quantity(shelf.quantityOnHand),
+                    cost: money(shelf.unitCost, shelf.currency),
+                  })
+                : t('parts.shelfHeadingNoCost', {
+                    code: codeFor(shelf.rooftopId),
+                    quantity: quantity(shelf.quantityOnHand),
+                  })}
             </h3>
 
             {/*
@@ -495,9 +519,11 @@ function Part({
                     <th scope="col" className="num">
                       {t('parts.colLeft')}
                     </th>
-                    <th scope="col" className="num">
-                      {t('parts.colCostEach')}
-                    </th>
+                    {showsCost ? (
+                      <th scope="col" className="num">
+                        {t('parts.colCostEach')}
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -507,7 +533,11 @@ function Part({
                       <td>{layer.reference ?? ''}</td>
                       <td className="num">{quantity(layer.quantityReceived)}</td>
                       <td className="num">{quantity(layer.remainingQuantity)}</td>
-                      <td className="num">{money(layer.unitCost, shelf.currency)}</td>
+                      {showsCost ? (
+                        <td className="num">
+                          {layer.unitCost === null ? '—' : money(layer.unitCost, shelf.currency)}
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
