@@ -4,6 +4,12 @@
 open findings and one limitation that matters.** Recorded 2026-10-03 against
 commit `e07b0cc` (the frontend is unchanged since `0ded890`).
 
+**Updated 2026-10-17:** findings 4 (checkbox size) and 5 (the language picker
+that changed on input) are **fixed** — see *Open findings*. A reading-order
+review of the accessibility tree on sign-in, the deal desk and the workshop was
+done and found three further items, recorded as findings 6–8. **Still no screen
+reader was run** — see the limitation, which is unchanged in substance.
+
 [`07-Delivery-Roadmap.md`](07-Delivery-Roadmap.md) lists a WCAG 2.2 AA review as
 a stage 7 exit criterion and [`09-Implementation-Roadmap.md`](09-Implementation-Roadmap.md)
 requires that accessibility acceptance be recorded. Accessibility work had been
@@ -19,6 +25,23 @@ development host). Whether a given announcement is *pleasant* to hear, and
 whether NVDA, JAWS or VoiceOver read a region the way the markup suggests, is
 untested. "A live region exists" is not "it is announced well." An independent
 audit with assistive technology is still owed, and nothing here replaces it.
+
+**What the 2026-10-17 review was, exactly.** NVDA is not installed on this
+machine (checked both Program Files locations) and installing it is the
+maintainer's to do. Narrator is built into Windows, but the reviewer has no audio
+and Narrator keeps no transcript, so running it would have produced nothing that
+could be reported. What was done instead is a **reading-order transcript** of
+the accessibility tree — every landmark, heading, link, button and field in DOM
+order with its role, accessible name and state (`expanded`, `pressed`,
+`current`, `required`, `disabled`, live regions) — read for sign-in, the deal
+desk (list and an opened deal) and the workshop (list and an opened job). That
+is what a screen reader is *given*; it finds missing names, wrong order and
+ambiguous controls. It does not find what it sounds like, how verbosely a
+product navigates a 50-row table, or how any particular reader treats a live
+region. It is a review of the input to a screen reader, not a run of one, and
+it must not be cited as one. One false alarm is worth recording: the first
+transcript listed each table row's button twice; counting the DOM showed one
+per row (50 for 50) and the fault was in the transcript script.
 
 Also not covered: French, German, Russian and Spanish were not walked (Arabic
 RTL was, at 320px, on the earlier presentation pass); `prefers-reduced-motion`
@@ -80,9 +103,8 @@ their details, but no multi-step flow was traced for repeated fields.
 
 ## Open findings
 
-None of these is fixed by this record. Each needs a code change, and the
-repository lock was held by another session when this was written, so they are
-queued rather than done. Severity is the assessor's judgement.
+Findings 1, 2, 3, 6 and 7 are **open**; 4 and 5 were fixed on 2026-10-17 and 8 is
+recorded. Severity is the assessor's judgement.
 
 1. **A — 2.4.2 Page titled.** `document.title` is `DealerFOSS` on **all 21
    routes**; it is set once in `frontend/index.html` and no code changes it.
@@ -99,15 +121,42 @@ queued rather than done. Severity is the assessor's judgement.
    The text identifies the error and, where live, is announced; it is not
    programmatically associated with the input it is about. Passes the letter of
    3.3.1 through the live region; does not meet the recognised technique.
-4. **Consistency, not a WCAG failure.** The *Only mine* checkbox on the
-   enquiries screen draws **13px wide; the workshop's draws 18px.**
-   `.filter label.check input { width: auto }` overrides the 18px rule for any
-   checkbox inside a `.filter`. Same control, two sizes.
-5. **Judgement call, 3.2.2 On input.** The language picker applies the moment
-   it changes, with no confirm button. It is labelled and in a fixed place, and
-   changing language is what a person opening it intends, but it is the one
-   control that changes the whole page on input. Left as designed; recorded so a
-   reviewer who disagrees can reopen it.
+4. **FIXED 2026-10-17 — consistency.** The *Only mine* checkbox on the
+   enquiries screen drew **13px wide; the workshop's drew 18px.**
+   `.filter label.check input { width: auto }` overrode the 18px rule for any
+   checkbox inside a `.filter`. The override is gone. Re-measured in the
+   browser: enquiries **18×18** (label 85×24), workshop **18×18**.
+5. **FIXED 2026-10-17 — 3.2.2 On input.** The language picker was a native
+   `<select>`, which fires `change` on every arrow press: somebody moving
+   through the options with a keyboard had the whole page switch language under
+   them at each step — and is the person most likely to be doing that, since
+   they cannot read the current language. It is now a button that opens a list
+   (`AppearanceControls.tsx`); arrows only **move focus** and nothing changes
+   until Enter, Space or a click chooses. Verified with real key presses on the
+   sign-in screen: Enter, then three ArrowDowns moved focus English → Español →
+   Français → Deutsch with **zero** changes to the page's `lang`; Enter then set
+   `lang="de"`, renamed the trigger *Sprache: Deutsch* and returned focus to it.
+   The list opens on the current language (`aria-current`), each option carries
+   its own `lang`, Escape closes without choosing, Tab leaving closes it. At
+   320px it stays inside the viewport in both directions (left 41–right 233 in
+   Arabic, 87–279 in English; 0px sideways scroll). Contrast, both themes:
+   current option 5.29 / 6.19, other options 17.6 / 14.57, trigger text 7.9 /
+   7.61, trigger border 3.77 / 3.67. Four new tests pin the behaviour.
+6. **Found 2026-10-17, open — row actions have no row context (2.4.6 /
+   4.1.2).** The workshop's booking rows carry *It's here* and *Did not come*,
+   and the deal editor's charge rows carry *Remove*, each with the same name on
+   every row. Reached by Tab in a list of buttons, "It's here, It's here, It's
+   here" says which booking to nobody. A screen reader's table navigation
+   recovers the row; a list of controls does not. The fix is an accessible name
+   carrying the row, which needs new strings in all six catalogues.
+7. **Found 2026-10-17, open — 1.3.1.** The deal editor's *Sold with the car*
+   table has no `<caption>`, unlike the other deal tables and every list.
+8. **Found 2026-10-17, recorded, not a defect in the code.** On the development
+   catalogue 13 products are named *3-year warranty* followed by a raw id, so a
+   screen reader reads a 36-character id aloud as part of each checkbox's name.
+   The names are test residue in the seeded data, not generated by the
+   component (it uses `product.name` verbatim). Recorded because the same would
+   happen to a dealership that gave two products the same name.
 
 **Pre-existing, unrelated:** `/accounting/reports` renders a blank page for an
 empty currency code — see the 2026-10-03 entry in STATUS.md. It is a data and
@@ -115,11 +164,12 @@ formatting fault, but a blank screen is also the least accessible one there is.
 
 ## What would make this a real acceptance
 
-1. Fix findings 1–3 and re-measure; 4 is a one-line CSS correction.
+1. Fix findings 1–3, 6 and 7 and re-measure.
 2. A pass with a screen reader on the five highest-traffic flows (sign in,
    find a customer, open a deal, take a payment, close a month), in English and
-   Arabic.
+   Arabic. The maintainer installing NVDA is the one step that unblocks it.
 3. An independent reviewer, since the author of the markup cannot audit it.
 
 Until then the honest statement is: **the measurable criteria pass; two are
-open as failures (1, 2); the rest is untested with assistive technology.**
+open as failures (1, 2) and three more are open (3, 6, 7); the rest is untested
+with assistive technology.**

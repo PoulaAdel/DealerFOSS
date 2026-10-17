@@ -22,20 +22,29 @@
 //   `aria-pressed` still carries the actual state to a screen reader
 //   regardless of what is visible.
 //
-//   Language is a <select> rather than five buttons: five segments do not
-//   fit the bar, and a select is the control every operating system already
-//   renders as a language picker. Each option names itself IN ITSELF —
-//   "العربية", not "Arabic" — because somebody who needs to switch to
-//   Arabic is, by definition, the person least able to find the word
-//   "Arabic" written in English. The globe glyph in front of it is
-//   decorative only (aria-hidden) — the accessible name is still the
-//   select's own aria-label, not the icon.
+//   LANGUAGE IS A BUTTON THAT OPENS A LIST, NOT A <select> — and that is a
+//   WCAG 3.2.2 fix, not a taste. A closed native <select> fires `change` on
+//   every arrow press, so somebody moving through the options with a keyboard
+//   had the whole page switch language under them at each step, and could not
+//   reach the one they wanted without passing through the others. They are
+//   also the person most likely to be doing exactly that: the one who cannot
+//   read the language the page is currently in. Here nothing changes until a
+//   language is CHOSEN (Enter, Space or a click on its own button); arrows only
+//   move focus.
+//
+//   Each option still names itself IN ITSELF — "العربية", not "Arabic" —
+//   because somebody who needs to switch to Arabic is, by definition, the
+//   person least able to find the word "Arabic" written in English, and each
+//   carries its own `lang` so a screen reader pronounces it with that voice.
+//   The globe glyph is decorative only (aria-hidden); the trigger's accessible
+//   name is the word for "Language" plus the current language, which contains
+//   the text sighted users see (WCAG 2.5.3).
 //
 //   There is no direction control any more. Direction follows the language
 //   (see shared/i18n), because "Arabic, left to right" is not a preference
 //   anybody holds.
 
-import type { ReactElement } from 'react';
+import { useEffect, useId, useRef, useState, type ReactElement } from 'react';
 import { useAppearance, type ThemeChoice } from '../shared/appearance';
 import { LANGUAGES, useI18n, type LanguageCode } from '../shared/i18n';
 import type { MessageKey } from '../shared/i18n';
@@ -96,7 +105,7 @@ const themes: { value: ThemeChoice; label: MessageKey; hint: MessageKey; icon: (
 
 export function AppearanceControls() {
   const { theme, setTheme } = useAppearance();
-  const { language, setLanguage, t } = useI18n();
+  const { t } = useI18n();
 
   return (
     <div className="appearance">
@@ -121,23 +130,110 @@ export function AppearanceControls() {
         })}
       </div>
 
-      <span className="language-picker">
+      <LanguageMenu />
+    </div>
+  );
+}
+
+function LanguageMenu() {
+  const { language, setLanguage, t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLSpanElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  const options = () => Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('button') ?? []);
+
+  // Focus lands on the CURRENT language, so opening and pressing Escape is a
+  // no-op and opening and pressing Enter changes nothing.
+  useEffect(() => {
+    if (!open) return;
+
+    (options().find((button) => button.getAttribute('aria-current') === 'true') ?? options()[0])?.focus();
+
+    function onPointerDown(event: MouseEvent) {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        trigger.current?.focus();
+      }
+    }
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <span
+      className="language-picker"
+      ref={root}
+      onBlur={(event) => {
+        // Tab leaving the list closes it without pulling focus backwards.
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
+    >
+      <button
+        type="button"
+        ref={trigger}
+        className="language-picker__trigger"
+        aria-label={`${t('shell.language')}: ${language.nativeName}`}
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => setOpen((was) => !was)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' && !open) {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
+      >
         <GlobeIcon />
-        <select
-          className="language"
-          aria-label={t('shell.language')}
-          value={language.code}
-          onChange={(event) => setLanguage(event.target.value as LanguageCode)}
+        {language.nativeName}
+      </button>
+
+      {open ? (
+        <div
+          id={menuId}
+          className="language-picker__menu"
+          ref={menu}
+          onKeyDown={(event) => {
+            // Arrows MOVE focus; they never choose. Choosing is Enter, Space or
+            // a click, which is the whole point of this control.
+            if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+            event.preventDefault();
+            const all = options();
+            const at = all.indexOf(document.activeElement as HTMLButtonElement);
+            const next = event.key === 'ArrowDown' ? at + 1 : at - 1;
+            all[(next + all.length) % all.length]?.focus();
+          }}
         >
           {LANGUAGES.map((option) => (
-            // `lang` on the option so a screen reader pronounces "Français" with a
-            // French voice rather than reading it as mangled English.
-            <option key={option.code} value={option.code} lang={option.code}>
+            // `lang` so a screen reader pronounces "Français" with a French
+            // voice rather than reading it as mangled English.
+            <button
+              key={option.code}
+              type="button"
+              lang={option.code}
+              aria-current={option.code === language.code ? 'true' : undefined}
+              onClick={() => {
+                setLanguage(option.code as LanguageCode);
+                setOpen(false);
+                trigger.current?.focus();
+              }}
+            >
               {option.nativeName}
-            </option>
+            </button>
           ))}
-        </select>
-      </span>
-    </div>
+        </div>
+      ) : null}
+    </span>
   );
 }

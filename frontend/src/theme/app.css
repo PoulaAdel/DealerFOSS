@@ -1614,8 +1614,11 @@ button.danger:hover:not(:disabled) {
   margin: 0;
 }
 
+/* No `width: auto` here. It beat `.check input[type='checkbox']` on
+   specificity and drew this checkbox at the browser's 13px while the
+   workshop's drew 18px — the same control at two sizes. The label is the
+   24px target either way; this is about the two matching. */
 .filter label.check input {
-  width: auto;
   margin: 0;
 }
 
@@ -1771,28 +1774,66 @@ table button.link:hover:not(:disabled) {
   background: var(--idle-soft);
 }
 
-/* The globe sits inside the select's own box rather than beside it, so the
-   control is still one visual piece and one hit target — not an icon next
-   to an unrelated dropdown. */
+/* The language control: a button that opens a list, so nothing changes until a
+   language is chosen (WCAG 3.2.2 — see AppearanceControls). The trigger takes
+   the same height as the theme switcher beside it on every screen, including
+   the sign-in card where `.shell__right` does not apply. */
 .language-picker {
   position: relative;
   display: inline-flex;
   align-items: center;
+}
+
+.language-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-block-size: var(--control-h-sm);
+  padding-block: 0;
+  color: var(--ink-2);
+}
+
+.language-picker__trigger svg {
   color: var(--ink-3-on-surface);
 }
 
-.language-picker svg {
+.language-picker__menu {
   position: absolute;
-  inset-inline-start: 10px;
-  pointer-events: none;
+  inset-inline-end: 0;
+  inset-block-start: calc(100% + var(--s-1));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 12rem;
+  max-inline-size: calc(100vw - var(--s-6));
+  padding: var(--s-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--lift);
 }
 
-.language-picker select {
-  /* Not a step: clearance for the globe glyph drawn over this select, so it
-     is measured against that artwork rather than the spacing rhythm. */
-  padding-inline-start: 30px;
-  border-radius: var(--r-sm);
-  color: var(--ink-2);
+.language-picker__menu button {
+  justify-content: flex-start;
+  min-block-size: var(--control-h);
+  padding-block: var(--s-2);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: start;
+}
+
+.language-picker__menu button:hover:not(:disabled) {
+  background: var(--idle-soft);
+}
+
+/* The current language is marked by weight and fill AND by a leading rule, so
+   it is never carried by colour alone. */
+.language-picker__menu button[aria-current='true'] {
+  background: var(--accent-soft);
+  border-inline-start: var(--s-1) solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .appearance {

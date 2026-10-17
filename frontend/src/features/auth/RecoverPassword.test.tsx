@@ -144,6 +144,6 @@ describe('getting back into an account', () => {
 
     // Same reason it is on the sign-in screen: somebody who reads only Arabic
     // must not have to read English to find out how to stop reading English.
-    expect(await screen.findByRole('combobox', { name: 'Language' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: /^Language/ })).toBeVisible();
   });
 });

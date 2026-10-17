@@ -329,7 +329,8 @@ describe('the administration console', () => {
     render(<App />);
     await screen.findByRole('heading', { name: 'Dealerships' });
 
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'ar');
+    await userEvent.click(screen.getByRole('button', { name: /^Language/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'العربية' }));
 
     // The console was the last thing still in English. Its own vocabulary, its
     // navigation, and the status chip a tenant row draws all have to move.

@@ -35,9 +35,19 @@ function renderControls() {
   );
 }
 
-/** The picker, by its accessible name in whichever language is showing. */
-function picker(): HTMLSelectElement {
-  return screen.getByRole('combobox') as HTMLSelectElement;
+/**
+ * The language trigger. It is the only button that can be expanded, so it can
+ * be found without knowing which language is showing — its accessible name is
+ * the word for "Language" in that language.
+ */
+function trigger(): HTMLElement {
+  return screen.getByRole('button', { expanded: false });
+}
+
+/** Opens the list and CHOOSES a language by the name it gives itself. */
+async function choose(nativeName: string) {
+  await userEvent.click(trigger());
+  await userEvent.click(screen.getByRole('button', { name: nativeName }));
 }
 
 function pageLanguage(): string | null {
@@ -62,34 +72,81 @@ describe('choosing a language', () => {
 
     expect(screen.getByRole('button', { name: 'Dark' })).toBeVisible();
 
-    await userEvent.selectOptions(picker(), 'de');
+    await choose('Deutsch');
 
     expect(screen.getByRole('button', { name: 'Dunkel' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Dark' })).toBeNull();
   });
 
-  it('names each language in itself, not in English', () => {
+  it('names each language in itself, not in English', async () => {
     renderControls();
+    await userEvent.click(trigger());
 
     // Somebody who needs Arabic is the person least able to find the word
     // "Arabic" written in English.
-    expect(screen.getByRole('option', { name: 'العربية' })).toBeVisible();
-    expect(screen.getByRole('option', { name: 'Русский' })).toBeVisible();
-    expect(screen.queryByRole('option', { name: 'Arabic' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'العربية' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Русский' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Arabic' })).toBeNull();
   });
 
   it('remembers the choice for next time', async () => {
     renderControls();
-    await userEvent.selectOptions(picker(), 'ru');
+    await choose('Русский');
 
     expect(localStorage.getItem('dfoss.language')).toBe('ru');
+  });
+});
+
+// WCAG 3.2.2. A native <select> fires `change` on every arrow press, so
+// somebody moving through the options with a keyboard had the page switch
+// language under them at each step. Nothing here may change until a language
+// is chosen.
+describe('a language is chosen, never arrowed past', () => {
+  it('does not change the language while arrow keys move through the list', async () => {
+    renderControls();
+    await userEvent.click(trigger());
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}');
+
+    expect(pageLanguage()).toBe('en');
+    expect(localStorage.getItem('dfoss.language')).toBeNull();
+  });
+
+  it('changes it on Enter, from the option focused by the arrows', async () => {
+    renderControls();
+    await userEvent.click(trigger());
+
+    // Opens on the current language (English, the first), so one ArrowDown
+    // lands on the second and Enter chooses it.
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+
+    expect(pageLanguage()).not.toBe('en');
+  });
+
+  it('marks the current language, and Escape closes without choosing', async () => {
+    renderControls();
+    await userEvent.click(trigger());
+
+    expect(screen.getByRole('button', { name: 'English' })).toHaveAttribute('aria-current', 'true');
+
+    await userEvent.keyboard('{ArrowDown}{Escape}');
+
+    expect(pageLanguage()).toBe('en');
+    expect(screen.queryByRole('button', { name: 'Deutsch' })).toBeNull();
+    expect(trigger()).toHaveFocus();
+  });
+
+  it('marks each option with its own language so it is read in that voice', async () => {
+    renderControls();
+    await userEvent.click(trigger());
+
+    expect(screen.getByRole('button', { name: 'Français' })).toHaveAttribute('lang', 'fr');
   });
 });
 
 describe('direction follows the language', () => {
   it('turns the page round for Arabic', async () => {
     renderControls();
-    await userEvent.selectOptions(picker(), 'ar');
+    await choose('العربية');
 
     // Every layout rule is written with logical properties, so this one
     // attribute is the entire mechanism that mirrors the application.
@@ -100,10 +157,10 @@ describe('direction follows the language', () => {
   it('turns it back for a left-to-right language', async () => {
     renderControls();
 
-    await userEvent.selectOptions(picker(), 'ar');
+    await choose('العربية');
     expect(pageDirection()).toBe('rtl');
 
-    await userEvent.selectOptions(picker(), 'fr');
+    await choose('Français');
     expect(pageDirection()).toBe('ltr');
   });
 
