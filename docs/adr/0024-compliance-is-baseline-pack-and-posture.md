@@ -301,6 +301,50 @@ the switches the dealership owns.
   one. Nothing resolves tax from it automatically yet — a person still enters
   the tax lines and the address they were worked out from (`TaxedAt`)
   separately; wiring the resolver to read this address is future work.
+
+- **The rate tables, the resolver and the review gate are built. Done 2026-10-19.**
+  `JurisdictionPacks` / `JurisdictionRates` / `JurisdictionRules` live in the host
+  catalog under a `compliance` schema, behind a third context bound to the host
+  connection — the same separation as `ControlPlaneDb`, so `HostDb`'s "routing
+  only" rule stays literally true. A pack is a JSON document; the loader hashes
+  the raw bytes, **refuses an unknown rule key** (R1 made mechanical rather than
+  trusted), and refuses a rate written as a percentage where a fraction belongs.
+  `POST /deals/{id}/tax/from-pack` resolves the deal's registration address,
+  applies `Deal.TaxableBasis`, and writes lines stamped with the pack and
+  version. The posture is a per-tenant singleton behind a new organization-wide
+  `Compliance.Configure`, defaulting to **off**: an installation does not start
+  charging tax from whatever shipped.
+
+  **One addition to the shape sketched above.** `JurisdictionRates` carries
+  nullable `AdministrativeArea` / `County` / `PostalKey` **matchers** alongside
+  the jurisdiction code. The sketch named "jurisdiction code, postal key" and
+  those are two different jobs: the code is the LABEL that reaches the tax line
+  and the paperwork, while the matchers are what an address is tested against. A
+  county rate cannot be matched on a postcode at all — one ZIP spans several
+  taxing jurisdictions, which is this document's own reason for rejecting ZIPs as
+  a key. Every matching row applies, one line each, because state, county and
+  city taxes stack on one car; a precedence rule would have silently undercharged
+  every deal in a county levying on top of its state.
+
+  **`Supported` now has teeth.** A `Draft` pack resolves nothing, and
+  `MarkReviewed` **refuses while any of the three basis flags is unset**, naming
+  the ones outstanding. That closes the gap between this ADR's review trigger and
+  what the code could actually enforce: the shipped Indiana pack carries a sourced
+  7 percent rate and **no** basis flags, so a reviewer who never opened Bulletin
+  28S cannot bless somebody's guesses by pressing a button. Shipping it with the
+  common-US flags as placeholders was considered and rejected for exactly that
+  reason.
+
+  **And a hole R4 had left open.** `POST /deals/{id}/tax` accepted whatever
+  provenance a caller sent, so anything could post a figure claiming a rate table
+  produced it, naming any pack and any version — inert while no pack existed, and
+  provenance laundering the moment one did. The server is now the only writer of
+  `Pack` provenance; an unchanged pack line may be sent back so the editor can
+  replace the whole set, and an altered one becomes the person's.
+
+  Not built: a screen for either half, and any pack marked `Supported`. Authoring
+  a production pack is now its own register row, because it needs somebody who can
+  answer for the numbers.
 - **A pack needs an owner and a review date, or it rots**, and a rotted pack is
   worse than none because it is trusted. `Supported` status is a claim about a
   human review, not about the file parsing.

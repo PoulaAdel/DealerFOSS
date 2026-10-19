@@ -1,3 +1,4 @@
+| `src/App/Compliance/Migrations` | `JurisdictionDb` | the `compliance` schema in the host catalog |
 # Local Development
 
 ← [Onboarding](ONBOARDING.md) · [Workbook](00-Workbook.md)
@@ -103,7 +104,7 @@ chain commands by putting one per line. Invoke scripts with the call operator:
 
 ## Migrations
 
-There are four migration sets across three folders, and they are generated
+There are five migration sets across four folders, and they are generated
 artifacts — excluded from style analysis, and never hand-edited.
 
 | Folder | Context | Holds |
@@ -112,6 +113,7 @@ artifacts — excluded from style analysis, and never hand-edited.
 | `src/Identity/Migrations` | `ControlPlaneDb` | the `control` schema in the host catalog |
 | `src/App/Tenancy/Migrations` | `HostDb` | host catalog routing |
 | `src/App/Data/Migrations` | `TenantDb` | tenant business data |
+| `src/App/Compliance/Migrations` | `JurisdictionDb` | the `compliance` schema in the host catalog |
 
 A control-plane migration needs `--context ControlPlaneDb --output-dir Migrations`,
 and EF will warn that two contexts share one migrations namespace. **Accept the
@@ -119,6 +121,12 @@ warning.** The flat folder is what the analyzer exclusion `[**/Migrations/*.cs]`
 matches, and `--namespace` makes `dotnet ef` write the model snapshot to a
 namespace-derived path outside it. The warning's failure mode is two migrations
 with the same class name — a compile error, not a silent one.
+
+`JurisdictionDb` is the third context bound to the host catalog and the second
+that owns a schema there. Its migration needs
+`--context JurisdictionDb --output-dir Compliance/Migrations`. **The host catalog
+is migrated automatically only by the development seeder**, so a real deployment
+runs `dotnet ef database update` once per context — including this one.
 
 ## House rules that will fail your build
 

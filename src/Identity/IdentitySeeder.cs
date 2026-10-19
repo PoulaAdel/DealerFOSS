@@ -186,6 +186,13 @@ public static class IdentitySeeder
             // role and no other: it is the dealership auditing itself, which is
             // the same kind of act as setting the second-factor rule beside it.
             Permissions.SecurityReviewAccess,
+            // Which jurisdiction tax pack the dealership charges tax from
+            // (ADR-024's posture). On the manager because on a fresh installation
+            // there is nobody else to hold it, and because the alternative was a
+            // permission nobody has — which would make the pack mechanism
+            // unreachable without a code change. Loading and approving a pack is
+            // NOT here: that is a deployment operator's act on the control plane.
+            Permissions.ComplianceConfigure,
         ]);
 
         // An advisor can look a customer up but not create one, and can see stock,

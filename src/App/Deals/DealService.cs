@@ -24,6 +24,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Accounting;
+using DealerFOSS.Compliance;
 using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.Data;
@@ -42,6 +43,7 @@ public sealed class DealService(
     IAccounting accounting,
     IReceivables receivables,
     IFinanceProducts products,
+    ITaxResolution taxResolution,
     ICurrentUser currentUser,
     IAuditSink audit,
     IClock clock)
@@ -63,6 +65,7 @@ public sealed class DealService(
     private readonly IAccounting _accounting = accounting;
     private readonly IReceivables _receivables = receivables;
     private readonly IFinanceProducts _products = products;
+    private readonly ITaxResolution _taxResolution = taxResolution;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IAuditSink _audit = audit;
     private readonly IClock _clock = clock;
@@ -692,6 +695,22 @@ public sealed class DealService(
                 return Result.Failure<DealDetail>(DealErrors.UnknownTaxProvenance);
             }
 
+            // THE SERVER IS THE ONLY WRITER OF PACK PROVENANCE. Until a pack
+            // existed this endpoint accepted whatever label a caller sent, so
+            // anything could post a figure claiming a rate table produced it,
+            // naming any pack and any version. Nothing could tell that line from
+            // one the resolver wrote, which would have made the provenance column
+            // — the entire point of ADR-024 R4 — decorative.
+            //
+            // An UNCHANGED pack line may come back, because the editor replaces
+            // the whole set and must be able to leave other rows alone. Altered
+            // or invented, it is refused, and the browser's job is to send an
+            // edited row as a person's.
+            if (provenance != TaxProvenance.EnteredByPerson && !IsUntouched(deal, line, provenance))
+            {
+                return Result.Failure<DealDetail>(DealErrors.TaxProvenanceNotEarned);
+            }
+
             lines.Add((
                 line.Description, line.Jurisdiction, line.Basis, line.Rate,
                 line.Amount, provenance, line.PackId, line.PackVersion));
@@ -720,6 +739,156 @@ public sealed class DealService(
 
         await _db.SaveChangesAsync(cancellationToken);
         return await DescribeAsync(deal, cancellationToken);
+    }
+
+    /// <summary>
+    /// Whether an incoming line is one already on the deal, unchanged in every
+    /// figure that matters. Anything else claiming pack or vendor provenance is
+    /// a claim the caller has not earned.
+    /// </summary>
+    /// <remarks>
+    /// Matched by id rather than by shape, so two identical lines cannot stand in
+    /// for one another, and compared field by field rather than by a hash — a
+    /// mismatch should be cheap to read in a debugger when somebody is working
+    /// out why their save was refused.
+    /// </remarks>
+    private static bool IsUntouched(Deal deal, NewTaxLine line, TaxProvenance provenance)
+    {
+        if (line.Id is not { } id)
+        {
+            return false;
+        }
+
+        var existing = deal.TaxLines.SingleOrDefault(t => t.Id == id);
+
+        return existing is not null
+            && existing.Provenance == provenance
+            && string.Equals(existing.Description, line.Description?.Trim(), StringComparison.Ordinal)
+            && string.Equals(existing.Jurisdiction, line.Jurisdiction?.Trim(), StringComparison.Ordinal)
+            && existing.Basis == line.Basis
+            && existing.Rate == line.Rate
+            && existing.Amount == line.Amount
+            && string.Equals(existing.PackId, line.PackId, StringComparison.Ordinal)
+            && existing.PackVersion == line.PackVersion;
+    }
+
+    /// <summary>
+    /// Works the tax out from the dealership's enabled jurisdiction pack and
+    /// records it, replacing whatever was on the deal.
+    /// </summary>
+    /// <remarks>
+    /// THIS IS THE ONLY PLACE A PACK-SOURCED TAX LINE IS EVER WRITTEN. The basis
+    /// comes from Deal.TaxableBasis, in the domain, because a pack carries data
+    /// and never logic (ADR-024 R1) — the pack supplies three flags and a rate,
+    /// and the arithmetic that reads them is ours and under our tests.
+    ///
+    /// AN UNRESOLVED JURISDICTION IS NOT A FAILURE (R5). No address, no enabled
+    /// pack, or no rate covering the address all come back as an ordinary answer
+    /// with the deal untouched, and the screen says which it was so a person can
+    /// type the tax instead. Only a missing registration address is a refusal,
+    /// because it is the one a person can fix in the next field along.
+    ///
+    /// Resolved against TODAY, not the deal's creation date: the tax is being
+    /// worked out now, against the rates in force now, and it freezes at that
+    /// (R3). A deal started in December and priced in January gets January's
+    /// rate, which is what the person pricing it would read off the table.
+    /// </remarks>
+    public async Task<Result<DealTaxFromPack>> SetTaxFromPackAsync(
+        Guid dealId,
+        CancellationToken cancellationToken)
+    {
+        var deal = await LoadAsync(dealId, tracked: true, cancellationToken);
+        if (deal is null)
+        {
+            return Result.Failure<DealTaxFromPack>(DealErrors.Forbidden);
+        }
+
+        if (!await _access.IsAuthorizedAsync(
+            _currentUser.Id, WritePermission, deal.RooftopId, deal.SalespersonUserId, cancellationToken))
+        {
+            return Result.Failure<DealTaxFromPack>(DealErrors.Forbidden);
+        }
+
+        if (deal.RegistrationAddress is not { } address)
+        {
+            return Result.Failure<DealTaxFromPack>(DealErrors.NoRegistrationAddress);
+        }
+
+        if (!deal.TermsAreOpen)
+        {
+            return Result.Failure<DealTaxFromPack>(Error.Conflict(
+                "deals.terms_frozen",
+                $"A {deal.Status} deal is frozen. Move it back to Draft to change the tax."));
+        }
+
+        var resolution = await _taxResolution.ResolveAsync(
+            new TaxResolutionRequest(
+                address.Country,
+                address.AdministrativeArea,
+                address.County,
+                address.PostalCode,
+                DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime)),
+            cancellationToken);
+
+        if (resolution.IsFailure)
+        {
+            return Result.Failure<DealTaxFromPack>(resolution.Error);
+        }
+
+        if (resolution.Value is not { Outcome: TaxResolutionOutcome.Resolved, Tax: { } resolved })
+        {
+            // The deal is deliberately not touched. Somebody asking for the pack's
+            // answer and being told there isn't one should not also lose the tax
+            // they had already typed.
+            var detail = await DescribeAsync(deal, cancellationToken);
+            return detail.IsSuccess
+                ? Result.Success(new DealTaxFromPack(
+                    resolution.Value.Outcome.ToString(), null, null, detail.Value))
+                : Result.Failure<DealTaxFromPack>(detail.Error);
+        }
+
+        var basis = deal.TaxableBasis(new TaxBasisRules(
+            resolved.TradeInReducesBasis,
+            resolved.DocumentationFeeIsTaxable,
+            resolved.OtherFeesAreTaxable));
+
+        var lines = resolved.Rates
+            .Select(rate => (
+                rate.Description,
+                rate.JurisdictionCode,
+                basis.Amount,
+                rate.Rate,
+
+                // To the cent, here, once. The browser shows the same arithmetic
+                // while somebody types, but the figure that reaches the invoice
+                // and the ledger is this one — and a cent of drift between them
+                // is a cent two reports disagree about forever.
+                Math.Round(basis.Amount * rate.Rate, 2, MidpointRounding.AwayFromZero),
+                TaxProvenance.Pack,
+                (string?)resolved.PackId,
+                (int?)resolved.PackVersion))
+            .ToList();
+
+        try
+        {
+            deal.SetTax(lines, TaxAddress.Create(
+                address.AdministrativeArea, address.County, address.PostalCode, address.Country));
+        }
+        catch (ArgumentException ex)
+        {
+            return Result.Failure<DealTaxFromPack>(Error.Validation("deals.invalid_tax", ex.Message));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var described = await DescribeAsync(deal, cancellationToken);
+        return described.IsSuccess
+            ? Result.Success(new DealTaxFromPack(
+                TaxResolutionOutcome.Resolved.ToString(),
+                resolved.PackId,
+                resolved.PackVersion,
+                described.Value))
+            : Result.Failure<DealTaxFromPack>(described.Error);
     }
 
     public async Task<Result<DealDetail>> SetRegistrationAddressAsync(
@@ -1293,6 +1462,24 @@ internal static class DealErrors
     public static Error UnknownTaxProvenance { get; } = Error.Validation(
         "deals.unknown_tax_provenance",
         "A tax line must say where its figure came from: EnteredByPerson, Pack, or Vendor.");
+
+    /// <summary>
+    /// A caller claiming a figure came from a rate table that did not produce it.
+    /// </summary>
+    /// <remarks>
+    /// The browser may send a pack-sourced line back UNCHANGED — that is how an
+    /// edit to one row leaves the others alone. What it may not do is invent one,
+    /// or alter one and keep the label. Change any figure on a pack line and it
+    /// becomes a person's, which is the truth about who is answerable for it.
+    /// </remarks>
+    public static Error TaxProvenanceNotEarned { get; } = Error.Validation(
+        "deals.tax_provenance_not_earned",
+        "Only the rate table can say a figure came from the rate table. "
+            + "Work the tax out from the pack, or record it as entered by a person.");
+
+    public static Error NoRegistrationAddress { get; } = Error.Validation(
+        "deals.no_registration_address",
+        "Add the address the car will be registered at first — that is what decides the rate.");
 
     public static Error UnknownChargeKind { get; } = Error.Validation(
         "deals.unknown_charge_kind",

@@ -43,6 +43,12 @@ internal static class DealEndpoints
         group.MapPost("/{dealId:guid}/products", SetProductsAsync);
         group.MapPost("/{dealId:guid}/products/{dealProductId:guid}/cancel", CancelProductAsync);
         group.MapPost("/{dealId:guid}/tax", SetTaxAsync);
+
+        // Its own route, because it is a different author: this one is the SERVER
+        // working the figure out and signing a pack's name to it. The route above
+        // records what a person typed. Folding them together would mean one
+        // endpoint that sometimes asserts provenance a caller did not earn.
+        group.MapPost("/{dealId:guid}/tax/from-pack", SetTaxFromPackAsync);
         group.MapPost("/{dealId:guid}/registration-address", SetRegistrationAddressAsync);
 
         // Its own path rather than part of terms, for the same reason as products:
@@ -142,6 +148,16 @@ internal static class DealEndpoints
         var result = await deals.SetTaxAsync(
             dealId, new DealTaxEntry(request.Lines ?? [], request.TaxedAt), cancellationToken);
 
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+
+    private static async Task<IResult> SetTaxFromPackAsync(
+        Guid dealId,
+        IDeals deals,
+        CancellationToken cancellationToken)
+    {
+        var result = await deals.SetTaxFromPackAsync(dealId, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 

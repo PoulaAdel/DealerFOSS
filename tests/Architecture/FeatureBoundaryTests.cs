@@ -54,7 +54,7 @@ public sealed class FeatureBoundaryTests
     public static TheoryData<string, string[]> ForbiddenEntityDependencies() => new()
     {
         { "DealerFOSS.Leads", ["DealerFOSS.Customers.Customer", "DealerFOSS.Customers.ContactPoint", "DealerFOSS.Vehicles.Vehicle", "DealerFOSS.Inventory.InventoryUnit"] },
-        { "DealerFOSS.Deals", ["DealerFOSS.Customers.Customer", "DealerFOSS.Customers.ContactPoint", "DealerFOSS.Vehicles.Vehicle", "DealerFOSS.Inventory.InventoryUnit", "DealerFOSS.Inventory.InventoryStatusChange", "DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.Account"] },
+        { "DealerFOSS.Deals", ["DealerFOSS.Customers.Customer", "DealerFOSS.Customers.ContactPoint", "DealerFOSS.Vehicles.Vehicle", "DealerFOSS.Inventory.InventoryUnit", "DealerFOSS.Inventory.InventoryStatusChange", "DealerFOSS.Accounting.JournalEntry", "DealerFOSS.Accounting.Account", "DealerFOSS.Compliance.JurisdictionPack", "DealerFOSS.Compliance.JurisdictionRate", "DealerFOSS.Compliance.JurisdictionRule", "DealerFOSS.Compliance.JurisdictionDb"] },
         { "DealerFOSS.Accounting", ["DealerFOSS.Organization.Rooftop", "DealerFOSS.Organization.LegalEntity", "DealerFOSS.Organization.DealerOrganization"] },
         // RepairOrders asks IParts what a job's parts cost and takes them off the
         // shelf. It must never touch the stock itself — a capability that could
@@ -215,11 +215,29 @@ public sealed class FeatureBoundaryTests
         // be choosing a connection itself, and could address another dealer's
         // database (doc 04 §5). Only the data layer, tenancy, and the
         // development seeder may do that.
+        //
+        // TWO NAMED EXEMPTIONS IN COMPLIANCE, both about what the type is rather
+        // than about convenience, and neither able to reach a tenant database at
+        // all: both bind to the HOST catalog, where jurisdiction reference data
+        // lives (ADR-024), so the harm this rule guards against — addressing
+        // another dealer's business database — is not available to them.
+        //
+        //   JurisdictionDbDesignTimeFactory exists for `dotnet ef` and is never
+        //   constructed by the running application. It is the same thing
+        //   HostDbDesignTimeFactory is, which escapes this rule only because it
+        //   happens to sit in the Tenancy namespace.
+        //
+        //   DevelopmentPacks is a development seeder, which the paragraph above
+        //   already says may choose a connection. It is reached only from
+        //   DevelopmentSeeder, behind IsDevelopment and an explicit flag.
+        //
+        // Named individually, so a NEW type in Compliance still fails this test.
         var result = Types.InAssembly(App)
             .That().ResideInNamespaceStartingWith("DealerFOSS.")
             .And().DoNotResideInNamespace("DealerFOSS.Data")
             .And().DoNotResideInNamespace("DealerFOSS.Tenancy")
             .And().DoNotResideInNamespace("DealerFOSS.App")
+            .And().DoNotHaveName("JurisdictionDbDesignTimeFactory", "DevelopmentPacks")
             .Should().NotHaveDependencyOn("Microsoft.EntityFrameworkCore.DbContextOptionsBuilder`1")
             .GetResult();
 

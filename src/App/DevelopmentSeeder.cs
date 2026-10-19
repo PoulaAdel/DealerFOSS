@@ -19,6 +19,7 @@
 
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using DealerFOSS.Compliance;
 using DealerFOSS.Core;
 using DealerFOSS.Accounting;
 using DealerFOSS.Customers;
@@ -54,6 +55,13 @@ public static class DevelopmentSeeder
         var clock = services.GetRequiredService<IClock>();
 
         await hostCatalog.Database.MigrateAsync();
+
+        // Jurisdiction reference data, in the same host catalog under its own
+        // schema. The packs that ship arrive Draft and resolve nothing; the
+        // example pack beside them is reviewed and enabled below, so a developer
+        // can see tax actually computed without anybody blessing a real
+        // jurisdiction's unreviewed figures.
+        await DevelopmentPacks.SeedAsync(hostConnectionString, clock, DevAdministrator.Email);
 
         // The control plane lives in the same host catalog database, under its
         // own schema. Seeded first so the deployment always has an operator, and
@@ -213,6 +221,16 @@ public static class DevelopmentSeeder
         }
 
         var organizationId = await tenantDb.Organizations.Select(o => o.Id).FirstAsync();
+
+        // The posture (ADR-024): this dealership uses the example pack. Real
+        // deployments start with nothing enabled and choose for themselves —
+        // which is why this is seeded here rather than defaulted in the entity.
+        if (!await tenantDb.ComplianceSettings.AnyAsync())
+        {
+            tenantDb.ComplianceSettings.Add(
+                new ComplianceSettings([DevelopmentPacks.ExamplePackId]));
+            await tenantDb.SaveChangesAsync();
+        }
         var name = await tenantDb.Organizations.Select(o => o.Name).FirstAsync();
 
         var firstRooftop = await tenantDb.Rooftops

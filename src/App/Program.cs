@@ -22,6 +22,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using DealerFOSS.Accounting;
 using DealerFOSS.Administration;
 using DealerFOSS.App;
+using DealerFOSS.Compliance;
 using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.Data;
@@ -132,6 +133,21 @@ if (tenancyEnabled)
     builder.Services.AddScoped<IInventory, InventoryService>();
     builder.Services.AddScoped<ILeads, LeadService>();
     builder.Services.AddScoped<IDeals, DealService>();
+
+    // Jurisdiction reference data, bound to the HOST catalog rather than to any
+    // tenant: a published tax rate is the same number for every dealership, so
+    // it is reference data held once (ADR-024), and only the enablement is per
+    // tenant. Same shape as AddControlPlane above, and for the same reason.
+    builder.Services.AddDbContext<JurisdictionDb>(options =>
+        options.UseSqlServer(hostConnection!, sql =>
+            sql.MigrationsAssembly(typeof(JurisdictionDb).Assembly.FullName)));
+
+    // Two registrations because they answer to two different callers: packs are
+    // administered on the control plane, the posture is the dealership's.
+    builder.Services.AddScoped<IJurisdictionPacks, JurisdictionPackService>();
+    builder.Services.AddScoped<ComplianceService>();
+    builder.Services.AddScoped<ICompliance>(sp => sp.GetRequiredService<ComplianceService>());
+    builder.Services.AddScoped<ITaxResolution>(sp => sp.GetRequiredService<ComplianceService>());
     builder.Services.AddScoped<IFinanceProducts, FinanceProductService>();
     builder.Services.AddScoped<IDocuments, DocumentService>();
     builder.Services.AddScoped<ITenantProvisioning, TenantProvisioning>();
@@ -446,6 +462,7 @@ if (tenancyEnabled)
     app.MapInventory();
     app.MapLeads();
     app.MapDeals();
+    app.MapCompliance();
     app.MapParts();
     app.MapRepairOrders();
     app.MapAppointments();

@@ -131,6 +131,17 @@ public sealed class CredentialSurfaceTests(HostFixture fixture)
             "/api/v1/admin/tenants/{slug}/status",
             "/api/v1/admin/support-access",
             "/api/v1/admin/support-access/{id:guid}/end",
+            // Jurisdiction tax packs. The same reasoning as the console above,
+            // and one more that is specific to these: a pack cannot be guessed
+            // into doing anything. Loading one stores inert Draft rows that
+            // resolve no tax at all, and marking one supported requires the three
+            // basis flags to be decided first. The consequential act here is
+            // somebody taking responsibility for a rate, which is recorded with
+            // their name on the pack row rather than defended by a rate limit.
+            "/api/v1/admin/jurisdiction-packs",
+            "/api/v1/admin/jurisdiction-packs/shipped",
+            "/api/v1/admin/jurisdiction-packs/{packId}/{version:int}/review",
+            "/api/v1/admin/jurisdiction-packs/{packId}/{version:int}/withdraw",
         ];
 
         var unconsidered = AuthenticationRoutes()

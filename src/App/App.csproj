@@ -37,4 +37,14 @@
     <InternalsVisibleTo Include="Unit.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      Jurisdiction packs ship INSIDE the assembly rather than as loose files, so
+      the bytes a reviewer approved cannot be edited after the build without the
+      content hash changing (ADR-024). A deployer's own pack arrives through the
+      admin API instead.
+    -->
+    <EmbeddedResource Include="Compliance\Packs\*.json" />
+  </ItemGroup>
+
 </Project>

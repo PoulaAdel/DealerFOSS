@@ -341,6 +341,41 @@ namespace DealerFOSS.Data.Migrations
                     b.ToTable("JournalLines", "accounting");
                 });
 
+            modelBuilder.Entity("DealerFOSS.Compliance.ComplianceSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTimeOffset?>("ModifiedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("_enabledPackIds")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("EnabledPackIds");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ComplianceSettings", "compliance");
+                });
+
             modelBuilder.Entity("DealerFOSS.Customers.ContactPoint", b =>
                 {
                     b.Property<Guid>("Id")

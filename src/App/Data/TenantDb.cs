@@ -20,6 +20,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using DealerFOSS.Accounting;
+using DealerFOSS.Compliance;
 using DealerFOSS.Core;
 using DealerFOSS.Customers;
 using DealerFOSS.DataMigration;
@@ -116,6 +117,9 @@ public sealed class TenantDb(DbContextOptions<TenantDb> options, IClock clock, I
     public DbSet<StockReceipt> StockReceipts => Set<StockReceipt>();
 
     public DbSet<PartsSettings> PartsSettings => Set<PartsSettings>();
+
+    /// <summary>Which jurisdiction tax packs this dealership uses (ADR-024's posture).</summary>
+    public DbSet<ComplianceSettings> ComplianceSettings => Set<ComplianceSettings>();
 
     public DbSet<ConnectorCursor> ConnectorCursors => Set<ConnectorCursor>();
 

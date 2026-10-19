@@ -198,6 +198,28 @@ public static class Permissions
     /// </summary>
     public const string ProfitabilityRead = "Profitability.Read";
 
+    /// <summary>
+    /// Choosing which jurisdiction tax pack this dealership charges tax from
+    /// (ADR-024's posture).
+    ///
+    /// Held ORGANIZATION-WIDE, the same reasoning as <see cref="PartsManage"/>
+    /// and the second-factor policy: which rate table the business charges tax
+    /// from is not a decision one lot makes for the others, and two lots
+    /// disagreeing about it would put two different answers on the same
+    /// question in one tax return.
+    ///
+    /// Deliberately NOT <see cref="DealsWrite"/>, which a salesperson holds
+    /// because building the numbers is their job. Enabling a pack changes what
+    /// every future deal is charged; typing a tax line changes one deal, and
+    /// says on screen that a person typed it.
+    ///
+    /// It does not extend to loading or approving a pack. Packs are
+    /// host-catalog reference data shared by every dealership in the
+    /// deployment, so that is a control-plane act authorised against an
+    /// administrator — see IJurisdictionPacks.
+    /// </summary>
+    public const string ComplianceConfigure = "Compliance.Configure";
+
     /// <summary>Seeing the parts catalogue and what is on the shelf.</summary>
     public const string PartsRead = "Parts.Read";
 
@@ -325,6 +347,7 @@ public static class Permissions
         FinanceManageProducts,
         ProfitabilityRead,
         SecurityReviewAccess,
+        ComplianceConfigure,
     ];
 }
 

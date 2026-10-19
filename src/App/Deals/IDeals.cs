@@ -70,6 +70,22 @@ public interface IDeals
         DealTaxEntry tax,
         CancellationToken cancellationToken);
 
+
+    /// <summary>
+    /// Works the tax out from the dealership's enabled jurisdiction pack, from
+    /// the deal's registration address, and records it.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="SetTaxAsync"/> because it is a different act by a
+    /// different author: this one is the SERVER writing a figure and signing a
+    /// pack's name to it, and it is the only route that may. A person's typed
+    /// tax still goes through SetTaxAsync, and an unsupported jurisdiction still
+    /// works that way (ADR-024 R5).
+    /// </remarks>
+    Task<Result<DealTaxFromPack>> SetTaxFromPackAsync(
+        Guid dealId,
+        CancellationToken cancellationToken);
+
     /// <summary>
     /// Replaces the address the car will be registered or garaged at, or clears
     /// it with null. Distinct from the customer's own mailing address — this is
@@ -409,7 +425,22 @@ public sealed record NewTaxLine(
     decimal Amount,
     string Provenance,
     string? PackId = null,
-    int? PackVersion = null);
+    int? PackVersion = null,
+
+    /// <summary>
+    /// The id of the line this one already is, when a pack-sourced line is being
+    /// sent back unchanged. Null for anything a person typed, which is almost
+    /// everything.
+    /// </summary>
+    /// <remarks>
+    /// It exists so the editor can replace the whole set — which is how it has
+    /// always worked — without a pack's lines losing their authorship just
+    /// because somebody edited the row below. The server checks the figures
+    /// against the saved line and refuses a changed one that still claims the
+    /// pack, so this is not a way to assert provenance; it is a way to keep one
+    /// that was already earned.
+    /// </remarks>
+    Guid? Id = null);
 
 public sealed record TaxLineView(
     Guid Id,
@@ -441,3 +472,21 @@ public sealed record RegistrationAddressView(
     string? County,
     string? PostalCode,
     string Country);
+
+/// <summary>
+/// What came of asking the rate table. <c>Outcome</c> is "Resolved" when the tax
+/// was worked out and written; otherwise it says why not and the deal is
+/// unchanged.
+/// </summary>
+/// <remarks>
+/// Not resolving is an ORDINARY ANSWER, not an error, which is why this carries
+/// an outcome rather than the endpoint returning a failure. "No pack is enabled
+/// for this country" is something the screen reports while the person types the
+/// tax themselves — ADR-024 R5, which is what makes the product usable in every
+/// jurisdiction nobody has written a pack for.
+/// </remarks>
+public sealed record DealTaxFromPack(
+    string Outcome,
+    string? PackId,
+    int? PackVersion,
+    DealDetail Deal);
