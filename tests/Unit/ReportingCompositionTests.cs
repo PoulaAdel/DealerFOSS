@@ -363,5 +363,9 @@ public sealed class ReportingCompositionTests
         public Task<Result<InventoryUnitDetail>> ChangeStatusAsync(
             Guid unitId, StatusChangeRequest change, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
+        public Task<Result<InventoryUnitDetail>> MarkSoldAsync(
+            Guid unitId, Guid dealId, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 }

@@ -431,6 +431,7 @@ export const ar: Catalogue = {
   'stock.moveTo': 'النقل إلى {to}',
   'stock.soldNote': 'بيعت هذه السيارة. لإلغاء ذلك، اعكس الصفقة.',
   'stock.noMovesNote': 'لا يمكن نقل هذه السيارة إلى أي حالة من هنا.',
+  'stock.cannotMoveNote': 'ليس لديك صلاحية تحريك المخزون في هذا الفرع.',
 
   'enum.accountKind.Asset': 'أصول',
   'enum.accountKind.Liability': 'التزامات',

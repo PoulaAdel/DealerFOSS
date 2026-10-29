@@ -216,6 +216,19 @@ export interface InventoryUnitDetail extends InventoryUnitSummary {
 
   /** Every posting behind `reconditioningAmount`, oldest first. */
   reconditioning: ReconditioningEntry[];
+
+  /**
+   * The statuses this caller may move this car to from here — the life cycle's
+   * legal moves, minus Sold, and empty when they may not move stock at this lot.
+   *
+   * Render these and nothing else. Do not reintroduce a local transition table:
+   * the one that used to live in `InventoryPage` held the only copy of the
+   * "never Sold" rule, so the endpoint accepted Sold from anybody until
+   * 2026-10-19. An empty list means either "nowhere to go" or "not yours to
+   * move", and the server deliberately does not say which — the permission hint
+   * on `/auth/me` decides which sentence to print (ADR-025).
+   */
+  availableMoves: InventoryStatus[];
 }
 
 export interface ReconditioningEntry {

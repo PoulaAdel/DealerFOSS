@@ -234,6 +234,7 @@ describe('taking a car into stock', () => {
     costCurrency: 'USD',
     acquiredOn: null,
     history: [],
+    availableMoves: ['Reconditioning', 'Available', 'Removed'],
   };
 
   /**
@@ -352,6 +353,30 @@ describe('taking a car into stock', () => {
 });
 
 describe('moving a car between stock states', () => {
+  /**
+   * The moves the real server computes for each state, so these fixtures look
+   * like the real answer rather than a convenient one.
+   *
+   * This table is NOT a copy of a rule the screen applies — the screen has none
+   * left, which is the whole change. It is test data standing in for
+   * `InventoryService.AvailableMoves`, and `InventoryTests` is what holds that
+   * method honest. Note Sold is absent from every row: a manager can reach it on
+   * the server from Available and OnHold, and Inventory subtracts it because a
+   * car is sold by delivering a deal.
+   */
+  const serverMoves: Record<string, string[]> = {
+    Incoming: ['Reconditioning', 'Available', 'Removed'],
+    Reconditioning: ['Available', 'OnHold', 'Removed'],
+    Available: ['Reconditioning', 'OnHold', 'Removed'],
+    OnHold: ['Available', 'Reconditioning', 'Removed'],
+    // Sold offers nothing, and that is a server rule rather than a quirk of this
+    // table: the life cycle permits Sold -> Available, but a delivered deal
+    // cannot be cancelled, so nothing may put a sold car back on the lot without
+    // also taking the sale out of the books.
+    Sold: [],
+    Removed: [],
+  };
+
   const detailAt = (status: InventoryUnitSummary['status']) => ({
     ...unit,
     status,
@@ -359,6 +384,7 @@ describe('moving a car between stock states', () => {
     costCurrency: 'USD',
     acquiredOn: null,
     history: [],
+    availableMoves: serverMoves[status],
   });
 
   it('offers the moves the domain allows from where the car is', async () => {
@@ -402,27 +428,61 @@ describe('moving a car between stock states', () => {
   });
 
 
-  it('never offers Sold, from any state a car can be moved from', async () => {
-    // Broadened after a rehearsal: the first version of this only opened a car
-    // in Reconditioning, so adding Sold to the Available moves broke nothing and
-    // the suite stayed green. Available is the state most cars are in.
-    for (const from of ['Incoming', 'Reconditioning', 'Available', 'OnHold'] as const) {
-      mockApi({
-        '/inventory': { ok: true, body: page([unit]) },
-        [`/inventory/${unit.id}`]: { ok: true, body: detailAt(from) },
-      });
+  it('draws exactly the moves the server named, and nothing else', async () => {
+    // This replaces `never offers Sold, from any state a car can be moved from`,
+    // which stopped being a test on 2026-10-19. That test asserted the screen
+    // did not draw a Sold button while the screen was deciding that for itself;
+    // now the server decides, so the same assertion would only prove the FIXTURE
+    // above has no Sold in it. Tautology, and the old one carried a comment
+    // saying it had already passed vacuously once before.
+    //
+    // The real question for this file is fidelity: whatever the server names is
+    // what gets drawn, no more and no less. The Sold rule itself is now asserted
+    // where it is implemented — InventoryTests, two assertions: absent from
+    // availableMoves, and refused when posted anyway.
+    mockApi({
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: {
+        ok: true,
+        body: { ...detailAt('Available'), availableMoves: ['OnHold'] },
+      },
+    });
+    renderStock();
 
-      const view = renderStock();
-      await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
-      await screen.findByRole('heading', { name: 'Where it goes next' });
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+    await screen.findByRole('heading', { name: 'Where it goes next' });
 
-      expect(
-        screen.queryByRole('button', { name: /Move to Sold/ }),
-        `${from} offered a way to sell a car without a deal`,
-      ).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Move to On hold' })).toBeVisible();
 
-      view.unmount();
-    }
+    // Reconditioning and Removed are legal from Available and this caller was
+    // not offered them, so they must not appear. A screen that drew them from
+    // the status would pass the line above and fail here.
+    expect(screen.queryByRole('button', { name: /Move to Reconditioning/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Move to Removed/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Move to Sold/ })).not.toBeInTheDocument();
+  });
+
+  it('says the caller may not move stock rather than blaming the car', async () => {
+    // An empty list means two different things and the server sends [] for both.
+    // Before this, a read-only advisor looking at a perfectly movable car was
+    // told "This car cannot be moved anywhere from here" — false about the car,
+    // and it would send them hunting for a problem with the vehicle.
+    mockApi({
+      '/auth/me': signedInAs([Permission.InventoryRead]),
+      '/inventory': { ok: true, body: page([unit]) },
+      [`/inventory/${unit.id}`]: {
+        ok: true,
+        body: { ...detailAt('Available'), availableMoves: [] },
+      },
+    });
+    renderStock();
+
+    await userEvent.click(await screen.findByRole('button', { name: /NAG-1042/ }));
+
+    expect(
+      await screen.findByText('You do not have permission to move stock at this location.'),
+    ).toBeVisible();
+    expect(screen.queryByText('This car cannot be moved anywhere from here.')).not.toBeInTheDocument();
   });
 
   it('says why a sold car cannot be moved rather than showing dead buttons', async () => {
@@ -454,6 +514,7 @@ describe('a car reached by its own address', () => {
     costCurrency: 'USD',
     acquiredOn: null,
     history: [],
+    availableMoves: ['Reconditioning', 'OnHold', 'Removed'],
   };
 
   it('arrives open when the address names the car', async () => {
@@ -542,6 +603,7 @@ describe('what is in the car', () => {
     bookValueAmount: 14680,
     acquiredOn: null,
     history: [],
+    availableMoves: ['Reconditioning', 'OnHold', 'Removed'],
     reconditioning: [
       {
         amount: 180,

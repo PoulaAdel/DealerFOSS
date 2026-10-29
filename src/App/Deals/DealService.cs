@@ -1058,25 +1058,28 @@ public sealed class DealService(
 
         // The car follows the deal: delivered means sold, cancelled means it goes
         // back on the lot for somebody else.
-        var carMove = next switch
+        //
+        // Delivery goes through MarkSoldAsync and not ChangeStatusAsync, because
+        // as of 2026-10-19 Inventory refuses Sold from the ordinary status door —
+        // a person could otherwise sell a car by typing a status onto it, taking
+        // it out of stock while its whole carrying value stayed on the balance
+        // sheet. A delivered deal is the one thing entitled to make that move,
+        // and this is the only call site that may.
+        Result<InventoryUnitDetail>? moved = next switch
         {
-            DealStatus.Delivered => "Sold",
-            DealStatus.Cancelled => "Available",
+            DealStatus.Delivered => await _inventory.MarkSoldAsync(
+                deal.InventoryUnitId, deal.Id, cancellationToken),
+            DealStatus.Cancelled => await _inventory.ChangeStatusAsync(
+                deal.InventoryUnitId,
+                new StatusChangeRequest("Available", "Deal cancelled."),
+                cancellationToken),
             _ => null,
         };
 
-        if (carMove is not null)
+        if (moved is { IsFailure: true })
         {
-            var moved = await _inventory.ChangeStatusAsync(
-                deal.InventoryUnitId,
-                new StatusChangeRequest(carMove, $"Deal {next.ToString().ToLowerInvariant()}."),
-                cancellationToken);
-
-            if (moved.IsFailure)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                return Result.Failure<DealDetail>(moved.Error);
-            }
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<DealDetail>(moved.Error);
         }
 
         // A car leaving the lot is an accounting event. It posts inside the same

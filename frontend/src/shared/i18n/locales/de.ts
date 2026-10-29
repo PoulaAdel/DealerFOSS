@@ -416,6 +416,7 @@ export const de: Catalogue = {
   'stock.moveTo': 'Auf {to} setzen',
   'stock.soldNote': 'Dieses Fahrzeug ist verkauft. Zum Rückgängigmachen den Vorgang stornieren.',
   'stock.noMovesNote': 'Dieses Fahrzeug kann von hier aus nicht bewegt werden.',
+  'stock.cannotMoveNote': 'Sie haben keine Berechtigung, den Bestand an diesem Standort zu bewegen.',
 
   // HGB-Bilanzgliederung.
   'enum.accountKind.Asset': 'Aktiva',

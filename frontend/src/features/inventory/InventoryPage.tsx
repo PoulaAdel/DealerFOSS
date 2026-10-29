@@ -334,10 +334,19 @@ function UnitDetail({
  * called `POST /inventory/{id}/status`. The status filter above the list was
  * therefore a filter over something nobody could change.
  *
- * Only the moves the domain actually allows from here are offered, and Sold is
- * never one of them — a car is sold by delivering a deal, which is what posts
- * the sale. Offering it here would be a second way to change the same fact, and
- * the one that skips the ledger.
+ * Driven entirely by `unit.availableMoves`, never by `unit.status`. The server
+ * has already folded in the life cycle, this caller's `Inventory.Manage` scope,
+ * and the rule that Sold is not a move a person makes — so a button that would
+ * be refused is absent rather than shown and then refused. Do not grow a
+ * parallel `unit.status === 'X'` guard here: that is the second copy of the rule
+ * ADR-025 and AGENTS.md §6 forbid, and this file is the cautionary tale.
+ *
+ * It held the ONLY copy of the "never Sold" rule, in a local `movesFrom()`, with
+ * a comment explaining why the button must not exist. The comment was right and
+ * the server had never heard of it: `POST /inventory/{id}/status` accepted
+ * `Sold` from anybody holding Inventory.Manage until 2026-10-19, taking a car
+ * out of stock while its whole carrying value stayed on the balance sheet. A
+ * rule a screen keeps to itself is not a rule.
  */
 function MoveTheCar({
   unit,
@@ -349,12 +358,13 @@ function MoveTheCar({
   const { t } = useI18n();
   const label = useEnumLabel();
   const describe = useApiMessage();
+  const { holds } = useSession();
 
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const moves = movesFrom(unit.status);
+  const moves = unit.availableMoves;
 
   async function move(to: InventoryStatus) {
     setError(null);
@@ -376,11 +386,23 @@ function MoveTheCar({
   }
 
   if (moves.length === 0) {
-    return (
-      <p className="note">
-        {unit.status === 'Sold' ? t('stock.soldNote') : t('stock.noMovesNote')}
-      </p>
-    );
+    // An empty list means one of two different things and the server does not
+    // distinguish them — to a caller who may not move stock, "nowhere to go" and
+    // "not yours to move" are the same answer, so it sends [] for both. Which
+    // one to SAY is the browser's job, from the permission hint on /auth/me
+    // (ADR-025). Without this branch a read-only advisor looking at an Available
+    // car was told "this car cannot be moved anywhere from here", which is a
+    // false statement about the car rather than a true one about them.
+    //
+    // A hint, not a control: the endpoint refuses the advisor either way, and
+    // this only decides which sentence to print.
+    const message = unit.status === 'Sold'
+      ? t('stock.soldNote')
+      : holds('Inventory.Manage')
+        ? t('stock.noMovesNote')
+        : t('stock.cannotMoveNote');
+
+    return <p className="note">{message}</p>;
   }
 
   return (
@@ -410,31 +432,6 @@ function MoveTheCar({
       </div>
     </>
   );
-}
-
-/**
- * The moves a person may make from a given state.
- *
- * Kept here rather than derived from the whole status list because most pairs
- * are nonsense — a Sold car does not go back to Incoming, and a Removed one does
- * not come back at all. The server is still the authority and refuses anything
- * else; this only decides which buttons are worth showing.
- */
-function movesFrom(status: InventoryStatus): InventoryStatus[] {
-  switch (status) {
-    case 'Incoming':
-      return ['Reconditioning', 'Available', 'Removed'];
-    case 'Reconditioning':
-      return ['Available', 'OnHold', 'Removed'];
-    case 'Available':
-      return ['Reconditioning', 'OnHold', 'Removed'];
-    case 'OnHold':
-      return ['Available', 'Reconditioning', 'Removed'];
-    default:
-      // Sold and Removed are ends. A sold car is unwound by reversing the deal,
-      // not by typing a different status onto the car.
-      return [];
-  }
 }
 
 function Body({

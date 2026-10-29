@@ -33,6 +33,13 @@ public sealed class InventoryTests(HostFixture fixture)
     private const string Advisor = DevelopmentSeeder.DevUsers.FirstRooftopOnlyEmail;
     private const string Nobody = DevelopmentSeeder.DevUsers.UnassignedEmail;
 
+    /// <summary>
+    /// The salesperson role at the first rooftop, narrowed with
+    /// <c>OwnRecordsOnly</c> (ADR-030). Here to prove that narrowing does NOT
+    /// take stock away — see <c>An_own_work_only_salesperson_can_still_move_stock</c>.
+    /// </summary>
+    private const string OwnWorkOnly = DevelopmentSeeder.DevUsers.OwnWorkOnlyEmail;
+
     private readonly HostFixture _fixture = fixture;
 
     // --- vehicles ----------------------------------------------------------
@@ -413,12 +420,63 @@ public sealed class InventoryTests(HostFixture fixture)
     {
         var unitId = await ReceiveIdAsync(Manager, await RooftopIdAsync("NAG-01"), UniqueStock());
 
+        // Probes with OnHold, not Sold. It used to use Sold, which stopped
+        // testing this rule on 2026-10-19: Sold is now refused by its own guard
+        // before the life cycle is ever consulted, so the assertion below passed
+        // for the wrong reason and the life-cycle message went uncovered. An
+        // Incoming car can become Reconditioning, Available or Removed — being
+        // spoken for before it has arrived is not one of them.
         using var response = await PostAsync($"{Inventory}/{unitId}/status", Manager,
-            new { status = "Sold" });
+            new { status = "OnHold" });
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await response.Content.ReadAsStringAsync()).Should().Contain("Available",
             because: "the message must tell the user what they can do instead");
+    }
+
+    [Fact]
+    public async Task A_person_cannot_sell_a_car_by_typing_Sold_onto_it()
+    {
+        // The test above looks like it covers this and does not: it posts Sold on
+        // an INCOMING car, which the life cycle refuses on its own. Available ->
+        // Sold and OnHold -> Sold are both legal moves, so until 2026-10-19
+        // anybody holding Inventory.Manage could sell a car with one request --
+        // no deal, no customer, and no delivery posting.
+        //
+        // What that cost: the car left the stock list and its carrying value
+        // stayed on the balance sheet. Nothing relieved 1300, because the thing
+        // that relieves 1300 is PostDeliveryAsync, and no deal had been
+        // delivered. The same failure class as the reconditioning bug found on
+        // 2026-09-19 -- an account that never comes back to zero -- and equally
+        // invisible to the balancing checks, because no entry was wrong. There
+        // was simply no entry.
+        //
+        // The screen never offered the button, which is why this survived: the
+        // rule lived in InventoryPage.movesFrom() and nowhere on the server. The
+        // exact gap ADR-025 names -- hiding a control is a courtesy, the
+        // endpoint behind it still has to refuse.
+        var unitId = await ReceiveIdAsync(Manager, await RooftopIdAsync("NAG-01"), UniqueStock());
+
+        using (var available = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+            new { status = "Available" }))
+        {
+            available.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        using var sold = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+            new { status = "Sold" });
+
+        sold.StatusCode.Should().Be(HttpStatusCode.Conflict,
+            because: "a car is sold by delivering a deal, which is what posts the sale");
+        (await sold.Content.ReadAsStringAsync()).Should().Contain("deal",
+            because: "the refusal has to say where to go instead, or it reads as a bug");
+
+        // And the car is still on the lot afterwards. Asserted separately
+        // because a refusal that still moved the record would be worse than one
+        // that did not refuse at all.
+        using var after = await SendAsync(HttpMethod.Get, $"{Inventory}/{unitId}", Manager);
+        (await after.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("status").GetString().Should().Be("Available");
     }
 
     [Fact]
@@ -434,6 +492,197 @@ public sealed class InventoryTests(HostFixture fixture)
 
         move.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             because: "Inventory.Read and Inventory.Manage are checked separately");
+    }
+
+    // --- availableMoves: a button a caller would be refused is never offered --
+
+    [Fact]
+    public async Task AvailableMoves_offers_what_the_life_cycle_allows_from_here()
+    {
+        var unitId = await ReceiveIdAsync(Manager, await RooftopIdAsync("NAG-01"), UniqueStock());
+
+        using (var reconditioning = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+            new { status = "Reconditioning" }))
+        {
+            reconditioning.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        (await MovesAsync(unitId, Manager)).Should().BeEquivalentTo(["Available", "OnHold", "Removed"]);
+    }
+
+    [Fact]
+    public async Task AvailableMoves_never_offers_Sold_from_any_state_a_car_can_be_moved_from()
+    {
+        // The browser used to decide this, in InventoryPage.movesFrom(), which is
+        // why POST /status accepted Sold from anybody for months. Asserted from
+        // every state that can reach Sold legally, not just one: Available and
+        // OnHold are the two, and a test that only opened a Reconditioning car
+        // would stay green if the subtraction were dropped.
+        var unitId = await ReceiveIdAsync(Manager, await RooftopIdAsync("NAG-01"), UniqueStock());
+
+        foreach (var state in new[] { "Available", "OnHold" })
+        {
+            using var moved = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+                new { status = state });
+            moved.StatusCode.Should().Be(HttpStatusCode.OK, because: await moved.Content.ReadAsStringAsync());
+
+            (await MovesAsync(unitId, Manager)).Should().NotContain("Sold",
+                because: $"a {state} car is sold by delivering its deal, not from the stock screen");
+        }
+    }
+
+    [Fact]
+    public async Task AvailableMoves_is_empty_for_a_caller_who_only_holds_read()
+    {
+        // The advisor holds Inventory.Read and not Inventory.Manage, so the two
+        // halves of this assertion are the whole point: the moves are absent
+        // from the record AND the endpoint refuses one that is posted anyway.
+        // Hiding a control is a courtesy; the refusal is the control (ADR-025).
+        var unitId = await ReceiveIdAsync(Manager, await RooftopIdAsync("NAG-01"), UniqueStock());
+
+        (await MovesAsync(unitId, Advisor)).Should().BeEmpty();
+
+        using var refused = await PostAsync($"{Inventory}/{unitId}/status", Advisor,
+            new { status = "Available" });
+        refused.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task An_own_work_only_salesperson_can_still_move_stock()
+    {
+        // THIS TEST EXISTS TO STOP A TIDY-UP. AvailableMoves uses
+        // AuthorizedScope.Covers, not Allows, and the difference is not cosmetic:
+        // a car names nobody, and Allows(rooftopId, null) deliberately REFUSES a
+        // caller narrowed to their own records. Switching to Allows "for
+        // consistency with Deals and Leads" would hide every move button from
+        // this account, for every car on the lot, and the endpoint would go on
+        // allowing the move — so the screen would be wrong and silent.
+        //
+        // ADR-030 names receiving stock as its own example of a question with no
+        // owner to ask it with. ownwork@dev.local differs from sales@dev.local by
+        // the OwnRecordsOnly narrowing and nothing else, which is what makes this
+        // a test of the dimension rather than of a role.
+        var unitId = await ReceiveIdAsync(Manager, await RooftopIdAsync("NAG-01"), UniqueStock());
+
+        (await MovesAsync(unitId, OwnWorkOnly)).Should().Contain("Available",
+            because: "a car is not somebody's own record, so being limited to your own work "
+                + "does not take stock away from you");
+
+        using var moved = await PostAsync($"{Inventory}/{unitId}/status", OwnWorkOnly,
+            new { status = "Available" });
+        moved.StatusCode.Should().Be(HttpStatusCode.OK,
+            because: "the offer and the act have to agree, or one of them is a lie");
+    }
+
+    [Fact]
+    public async Task AvailableMoves_is_empty_for_a_car_that_has_been_removed()
+    {
+        var unitId = await ReceiveIdAsync(Manager, await RooftopIdAsync("NAG-01"), UniqueStock());
+
+        using (var removed = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+            new { status = "Removed" }))
+        {
+            removed.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        (await MovesAsync(unitId, Manager)).Should().BeEmpty(
+            because: "Removed is the end of the line; a car that comes back is received again");
+    }
+
+    [Fact]
+    public async Task A_sold_car_is_not_put_back_on_the_lot_by_hand()
+    {
+        // The other half of the rule, and the half nobody had written down. The
+        // life cycle allows Sold -> Available, under a comment about deals
+        // falling through -- but DealStatusRules has [Delivered] = [], so a
+        // delivered deal can never be cancelled and Deals only ever returns a
+        // car to stock from OnHold. Nothing in the solution moves a car out of
+        // Sold.
+        //
+        // So a person doing it by hand would put the car back on the forecourt
+        // while the ledger still carried its delivery: 1300 relieved, the sale
+        // booked, the car for sale again. The mirror image of selling one by
+        // hand, and found the same way -- the browser's movesFrom() returned
+        // nothing for a Sold car, so the screen had the rule and the server did
+        // not.
+        var rooftop = await RooftopIdAsync("NAG-01");
+        var unitId = await ReceiveIdAsync(Manager, rooftop, UniqueStock());
+
+        using (var available = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+            new { status = "Available" }))
+        {
+            available.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        // Sold the only way a car can be: by delivering a deal.
+        await DeliverADealForAsync(unitId, rooftop);
+
+        (await MovesAsync(unitId, Manager)).Should().BeEmpty(
+            because: "a delivered deal cannot be cancelled, so there is nothing to undo this with");
+
+        using var back = await PostAsync($"{Inventory}/{unitId}/status", Manager,
+            new { status = "Available" });
+
+        back.StatusCode.Should().Be(HttpStatusCode.Conflict,
+            because: "the car would be for sale again while the books still held the sale");
+
+        using var after = await SendAsync(HttpMethod.Get, $"{Inventory}/{unitId}", Manager);
+        (await after.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("status").GetString().Should().Be("Sold");
+    }
+
+    /// <summary>
+    /// Takes a car all the way to Sold through the only door there is, so a test
+    /// about a sold car is about one the system really sold.
+    /// </summary>
+    private async Task DeliverADealForAsync(string unitId, string rooftop)
+    {
+        using var customer = await PostAsync("/api/v1/customers", Manager, new
+        {
+            kind = "Person", firstName = "Sold", lastName = $"Car{Guid.NewGuid():N}"[..12],
+        });
+        var customerId = (await customer.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetString()!;
+
+        using var started = await PostAsync("/api/v1/deals", Manager, new
+        {
+            rooftopId = rooftop, customerId, inventoryUnitId = unitId, currency = "USD",
+            salespersonUserId = DevelopmentSeeder.DevUsers.Salesperson,
+        });
+        started.StatusCode.Should().Be(HttpStatusCode.Created,
+            because: await started.Content.ReadAsStringAsync());
+
+        var dealId = (await started.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetString()!;
+
+        using (var terms = await PostAsync($"/api/v1/deals/{dealId}/terms", Manager, new
+        {
+            charges = new object[]
+            {
+                new { kind = "VehiclePrice", description = "The car", amount = 21_000m },
+            },
+        }))
+        {
+            terms.StatusCode.Should().Be(HttpStatusCode.OK, because: await terms.Content.ReadAsStringAsync());
+        }
+
+        foreach (var status in new[] { "Submitted", "Approved", "Delivered" })
+        {
+            using var moved = await PostAsync($"/api/v1/deals/{dealId}/status", Manager, new { status });
+            moved.StatusCode.Should().Be(HttpStatusCode.OK, because: await moved.Content.ReadAsStringAsync());
+        }
+    }
+
+    private async Task<IReadOnlyList<string>> MovesAsync(string unitId, string email)
+    {
+        using var response = await SendAsync(HttpMethod.Get, $"{Inventory}/{unitId}", email);
+        response.StatusCode.Should().Be(HttpStatusCode.OK, because: await response.Content.ReadAsStringAsync());
+
+        return (await response.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("availableMoves")
+            .EnumerateArray()
+            .Select(move => move.GetString()!)
+            .ToList();
     }
 
     [Fact]

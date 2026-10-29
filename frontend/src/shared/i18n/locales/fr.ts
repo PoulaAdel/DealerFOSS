@@ -415,6 +415,7 @@ export const fr: Catalogue = {
   'stock.moveTo': 'Passer à {to}',
   'stock.soldNote': 'Cette voiture est vendue. Contre-passez l’opération pour annuler.',
   'stock.noMovesNote': 'Cette voiture ne peut aller nulle part depuis ici.',
+  'stock.cannotMoveNote': "Vous n'avez pas l'autorisation de déplacer le stock sur ce site.",
 
   // Vocabulaire du plan comptable général.
   'enum.accountKind.Asset': 'Actif',

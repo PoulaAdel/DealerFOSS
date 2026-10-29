@@ -421,6 +421,7 @@ export const es: Catalogue = {
   'stock.moveTo': 'Pasar a {to}',
   'stock.soldNote': 'Este coche se ha vendido. Revierte la operación para deshacerlo.',
   'stock.noMovesNote': 'Este coche no puede moverse a ningún sitio desde aquí.',
+  'stock.cannotMoveNote': 'No tiene permiso para mover el inventario en esta sede.',
 
   'enum.accountKind.Asset': 'Activo',
   'enum.accountKind.Liability': 'Pasivo',

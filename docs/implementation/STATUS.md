@@ -26,14 +26,22 @@ token migration closed on 2026-09-18, although this header once still called it
 unfinished. A presentation-only pass followed on 2026-10-03 — see its entry at
 the end of the milestone log, which also records an unrelated defect on
 `/accounting/reports` that was found and deliberately not fixed.
-Last verified: 2026-10-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 1031/1031,
+Last verified: 2026-10-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 1038/1038,
 `verify-e2e.ps1` PASS **against the canonical LocalDB catalogue** — which now
 works again. The 2026-09-19 note that `DealerFOSS_Host` was detached with its MDF
 still on disk no longer holds; the default command in `AGENTS.md` and
 `docs/LOCAL-DEVELOPMENT.md` runs clean.
 The frontend gates ran the same day — `npm audit` clean at high (two
 moderate `@vitest/mocker` advisories are open and need a vitest 5 upgrade),
-`npm run typecheck`, `npm test` 529/529, `npm run build`
+`npm run typecheck`, `npm test` 535/535, `npm run build`
+
+The frontend figure was **529 here and wrong**, and the correction is worth more
+than the number: it had not been re-measured since `ae3e07a`, which recorded
+`FrontendOk: false` because Docker was unavailable on the machine that day. Five
+tests landed behind that stale line. The inventory work of 2026-10-19 adds one
+(30 to 31 in `InventoryPage.test.tsx`); the other five were already there and
+uncounted. **A count nobody re-ran is a claim, not evidence** — the same lesson
+this file's own header gives about register rows.
 
 **Stage 1 is done.** The last open criterion — a rehearsed backup and restore —
 closed on 2026-08-04. The only unmet identity item left is OIDC federation, which

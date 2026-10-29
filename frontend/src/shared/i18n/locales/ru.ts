@@ -421,6 +421,7 @@ export const ru: Catalogue = {
   'stock.moveTo': 'Перевести в «{to}»',
   'stock.soldNote': 'Эта машина продана. Чтобы отменить, сторнируйте сделку.',
   'stock.noMovesNote': 'Отсюда эту машину никуда перевести нельзя.',
+  'stock.cannotMoveNote': 'У вас нет прав перемещать склад в этом подразделении.',
 
   'enum.accountKind.Asset': 'Актив',
   'enum.accountKind.Liability': 'Обязательство',

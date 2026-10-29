@@ -432,6 +432,7 @@ export const en = {
   'stock.moveTo': 'Move to {to}',
   'stock.soldNote': 'This car has been sold. Reverse the deal to undo that.',
   'stock.noMovesNote': 'This car cannot be moved anywhere from here.',
+  'stock.cannotMoveNote': 'You do not have permission to move stock at this location.',
 
   'enum.accountKind.Asset': 'Asset',
   'enum.accountKind.Liability': 'Liability',

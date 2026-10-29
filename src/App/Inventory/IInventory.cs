@@ -62,9 +62,43 @@ public interface IInventory
         NewInventoryUnit unit,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Moves a unit along its life cycle, as a person does from the stock screen.
+    /// </summary>
+    /// <remarks>
+    /// <b>This refuses <see cref="InventoryStatus.Sold"/>, and that is the point.</b>
+    /// A car is sold by delivering a deal, which is what posts the sale and
+    /// relieves account 1300. Until 2026-10-19 this method accepted Sold from
+    /// anybody holding <c>Inventory.Manage</c>, so one request could take a car
+    /// out of stock while leaving its whole carrying value on the balance sheet
+    /// — the reconditioning failure of 2026-09-19 all over again, an account
+    /// that never comes back to zero. Nothing caught it because the only copy of
+    /// the rule lived in the browser, in <c>InventoryPage.movesFrom()</c>.
+    /// Deals reaches Sold through <see cref="MarkSoldAsync"/> instead.
+    /// </remarks>
     Task<Result<InventoryUnitDetail>> ChangeStatusAsync(
         Guid unitId,
         StatusChangeRequest change,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Records that a delivered deal took this car off the lot. The one door to
+    /// <see cref="InventoryStatus.Sold"/>.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="ChangeStatusAsync"/> rather than a flag on it,
+    /// because the two have different callers and only one of them is a person.
+    /// Naming the deal is what makes this method unforgeable in the way a status
+    /// string is not: a caller has to have a delivered deal in hand to use it,
+    /// and the deal id lands in the unit's history so "why did this car go" has
+    /// an answer on the record.
+    ///
+    /// Called inside the deal's own transaction, beside the delivery posting, so
+    /// a car cannot go Sold for a sale that rolled back.
+    /// </remarks>
+    Task<Result<InventoryUnitDetail>> MarkSoldAsync(
+        Guid unitId,
+        Guid dealId,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -228,7 +262,27 @@ public sealed record InventoryUnitDetail(
     /// "where did this come from" has an answer on the screen rather than only
     /// in the database.
     /// </summary>
-    IReadOnlyList<ReconditioningEntry> Reconditioning);
+    IReadOnlyList<ReconditioningEntry> Reconditioning,
+
+    /// <summary>
+    /// The statuses this CALLER may move this car to from here — the life
+    /// cycle's legal moves, minus Sold, and empty when they do not hold
+    /// <c>Inventory.Manage</c> at this lot.
+    ///
+    /// <para>
+    /// Sent so the stock screen offers exactly what will be allowed rather than
+    /// predicting from status and finding out by being refused. It replaces a
+    /// second copy of the transition table that lived in the browser — and that
+    /// copy was also the only place the "never Sold" rule existed, which is how
+    /// a person could sell a car through the API for months. See
+    /// <see cref="ChangeStatusAsync"/>.
+    /// </para>
+    /// <para>
+    /// A hint for drawing a screen, never the decision: every move is still
+    /// authorized independently on the way in.
+    /// </para>
+    /// </summary>
+    IReadOnlyList<string> AvailableMoves);
 
 /// <summary>One capitalised posting, as a screen shows it.</summary>
 public sealed record ReconditioningEntry(

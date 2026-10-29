@@ -182,7 +182,8 @@ public sealed class InventoryService(
 
         return Result.Success(Describe(
             row.Unit, row.Vehicle, history, await ChargesForAsync(unitId, cancellationToken),
-            await ProfitScopeAsync(cancellationToken)));
+            await ProfitScopeAsync(cancellationToken),
+            await ManageScopeAsync(cancellationToken)));
     }
 
     public async Task<Result<IReadOnlyList<InventoryUnitSummary>>> GetManyAsync(
@@ -423,7 +424,8 @@ public sealed class InventoryService(
         // A car just taken in has absorbed nothing yet, which is a known amount.
         return Result.Success(Describe(
             received, vehicle, received.StatusHistory, [],
-            await ProfitScopeAsync(cancellationToken)));
+            await ProfitScopeAsync(cancellationToken),
+            await ManageScopeAsync(cancellationToken)));
     }
 
     public async Task<Result<InventoryUnitDetail>> ChangeStatusAsync(
@@ -449,10 +451,90 @@ public sealed class InventoryService(
             return Result.Failure<InventoryUnitDetail>(InventoryErrors.UnknownStatus);
         }
 
+        // Sold is not a move a person makes. It is the consequence of delivering
+        // a deal, which is also what posts the sale and relieves 1300 — so a car
+        // marked Sold here would leave the lot with its entire carrying value
+        // still on the balance sheet. See MarkSoldAsync, and the remark on
+        // IInventory.ChangeStatusAsync for what this cost before 2026-10-19.
+        //
+        // Refused HERE rather than by removing Sold from InventoryStatusRules,
+        // because the move itself is legitimate — Deals makes it on every
+        // delivery. What is illegitimate is a person making it directly, and
+        // that is a question about the caller, not about the life cycle.
+        if (next == InventoryStatus.Sold)
+        {
+            return Result.Failure<InventoryUnitDetail>(InventoryErrors.SoldBelongsToADeal);
+        }
+
+        // And the same rule in the other direction, which is the less obvious
+        // half. The life cycle allows Sold -> Available because "a deal falls
+        // through and the car goes back on the lot" — but DealStatusRules has
+        // `[Delivered] = []`, so a DELIVERED deal can never be cancelled, and
+        // Deals only ever returns a car to stock from OnHold. Nothing in the
+        // solution moves a car out of Sold. A person doing it by hand would put
+        // the car back on the forecourt while the delivery posting stayed in the
+        // ledger: 1300 already relieved, the sale still booked, the car for sale
+        // again. The same failure as selling by hand, pointing the other way.
+        //
+        // Found on 2026-10-19 while computing availableMoves: the browser's old
+        // movesFrom() returned nothing for a Sold car, so the screen was right
+        // and — exactly as with Sold itself — the server had never heard of it.
+        // If a delivery ever becomes reversible, that gets its own door the way
+        // MarkSoldAsync did, not this one.
+        if (unit.Status == InventoryStatus.Sold)
+        {
+            return Result.Failure<InventoryUnitDetail>(InventoryErrors.SoldIsUndoneByTheDeal);
+        }
+
+        return await MoveAsync(unit, next, change.Note, cancellationToken);
+    }
+
+    public async Task<Result<InventoryUnitDetail>> MarkSoldAsync(
+        Guid unitId,
+        Guid dealId,
+        CancellationToken cancellationToken)
+    {
+        var unit = await _db.InventoryUnits.SingleOrDefaultAsync(u => u.Id == unitId, cancellationToken);
+        if (unit is null)
+        {
+            return Result.Failure<InventoryUnitDetail>(InventoryErrors.Forbidden);
+        }
+
+        // The same right as any other move, checked the same way. Delivering a
+        // deal already required Deals.Write at this rooftop; this is not a
+        // second, weaker door into stock.
+        if (!await _access.IsAuthorizedAsync(_currentUser.Id, ManagePermission, unit.RooftopId, cancellationToken))
+        {
+            return Result.Failure<InventoryUnitDetail>(InventoryErrors.Forbidden);
+        }
+
+        // The deal id goes in the note, so the car's own history says which sale
+        // took it. Dealership data, not a translated string — the history is a
+        // record, and this is the one line in it that points at another record.
+        return await MoveAsync(
+            unit, InventoryStatus.Sold, $"Sold on deal {dealId}.", cancellationToken);
+    }
+
+    /// <summary>
+    /// The shared tail of every move: apply it, save it, audit it, and describe
+    /// the car afterwards.
+    /// </summary>
+    /// <remarks>
+    /// Extracted when <see cref="MarkSoldAsync"/> arrived rather than duplicated,
+    /// because the half worth getting right is the same for both — the status
+    /// change and its history line are one write, and the audit row names the
+    /// move that actually happened.
+    /// </remarks>
+    private async Task<Result<InventoryUnitDetail>> MoveAsync(
+        InventoryUnit unit,
+        InventoryStatus next,
+        string? note,
+        CancellationToken cancellationToken)
+    {
         var from = unit.Status;
         try
         {
-            unit.ChangeStatus(next, _clock.UtcNow, _currentUser.Id, change.Note);
+            unit.ChangeStatus(next, _clock.UtcNow, _currentUser.Id, note);
         }
         catch (InvalidOperationException ex)
         {
@@ -483,14 +565,15 @@ public sealed class InventoryService(
 
         var history = await _db.Set<InventoryStatusChange>()
             .AsNoTracking()
-            .Where(h => h.InventoryUnitId == unitId)
+            .Where(h => h.InventoryUnitId == unit.Id)
             .OrderBy(h => h.OccurredAt)
             .ThenBy(h => h.Sequence)
             .ToListAsync(cancellationToken);
 
         return Result.Success(Describe(
-            unit, vehicle, history, await ChargesForAsync(unitId, cancellationToken),
-            await ProfitScopeAsync(cancellationToken)));
+            unit, vehicle, history, await ChargesForAsync(unit.Id, cancellationToken),
+            await ProfitScopeAsync(cancellationToken),
+            await ManageScopeAsync(cancellationToken)));
     }
 
     public async Task<Result<Guid?>> FindOwnedAsync(
@@ -762,6 +845,65 @@ public sealed class InventoryService(
         await _access.GetAuthorizedScopeAsync(
             _currentUser.Id, Permissions.ProfitabilityRead, cancellationToken);
 
+    /// <summary>
+    /// Whether this caller may move stock, per lot, for deciding what to offer.
+    /// </summary>
+    /// <remarks>
+    /// Same instrument and same reason as <see cref="ProfitScopeAsync"/>: not
+    /// <c>IsAuthorizedAsync</c>, because this runs on every read of a car —
+    /// including the ones nobody is about to touch — and that overload writes a
+    /// Denied row per call. An advisor opening six cars to find the right one
+    /// would otherwise file six refusals for acts they never attempted.
+    /// </remarks>
+    private async Task<AuthorizedScope> ManageScopeAsync(CancellationToken cancellationToken) =>
+        await _access.GetAuthorizedScopeAsync(
+            _currentUser.Id, ManagePermission, cancellationToken);
+
+    /// <summary>
+    /// Which moves to offer for this car: the life cycle's legal ones, minus
+    /// Sold, or none at all when the caller may not move stock at this lot.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b><c>Covers</c>, not <c>Allows</c> (ADR-030).</b> An inventory unit names
+    /// nobody — there is no salesperson or technician on a car the way there is
+    /// on a deal or a job — and <c>Allows(rooftopId, null)</c> deliberately
+    /// REFUSES a caller whose grant is narrowed to their own records. Using it
+    /// here would silently hide every move button from anybody holding
+    /// <c>OwnRecordsOnly</c>, for every car on the lot. ADR-030 names receiving
+    /// stock as its own example of a question that has no owner to ask with, and
+    /// `Summarize` above already uses `Covers` for the same reason.
+    /// `An_own_work_only_salesperson_can_still_move_stock` is the test that
+    /// fails if somebody "tidies" this into `Allows`.
+    /// </para>
+    /// <para>
+    /// All-or-nothing rather than per-move, because every move needs the same
+    /// <c>Inventory.Manage</c>. Nothing here splits write from approve the way
+    /// Deals splits building a deal from signing it off, so there is no second
+    /// scope to fetch.
+    /// </para>
+    /// <para>
+    /// Sold is subtracted because a car is sold by delivering a deal, and a car
+    /// that IS Sold offers nothing at all, because a delivery is undone by the
+    /// deal too — and a delivered deal cannot be cancelled, so there is nothing
+    /// to undo it with. Both halves of that rule used to live only in the
+    /// browser, which is exactly why the endpoint accepted either direction from
+    /// anybody until 2026-10-19 — see <see cref="ChangeStatusAsync"/>.
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// Returns <see cref="List{T}"/> rather than <see cref="IReadOnlyList{T}"/>
+    /// because CA1859 is an error here and the only caller is
+    /// <see cref="Describe"/>, which widens it into the record field anyway.
+    /// </remarks>
+    private static List<string> AvailableMoves(InventoryUnit unit, AuthorizedScope manage) =>
+        manage.Covers(unit.RooftopId) && unit.Status != InventoryStatus.Sold
+            ? InventoryStatusRules.MovesFrom(unit.Status)
+                .Where(move => move != InventoryStatus.Sold)
+                .Select(move => move.ToString())
+                .ToList()
+            : [];
+
     private static InventoryUnitSummary Summarize(
         InventoryUnit u, Vehicle v, decimal recon, AuthorizedScope profit)
     {
@@ -779,7 +921,8 @@ public sealed class InventoryService(
         Vehicle v,
         IReadOnlyList<InventoryStatusChange> history,
         IReadOnlyList<ReconditioningCharge> reconditioning,
-        AuthorizedScope profit) =>
+        AuthorizedScope profit,
+        AuthorizedScope manage) =>
         new(u.Id,
             u.StockNumber,
             u.RooftopId,
@@ -808,7 +951,8 @@ public sealed class InventoryService(
                     .Select(c => new ReconditioningEntry(
                         c.Amount, c.Currency, c.SourceRepairOrderId, c.OccurredAt))
                     .ToList()
-                : []);
+                : [],
+            AvailableMoves(u, manage));
 }
 
 /// <summary>Stable error codes for the Inventory capability (doc 06 §6).</summary>
@@ -821,6 +965,27 @@ internal static class InventoryErrors
     public static Error UnknownStatus { get; } = Error.Validation(
         "inventory.unknown_status",
         "That is not an inventory status.");
+
+    /// <summary>
+    /// A person tried to sell a car by typing a status onto it. Conflict rather
+    /// than Forbidden, and the distinction matters: nobody holds a permission
+    /// that would make this allowed, so it is not about who is asking — the act
+    /// belongs to a different part of the system, and the message says which.
+    /// </summary>
+    public static Error SoldBelongsToADeal { get; } = Error.Conflict(
+        "inventory.sold_belongs_to_a_deal",
+        "A car is sold by delivering its deal, which records the sale in the books. "
+            + "Mark it On hold for a customer instead.");
+
+    /// <summary>
+    /// The other direction, and the reason it is refused rather than allowed: a
+    /// car put back on the lot by hand would be for sale again while the ledger
+    /// still held its delivery. See the comment in ChangeStatusAsync.
+    /// </summary>
+    public static Error SoldIsUndoneByTheDeal { get; } = Error.Conflict(
+        "inventory.sold_is_undone_by_the_deal",
+        "This car has been sold. Putting it back on the lot means reversing the deal, "
+            + "which also takes the sale back out of the books.");
 
     public static Error VehicleNotFound { get; } = Error.NotFound(
         "inventory.vehicle_not_found",
