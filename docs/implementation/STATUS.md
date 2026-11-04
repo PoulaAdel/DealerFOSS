@@ -26,7 +26,7 @@ token migration closed on 2026-09-18, although this header once still called it
 unfinished. A presentation-only pass followed on 2026-10-03 — see its entry at
 the end of the milestone log, which also records an unrelated defect on
 `/accounting/reports` that was found and deliberately not fixed.
-Last verified: 2026-10-19 · `dotnet build` 0 warnings/0 errors, `dotnet test` 1038/1038,
+Last verified: 2026-11-04 · `dotnet build` 0 warnings/0 errors, `dotnet test` 1038/1038,
 `verify-e2e.ps1` PASS **against the canonical LocalDB catalogue** — which now
 works again. The 2026-09-19 note that `DealerFOSS_Host` was detached with its MDF
 still on disk no longer holds; the default command in `AGENTS.md` and
@@ -1931,3 +1931,21 @@ to come.
   Not built, and deliberately: a screen for either half. Commit 2 is the admin pack page and the deal desk's "work out the tax" action.
 
   Evidence: `& .\local\gate.ps1` green — `dotnet build` 0 warnings / 0 errors, `dotnet test` **1031/1031** (was 1012 — 19 new: 14 unit covering the format, the matcher and the review gate, 5 integration covering the end-to-end path, the provenance lock, R5 by hand, the Indiana gate, and **the one that matters — load version 1, tax a deal, load version 2 at a different rate, and the saved line still reads version 1's rate and version**), `verify-e2e.ps1` PASS. Frontend gates not run: nothing under `frontend/` changed.
+
+- **2026-11-04 — The tax a rate table works out is visible, and a figure stops being the table's the moment somebody edits it.** The screens for the mechanism that landed on 2026-10-19.
+
+  **The deal desk** gets "Work the tax out", which asks the server to resolve from the registration address — the server computes and writes the lines, because it is the only thing allowed to sign a pack's name to a figure. Walked in a browser against the development seed: a $20,000 car with a $500 documentation fee, a $100 registration fee and a $5,000 trade-in resolved to **two stacked rates on one car** — 5 percent state and 1.5 percent county, both on a basis of $15,500, giving $775.00 and $232.50, with the deal's total moving to $16,607.50. That stacking is the case a "most specific wins" rule would silently undercharge, and it is now visible rather than only asserted in a test.
+
+  **The provenance chip is now in the editable table, not only once the deal is frozen, and it is per row.** Driving it in the browser: editing the first line's amount turned that row into "a person entered it" while the second stayed "zz-example v1", and saving the mixed set was accepted — the edited row as the person's, the untouched row still the pack's. That is the point of the column. A screen that kept the chip on a figure somebody had just overwritten would be worse than no chip.
+
+  **An untouched pack row is sent back from the saved line rather than from the input boxes**, and that is not tidiness. The server compares a pack row field for field against what it stored, and re-parsing "1.5" out of the percentage box back into 0.015 can land one unit in the last place away from the stored decimal — a refusal nobody could explain from the screen.
+
+  **The three unresolved answers each get their own sentence**, because each needs something different done about it: add a registration address, enable a rate table, or accept that this jurisdiction is typed by hand. None of them is an error and the deal is left untouched, so asking and being told "no" does not throw away work somebody had already done (ADR-024 R5).
+
+  **The admin console gets a Jurisdiction packs screen**, showing what every column of it is for: which table, which version, which source, read when, hashed to what, reviewed by whom. The hash is shown rather than hidden because **a reviewer approves bytes** — if the file changes their approval no longer covers it, and the only way to see that is to be shown it. **The review button is absent, not merely refused, while a basis flag is undecided**, and the row names the undecided flags instead. The API refuses anyway; a screen that offers an action it knows will be rejected teaches people to click through refusals.
+
+  **Two things were fixed that were not mine.** `npm audit` had gone red on `main` with a **high** advisory against vite 6.4.3 (`GHSA-9jrq-w75r-8gcw` and four others), which blocked every frontend commit and not just this one. Taken as the minimal fix: a lockfile-only patch bump to 6.4.5 inside the existing range, `package.json` untouched. And the tax band's lede still told people that nothing worked the tax out, which stopped being true on 2026-10-19; it is rewritten in all six languages.
+
+  **What was not done, and why.** The admin screen was **not walked in a browser**. The development administrator's password in this device's SQL container predates the current seed constant, `ControlPlaneSeeder` will not reset an account that already exists, and guessing at or rewriting credentials in a shared development database is not a reasonable way to see a screen. It has seven component tests covering its load-bearing behaviour and it reuses `TenantsPage`'s exact structure, but its layout has not been seen by anybody. Resetting that account is a maintainer action; the command is in the handover.
+
+  Evidence: `& .\local\gate.ps1 -Frontend` green — `dotnet build` 0 warnings / 0 errors, `dotnet test` **1038/1038** (unchanged — this milestone adds no backend tests; the 7 above 1031 are Inventory's commit, not mine), `verify-e2e.ps1` PASS, `npm audit` **0 vulnerabilities** (was 1 high), `npm run typecheck`, `npm test` **549/549** (was 534 — 15 new: 7 for the pack screen, 8 for the deal desk), `npm run build`.

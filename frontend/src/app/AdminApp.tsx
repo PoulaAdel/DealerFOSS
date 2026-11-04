@@ -21,6 +21,7 @@ import { AdminSignIn } from '../features/admin/AdminSignIn';
 import { AdminSecondFactorSetup } from '../features/admin/AdminSecondFactorSetup';
 import { TenantsPage } from '../features/admin/TenantsPage';
 import { SupportAccessPage } from '../features/admin/SupportAccessPage';
+import { JurisdictionPacksPage } from '../features/admin/JurisdictionPacksPage';
 import { AppearanceControls } from './AppearanceControls';
 import { Mark, Wordmark } from './Mark';
 
@@ -66,6 +67,7 @@ function AdminRoutes() {
       <Route element={<AdminShell />}>
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="support-access" element={<SupportAccessPage />} />
+        <Route path="jurisdiction-packs" element={<JurisdictionPacksPage />} />
         <Route path="*" element={<Navigate to="tenants" replace />} />
       </Route>
     </Routes>
@@ -92,6 +94,7 @@ function AdminShell({ restricted = false }: { restricted?: boolean }) {
           <nav aria-label={t('shell.mainNavigation')}>
             <NavLink to="tenants">{t('admin.navDealerships')}</NavLink>
             <NavLink to="support-access">{t('admin.navSupportAccess')}</NavLink>
+            <NavLink to="jurisdiction-packs">{t('admin.navPacks')}</NavLink>
           </nav>
         )}
 

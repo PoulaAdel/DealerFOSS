@@ -887,7 +887,7 @@ export const es: Catalogue = {
   // --- Starting a deal ------------------------------------------------------
   'tax.title': 'Impuestos',
   'tax.lede':
-    'Todavía nada calcula esto por usted, así que escriba lo que corresponda. Cada línea deja constancia de que la introdujo una persona, que es lo que un gerente y un auditor necesitan ver después.',
+    'Calcúlelo con la tabla de tipos en uso, o escriba lo que corresponda. En ambos casos cada línea deja constancia de su procedencia, que es lo que un gerente y un auditor necesitan ver después.',
   'tax.workedOutFrom': 'Dirección con la que se calculan los impuestos',
   'tax.state': 'Estado o región',
   'tax.county': 'Condado',
@@ -1638,4 +1638,57 @@ export const es: Catalogue = {
   'customers.creditLimitPlaceholder': 'Sin límite',
   'customers.creditLimitSave': 'Guardar',
   'customers.creditLimitSaving': 'Guardando…',
+
+  // --- Tablas de impuestos por jurisdicción (ADR-024) -----------------------
+  'admin.navPacks': 'Tablas de tipos impositivos',
+  'packs.title': 'Tablas de tipos impositivos',
+  'packs.lede':
+    'Una tabla de tipos no cobra nada a nadie hasta que alguien de aquí ha leído su fuente y lo ha confirmado. Hasta entonces se guarda, se verifica y no se usa.',
+  'packs.loading': 'Cargando las tablas de tipos…',
+  'packs.none':
+    'Todavía no hay tablas de tipos. Cada impuesto lo introduce una persona.',
+  'packs.caption': '{count} versión(es) de tabla en esta instalación',
+  'packs.loadShipped': 'Cargar las tablas incluidas',
+  'packs.loadingShipped': 'Cargando…',
+  'packs.loadedNone': 'Nada nuevo: todas las tablas incluidas ya están guardadas.',
+  'packs.loadedSome':
+    'Se han añadido {count} versión(es) de tabla. Ninguna cobra nada todavía.',
+  'packs.colPack': 'Tabla',
+  'packs.colScheme': 'Tipo de fuente',
+  'packs.colVersion': 'Versión',
+  'packs.colStatus': 'Estado',
+  'packs.colEffective': 'En vigor',
+  'packs.colRates': 'Tipos',
+  'packs.colSource': 'Procedencia',
+  'packs.colReviewed': 'Revisada',
+  'packs.colActions': 'Acciones',
+  'packs.effectiveOpen': 'Desde {from}',
+  'packs.effectiveRange': 'De {from} a {to}',
+  'packs.openSource': 'Abrir la fuente',
+  'packs.readOn': 'Leída el {date}',
+  'packs.neverReviewed': 'Nadie aún',
+  'packs.reviewedBy': '{who}, {date}',
+  'packs.undecided':
+    'Nadie ha decidido: {flags}. No se puede usar hasta que alguien lo haga.',
+  'packs.review': 'He leído la fuente: usarla',
+  'packs.withdraw': 'Retirar',
+  'packs.withdrawTitle': '¿Retirar {pack} versión {version}?',
+  'packs.withdrawBody':
+    'Dejará de calcular impuestos en las operaciones nuevas, en todos los concesionarios de esta instalación. Las operaciones ya gravadas con ella conservan su importe y siguen siendo explicables.',
+  'enum.packStatus.Draft': 'Sin revisar',
+  'enum.packStatus.Supported': 'En uso',
+  'enum.packStatus.Withdrawn': 'Retirada',
+  'enum.packScheme.Manual': 'Introducido por una persona',
+  'enum.packScheme.Sst': 'Streamlined Sales Tax',
+  'enum.packScheme.Vendor': 'Proveedor fiscal',
+  'enum.packScheme.EuVat': 'IVA de la UE',
+
+  'tax.workOutFromPack': 'Calcular el impuesto',
+  'tax.workingOut': 'Calculando…',
+  'tax.outcomeNoAddress':
+    'Añada primero la dirección donde se matriculará el vehículo: es la que decide el tipo.',
+  'tax.outcomeNoPackEnabled':
+    'No se usa ninguna tabla de tipos para ese país, así que el impuesto se introduce a mano. No se ha cambiado nada.',
+  'tax.outcomeNoRateForAddress':
+    'La tabla de tipos en uso no tiene nada para esa dirección, así que el impuesto se introduce a mano. No se ha cambiado nada.',
 };

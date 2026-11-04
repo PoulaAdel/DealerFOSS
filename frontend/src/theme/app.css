@@ -1561,6 +1561,29 @@ button.danger:hover:not(:disabled) {
   color: var(--ink-2);
 }
 
+/* --- whether a rate table may be used (ADR-024) ---
+   Draft is not a warning and not a failure: it is the normal state of a pack
+   nobody has reviewed yet, and the product shipping one that way is deliberate.
+   So it reads as idle rather than as something broken. Withdrawn is the one that
+   needs to stand out, because a pack that used to charge tax and has stopped is
+   a change somebody may be looking for. As everywhere, the chip says its own
+   name and the colour only reinforces it. */
+
+.chip--pack-draft {
+  background: var(--idle-soft);
+  color: var(--ink-2);
+}
+
+.chip--pack-supported {
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.chip--pack-withdrawn {
+  background: var(--fail-soft);
+  color: var(--fail);
+}
+
 /* The address the tax was resolved from. A fieldset because the four boxes are
    one question, and a screen reader should hear it asked once. */
 .taxAddress {

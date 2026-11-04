@@ -3,7 +3,7 @@
 //
 // Overview: Purpose, File Design, and Engineering
 //   DealTax — the tax on a deal: what is charged, and where each figure came
-//   from.
+//   from. Either worked out from the dealership's rate table or typed.
 //
 // Usage:
 //   Mounted by DealsPage while the deal's terms are open. SoldTax renders the
@@ -11,29 +11,43 @@
 //
 // Coding Instructions:
 //   EVERY LINE SAYS WHERE ITS FIGURE CAME FROM, ON SCREEN, AND THAT IS THE
-//   WHOLE POINT (ADR-024 R4/R5). Nothing computes tax yet: a person types it,
-//   and the alternative to saying so is a screen that presents a typed number
-//   with the same authority as one a rate table produced. That is the failure
-//   this band exists to prevent, so the provenance column is not decoration and
-//   must not be dropped to save width.
+//   WHOLE POINT (ADR-024 R4/R5). The provenance column is not decoration and
+//   must not be dropped to save width: a typed figure must never look like one
+//   a rate table produced.
 //
-//   The address is required as soon as there is a line, and refused by the API
-//   otherwise, because an address is how a rate is defended months later. It is
-//   asked for as state / county / postcode / country separately — the county is
-//   its own field because US sales tax varies by state AND county, which is the
-//   gap closed on 2026-09-05.
+//   "WORK OUT THE TAX" IS THE SERVER'S ACT, NOT THIS SCREEN'S. It posts to
+//   /tax/from-pack and the server resolves, computes and writes the lines
+//   itself, because it is the only thing allowed to sign a pack's name to a
+//   figure. This screen cannot construct a pack-sourced line and must not try —
+//   the API refuses a `Pack` provenance it did not produce.
+//
+//   A ROW THAT IS TOUCHED STOPS BEING THE PACK'S, visibly and on the wire. The
+//   chip disappears the moment somebody edits any field of it and the line is
+//   sent as EnteredByPerson, because a person who changes a figure owns it. An
+//   untouched pack row is sent back WITH its id and the pack's name, which is
+//   how editing one row leaves the others' authorship alone — this editor
+//   replaces the whole set, and always has.
+//
+//   AN UNTOUCHED ROW IS SENT FROM THE SAVED LINE, NOT FROM THE INPUT BOXES, and
+//   that is not tidiness. The server compares a pack row field for field against
+//   what it stored, and re-parsing "1.5" back into 0.015 can land one unit in
+//   the last place away from the stored decimal — which would be a refusal
+//   nobody could explain from the screen. So the saved line is kept whole and
+//   sent verbatim.
+//
+//   NOT RESOLVING IS AN ORDINARY ANSWER (R5), not an error. No registration
+//   address, no pack enabled, and no rate covering the address each get their
+//   own sentence, because they need different things done about them — and the
+//   deal is untouched, so whatever was typed is still there.
 //
 //   The rate is entered as a PERCENTAGE and stored as a fraction. 6.25 in the
 //   box becomes 0.0625 on the wire. Anyone typing a tax rate is reading it off a
 //   table that says "6.25%", and asking them to divide by a hundred is how a
 //   deal gets taxed a hundred times over.
-//
-//   Saving replaces the whole set, like the charges and products editors. An
-//   empty form would mean adding one line deleted the rest.
 
 import { useState } from 'react';
 import { post } from '../../shared/api';
-import type { DealDetail, TaxLineView } from '../../shared/contracts';
+import type { DealDetail, DealTaxFromPack, TaxLineView } from '../../shared/contracts';
 import { useI18n } from '../../shared/i18n';
 import { useApiMessage } from '../../shared/i18n/apiMessage';
 
@@ -52,6 +66,14 @@ type Row = {
    * than overwriting what they just entered on the next keystroke elsewhere.
    */
   amountEdited: boolean;
+
+  /**
+   * The saved line this row still is, when a pack produced it and nobody has
+   * touched it since. Null for anything a person typed, and cleared by the first
+   * edit — see the file header for why the whole line is kept rather than just
+   * its ids.
+   */
+  fromPack: TaxLineView | null;
 };
 
 /**
@@ -103,6 +125,11 @@ function rowsFrom(lines: readonly TaxLineView[]): Row[] {
     // A saved line is somebody's settled figure. Treating it as untouched would
     // let a later edit to the basis silently rewrite it.
     amountEdited: true,
+
+    fromPack:
+      line.provenance === 'Pack' && line.packId !== null && line.packVersion !== null
+        ? line
+        : null,
   }));
 }
 
@@ -115,6 +142,7 @@ function blankRow(): Row {
     ratePercent: '',
     amount: '',
     amountEdited: false,
+    fromPack: null,
   };
 }
 
@@ -135,6 +163,8 @@ export function DealTax({
   const [postalCode, setPostalCode] = useState(deal.taxedAt?.postalCode ?? '');
   const [country, setCountry] = useState(deal.taxedAt?.country ?? '');
   const [busy, setBusy] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [unresolved, setUnresolved] = useState<DealTaxFromPack['outcome'] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const total = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
@@ -147,6 +177,11 @@ export function DealTax({
         }
 
         const next = { ...r, ...change };
+
+        // Touching any field ends the pack's claim on this row. See the header:
+        // a person who changes a figure owns it, and the chip going away is the
+        // screen saying so before the save does.
+        next.fromPack = null;
 
         // THE AMOUNT FOLLOWS THE ARITHMETIC. A person used to type basis, rate
         // AND the answer, with nothing checking the three agreed — so a deal
@@ -167,9 +202,43 @@ export function DealTax({
     );
   }
 
+  /**
+   * Asks the server to work the tax out from the dealership's rate table. It
+   * resolves, computes and writes the lines; this screen only reports what came
+   * back and redraws from it.
+   */
+  async function workItOut() {
+    setWorking(true);
+    setError(null);
+    setUnresolved(null);
+
+    try {
+      const answer = await post<DealTaxFromPack>(`/deals/${deal.id}/tax/from-pack`, {});
+
+      if (answer.outcome === 'Resolved') {
+        setRows(rowsFrom(answer.deal.taxLines));
+        setArea(answer.deal.taxedAt?.administrativeArea ?? '');
+        setCounty(answer.deal.taxedAt?.county ?? '');
+        setPostalCode(answer.deal.taxedAt?.postalCode ?? '');
+        setCountry(answer.deal.taxedAt?.country ?? '');
+      } else {
+        // The deal came back untouched, so nothing typed is lost. Say which
+        // answer it was rather than "no".
+        setUnresolved(answer.outcome);
+      }
+
+      onChanged(answer.deal);
+    } catch (failure) {
+      setError(describe(failure));
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function save() {
     setBusy(true);
     setError(null);
+    setUnresolved(null);
 
     try {
       const lines = rows
@@ -177,14 +246,30 @@ export function DealTax({
         // rather than sending it means the API's "a line needs a description"
         // refusal is reserved for a real mistake.
         .filter((r) => r.description.trim() !== '' || r.amount.trim() !== '')
-        .map((r) => ({
-          description: r.description.trim(),
-          jurisdiction: r.jurisdiction.trim(),
-          basis: Number(r.basis) || 0,
-          rate: (Number(r.ratePercent) || 0) / 100,
-          amount: Number(r.amount) || 0,
-          provenance: 'EnteredByPerson',
-        }));
+        .map((r) =>
+          r.fromPack === null
+            ? {
+                description: r.description.trim(),
+                jurisdiction: r.jurisdiction.trim(),
+                basis: Number(r.basis) || 0,
+                rate: (Number(r.ratePercent) || 0) / 100,
+                amount: Number(r.amount) || 0,
+                provenance: 'EnteredByPerson',
+              }
+            : {
+                // Verbatim from the saved line, not from the boxes — see the
+                // header. The server checks these field for field.
+                description: r.fromPack.description,
+                jurisdiction: r.fromPack.jurisdiction,
+                basis: r.fromPack.basis,
+                rate: r.fromPack.rate,
+                amount: r.fromPack.amount,
+                provenance: 'Pack',
+                packId: r.fromPack.packId,
+                packVersion: r.fromPack.packVersion,
+                id: r.fromPack.id,
+              },
+        );
 
       onChanged(
         await post<DealDetail>(`/deals/${deal.id}/tax`, {
@@ -211,6 +296,23 @@ export function DealTax({
     <>
       <h3>{t('tax.title')}</h3>
       <p className="note">{t('tax.lede')}</p>
+
+      <div className="actions">
+        <button type="button" disabled={busy || working} onClick={() => void workItOut()}>
+          {working ? t('tax.workingOut') : t('tax.workOutFromPack')}
+        </button>
+      </div>
+
+      {/* Each outcome gets its own sentence because each needs something
+          different done about it: add an address, enable a pack, or accept that
+          this jurisdiction is typed by hand. */}
+      {unresolved === null ? null : (
+        <p className="note" role="status">
+          {unresolved === 'NoAddress' ? t('tax.outcomeNoAddress') : null}
+          {unresolved === 'NoPackEnabled' ? t('tax.outcomeNoPackEnabled') : null}
+          {unresolved === 'NoRateForAddress' ? t('tax.outcomeNoRateForAddress') : null}
+        </p>
+      )}
 
       <fieldset className="taxAddress">
         <legend>{t('tax.workedOutFrom')}</legend>
@@ -267,12 +369,13 @@ export function DealTax({
               <th scope="col" className="num">
                 {t('tax.colAmount')}
               </th>
+              <th scope="col">{t('tax.colSource')}</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="muted">
+                <td colSpan={6} className="muted">
                   {t('tax.none')}
                 </td>
               </tr>
@@ -336,6 +439,23 @@ export function DealTax({
                         })}
                       </span>
                     ) : null}
+                  </td>
+                  <td>
+                    {/* The chip is here while the row is still the pack's. Edit
+                        any field of it and this becomes "a person entered it",
+                        before the save rather than after. */}
+                    {row.fromPack === null ? (
+                      <span className="chip chip--tax-enteredbyperson">
+                        {t('tax.from.EnteredByPerson')}
+                      </span>
+                    ) : (
+                      <span className="chip chip--tax-pack">
+                        {t('tax.fromPack', {
+                          pack: row.fromPack.packId ?? '',
+                          version: row.fromPack.packVersion ?? 0,
+                        })}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))

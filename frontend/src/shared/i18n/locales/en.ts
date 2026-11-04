@@ -904,7 +904,7 @@ export const en = {
   // person to assume a rate table is behind the boxes.
   'tax.title': 'Tax',
   'tax.lede':
-    'Nothing works this out for you yet, so type what applies. Every line records that a person entered it, which is what a manager and an auditor need to see later.',
+    'Work it out from the rate table in use, or type what applies. Either way every line records where its figure came from, which is what a manager and an auditor need to see later.',
   'tax.workedOutFrom': 'Address the tax is worked out from',
   'tax.state': 'State or region',
   'tax.county': 'County',
@@ -1689,4 +1689,54 @@ export const en = {
   'customers.creditLimitPlaceholder': 'No limit',
   'customers.creditLimitSave': 'Save',
   'customers.creditLimitSaving': 'Saving…',
+
+  // --- Jurisdiction tax packs (ADR-024) -------------------------------------
+  'admin.navPacks': 'Tax rate tables',
+  'packs.title': 'Tax rate tables',
+  'packs.lede':
+    'A rate table charges nobody anything until somebody here has read its source and said so. Until then it is held, hashed and unused.',
+  'packs.loading': 'Loading the rate tables…',
+  'packs.none': 'No rate tables are held yet. Every tax is entered by a person.',
+  'packs.caption': '{count} rate table version(s) held by this installation',
+  'packs.loadShipped': 'Load the tables that ship',
+  'packs.loadingShipped': 'Loading…',
+  'packs.loadedNone': 'Nothing new — every table that ships is already held.',
+  'packs.loadedSome': 'Added {count} table version(s). None of them charges anything yet.',
+  'packs.colPack': 'Table',
+  'packs.colScheme': 'Source kind',
+  'packs.colVersion': 'Version',
+  'packs.colStatus': 'State',
+  'packs.colEffective': 'In force',
+  'packs.colRates': 'Rates',
+  'packs.colSource': 'Where it came from',
+  'packs.colReviewed': 'Reviewed',
+  'packs.colActions': 'Actions',
+  'packs.effectiveOpen': 'From {from}',
+  'packs.effectiveRange': '{from} to {to}',
+  'packs.openSource': 'Open the source',
+  'packs.readOn': 'Read on {date}',
+  'packs.neverReviewed': 'Nobody yet',
+  'packs.reviewedBy': '{who}, {date}',
+  'packs.undecided': 'Nobody has decided: {flags}. It cannot be used until somebody does.',
+  'packs.review': "I have read the source — use it",
+  'packs.withdraw': 'Withdraw',
+  'packs.withdrawTitle': 'Withdraw {pack} version {version}?',
+  'packs.withdrawBody':
+    'It stops working out tax on new deals, for every dealership on this installation. Deals already taxed from it keep what they were charged and stay explainable.',
+  'enum.packStatus.Draft': 'Not reviewed',
+  'enum.packStatus.Supported': 'In use',
+  'enum.packStatus.Withdrawn': 'Withdrawn',
+  'enum.packScheme.Manual': 'Entered by a person',
+  'enum.packScheme.Sst': 'Streamlined Sales Tax',
+  'enum.packScheme.Vendor': 'Tax provider',
+  'enum.packScheme.EuVat': 'EU VAT',
+
+  'tax.workOutFromPack': 'Work the tax out',
+  'tax.workingOut': 'Working it out…',
+  'tax.outcomeNoAddress':
+    'Add the address the car will be registered at first — that is what decides the rate.',
+  'tax.outcomeNoPackEnabled':
+    'No rate table is in use for that country, so the tax is entered by hand. Nothing has been changed.',
+  'tax.outcomeNoRateForAddress':
+    'The rate table in use has nothing for that address, so the tax is entered by hand. Nothing has been changed.',
 } as const;

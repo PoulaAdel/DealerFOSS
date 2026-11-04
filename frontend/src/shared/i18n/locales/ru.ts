@@ -915,7 +915,7 @@ export const ru: Catalogue = {
 
   'tax.title': 'Налоги',
   'tax.lede':
-    'Пока это не рассчитывается автоматически — введите то, что применимо. В каждой строке фиксируется, что её ввёл человек: именно это позже нужно видеть руководителю и аудитору.',
+    'Рассчитайте по используемой таблице ставок или введите то, что применимо. В любом случае в каждой строке фиксируется, откуда взята её сумма: именно это позже нужно видеть руководителю и аудитору.',
   'tax.workedOutFrom': 'Адрес, по которому рассчитывается налог',
   'tax.state': 'Штат или регион',
   'tax.county': 'Округ',
@@ -1684,4 +1684,55 @@ export const ru: Catalogue = {
   'customers.creditLimitPlaceholder': 'Без лимита',
   'customers.creditLimitSave': 'Сохранить',
   'customers.creditLimitSaving': 'Сохранение…',
+
+  // --- Таблицы налогов по юрисдикциям (ADR-024) -----------------------------
+  'admin.navPacks': 'Таблицы налоговых ставок',
+  'packs.title': 'Таблицы налоговых ставок',
+  'packs.lede':
+    'Таблица ставок никому ничего не начисляет, пока кто-то здесь не прочитает её источник и не подтвердит это. До тех пор она хранится, проверяется по хешу и не используется.',
+  'packs.loading': 'Загрузка таблиц ставок…',
+  'packs.none': 'Таблиц ставок пока нет. Каждый налог вводит человек.',
+  'packs.caption': 'Версий таблиц в этой установке: {count}',
+  'packs.loadShipped': 'Загрузить поставляемые таблицы',
+  'packs.loadingShipped': 'Загрузка…',
+  'packs.loadedNone': 'Ничего нового — все поставляемые таблицы уже есть.',
+  'packs.loadedSome': 'Добавлено версий: {count}. Ни одна из них пока ничего не начисляет.',
+  'packs.colPack': 'Таблица',
+  'packs.colScheme': 'Вид источника',
+  'packs.colVersion': 'Версия',
+  'packs.colStatus': 'Состояние',
+  'packs.colEffective': 'Действует',
+  'packs.colRates': 'Ставки',
+  'packs.colSource': 'Откуда получена',
+  'packs.colReviewed': 'Проверена',
+  'packs.colActions': 'Действия',
+  'packs.effectiveOpen': 'С {from}',
+  'packs.effectiveRange': 'С {from} по {to}',
+  'packs.openSource': 'Открыть источник',
+  'packs.readOn': 'Прочитан {date}',
+  'packs.neverReviewed': 'Пока никто',
+  'packs.reviewedBy': '{who}, {date}',
+  'packs.undecided':
+    'Никто не решил: {flags}. Пока это не решено, таблицу использовать нельзя.',
+  'packs.review': 'Я прочитал источник — использовать',
+  'packs.withdraw': 'Отозвать',
+  'packs.withdrawTitle': 'Отозвать {pack} версии {version}?',
+  'packs.withdrawBody':
+    'Она перестанет рассчитывать налог по новым сделкам — для всех салонов этой установки. Сделки, налог по которым уже рассчитан по ней, сохраняют свои суммы и остаются объяснимыми.',
+  'enum.packStatus.Draft': 'Не проверена',
+  'enum.packStatus.Supported': 'Используется',
+  'enum.packStatus.Withdrawn': 'Отозвана',
+  'enum.packScheme.Manual': 'Вводит человек',
+  'enum.packScheme.Sst': 'Streamlined Sales Tax',
+  'enum.packScheme.Vendor': 'Налоговый провайдер',
+  'enum.packScheme.EuVat': 'НДС ЕС',
+
+  'tax.workOutFromPack': 'Рассчитать налог',
+  'tax.workingOut': 'Расчёт…',
+  'tax.outcomeNoAddress':
+    'Сначала укажите адрес регистрации автомобиля — именно он определяет ставку.',
+  'tax.outcomeNoPackEnabled':
+    'Для этой страны не используется ни одна таблица ставок, поэтому налог вводится вручную. Ничего не изменено.',
+  'tax.outcomeNoRateForAddress':
+    'В используемой таблице ставок нет ничего для этого адреса, поэтому налог вводится вручную. Ничего не изменено.',
 };

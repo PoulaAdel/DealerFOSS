@@ -342,9 +342,29 @@ the switches the dealership owns.
   `Pack` provenance; an unchanged pack line may be sent back so the editor can
   replace the whole set, and an altered one becomes the person's.
 
-  Not built: a screen for either half, and any pack marked `Supported`. Authoring
-  a production pack is now its own register row, because it needs somebody who can
-  answer for the numbers.
+  Not built at that point: a screen for either half. No pack is marked
+  `Supported`, and authoring a production pack is now its own register row,
+  because it needs somebody who can answer for the numbers.
+
+  **The screens landed 2026-11-04.** The deal desk asks the server to work the
+  tax out and reports what came back; the admin console shows what every pack
+  claims and who stood behind it. Two decisions in them are worth recording
+  because both were the harder option and both are the point of R4.
+
+  The provenance chip moved into the **editable** table and became **per row**:
+  edit any field of a pack-sourced line and the chip becomes "a person entered
+  it" immediately, before the save rather than after, and that row goes to the
+  server as `EnteredByPerson`. An untouched row keeps the pack's name and is sent
+  back **verbatim from the saved line** rather than re-parsed out of the input
+  boxes, because the server compares a pack row field for field and a round trip
+  through a percentage box can land a unit in the last place away from the stored
+  decimal.
+
+  And the admin screen **withholds the review button entirely** while a basis
+  flag is undecided, naming the undecided flags in its place. The API refuses
+  regardless, so this is not the safety mechanism — it is the screen refusing to
+  offer an action it already knows will be rejected, which is how a refusal stays
+  meaningful rather than becoming something people learn to click through.
 - **A pack needs an owner and a review date, or it rots**, and a rotted pack is
   worse than none because it is trusted. `Supported` status is a claim about a
   human review, not about the file parsing.

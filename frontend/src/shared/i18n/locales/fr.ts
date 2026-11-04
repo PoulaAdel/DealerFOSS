@@ -876,7 +876,7 @@ export const fr: Catalogue = {
 
   'tax.title': 'Taxes',
   'tax.lede':
-    "Rien ne calcule encore cela pour vous : saisissez ce qui s'applique. Chaque ligne indique qu'une personne l'a saisie, ce qu'un responsable et un auditeur doivent pouvoir voir ensuite.",
+    "Faites-le calculer par la table de taux utilisée, ou saisissez ce qui s'applique. Dans les deux cas, chaque ligne indique la provenance de son chiffre, ce qu'un responsable et un auditeur doivent pouvoir voir ensuite.",
   'tax.workedOutFrom': 'Adresse servant au calcul des taxes',
   'tax.state': 'État ou région',
   'tax.county': 'Comté',
@@ -1631,4 +1631,57 @@ export const fr: Catalogue = {
   'customers.creditLimitPlaceholder': 'Aucune limite',
   'customers.creditLimitSave': 'Enregistrer',
   'customers.creditLimitSaving': 'Enregistrement…',
+
+  // --- Tables de taxes par juridiction (ADR-024) ----------------------------
+  'admin.navPacks': 'Tables de taux de taxe',
+  'packs.title': 'Tables de taux de taxe',
+  'packs.lede':
+    "Une table de taux ne facture rien à personne tant que quelqu'un ici n'a pas lu sa source et ne l'a pas confirmé. En attendant, elle est conservée, vérifiée et inutilisée.",
+  'packs.loading': 'Chargement des tables de taux…',
+  'packs.none':
+    "Aucune table de taux n'est encore conservée. Chaque taxe est saisie par une personne.",
+  'packs.caption': '{count} version(s) de table dans cette installation',
+  'packs.loadShipped': 'Charger les tables fournies',
+  'packs.loadingShipped': 'Chargement…',
+  'packs.loadedNone': 'Rien de nouveau : toutes les tables fournies sont déjà conservées.',
+  'packs.loadedSome':
+    '{count} version(s) de table ajoutée(s). Aucune ne facture encore quoi que ce soit.',
+  'packs.colPack': 'Table',
+  'packs.colScheme': 'Type de source',
+  'packs.colVersion': 'Version',
+  'packs.colStatus': 'État',
+  'packs.colEffective': 'En vigueur',
+  'packs.colRates': 'Taux',
+  'packs.colSource': 'Provenance',
+  'packs.colReviewed': 'Vérifiée',
+  'packs.colActions': 'Actions',
+  'packs.effectiveOpen': 'À partir du {from}',
+  'packs.effectiveRange': 'Du {from} au {to}',
+  'packs.openSource': 'Ouvrir la source',
+  'packs.readOn': 'Lue le {date}',
+  'packs.neverReviewed': 'Personne encore',
+  'packs.reviewedBy': '{who}, {date}',
+  'packs.undecided':
+    "Personne n'a tranché : {flags}. Elle ne peut pas être utilisée avant que ce soit fait.",
+  'packs.review': "J'ai lu la source — l'utiliser",
+  'packs.withdraw': 'Retirer',
+  'packs.withdrawTitle': 'Retirer {pack} version {version} ?',
+  'packs.withdrawBody':
+    "Elle cessera de calculer la taxe sur les nouvelles affaires, pour toutes les concessions de cette installation. Les affaires déjà taxées avec elle conservent leur montant et restent explicables.",
+  'enum.packStatus.Draft': 'Non vérifiée',
+  'enum.packStatus.Supported': 'Utilisée',
+  'enum.packStatus.Withdrawn': 'Retirée',
+  'enum.packScheme.Manual': 'Saisie par une personne',
+  'enum.packScheme.Sst': 'Streamlined Sales Tax',
+  'enum.packScheme.Vendor': 'Prestataire fiscal',
+  'enum.packScheme.EuVat': 'TVA de l’UE',
+
+  'tax.workOutFromPack': 'Calculer la taxe',
+  'tax.workingOut': 'Calcul en cours…',
+  'tax.outcomeNoAddress':
+    "Ajoutez d'abord l'adresse d'immatriculation du véhicule : c'est elle qui détermine le taux.",
+  'tax.outcomeNoPackEnabled':
+    "Aucune table de taux n'est utilisée pour ce pays, la taxe est donc saisie à la main. Rien n'a été modifié.",
+  'tax.outcomeNoRateForAddress':
+    "La table de taux utilisée ne contient rien pour cette adresse, la taxe est donc saisie à la main. Rien n'a été modifié.",
 };

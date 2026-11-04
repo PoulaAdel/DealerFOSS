@@ -936,7 +936,7 @@ export const ar: Catalogue = {
 
   'tax.title': 'الضرائب',
   'tax.lede':
-    'لا يُحتسب هذا تلقائيًا بعد، لذا أدخل ما ينطبق. يسجّل كل سطر أن شخصًا أدخله، وهو ما يحتاج المدير والمراجع إلى رؤيته لاحقًا.',
+    'احسبها من جدول النسب المستخدم، أو أدخل ما ينطبق. وفي الحالتين يسجّل كل سطر من أين جاء رقمه، وهو ما يحتاج المدير والمراجع إلى رؤيته لاحقًا.',
   'tax.workedOutFrom': 'العنوان الذي تُحتسب الضريبة على أساسه',
   'tax.state': 'الولاية أو المنطقة',
   'tax.county': 'المقاطعة',
@@ -1717,4 +1717,53 @@ export const ar: Catalogue = {
   'customers.creditLimitPlaceholder': 'بلا حد',
   'customers.creditLimitSave': 'حفظ',
   'customers.creditLimitSaving': 'جارٍ الحفظ…',
+
+  // --- جداول الضريبة حسب الولاية القضائية (ADR-024) -------------------------
+  'admin.navPacks': 'جداول نسب الضريبة',
+  'packs.title': 'جداول نسب الضريبة',
+  'packs.lede':
+    'لا يحسب جدول النسب ضريبة على أحد حتى يقرأ شخص هنا مصدره ويؤكد ذلك. وحتى ذلك الحين يُحفظ الجدول ويُبصم ولا يُستخدم.',
+  'packs.loading': 'جارٍ تحميل جداول النسب…',
+  'packs.none': 'لا توجد جداول نسب محفوظة بعد. كل ضريبة يدخلها شخص.',
+  'packs.caption': '{count} إصدارًا من الجداول في هذا التركيب',
+  'packs.loadShipped': 'تحميل الجداول المرفقة',
+  'packs.loadingShipped': 'جارٍ التحميل…',
+  'packs.loadedNone': 'لا جديد — كل جدول مرفق محفوظ بالفعل.',
+  'packs.loadedSome': 'أُضيف {count} إصدارًا. ولا يحسب أي منها شيئًا بعد.',
+  'packs.colPack': 'الجدول',
+  'packs.colScheme': 'نوع المصدر',
+  'packs.colVersion': 'الإصدار',
+  'packs.colStatus': 'الحالة',
+  'packs.colEffective': 'سارٍ',
+  'packs.colRates': 'النسب',
+  'packs.colSource': 'من أين جاء',
+  'packs.colReviewed': 'المراجعة',
+  'packs.colActions': 'الإجراءات',
+  'packs.effectiveOpen': 'من {from}',
+  'packs.effectiveRange': 'من {from} إلى {to}',
+  'packs.openSource': 'فتح المصدر',
+  'packs.readOn': 'قُرئ في {date}',
+  'packs.neverReviewed': 'لا أحد بعد',
+  'packs.reviewedBy': '{who}، {date}',
+  'packs.undecided': 'لم يحدد أحد: {flags}. ولا يمكن استخدامه حتى يحدده أحد.',
+  'packs.review': 'قرأت المصدر — استخدمه',
+  'packs.withdraw': 'سحب',
+  'packs.withdrawTitle': 'سحب {pack} الإصدار {version}؟',
+  'packs.withdrawBody':
+    'سيتوقف عن حساب الضريبة على المعاملات الجديدة، في كل معرض على هذا التركيب. والمعاملات التي حُسبت ضريبتها منه تبقى بمبالغها ويبقى تفسيرها ممكنًا.',
+  'enum.packStatus.Draft': 'غير مراجَع',
+  'enum.packStatus.Supported': 'مستخدَم',
+  'enum.packStatus.Withdrawn': 'مسحوب',
+  'enum.packScheme.Manual': 'يدخله شخص',
+  'enum.packScheme.Sst': 'Streamlined Sales Tax',
+  'enum.packScheme.Vendor': 'مزود ضريبي',
+  'enum.packScheme.EuVat': 'ضريبة القيمة المضافة الأوروبية',
+
+  'tax.workOutFromPack': 'احسب الضريبة',
+  'tax.workingOut': 'جارٍ الحساب…',
+  'tax.outcomeNoAddress': 'أضف أولًا عنوان ترخيص السيارة — فهو الذي يحدد النسبة.',
+  'tax.outcomeNoPackEnabled':
+    'لا يُستخدم أي جدول نسب لهذا البلد، فتُدخل الضريبة يدويًا. ولم يتغير شيء.',
+  'tax.outcomeNoRateForAddress':
+    'الجدول المستخدم لا يحتوي شيئًا لهذا العنوان، فتُدخل الضريبة يدويًا. ولم يتغير شيء.',
 };

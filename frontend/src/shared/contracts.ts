@@ -1768,3 +1768,58 @@ export interface ReplayOutcome {
   reasonCode: string | null;
   reasonDetail: string | null;
 }
+
+// --- jurisdiction tax packs (ADR-024) ---
+
+/**
+ * One loaded generation of one jurisdiction's tax data, as an operator sees it.
+ *
+ * `status` is a claim about a HUMAN REVIEW, not about the file parsing: only a
+ * Supported pack resolves tax, and a pack cannot become Supported while
+ * `missingRules` is non-empty.
+ */
+export interface PackView {
+  packId: string;
+  country: string;
+  scheme: 'Manual' | 'Sst' | 'Vendor' | 'EuVat';
+  version: number;
+  status: 'Draft' | 'Supported' | 'Withdrawn';
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  sourceUri: string;
+  /** When the source was actually read — not when the pack was written. */
+  fetchedAt: string;
+  /** SHA-256 of the pack file, so an approval is tied to exact content. */
+  contentHash: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  rateCount: number;
+  /** The basis flags nobody has decided yet. Non-empty means it cannot be reviewed. */
+  missingRules: string[];
+}
+
+/** Which packs this dealership has turned on. Empty means tax is entered by a person. */
+export interface CompliancePosture {
+  enabledPackIds: string[];
+}
+
+/**
+ * What came of asking the rate table.
+ *
+ * Anything other than `Resolved` is an ORDINARY ANSWER and not an error — the
+ * deal is untouched and a person enters the tax instead (ADR-024 R5). The
+ * screen says which it was, because "no pack is enabled for this country" and
+ * "no rate covers this address" need different things done about them.
+ */
+export type TaxResolutionOutcome =
+  | 'Resolved'
+  | 'NoPackEnabled'
+  | 'NoRateForAddress'
+  | 'NoAddress';
+
+export interface DealTaxFromPack {
+  outcome: TaxResolutionOutcome;
+  packId: string | null;
+  packVersion: number | null;
+  deal: DealDetail;
+}

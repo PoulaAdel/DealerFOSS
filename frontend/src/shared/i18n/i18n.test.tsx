@@ -297,6 +297,15 @@ describe('the catalogues', () => {
       ['payType.colRevenue', 'the same word in French'],
       ['claim.status', 'the same word in German'],
       ['accessReview.colPerson', 'the same word in German'],
+      ['packs.colPack', 'the same word in French'],
+      ['packs.colVersion', 'the same word in French'],
+      ['packs.colActions', 'the same word in French'],
+      ['packs.reviewedBy', 'two placeholders and a comma; there is nothing to translate'],
+      // Streamlined Sales Tax is the name of a specific American interstate
+      // agreement, not a description of one. A French rendering would name a
+      // programme that does not exist, and a reader looking it up would find
+      // nothing.
+      ['enum.packScheme.Sst', 'the programme calls itself this in every language'],
     ]);
 
     for (const [name, catalogue] of Object.entries(catalogues)) {

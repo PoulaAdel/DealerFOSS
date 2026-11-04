@@ -879,7 +879,7 @@ export const de: Catalogue = {
 
   'tax.title': 'Steuern',
   'tax.lede':
-    'Das wird noch nicht für Sie berechnet — tragen Sie ein, was zutrifft. Jede Zeile hält fest, dass eine Person sie eingegeben hat; genau das müssen Geschäftsleitung und Prüfer später sehen.',
+    'Lassen Sie es aus der verwendeten Steuersatztabelle berechnen oder tragen Sie ein, was zutrifft. In beiden Fällen hält jede Zeile fest, woher ihre Zahl kommt; genau das müssen Geschäftsleitung und Prüfer später sehen.',
   'tax.workedOutFrom': 'Adresse, nach der die Steuer berechnet wird',
   'tax.state': 'Bundesland oder Region',
   'tax.county': 'Landkreis',
@@ -1636,4 +1636,57 @@ export const de: Catalogue = {
   'customers.creditLimitPlaceholder': 'Kein Limit',
   'customers.creditLimitSave': 'Speichern',
   'customers.creditLimitSaving': 'Wird gespeichert…',
+
+  // --- Steuertabellen nach Rechtsraum (ADR-024) -----------------------------
+  'admin.navPacks': 'Steuersatztabellen',
+  'packs.title': 'Steuersatztabellen',
+  'packs.lede':
+    'Eine Steuersatztabelle berechnet niemandem etwas, solange hier niemand ihre Quelle gelesen und das bestätigt hat. Bis dahin wird sie gespeichert, geprüft und nicht verwendet.',
+  'packs.loading': 'Steuersatztabellen werden geladen…',
+  'packs.none':
+    'Es sind noch keine Steuersatztabellen gespeichert. Jede Steuer wird von einer Person eingegeben.',
+  'packs.caption': '{count} Tabellenversion(en) in dieser Installation',
+  'packs.loadShipped': 'Mitgelieferte Tabellen laden',
+  'packs.loadingShipped': 'Wird geladen…',
+  'packs.loadedNone': 'Nichts Neues — jede mitgelieferte Tabelle ist bereits vorhanden.',
+  'packs.loadedSome':
+    '{count} Tabellenversion(en) hinzugefügt. Keine davon berechnet bisher etwas.',
+  'packs.colPack': 'Tabelle',
+  'packs.colScheme': 'Art der Quelle',
+  'packs.colVersion': 'Version',
+  'packs.colStatus': 'Zustand',
+  'packs.colEffective': 'Gültig',
+  'packs.colRates': 'Sätze',
+  'packs.colSource': 'Herkunft',
+  'packs.colReviewed': 'Geprüft',
+  'packs.colActions': 'Aktionen',
+  'packs.effectiveOpen': 'Ab {from}',
+  'packs.effectiveRange': '{from} bis {to}',
+  'packs.openSource': 'Quelle öffnen',
+  'packs.readOn': 'Gelesen am {date}',
+  'packs.neverReviewed': 'Noch niemand',
+  'packs.reviewedBy': '{who}, {date}',
+  'packs.undecided':
+    'Niemand hat entschieden: {flags}. Die Tabelle kann erst verwendet werden, wenn das geklärt ist.',
+  'packs.review': 'Ich habe die Quelle gelesen — verwenden',
+  'packs.withdraw': 'Zurückziehen',
+  'packs.withdrawTitle': '{pack} Version {version} zurückziehen?',
+  'packs.withdrawBody':
+    'Sie berechnet dann keine Steuer mehr für neue Geschäfte, und zwar für jeden Betrieb dieser Installation. Bereits damit besteuerte Geschäfte behalten ihren Betrag und bleiben nachvollziehbar.',
+  'enum.packStatus.Draft': 'Nicht geprüft',
+  'enum.packStatus.Supported': 'In Verwendung',
+  'enum.packStatus.Withdrawn': 'Zurückgezogen',
+  'enum.packScheme.Manual': 'Von einer Person eingegeben',
+  'enum.packScheme.Sst': 'Streamlined Sales Tax',
+  'enum.packScheme.Vendor': 'Steuerdienstleister',
+  'enum.packScheme.EuVat': 'EU-Umsatzsteuer',
+
+  'tax.workOutFromPack': 'Steuer berechnen',
+  'tax.workingOut': 'Wird berechnet…',
+  'tax.outcomeNoAddress':
+    'Tragen Sie zuerst die Zulassungsadresse des Fahrzeugs ein — sie entscheidet über den Satz.',
+  'tax.outcomeNoPackEnabled':
+    'Für dieses Land wird keine Steuersatztabelle verwendet, die Steuer wird also von Hand eingegeben. Es wurde nichts geändert.',
+  'tax.outcomeNoRateForAddress':
+    'Die verwendete Steuersatztabelle enthält nichts für diese Adresse, die Steuer wird also von Hand eingegeben. Es wurde nichts geändert.',
 };
