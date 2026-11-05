@@ -14,6 +14,15 @@ relationship, a commercial contract, or the market decision nobody has taken yet
 [doc 11 §12](11-Franchise-and-External-Scope.md) labels each open item by what
 actually blocks it; only rows marked `Build` are available to anyone.
 
+**If you are not a programmer, there is still one open job and it is a real
+one.** A jurisdiction's tax pack has to be checked against what the authority
+publishes before the software will charge anything from it, and that needs
+somebody who knows the jurisdiction rather than somebody who knows the codebase.
+[Reviewing a tax pack](REVIEWING-A-TAX-PACK.md) is written for an accountant who
+has never seen this repository: what to check, what a sign-off does and does not
+mean, and how to propose a pack for a country we do not cover. No pack has been
+signed off by anybody yet, in any jurisdiction.
+
 ---
 
 ## Start here — an afternoon each

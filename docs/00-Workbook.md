@@ -65,6 +65,7 @@ them.
 | **What happens next** | [09 Implementation Roadmap](09-Implementation-Roadmap.md) for the phase you are in and its exit criteria; [07 Delivery Roadmap](07-Delivery-Roadmap.md) for the commercial plan around it; [11 §11](11-Franchise-and-External-Scope.md) for the decisions blocking both |
 | **How to run it for somebody else** | [Operating](OPERATING.md) — first start, setting a dealership up, backups, and what to check when something is wrong |
 | **How the dealership's own staff use it** | [Using DealerFOSS](USING-DEALERFOSS.md) — by the job somebody came to work to do, not by the menu. The only document written for a salesperson, an advisor or a parts person rather than for us |
+| **How to check a jurisdiction's tax rules** | [Reviewing a tax pack](REVIEWING-A-TAX-PACK.md) — **for a tax professional, not a programmer**: what to check, what a sign-off does and does not mean, and how to propose a pack for a new country |
 
 **Two things are not in this list on purpose.** A per-file guide to the codebase
 does not exist and should not: the file headers are that guide, and a second copy
@@ -110,6 +111,7 @@ eighteen.
 | — | [Local Development](LOCAL-DEVELOPMENT.md) | prerequisites, canonical commands, and the environment facts that are easy to get wrong |
 | — | [Operating](OPERATING.md) | **for whoever runs the installation** — first start, setting a dealership up, backups, diagnosis |
 | — | [Using DealerFOSS](USING-DEALERFOSS.md) | **for the dealership's own staff** — selling, the workshop, taking money, buying cars in, and the refusals that are deliberate |
+| — | [Reviewing a tax pack](REVIEWING-A-TAX-PACK.md) | **for a tax professional** — the review checklist, what a sign-off does and does not mean, and how to propose a pack for a jurisdiction we do not cover |
 | 09 | [Implementation Roadmap](09-Implementation-Roadmap.md) | implementation workflow, phase roadmap, completion rules, and progress reporting |
 | — | [Commercial License](COMMERCIAL-LICENSE.md) | the alternative terms offered alongside AGPLv3 |
 

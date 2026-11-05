@@ -1,4 +1,3 @@
-| `src/App/Compliance/Migrations` | `JurisdictionDb` | the `compliance` schema in the host catalog |
 # Local Development
 
 ← [Onboarding](ONBOARDING.md) · [Workbook](00-Workbook.md)
