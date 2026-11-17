@@ -116,7 +116,7 @@ export function ServiceSetupPage() {
     return (
       <section className="page">
         <h1>{t('serviceSetup.title')}</h1>
-        <p className="error">{load.message}</p>
+        <p className="error" role="alert">{load.message}</p>
         <button type="button" onClick={() => void find()}>
           {t('common.retry')}
         </button>

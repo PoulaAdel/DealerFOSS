@@ -174,7 +174,7 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
     return (
       <section className="panel" role="alert">
         <h2>{t('diary.title')}</h2>
-        <p className="error">{load.message}</p>
+        <p className="error" role="alert">{load.message}</p>
         <button type="button" onClick={() => void find()}>
           {t('common.retry')}
         </button>

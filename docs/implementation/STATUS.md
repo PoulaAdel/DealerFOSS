@@ -1978,3 +1978,11 @@ Two things went red with no change to the product, and both are the kind that wi
 The second kind is the more important one: a test that passes today and fails on a date nobody chose. Worth a search for other fixed dates meeting a real clock; none found failing in this run.
 
 Evidence: `& .\local\gate.ps1` green. `dotnet build` 0 warnings / 0 errors, `dotnet test` **1038/1038**, `verify-e2e.ps1` PASS. Frontend gates not re-run: nothing under `frontend/` changed.
+
+- **2026-11-17 — Every screen names itself in the browser tab, a failed load is announced, and the staff screen stops blanking the whole application.** Accessibility findings 1, 2 and 7 in [`ACCESSIBILITY.md`](../ACCESSIBILITY.md).
+
+  **Titles.** `PageTitle` reads the page's own `<h1>` and sets "Customers — DealerFOSS", rather than keeping a table of routes that tomorrow's screen would miss. `routeHeadings.test.tsx` reads the router and fails if a routed screen has no heading. **Load failures** on eight screens are `role="alert"`; *Record an entry*'s out-of-balance message is a persistent `role="status"`; the deal editor's *Sold with the car* table has a caption.
+
+  **The defect found on the way, and the wrong first reading of it.** Four routes (`/staff`, `/security/second-factor`, `/security/passkeys`, `/integrations`) looked untitled. Only one is at fault: `/staff` threw `Cannot read properties of undefined (reading 'length')` and **unmounted the whole React root**, so the three routes visited after it in the same page showed an empty body. Each of the other three, loaded on its own, titles correctly. The cause is in 20c1ba3: the server's full `StaffMember` carries `Assignments` and no `RoleNames`, while the screen read `person.roleNames.length` on the comment's assumption that both shapes have it (the tests' fixtures did, so they passed). The screen now derives the names from the assignments when `roleNames` is absent, with a test that omits it. The server could instead add `RoleNames` to `StaffMember`; that is Identity's contract and was left for its owner to choose.
+
+  **Register:** the server's full `StaffMember` has no `RoleNames` while the summary shape does; left as it is, the screen derives it.

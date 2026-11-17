@@ -132,7 +132,7 @@ export function StatementPage() {
 
       {load.kind === 'failed' ? (
         <>
-          <p className="error">{load.message}</p>
+          <p className="error" role="alert">{load.message}</p>
           <button type="button" onClick={() => void fetchStatement()}>{t('common.retry')}</button>
         </>
       ) : null}

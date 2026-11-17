@@ -161,6 +161,9 @@ export function DealProducts({
 
       <div className="scroll">
         <table className="table terms">
+          {/* The only table in the deal editor that had no caption (1.3.1). The
+              heading above it is the name it already has. */}
+          <caption className="visually-hidden">{t('products.title')}</caption>
           <thead>
             <tr>
               <th scope="col">{t('products.colSell')}</th>

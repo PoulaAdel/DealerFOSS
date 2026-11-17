@@ -120,7 +120,7 @@ export function StaffPage() {
     return (
       <section className="page">
         <h1>{t('staff.title')}</h1>
-        <p className="error">{load.message}</p>
+        <p className="error" role="alert">{load.message}</p>
         <button type="button" onClick={() => void find()}>
           {t('common.retry')}
         </button>
@@ -198,11 +198,13 @@ export function StaffPage() {
                   </td>
                   {showsDetail && <td>{person.email}</td>}
                   <td>
-                    {/* roleNames is on both shapes, so this one cell reads the
-                        same for either caller. */}
-                    {person.roleNames.length === 0
+                    {/* The server's full record carries assignments, not the
+                        summary's roleNames; reading roleNames unguarded blanked
+                        the whole application. Derived, so either shape reads
+                        the same. */}
+                    {rolesOf(person).length === 0
                       ? t('staff.holdsNothing')
-                      : person.roleNames.join(', ')}
+                      : rolesOf(person).join(', ')}
                   </td>
                   {showsDetail && (
                     <td>{person.hasSecondFactor ? t('common.yes') : t('common.no')}</td>
@@ -220,6 +222,16 @@ export function StaffPage() {
       )}
     </section>
   );
+}
+
+/** The distinct role names a person holds, whichever shape the server sent. */
+function rolesOf(person: StaffMember): string[] {
+  const named = (person as Partial<StaffMember>).roleNames;
+  if (named !== undefined) {
+    return named;
+  }
+
+  return [...new Set(person.assignments.map((a) => a.roleName))].sort();
 }
 
 /**

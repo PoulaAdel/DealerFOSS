@@ -122,6 +122,17 @@ describe('the staff list', () => {
     expect(screen.getByText('Manager')).toBeVisible();
   });
 
+  it('reads the roles from the assignments when the server sends no roleNames', async () => {
+    // The server's full record carries assignments only. Reading roleNames
+    // straight off it threw and blanked the whole application.
+    const { roleNames: _omitted, ...fromServer } = working;
+    withStaff([fromServer as StaffMember]);
+    renderStaff();
+
+    expect(await screen.findByRole('button', { name: 'Dana Whitfield' })).toBeVisible();
+    expect(screen.getByText('Manager')).toBeVisible();
+  });
+
   it('keeps the wide table scrolling inside its own box', async () => {
     // Found in a browser at 375px, not by this test: without `div.scroll` the
     // five columns push the whole page sideways. jsdom has no layout engine, so

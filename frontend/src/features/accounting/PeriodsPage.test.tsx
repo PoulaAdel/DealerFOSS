@@ -224,4 +224,15 @@ describe('reopening a month', () => {
 
     expect(await screen.findByText(/Month-end done\./)).toBeVisible();
   });
+
+  // WCAG 4.1.3. A plain <p> appearing after a failed load tells a screen-reader
+  // user nothing; it has to be an alert.
+  it('announces it when the months could not be read', async () => {
+    mockApi({
+      '/accounting/periods': { ok: false, status: 500, code: 'server.error', detail: 'Something went wrong.' },
+    });
+    renderPeriods();
+
+    expect(await screen.findByRole('alert')).toBeVisible();
+  });
 });

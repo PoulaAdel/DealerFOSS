@@ -253,9 +253,14 @@ export function RecordAnEntry({ onPosted }: { onPosted: () => void }) {
         </button>
 
         {/* Shown while it can still be fixed, rather than after a round trip. */}
-        {difference === 0 ? null : (
-          <p className="error">{t('entry.outBy', { amount: format.money(Math.abs(difference), 'USD') })}</p>
-        )}
+        {/* The status container is always there and only its contents come and
+            go: a live region has to exist BEFORE its text changes to be
+            announced, and this message changes with every line typed (4.1.3). */}
+        <div role="status">
+          {difference === 0 ? null : (
+            <p className="error">{t('entry.outBy', { amount: format.money(Math.abs(difference), 'USD') })}</p>
+          )}
+        </div>
 
         {error === null ? null : <p className="error" role="alert">{error}</p>}
 

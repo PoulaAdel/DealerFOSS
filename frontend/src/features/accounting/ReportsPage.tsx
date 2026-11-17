@@ -108,7 +108,7 @@ export function ReportsPage() {
 
       {load.kind === 'failed' ? (
         <>
-          <p className="error">{load.message}</p>
+          <p className="error" role="alert">{load.message}</p>
           <button type="button" onClick={() => void fetchReports()}>{t('common.retry')}</button>
         </>
       ) : null}

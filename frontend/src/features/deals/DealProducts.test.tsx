@@ -90,6 +90,13 @@ describe('the finance menu', () => {
     expect(screen.getByLabelText('Price for 3-year warranty')).toHaveValue('1200');
   });
 
+  it('names its table, like every other table in the deal editor', async () => {
+    mockApi({ '/finance/products': { ok: true, body: [warranty, gap] } });
+    renderProducts();
+
+    expect(await screen.findByRole('table', { name: 'Sold with the car' })).toBeInTheDocument();
+  });
+
   it('says plainly when nothing is set up to sell', async () => {
     mockApi({ '/finance/products': { ok: true, body: [] } });
     renderProducts();

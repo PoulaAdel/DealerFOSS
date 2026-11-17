@@ -103,19 +103,26 @@ their details, but no multi-step flow was traced for repeated fields.
 
 ## Open findings
 
-Findings 1, 2, 3, 6 and 7 are **open**; 4 and 5 were fixed on 2026-10-17 and 8 is
-recorded. Severity is the assessor's judgement.
+Findings 3 and 6 are **open**; 1, 2 and 7 were fixed on 2026-11-17, 4 and 5 on
+2026-10-17, and 8 is recorded. Severity is the assessor's judgement.
 
-1. **A — 2.4.2 Page titled.** `document.title` is `DealerFOSS` on **all 21
-   routes**; it is set once in `frontend/index.html` and no code changes it.
-   Somebody with several tabs open, or a screen reader announcing the tab,
-   cannot tell *Customers* from *The books*. Likeliest to be marked a failure.
-2. **A/AA — 4.1.3 Status messages.** Eight *page failed to load* messages are
-   plain `<p className="error">` with no `role="alert"` or live region: Periods
-   (two), Reports, Ageing, Statements, the workshop diary, Service setup, Staff.
-   A screen-reader user is told nothing when a screen fails to load. The
-   out-of-balance message on *Record an entry* is likewise unannounced while it
-   changes as the lines are typed. (The other 45 error elements are live.)
+1. **FIXED 2026-11-17 — A — 2.4.2 Page titled.** `document.title` was
+   `DealerFOSS` on all 21 routes. `PageTitle` (rendered beside the routes) now
+   sets it from the page's own `<h1>` — "Customers — DealerFOSS" — following a
+   heading that arrives after its data, and taking the navigation label on the
+   dashboard (whose `<h1>` is the month) and the submit button's words on the
+   signed-out screens (whose `<h1>` is the brand). Measured in the browser on
+   the signed-in routes and `/admin`. A source test
+   (`routeHeadings.test.tsx`) fails if a routed screen has no `<h1>`, so a new
+   screen cannot silently go back to the product name. Four tests pin the title
+   logic. **Found on the way:** `/staff` threw and blanked the entire
+   application, which is why four routes looked untitled in a sequential check
+   (see the 2026-11-17 STATUS entry).
+2. **FIXED 2026-11-17 — A/AA — 4.1.3 Status messages.** The eight *page failed
+   to load* messages (Periods ×2, Reports, Ageing, Statements, the workshop
+   diary, Service setup, Staff) now carry `role="alert"`, and the out-of-balance
+   message on *Record an entry* sits in a persistent `role="status"` region so
+   it is announced as the lines change. A Periods test pins the announcement.
 3. **Best practice, bordering 3.3.1 — errors are not tied to their field.** There
    are 54 error elements and **zero** `aria-invalid` or field `aria-describedby`.
    The text identifies the error and, where live, is announced; it is not
@@ -149,8 +156,8 @@ recorded. Severity is the assessor's judgement.
    here" says which booking to nobody. A screen reader's table navigation
    recovers the row; a list of controls does not. The fix is an accessible name
    carrying the row, which needs new strings in all six catalogues.
-7. **Found 2026-10-17, open — 1.3.1.** The deal editor's *Sold with the car*
-   table has no `<caption>`, unlike the other deal tables and every list.
+7. **FIXED 2026-11-17 — 1.3.1.** The deal editor's *Sold with the car* table
+   now has a (visually hidden) `<caption>`; a test pins it.
 8. **Found 2026-10-17, recorded, not a defect in the code.** On the development
    catalogue 13 products are named *3-year warranty* followed by a raw id, so a
    screen reader reads a 36-character id aloud as part of each checkbox's name.
@@ -164,7 +171,7 @@ formatting fault, but a blank screen is also the least accessible one there is.
 
 ## What would make this a real acceptance
 
-1. Fix findings 1–3, 6 and 7 and re-measure.
+1. Fix findings 3 and 6 and re-measure.
 2. A pass with a screen reader on the five highest-traffic flows (sign in,
    find a customer, open a deal, take a payment, close a month), in English and
    Arabic. The maintainer installing NVDA is the one step that unblocks it.

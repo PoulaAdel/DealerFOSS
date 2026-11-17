@@ -33,6 +33,7 @@ import { Permission } from '../shared/permissions';
 import { AppearanceControls } from './AppearanceControls';
 import { Mark, Wordmark } from './Mark';
 import { NavGroup } from './NavGroup';
+import { PageTitle } from './PageTitle';
 import { ShortcutsPanel } from './Shortcuts';
 import { useHotkeys } from '../shared/useHotkeys';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
@@ -71,6 +72,7 @@ export function App() {
     <I18nProvider>
       <AppearanceProvider>
         <Router>
+          <PageTitle />
           <Routes>
             {/* The split is above SessionProvider on purpose. An administrator
                 has no dealership, so asking /auth/me on their behalf would be a
