@@ -103,7 +103,7 @@ their details, but no multi-step flow was traced for repeated fields.
 
 ## Open findings
 
-Findings 3 and 6 are **open**; 1, 2 and 7 were fixed on 2026-11-17, 4 and 5 on
+Finding 6 is **open** and 3 is partly fixed; 1, 2 and 7 were fixed on 2026-11-17, 4 and 5 on
 2026-10-17, and 8 is recorded. Severity is the assessor's judgement.
 
 1. **FIXED 2026-11-17 — A — 2.4.2 Page titled.** `document.title` was
@@ -123,8 +123,17 @@ Findings 3 and 6 are **open**; 1, 2 and 7 were fixed on 2026-11-17, 4 and 5 on
    diary, Service setup, Staff) now carry `role="alert"`, and the out-of-balance
    message on *Record an entry* sits in a persistent `role="status"` region so
    it is announced as the lines change. A Periods test pins the announcement.
-3. **Best practice, bordering 3.3.1 — errors are not tied to their field.** There
-   are 54 error elements and **zero** `aria-invalid` or field `aria-describedby`.
+3. **PARTLY FIXED 2026-11-17 — errors are not tied to their field.** Measuring
+   the 54 error elements showed almost all are *submission-level* ("could not
+   save"): the API's problem responses carry a code and a message and **no field
+   name**, so nothing honest can mark a particular input `aria-invalid`. The
+   four places where the screen itself checks a named field now do: the
+   mismatched password confirmation (recover and first-password screens) and
+   the missing dealer group on sign-in carry `aria-invalid` and
+   `aria-describedby` to their message; a test pins one. **Still open:** the
+   car chosen before a deal starts (a picker, not an input) and any per-field
+   server error, which needs the API to name the field first.
+   Original finding: there are 54 error elements and **zero** `aria-invalid` or field `aria-describedby`.
    The text identifies the error and, where live, is announced; it is not
    programmatically associated with the input it is about. Passes the letter of
    3.3.1 through the live region; does not meet the recognised technique.

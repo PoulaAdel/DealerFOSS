@@ -221,9 +221,11 @@ export function RecoverPassword() {
             autoComplete="new-password"
             dir="ltr"
             required
+            aria-invalid={error === t('recover.mismatch') ? true : undefined}
+            aria-describedby={error === t('recover.mismatch') ? 'recover-error' : undefined}
           />
 
-          <p className="error" aria-live="polite">
+          <p className="error" id="recover-error" aria-live="polite">
             {error ?? ''}
           </p>
 

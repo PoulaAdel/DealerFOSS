@@ -103,6 +103,11 @@ describe('getting back into an account', () => {
 
     expect(await screen.findByText('Those two do not match.')).toBeVisible();
 
+    // Tied to the field it is about, not only announced (WCAG 3.3.1).
+    const again = screen.getByLabelText('New password again');
+    expect(again).toBeInvalid();
+    expect(again).toHaveAccessibleDescription('Those two do not match.');
+
     // A typo-catcher, not a security control — but there is no reason to spend a
     // single-use code on one.
     expect(apiCalls().filter((call) => call.init?.method === 'POST')).toHaveLength(0);

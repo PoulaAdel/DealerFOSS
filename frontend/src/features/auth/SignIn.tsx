@@ -189,6 +189,8 @@ export function SignIn() {
             onChange={(e) => setTenant(e.target.value)}
             autoComplete="organization"
             required
+            aria-invalid={error === t('passkey.needDealerGroup') ? true : undefined}
+            aria-describedby={error === t('passkey.needDealerGroup') ? 'sign-in-error' : undefined}
           />
 
           <label htmlFor="email">{t('signIn.email')}</label>
@@ -288,7 +290,7 @@ export function SignIn() {
 /// everybody else needs to be told.
 function Error({ message }: { message: string | null }) {
   return (
-    <p className="error" role="alert" aria-live="polite">
+    <p className="error" id="sign-in-error" role="alert" aria-live="polite">
       {message ?? ''}
     </p>
   );

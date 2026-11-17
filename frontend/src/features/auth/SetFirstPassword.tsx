@@ -121,10 +121,12 @@ export function SetFirstPassword() {
             type="password"
             value={again}
             onChange={(event) => setAgain(event.target.value)}
+            aria-invalid={mismatch ? true : undefined}
+            aria-describedby={mismatch ? 'enrol-error' : undefined}
           />
         </div>
 
-        <p className="error" aria-live="polite">
+        <p className="error" id="enrol-error" aria-live="polite">
           {mismatch ? t('setPassword.mismatch') : (error ?? '')}
         </p>
 
