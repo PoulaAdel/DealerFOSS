@@ -803,6 +803,7 @@ function Line({
             <button
               type="button"
               disabled={busy}
+              aria-label={t('workshop.removeLineFor', { name: line.description })}
               onClick={() =>
                 void onAct(() =>
                   remove<RepairOrderDetail>(`/repair-orders/${job.id}/lines/${line.id}`),

@@ -864,6 +864,7 @@ export const en = {
   'terms.remove': 'Remove',
   'terms.lineKind': 'Line {n} kind',
   'terms.lineDescription': 'Line {n} description',
+  'terms.removeLine': 'Remove line {n}',
   'terms.lineAmount': 'Line {n} amount',
   'terms.addLine': 'Add a line',
   'terms.addTradeIn': 'Add a trade-in',
@@ -1279,6 +1280,7 @@ export const en = {
     'Assigned to somebody who is not on your staff list — they may work at another location.',
   'workshop.addLine': 'Write it up',
   'workshop.removeLine': 'Remove',
+  'workshop.removeLineFor': 'Remove {name}',
   'workshop.moveNote': 'Note (goes on the record)',
   'workshop.howObtainedHint':
     'This is the part that matters if the bill is ever questioned. Say who you spoke to and when.',
@@ -1543,6 +1545,8 @@ export const en = {
   'diary.itsHere': 'It’s here',
   'diary.arriving': 'Opening the job…',
   'diary.didNotCome': 'Did not come',
+  'diary.itsHereFor': 'It’s here, {name}',
+  'diary.didNotComeFor': 'Did not come, {name}',
   'diary.becameJob': 'Job {number}',
 
   'diary.book': 'Book a car in',

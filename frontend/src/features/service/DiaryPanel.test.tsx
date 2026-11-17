@@ -113,7 +113,7 @@ describe('the service diary', () => {
 
     render(<DiaryPanel onArrived={arrived} />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'It’s here' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'It’s here, Daniel Okafor' }));
 
     // One call, not two. The server opens the job and links the booking in one
     // transaction; offering it as two steps here would be a lie about that.
@@ -140,7 +140,7 @@ describe('the service diary', () => {
     // The link is the whole point: a diary that only said "Arrived" could not be
     // reconciled against what the workshop actually did.
     expect(await screen.findByText('Job RO-1009')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'It’s here' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^It’s here/ })).not.toBeInTheDocument();
   });
 
   it('records a car that did not come rather than removing it', async () => {
@@ -150,7 +150,7 @@ describe('the service diary', () => {
     });
 
     render(<DiaryPanel onArrived={() => {}} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Did not come' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Did not come, Daniel Okafor' }));
 
     // `cancelled: false` is the distinction that matters — silence, not the
     // customer ringing. Collapsing the two loses the figure a service manager

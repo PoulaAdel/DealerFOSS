@@ -189,6 +189,7 @@ export function DealTerms({
                   className="link"
                   onClick={() => setCharges(charges.filter((_, i) => i !== index))}
                   disabled={charges.length === 1}
+                  aria-label={t('terms.removeLine', { n: index + 1 })}
                 >
                   {t('terms.remove')}
                 </button>

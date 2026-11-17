@@ -872,6 +872,7 @@ export const ru: Catalogue = {
   'terms.remove': 'Удалить',
   'terms.lineKind': 'Тип строки {n}',
   'terms.lineDescription': 'Наименование строки {n}',
+  'terms.removeLine': 'Удалить строку {n}',
   'terms.lineAmount': 'Сумма строки {n}',
   'terms.addLine': 'Добавить строку',
   'terms.addTradeIn': 'Добавить трейд-ин',
@@ -1285,6 +1286,7 @@ export const ru: Catalogue = {
   'workshop.assignedElsewhere':
     'Назначен сотруднику, которого нет в вашем списке, — возможно, он работает на другой площадке.',
   'workshop.removeLine': 'Убрать',
+  'workshop.removeLineFor': 'Убрать {name}',
   'workshop.moveNote': 'Примечание (останется в записи)',
   'workshop.howObtainedHint':
     'Именно это важно, если счёт когда-нибудь оспорят. Укажите, с кем и когда вы говорили.',
@@ -1535,6 +1537,8 @@ export const ru: Catalogue = {
   'diary.itsHere': 'Машина здесь',
   'diary.arriving': 'Открываем заказ-наряд…',
   'diary.didNotCome': 'Не приехала',
+  'diary.itsHereFor': 'Машина здесь, {name}',
+  'diary.didNotComeFor': 'Не приехала, {name}',
   'diary.becameJob': 'Заказ-наряд {number}',
 
   'diary.book': 'Записать машину',

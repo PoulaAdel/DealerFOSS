@@ -103,7 +103,7 @@ their details, but no multi-step flow was traced for repeated fields.
 
 ## Open findings
 
-Finding 6 is **open** and 3 is partly fixed; 1, 2 and 7 were fixed on 2026-11-17, 4 and 5 on
+Finding 3 is partly fixed; 1, 2, 6 and 7 were fixed on 2026-11-17, 4 and 5 on
 2026-10-17, and 8 is recorded. Severity is the assessor's judgement.
 
 1. **FIXED 2026-11-17 — A — 2.4.2 Page titled.** `document.title` was
@@ -158,13 +158,7 @@ Finding 6 is **open** and 3 is partly fixed; 1, 2 and 7 were fixed on 2026-11-17
    Arabic, 87–279 in English; 0px sideways scroll). Contrast, both themes:
    current option 5.29 / 6.19, other options 17.6 / 14.57, trigger text 7.9 /
    7.61, trigger border 3.77 / 3.67. Four new tests pin the behaviour.
-6. **Found 2026-10-17, open — row actions have no row context (2.4.6 /
-   4.1.2).** The workshop's booking rows carry *It's here* and *Did not come*,
-   and the deal editor's charge rows carry *Remove*, each with the same name on
-   every row. Reached by Tab in a list of buttons, "It's here, It's here, It's
-   here" says which booking to nobody. A screen reader's table navigation
-   recovers the row; a list of controls does not. The fix is an accessible name
-   carrying the row, which needs new strings in all six catalogues.
+6. **FIXED 2026-11-17 — row actions have no row context (2.4.6 / 4.1.2).** Found 2026-10-17: *It's here*, *Did not come* (diary), *Remove* (deal charge rows) and the workshop line *Remove* had the same name on every row. Each now carries the row in its accessible name, beginning with the visible words ("It’s here, Daniel Okafor", "Remove line 2"; label in name, 2.5.3), with four new strings in all six catalogues. 
 7. **FIXED 2026-11-17 — 1.3.1.** The deal editor's *Sold with the car* table
    now has a (visually hidden) `<caption>`; a test pins it.
 8. **Found 2026-10-17, recorded, not a defect in the code.** On the development
@@ -180,7 +174,7 @@ formatting fault, but a blank screen is also the least accessible one there is.
 
 ## What would make this a real acceptance
 
-1. Fix findings 3 and 6 and re-measure.
+1. Finish finding 3 (per-field server errors, which need the API to name the field) and re-measure.
 2. A pass with a screen reader on the five highest-traffic flows (sign in,
    find a customer, open a deal, take a payment, close a month), in English and
    Arabic. The maintainer installing NVDA is the one step that unblocks it.

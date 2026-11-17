@@ -893,6 +893,7 @@ export const ar: Catalogue = {
   'terms.remove': 'حذف',
   'terms.lineKind': 'نوع البند {n}',
   'terms.lineDescription': 'وصف البند {n}',
+  'terms.removeLine': 'حذف البند {n}',
   'terms.lineAmount': 'مبلغ البند {n}',
   'terms.addLine': 'أضِف بندًا',
   'terms.addTradeIn': 'أضِف سيارة مقايضة',
@@ -1305,6 +1306,7 @@ export const ar: Catalogue = {
   'workshop.assignedElsewhere':
     'مُسنَد إلى شخص ليس في قائمة موظفيك — ربما يعمل في فرع آخر.',
   'workshop.removeLine': 'إزالة',
+  'workshop.removeLineFor': 'إزالة {name}',
   'workshop.moveNote': 'ملاحظة (تُحفَظ في السجل)',
   'workshop.howObtainedHint':
     'هذا ما يهم إذا اعتُرِض على الفاتورة يومًا ما. اذكر مع مَن تحدَّثت ومتى.',
@@ -1564,6 +1566,8 @@ export const ar: Catalogue = {
   'diary.itsHere': 'وصلت',
   'diary.arriving': 'جارٍ فتح أمر الشغل…',
   'diary.didNotCome': 'لم تحضر',
+  'diary.itsHereFor': 'وصلت، {name}',
+  'diary.didNotComeFor': 'لم تحضر، {name}',
   'diary.becameJob': 'أمر الشغل {number}',
 
   'diary.book': 'حجز سيارة',

@@ -287,6 +287,7 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
                           type="button"
                           className="primary"
                           disabled={working === appointment.id}
+                          aria-label={t('diary.itsHereFor', { name: appointment.customerName })}
                           onClick={() => void arrive(appointment)}
                         >
                           {working === appointment.id ? t('diary.arriving') : t('diary.itsHere')}
@@ -294,6 +295,7 @@ export function DiaryPanel({ onArrived }: { onArrived: (job: RepairOrderDetail) 
                         <button
                           type="button"
                           disabled={working === appointment.id}
+                          aria-label={t('diary.didNotComeFor', { name: appointment.customerName })}
                           onClick={() => void didNotCome(appointment)}
                         >
                           {t('diary.didNotCome')}

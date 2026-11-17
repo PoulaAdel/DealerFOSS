@@ -108,12 +108,12 @@ describe('entering the numbers', () => {
     mockApi({});
     render(<DealTerms deal={base} onSaved={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: 'Remove' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove line 1' })).toBeDisabled();
 
     await userEvent.click(screen.getByRole('button', { name: 'Add a line' }));
     expect(screen.getByLabelText('Line 2 kind')).toBeVisible();
 
-    await userEvent.click(screen.getAllByRole('button', { name: 'Remove' })[1]!);
+    await userEvent.click(screen.getByRole('button', { name: 'Remove line 2' }));
     expect(screen.queryByLabelText('Line 2 kind')).not.toBeInTheDocument();
   });
 

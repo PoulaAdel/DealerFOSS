@@ -841,6 +841,7 @@ export const de: Catalogue = {
   'terms.remove': 'Entfernen',
   'terms.lineKind': 'Art der Position {n}',
   'terms.lineDescription': 'Bezeichnung der Position {n}',
+  'terms.removeLine': 'Entfernen: Position {n}',
   'terms.lineAmount': 'Betrag der Position {n}',
   'terms.addLine': 'Position hinzufügen',
   'terms.addTradeIn': 'Inzahlungnahme hinzufügen',
@@ -1244,6 +1245,7 @@ export const de: Catalogue = {
   'workshop.assignedElsewhere':
     'Jemandem zugewiesen, der nicht auf Ihrer Mitarbeiterliste steht — die Person arbeitet möglicherweise an einem anderen Standort.',
   'workshop.removeLine': 'Entfernen',
+  'workshop.removeLineFor': 'Entfernen: {name}',
   'workshop.moveNote': 'Notiz (kommt in die Akte)',
   'workshop.howObtainedHint':
     'Darauf kommt es an, falls die Rechnung je bestritten wird. Halten Sie fest, mit wem Sie wann gesprochen haben.',
@@ -1488,6 +1490,8 @@ export const de: Catalogue = {
   'diary.itsHere': 'Ist da',
   'diary.arriving': 'Auftrag wird angelegt…',
   'diary.didNotCome': 'Nicht gekommen',
+  'diary.itsHereFor': 'Ist da, {name}',
+  'diary.didNotComeFor': 'Nicht gekommen, {name}',
   'diary.becameJob': 'Auftrag {number}',
 
   'diary.book': 'Fahrzeug einbuchen',

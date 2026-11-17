@@ -838,6 +838,7 @@ export const fr: Catalogue = {
   'terms.remove': 'Supprimer',
   'terms.lineKind': 'Type de la ligne {n}',
   'terms.lineDescription': 'Désignation de la ligne {n}',
+  'terms.removeLine': 'Supprimer la ligne {n}',
   'terms.lineAmount': 'Montant de la ligne {n}',
   'terms.addLine': 'Ajouter une ligne',
   'terms.addTradeIn': 'Ajouter une reprise',
@@ -1241,6 +1242,7 @@ export const fr: Catalogue = {
   'workshop.assignedElsewhere':
     'Attribué à quelqu’un qui ne figure pas dans votre liste de personnel — cette personne travaille peut-être sur un autre site.',
   'workshop.removeLine': 'Retirer',
+  'workshop.removeLineFor': 'Retirer {name}',
   'workshop.moveNote': 'Note (inscrite au dossier)',
   'workshop.howObtainedHint':
     'C’est ce qui compte si la facture est un jour contestée. Indiquez à qui vous avez parlé et quand.',
@@ -1486,6 +1488,8 @@ export const fr: Catalogue = {
   'diary.itsHere': 'Elle est là',
   'diary.arriving': 'Ouverture de l’ordre…',
   'diary.didNotCome': 'Non venue',
+  'diary.itsHereFor': 'Elle est là, {name}',
+  'diary.didNotComeFor': 'Non venue, {name}',
   'diary.becameJob': 'Ordre {number}',
 
   'diary.book': 'Réserver une voiture',

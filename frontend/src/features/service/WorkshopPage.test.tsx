@@ -422,7 +422,7 @@ describe('work nobody has agreed to', () => {
 
     expect(await screen.findByRole('button', { name: 'I rang them' })).toBeVisible();
     // ...but the work itself is still frozen.
-    expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Write up more work' })).toBeNull();
   });
 
