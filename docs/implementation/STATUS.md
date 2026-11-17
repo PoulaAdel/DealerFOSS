@@ -1967,3 +1967,14 @@ to come.
   Every field name, rule key, enum value and route in the guide was read out of `PackDocument.cs`, `JurisdictionPack.cs` and `ComplianceEndpoints.cs` rather than from memory.
 
   Evidence: `& .\local\gate.ps1` green — `dotnet build` 0 warnings / 0 errors, `dotnet test` **1038/1038**, `verify-e2e.ps1` PASS. Frontend gates not run and not needed: nothing under `frontend/` changed, and Docker is down.
+
+### 2026-11-17 — the build is green again after a new advisory, and a test stopped depending on the date
+
+Two things went red with no change to the product, and both are the kind that will recur.
+
+- **`System.Formats.Cbor` 10.0.0 gained a moderate advisory (GHSA-vmv3-wvjp-wqpj),** which `NuGetAudit` turns into a build failure under warnings-as-errors. It is the library the passkey code uses to read a public key. Bumped to **10.0.15**, the first patched 10.0.x release, in `Directory.Packages.props`. UI & UX found it while trying to commit and correctly refused to touch it.
+- **Three `CustomerRecordSinkTests` failed because time passed.** The held-record fixture was stamped with a fixed date, 2026-08-14, and a held record is kept for 90 days, so on 2026-11-12 every such record became "expired" while the code under test read the real clock. The tests now hold a record at the current time. The one test that is *about* an expired record still holds it at the old date, so it still proves what it did.
+
+The second kind is the more important one: a test that passes today and fails on a date nobody chose. Worth a search for other fixed dates meeting a real clock; none found failing in this run.
+
+Evidence: `& .\local\gate.ps1` green. `dotnet build` 0 warnings / 0 errors, `dotnet test` **1038/1038**, `verify-e2e.ps1` PASS. Frontend gates not re-run: nothing under `frontend/` changed.

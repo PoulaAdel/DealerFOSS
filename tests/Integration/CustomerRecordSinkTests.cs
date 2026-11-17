@@ -634,7 +634,7 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
         // customer's details back into the dealership after the day we said we
         // would stop holding them.
         var reference = $"{_prefix}-EXPIRED";
-        var id = await HoldAsync(reference, Payload(reference, lastName: "Stale"));
+        var id = await HoldAsync(reference, Payload(reference, lastName: "Stale"), Start);
 
         await using var scope = await OpenScopeAsync();
 
@@ -693,8 +693,15 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
     /// A held row shaped exactly as the runtime writes one, so a replay test is
     /// exercising the real thing rather than a convenient stand-in.
     /// </summary>
-    private async Task<Guid> HoldAsync(string reference, string payload)
+    private async Task<Guid> HoldAsync(string reference, string payload, DateTimeOffset? heldAt = null)
     {
+        // The replay and list paths below run in a real scope, which reads the
+        // real clock. A row stamped with the fixed Start date silently expires
+        // 90 days after it (it did, on 2026-11-12, and three tests went red with
+        // no change to the code), so a row is held "now" unless a test is
+        // deliberately asking about an old one.
+        var at = heldAt ?? DateTimeOffset.UtcNow;
+
         await using var db = NewContext();
 
         var held = new QuarantinedRecord(
@@ -707,7 +714,7 @@ public sealed class CustomerRecordSinkTests(HostFixture fixture)
             null,
             payload,
             Error.Validation("customer.missing_name", "A surname is required."),
-            Start);
+            at);
 
         db.Add(held);
         await db.SaveChangesAsync(CancellationToken.None);

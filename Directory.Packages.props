@@ -35,8 +35,11 @@
       format decoded and two signature algorithms verified, and pulling a whole
       attestation stack into the sealed Identity project to get that would be a
       much larger security dependency than the problem calls for.
+
+      10.0.15, not 10.0.0: GHSA-vmv3-wvjp-wqpj (moderate) affects every 10.0.x
+      below 10.0.15, and the advisory appeared with no change on our side.
     -->
-    <PackageVersion Include="System.Formats.Cbor" Version="10.0.0" />
+    <PackageVersion Include="System.Formats.Cbor" Version="10.0.15" />
   </ItemGroup>
 
   <ItemGroup>
